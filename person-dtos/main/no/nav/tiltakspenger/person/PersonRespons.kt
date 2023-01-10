@@ -1,6 +1,6 @@
 package no.nav.tiltakspenger.person
 
-class Respons(
+class PersonRespons(
     val person: Person? = null,
     val feil: Feilmelding? = null
 )

@@ -3,11 +3,11 @@ package no.nav.tiltakspenger.person
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNull
 
-internal class ResponsTest {
+internal class PersonResponsTest {
 
     @Test
     fun `Test 1`() {
-        val respons = Respons(
+        val respons = PersonRespons(
             person = null, feil = null
         )
 

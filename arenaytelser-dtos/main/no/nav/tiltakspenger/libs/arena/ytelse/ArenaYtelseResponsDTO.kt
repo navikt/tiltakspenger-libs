@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.arena.ytelse
+package no.nav.tiltakspenger.libs.arena.ytelse
 
 import java.time.LocalDate
 import java.time.LocalDateTime

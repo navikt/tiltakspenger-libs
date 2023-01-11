@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.person
+package no.nav.tiltakspenger.libs.person
 
 class PersonRespons(
     val person: Person? = null,

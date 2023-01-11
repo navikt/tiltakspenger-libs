@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.arena.tiltak
+package no.nav.tiltakspenger.libs.arena.tiltak
 
 import java.time.LocalDate
 

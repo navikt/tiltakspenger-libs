@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.person
+package no.nav.tiltakspenger.libs.person
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNull

@@ -3,7 +3,7 @@ package no.nav.tiltakspenger.libs.arena.tiltak
 import java.time.LocalDate
 
 data class ArenaTiltaksaktivitetResponsDTO(
-    val tiltaksaktiviter: List<TiltaksaktivitetDTO>? = null,
+    val tiltaksaktiviteter: List<TiltaksaktivitetDTO>? = null,
     val feil: FeilmeldingDTO? = null
 ) {
 

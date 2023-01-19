@@ -1,6 +1,6 @@
 package no.nav.tiltakspenger.libs.skjerming
 
-class SkjermingRespons(
-    val identer: List<Ident>? = null,
+data class SkjermingResponsDTO(
+    val skjerming: SkjermingDTO? = null,
     val feil: Feilmelding? = null
 )

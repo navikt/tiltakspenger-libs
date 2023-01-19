@@ -7,12 +7,12 @@ internal class SkjermingResponsTest {
 
     @Test
     fun `Test 1`() {
-        val respons = SkjermingRespons(
-            identer = null,
+        val respons = SkjermingResponsDTO(
+            skjerming = null,
             feil = null,
         )
 
-        assertNull(respons.identer)
+        assertNull(respons.skjerming)
         assertNull(respons.feil)
     }
 }

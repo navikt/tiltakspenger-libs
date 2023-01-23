@@ -5,11 +5,18 @@ plugins {
     kotlin("plugin.serialization") version "1.8.0" apply false
     `maven-publish`
     `java-library`
+    id("com.diffplug.spotless") version "5.0.0"
 }
 
 allprojects {
     repositories {
         mavenCentral()
+    }
+}
+
+spotless {
+    kotlin {
+        ktlint("0.45.2")
     }
 }
 
@@ -19,6 +26,13 @@ subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "maven-publish")
     apply(plugin = "java-library")
+    apply(plugin = "com.diffplug.spotless")
+
+    spotless {
+        kotlin {
+            ktlint("0.45.2")
+        }
+    }
 
     tasks {
         withType<KotlinCompile> {

@@ -5,7 +5,7 @@ plugins {
     kotlin("plugin.serialization") version "1.8.0" apply false
     `maven-publish`
     `java-library`
-    id("com.diffplug.spotless") version "5.0.0"
+    id("com.diffplug.spotless") version "6.14.0"
 }
 
 allprojects {

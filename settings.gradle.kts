@@ -5,5 +5,6 @@ include(
     "arenatiltak-dtos",
     "arenaytelser-dtos",
     "skjerming-dtos",
-    "fp-dtos"
+    "fp-dtos",
+    "ufore-dtos"
 )

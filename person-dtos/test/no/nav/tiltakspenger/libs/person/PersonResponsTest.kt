@@ -8,7 +8,8 @@ internal class PersonResponsTest {
     @Test
     fun `Test 1`() {
         val respons = PersonRespons(
-            person = null, feil = null
+            person = null,
+            feil = null,
         )
 
         assertNull(respons.person)

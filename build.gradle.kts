@@ -5,18 +5,12 @@ plugins {
     kotlin("plugin.serialization") version "1.8.0" apply false
     `maven-publish`
     `java-library`
-    id("com.diffplug.spotless") version "5.0.0"
+    id("com.diffplug.spotless") version "6.15.0"
 }
 
 allprojects {
     repositories {
         mavenCentral()
-    }
-}
-
-spotless {
-    kotlin {
-        ktlint("0.45.2")
     }
 }
 
@@ -30,7 +24,7 @@ subprojects {
 
     spotless {
         kotlin {
-            ktlint("0.45.2")
+            ktlint("0.48.2")
         }
     }
 

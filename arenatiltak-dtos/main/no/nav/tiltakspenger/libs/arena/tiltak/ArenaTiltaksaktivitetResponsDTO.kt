@@ -4,11 +4,11 @@ import java.time.LocalDate
 
 data class ArenaTiltaksaktivitetResponsDTO(
     val tiltaksaktiviteter: List<TiltaksaktivitetDTO>? = null,
-    val feil: FeilmeldingDTO? = null
+    val feil: FeilmeldingDTO? = null,
 ) {
 
     enum class FeilmeldingDTO(val melding: String) {
-        UkjentFeil("Ukjent feil")
+        UkjentFeil("Ukjent feil"),
     }
 
     data class TiltaksaktivitetDTO(
@@ -136,7 +136,7 @@ data class ArenaTiltaksaktivitetResponsDTO(
         VASV("Varig tilrettelagt arbeid i skjermet virksomhet"),
         VV("Varig vernet arbeid (VVA)"),
         VIDRSKOLE("Videregående skole"),
-        OPPLT2AAR("2-årig opplæringstiltak");
+        OPPLT2AAR("2-årig opplæringstiltak"),
     }
 
     enum class DeltakerStatusType(val navn: String) {
@@ -153,6 +153,6 @@ data class ArenaTiltaksaktivitetResponsDTO(
         JATAKK("Takket ja til tilbud"),
         NEITAKK("Takket nei til tilbud"),
         TILBUD("Godkjent tiltaksplass"),
-        VENTELISTE("Venteliste")
+        VENTELISTE("Venteliste"),
     }
 }

@@ -6,11 +6,11 @@ import java.time.LocalDateTime
 
 data class FPResponsDTO(
     val ytelser: List<YtelseV1DTO>? = null,
-    val feil: FeilmeldingDTO? = null
+    val feil: FeilmeldingDTO? = null,
 ) {
 
     enum class FeilmeldingDTO(val melding: String) {
-        UkjentFeil("Ukjent feil")
+        UkjentFeil("Ukjent feil"),
     }
 
     data class YtelseV1DTO(
@@ -44,7 +44,7 @@ data class FPResponsDTO(
         /** Folketrygdloven K14 ytelser.  */
         ES, // ENGANGSTØNAD,
         FP, // FORELDREPENGER,
-        SVP // SVANGERSKAPSPENGER,
+        SVP, // SVANGERSKAPSPENGER,
 
         /** Midlertidig ytelse for Selvstendig næringsdrivende og Frilansere (Anmodning 10).  */
         // FRISINN
@@ -63,7 +63,7 @@ data class FPResponsDTO(
         SVANGERSKAPSPENGER,
 
         /** Midlertidig ytelse for Selvstendig næringsdrivende og Frilansere (Anmodning 10).  */
-        FRISINN
+        FRISINN,
     }
 
     enum class Status {
@@ -72,11 +72,11 @@ data class FPResponsDTO(
 
     enum class Kildesystem {
         FPSAK,
-        K9SAK
+        K9SAK,
     }
 
     data class Periode(
         val fom: LocalDate,
-        val tom: LocalDate
+        val tom: LocalDate,
     )
 }

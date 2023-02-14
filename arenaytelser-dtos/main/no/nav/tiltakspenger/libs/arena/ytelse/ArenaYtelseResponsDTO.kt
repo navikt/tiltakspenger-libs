@@ -6,11 +6,11 @@ import java.util.Collections.emptyList
 
 data class ArenaYtelseResponsDTO(
     val saker: List<SakDTO>? = null,
-    val feil: FeilmeldingDTO? = null
+    val feil: FeilmeldingDTO? = null,
 ) {
 
     enum class FeilmeldingDTO(val melding: String) {
-        UkjentFeil("Ukjent feil")
+        UkjentFeil("Ukjent feil"),
     }
 
     data class SakDTO(
@@ -28,14 +28,14 @@ data class ArenaYtelseResponsDTO(
     enum class SakStatusType(val navn: String) {
         AKTIV("Aktiv"),
         AVSLU("Lukket"),
-        INAKT("Inaktiv");
+        INAKT("Inaktiv"),
     }
 
     enum class SakType(val navn: String) {
         AA("Arbeidsavklaringspenger"),
         DAGP("Dagpenger"),
         INDIV("Individstønad"),
-        ANNET("Alt annet");
+        ANNET("Alt annet"),
     }
 
     data class VedtakDTO(
@@ -58,7 +58,7 @@ data class ArenaYtelseResponsDTO(
         K("Kontroll"), // Står ikke listet opp i dokumentasjonen..
         M("Omgjør reaksjon"), // Står ikke listet opp i dokumentasjonen..
         R("Revurdering"), // Står ikke listet opp i dokumentasjonen..
-        T("Tidsbegrenset bortfall"); // Gjelder ikke tiltakspenger
+        T("Tidsbegrenset bortfall"), // Gjelder ikke tiltakspenger
     }
 
     enum class RettighetType(val navn: String, val sakType: SakType) {
@@ -138,7 +138,7 @@ data class ArenaYtelseResponsDTO(
         UFOREYT("Uføreytelser", SakType.ANNET),
         UNDM("Bøker og undervisningsmatr.", SakType.ANNET),
         UTESTENG("Utestengning", SakType.ANNET),
-        VENT("Ventestønad", SakType.ANNET);
+        VENT("Ventestønad", SakType.ANNET),
     }
 
     enum class VedtakStatusType(val navn: String) {
@@ -148,6 +148,6 @@ data class ArenaYtelseResponsDTO(
         IVERK("Iverksatt"),
         MOTAT("Mottatt"),
         OPPRE("Opprettet"),
-        REGIS("Registrert");
+        REGIS("Registrert"),
     }
 }

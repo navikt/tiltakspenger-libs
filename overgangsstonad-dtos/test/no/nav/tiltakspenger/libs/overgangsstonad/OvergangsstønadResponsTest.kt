@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.overgangsstønad
+package no.nav.tiltakspenger.libs.overgangsstonad
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNull

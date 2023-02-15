@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.overgangsstønad
+package no.nav.tiltakspenger.libs.overgangsstonad
 
 import java.time.LocalDate
 

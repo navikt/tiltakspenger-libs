@@ -7,5 +7,5 @@ include(
     "skjerming-dtos",
     "fp-dtos",
     "ufore-dtos",
-    "overgangsstønad-dtos"
+    "overgangsstonad-dtos"
 )

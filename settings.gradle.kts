@@ -6,5 +6,6 @@ include(
     "arenaytelser-dtos",
     "skjerming-dtos",
     "fp-dtos",
-    "ufore-dtos"
+    "ufore-dtos",
+    "overgangsstønad-dtos"
 )

@@ -8,11 +8,11 @@ class OvergangsstønadResponsTest {
     @Test
     fun `Test 1`() {
         val respons = OvergangsstønadResponsDTO(
-            overgangsstønad = null,
+            overgangsstønader = null,
             feil = null,
         )
 
-        assertNull(respons.overgangsstønad)
+        assertNull(respons.overgangsstønader)
         assertNull(respons.feil)
     }
 }

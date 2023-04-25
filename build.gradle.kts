@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.8.0"
-    kotlin("plugin.serialization") version "1.8.0" apply false
+    kotlin("plugin.serialization") version "1.8.21" apply false
     `maven-publish`
     `java-library`
     id("com.diffplug.spotless") version "6.15.0"

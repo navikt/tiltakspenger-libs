@@ -164,6 +164,7 @@ data class ArenaTiltaksaktivitetResponsDTO(
         VV("Varig vernet arbeid (VVA)", Tiltaksgruppe.UTFAS, false),
         VIDRSKOLE("Videregående skole", Tiltaksgruppe.UTFAS, false),
         OPPLT2AAR("2-årig opplæringstiltak", Tiltaksgruppe.UTFAS, true),
+        FORSOPPLEV("Forsøk opplæringstiltak av lengre varighet", Tiltaksgruppe.FORSOK, true),
     }
 
     enum class DeltakerStatusType(val navn: String) {

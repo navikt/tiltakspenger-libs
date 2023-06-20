@@ -99,6 +99,7 @@ data class ArenaYtelseResponsDTO(
         DIMP("Import (E303 inn)", SakType.ANNET),
         EKSG("Eksamensgebyr", SakType.ANNET),
         FADD("Fadder", SakType.ANNET),
+        FETI("Ferietillegg", SakType.DAGP),
         FLYT("Flytting", SakType.ANNET),
         FREI("MOB-Fremreise", SakType.ANNET),
         FRI_MK_AAP("Fritak fra å sende meldekort AAP", SakType.ANNET),

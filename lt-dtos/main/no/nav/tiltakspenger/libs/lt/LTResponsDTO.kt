@@ -2,10 +2,9 @@ package no.nav.tiltakspenger.libs.lt
 
 import java.time.LocalDateTime
 
-
 data class LTResponsDTO(
     val status: TiltaksstatusV1DTO? = null,
-    val feil: FeilmeldingDTO? = null
+    val feil: FeilmeldingDTO? = null,
 ) {
 
     enum class FeilmeldingDTO(val melding: String) {
@@ -24,7 +23,7 @@ data class LTResponsDTO(
 
     data class TilskuddPeriode(
         val startDato: LocalDateTime,
-        val sluttDato: LocalDateTime
+        val sluttDato: LocalDateTime,
     )
 
     enum class Avtalestatus {
@@ -79,7 +78,7 @@ data class LTResponsDTO(
         AVTALE_SLETTET,
         GODKJENT_FOR_ETTERREGISTRERING,
         FJERNET_ETTERREGISTRERING,
-        STATUSENDRING
+        STATUSENDRING,
     }
 
     enum class Tiltakstype {
@@ -88,6 +87,6 @@ data class LTResponsDTO(
         VARIG_LONNSTILSKUDD,
         MENTOR,
         INKLUDERINGSTILSKUDD,
-        SOMMERJOBB
+        SOMMERJOBB,
     }
 }

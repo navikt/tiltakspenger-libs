@@ -1,0 +1,209 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Søknad om tiltakspenger",
+  "description": "Gjeldende versjon av søknad om tiltakspenger",
+  "required": [
+    "id",
+    "acr",
+    "kvalifiseringsprogram",
+    "introduksjonsprogram",
+    "tiltak",
+    "vedleggsnavn",
+    "barnetillegg",
+    "mottarAndreUtbetalinger",
+    "sykepenger",
+    "gjenlevendepensjon",
+    "alderspensjon",
+    "supplerendestønadover67",
+    "supplerendestønadflyktninger",
+    "pensjonsordning",
+    "etterlønn",
+    "lønnetArbeid",
+    "jobbsjansen",
+    "personopplysninger",
+    "harBekreftetAlleOpplysninger",
+    "harBekreftetÅSvareSåGodtManKan",
+    "innsendingTidspunkt"
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "periode": {
+      "type": "object",
+      "required": ["fra", "til"],
+      "properties": {
+        "fra": {
+          "type": "string",
+          "examples": "2025-01-01"
+        },
+        "til": {
+          "type": "string",
+          "examples": "2025-01-01"
+        }
+      }
+    }
+  },
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "examples": ["24bda361-88f7-4c0e-8706-6e6a1abdc0a0"]
+    },
+    "acr": {
+      "type": "string",
+      "description": "Sikkerhetsnivå",
+      "examples": ["Level4"]
+    },
+    "kvalifiseringsprogram": {
+      "type": "object",
+      "required": ["deltar"],
+      "properties": {
+        "deltar": {
+          "type": "boolean",
+          "examples": [true, false]
+        },
+        "periode": {
+          "$ref": "#/$defs/periode"
+        }
+      },
+      "examples": [{
+        "deltar": true,
+        "periode": {
+          "fra": "2025-01-01",
+          "til": "2025-01-01"
+        }
+      }],
+      "description": "Om og eventuelt hvilken periode søker oppgir å delta på kvalifiseringsprogram samtidig som de er på tiltak"
+    },
+    "introduksjonsprogram": {
+      "type": "object",
+      "required": ["deltar"],
+      "properties": {
+        "deltar": {
+          "type": "boolean",
+          "examples": [true, false]
+        },
+        "periode": {
+          "$ref": "#/$defs/periode"
+        }
+      },
+      "examples": [{
+        "deltar": true,
+        "periode": {
+          "fra": "2025-01-01",
+          "til": "2025-01-01"
+        }
+      }],
+      "description": "Om og eventuelt hvilken periode søker oppgir å delta på introduksjonsprogram samtidig som de er på tiltak"
+    },
+    "institusjonsopphold": {
+      "type": "object",
+      "required": ["borPåInstitusjon"],
+      "properties": {
+        "borPåInstitusjon": {
+          "type": "boolean",
+          "examples": [true, false]
+        },
+        "periode": {
+          "$ref": "#/$defs/periode"
+        }
+      },
+      "examples": [{
+        "borPåInstitusjon": true,
+        "periode": {
+          "fra": "2025-01-01",
+          "til": "2025-01-01"
+        }
+      }],
+      "description": "Om og eventuelt hvilken periode søker oppgir å bo på institusjonsopphold samtidig som de er på tiltak"
+    },
+    "tiltak": {
+      "type": "object",
+      "required": ["aktivitetId", "periode", "arrangør", "type", "typeNavn"],
+      "properties": {
+        "aktivitetId": {
+          "type": "string",
+          "examples": ["123"]
+        },
+        "periode": {
+          "$ref": "#/$defs/periode"
+        },
+        "arrangør": {
+          "type": "string",
+          "examples": ["Arrangør"]
+        },
+        "arenaRegistrertPeriode": {
+          "properties": {
+            "fra": {
+              "type": "string",
+              "examples": ["2025-01-01"]
+            },
+            "til": {
+              "type": "string",
+              "examples": ["2025-01-01"]
+            }
+          }
+        },
+        "type": {
+          "type": "string",
+          "examples": ["MENTOR"]
+        },
+        "typeNavn": {
+          "type": "string",
+          "examples": ["Mentor"]
+        }
+      }
+    },
+    "barnetillegg": {
+      "type": "object",
+      "required": ["manueltRegistrerteBarnSøktBarnetilleggFor", "registrerteBarnSøktBarnetilleggFor"],
+      "properties": {
+        "manueltRegistrerteBarnSøktBarnetilleggFor": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fornavn", "etternavn", "fødselsdato", "oppholdInnenforEøs"],
+            "properties": {
+              "fornavn": {
+                "type": "string"
+              },
+              "etternavn": {
+                "type": "string"
+              },
+              "fødselsdato": {
+                "type": "string"
+              },
+              "oppholdInnenforEøs": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "registrerteBarnSøktBarnetilleggFor": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["fødselsdato", "oppholdInnenforEøs"],
+            "properties": {
+              "fornavn": {
+                "type": "string"
+              },
+              "etternavn": {
+                "type": "string"
+              },
+              "fødselsdato": {
+                "type": "string"
+              },
+              "oppholdInnenforEøs": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "mottarAndreUtbetalinger": {
+      "type": "boolean"
+    }
+  }
+}

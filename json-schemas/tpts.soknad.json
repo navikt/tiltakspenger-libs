@@ -204,6 +204,196 @@
     },
     "mottarAndreUtbetalinger": {
       "type": "boolean"
+    },
+    "sykepenger": {
+      "type": "object",
+      "required": ["mottar"],
+      "properties": {
+        "mottar": {
+          "type": "boolean"
+        },
+        "periode":{
+          "$ref": "#/$defs/periode"
+        }
+      },
+      "examples": [{
+        "mottar": true,
+        "periode": {
+          "fra": "2025-01-01",
+          "til": "2025-01-01"
+        }
+      }]
+    },
+
+    "gjenlevendepensjon": {
+      "type": "object",
+      "properties": {
+        "mottar": {
+          "type": "boolean"
+        },
+        "periode":{
+          "$ref": "#/$defs/periode"
+        }
+      },
+      "examples": [{
+        "mottar": true,
+        "periode": {
+          "fra": "2025-01-01",
+          "til": "2025-01-01"
+        }
+      }]
+    },
+
+    "alderspensjon": {
+      "type": "object",
+      "properties": {
+        "mottar": {
+          "type": "boolean"
+        },
+        "fraDato": {
+          "type": "string"
+        }
+      },
+      "examples": [{
+        "mottar": true,
+        "fraDato": "2025-01-01"
+        }
+      ]
+    },
+
+    "supplerendestønadover67": {
+      "type": "object",
+      "properties": {
+        "mottar": {
+          "type": "boolean"
+        },
+        "periode":{
+          "$ref": "#/$defs/periode"
+        }
+      },
+      "examples": [{
+        "mottar": true,
+        "periode": {
+          "fra": "2025-01-01",
+          "til": "2025-01-01"
+        }
+      }]
+    },
+
+    "supplerendestønadflyktninger": {
+      "type": "object",
+      "properties": {
+        "mottar": {
+          "type": "boolean"
+        },
+        "periode":{
+          "$ref": "#/$defs/periode"
+        }
+      },
+      "examples": [{
+        "mottar": true,
+        "periode": {
+          "fra": "2025-01-01",
+          "til": "2025-01-01"
+        }
+      }]
+    },
+
+    "pensjonsordning": {
+      "type": "object",
+      "properties": {
+        "mottar": {
+          "type": "boolean"
+        },
+        "periode":{
+          "$ref": "#/$defs/periode"
+        }
+      },
+      "examples": [{
+        "mottar": true,
+        "periode": {
+          "fra": "2025-01-01",
+          "til": "2025-01-01"
+        }
+      }]
+    },
+
+    "etterlønn": {
+      "type": "object",
+      "required": ["mottar"],
+      "properties": {
+        "mottar": {
+          "type": "boolean"
+        }
+      },
+      "examples": [{
+        "mottar": true
+      }]
+    },
+
+    "lønnetArbeid": {
+      "type": "object",
+      "required": ["erILønnetArbeid"],
+      "properties": {
+        "erILønnetArbeid": {
+          "type": "boolean"
+        }
+      },
+      "examples": [{
+        "erILønnetArbeid": true
+      }]
+    },
+
+    "jobbsjansen": {
+      "type": "object",
+      "properties": {
+        "mottar": {
+          "type": "boolean"
+        },
+        "periode":{
+          "$ref": "#/$defs/periode"
+        }
+      },
+      "examples": [{
+        "mottar": true,
+        "periode": {
+          "fra": "2025-01-01",
+          "til": "2025-01-01"
+        }
+      }]
+    },
+
+    "personopplysninger": {
+      "type": "object",
+      "required": ["ident", "fornavn", "etternavn"],
+      "properties": {
+        "ident": {
+          "type": "string"
+        },
+        "fornavn": {
+          "type": "string"
+        },
+        "etternavn": {
+          "type": "string"
+        }
+      },
+      "examples": [{
+        "ident": "12345678910",
+        "fornavn": "person",
+        "etternavn": "personsen"
+      }]
+    },
+
+    "harBekreftetAlleOpplysninger": {
+      "type": "string"
+    },
+
+    "harBekreftetÅSvareSåGodtManKan": {
+      "type": "string"
+    },
+
+    "innsendingTidspunkt": {
+      "type": "string"
     }
   }
 }

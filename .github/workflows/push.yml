@@ -16,10 +16,10 @@ jobs:
           java-version: 17
           distribution: 'temurin'
           check-latest: true
-      - uses: gradle/gradle-build-action@v2.3.3
+      - uses: gradle/gradle-build-action@v2
         with:
           arguments: test --continue --no-daemon --configuration-cache
-      - uses: dorny/test-reporter@v1.6.0
+      - uses: dorny/test-reporter@v1.7.0
         if: always()
         with:
           name: tests
@@ -31,8 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      contents: write
-      packages: write
+      contents: 'write'
+      packages: 'write'
     steps:
       - uses: actions/checkout@v3
         with:

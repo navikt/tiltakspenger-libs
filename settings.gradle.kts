@@ -8,5 +8,6 @@ include(
     "fp-dtos",
     "lt-dtos",
     "ufore-dtos",
-    "overgangsstonad-dtos"
+    "overgangsstonad-dtos",
+    "tiltak-dtos"
 )

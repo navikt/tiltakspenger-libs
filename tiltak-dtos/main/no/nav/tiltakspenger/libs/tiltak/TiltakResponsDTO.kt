@@ -14,25 +14,26 @@ data class TiltakResponsDTO(
 
     data class TiltakDTO(
         val id: String,
-        val gjennomforing: GjennomforingResponseDTO,
-        val startDato: LocalDate?,
-        val sluttDato: LocalDate?,
-        val status: DeltakerStatusResponseDTO,
-        val dagerPerUke: Float?,
-        val prosentStilling: Float?,
+        val gjennomforing: GjennomføringDTO,
+        val deltakelseFom: LocalDate?,
+        val deltakelseTom: LocalDate?,
+        val deltakelseStatus: DeltakerStatusDTO,
+        val deltakelseDagerUke: Float?,
+        val deltakelseProsent: Float?,
+        val kilde: String,
         val registrertDato: LocalDateTime,
     )
 
-    data class GjennomforingResponseDTO(
+    data class GjennomføringDTO(
         val id: String,
-        val arrangornavn: String,
+        val arrangørnavn: String,
         val typeNavn: String,
         val arenaKode: TiltakType,
-        val startDato: LocalDate?,
-        val sluttDato: LocalDate?,
+        val fom: LocalDate?,
+        val tom: LocalDate?,
     )
 
-    enum class DeltakerStatusResponseDTO(val status: String, val girRettTilÅASøke: Boolean) {
+    enum class DeltakerStatusDTO(val status: String, val rettTilÅSøke: Boolean) {
         VENTER_PA_OPPSTART("Venter på oppstart", true),
         DELTAR("Deltar", true),
         HAR_SLUTTET("Har sluttet", true),

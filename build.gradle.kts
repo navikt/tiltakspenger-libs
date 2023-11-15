@@ -1,7 +1,7 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+val javaVersion = JavaVersion.VERSION_21
 
 plugins {
-    kotlin("jvm") version "1.8.22"
+    kotlin("jvm") version "1.9.20"
     // kotlin("plugin.serialization") version "1.8.22" apply false
     `maven-publish`
     `java-library`
@@ -29,18 +29,27 @@ subprojects {
     }
 
     tasks {
-        withType<KotlinCompile> {
-            kotlinOptions.jvmTarget = "17"
+        compileKotlin {
+            kotlinOptions.jvmTarget = javaVersion.toString()
+        }
+        compileTestKotlin {
+            kotlinOptions.jvmTarget = javaVersion.toString()
+            kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
+        }
+        test {
+            // JUnit 5 support
+            useJUnitPlatform()
+            // https://phauer.com/2018/best-practices-unit-testing-kotlin/
+            systemProperty("junit.jupiter.testinstance.lifecycle.default", "per_class")
         }
         withType<Jar> {
             duplicatesStrategy = DuplicatesStrategy.INCLUDE
         }
-        withType<Test> {
-            useJUnitPlatform()
-        }
     }
 
     java {
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
         withSourcesJar()
         withJavadocJar()
     }

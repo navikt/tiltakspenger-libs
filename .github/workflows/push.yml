@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 21
           distribution: 'temurin'
@@ -38,11 +38,11 @@ jobs:
       contents: write
       packages: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # include git tags
 
-      - uses: paulhatch/semantic-version@v5.0.2
+      - uses: paulhatch/semantic-version@v5.3.0
         id: tag
         with:
           bump_each_commit: true

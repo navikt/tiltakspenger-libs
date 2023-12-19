@@ -79,3 +79,11 @@ subprojects {
     sourceSets["main"].resources.srcDirs("main")
     sourceSets["test"].resources.srcDirs("test")
 }
+
+task("addPreCommitGitHookOnBuild") {
+    println("⚈ ⚈ ⚈ Running Add Pre Commit Git Hook Script on Build ⚈ ⚈ ⚈")
+    exec {
+        commandLine("cp", "./.scripts/pre-commit", "./.git/hooks")
+    }
+    println("✅ Added Pre Commit Git Hook Script.")
+}

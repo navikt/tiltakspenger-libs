@@ -4,7 +4,7 @@ plugins {
     kotlin("jvm") version "1.9.22"
     `maven-publish`
     `java-library`
-    id("com.diffplug.spotless") version "6.23.3"
+    id("com.diffplug.spotless") version "6.24.0"
 }
 
 allprojects {

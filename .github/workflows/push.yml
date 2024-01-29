@@ -20,7 +20,7 @@ jobs:
           java-version: 21
           distribution: 'temurin'
           check-latest: true
-      - uses: gradle/gradle-build-action@v2
+      - uses: gradle/gradle-build-action@v3
         with:
           arguments: test --continue --no-daemon --configuration-cache
       - uses: dorny/test-reporter@v1.8.0
@@ -67,7 +67,7 @@ jobs:
             Changes in this Release
             ${{ steps.notes.outputs.CHANGELOG }}
 
-      - uses: gradle/gradle-build-action@v2
+      - uses: gradle/gradle-build-action@v3
         with:
           arguments: -Pversion=${{ steps.tag.outputs.version }} publish
         env:

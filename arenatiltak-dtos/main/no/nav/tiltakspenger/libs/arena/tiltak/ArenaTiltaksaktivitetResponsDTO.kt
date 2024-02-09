@@ -156,7 +156,7 @@ data class ArenaTiltaksaktivitetResponsDTO(
         UTBHLETTPS("Utredning/behandling lettere psykiske lidelser", Tiltaksgruppe.UTFAS, true),
         UTBHPSLD("Utredning/behandling lettere psykiske og sammensatte lidelser", Tiltaksgruppe.UTFAS, true),
         UTBHSAMLI("Utredning/behandling sammensatte lidelser", Tiltaksgruppe.UTFAS, true),
-        UTVAOONAV("Utvidet oppfølging i NAV", Tiltaksgruppe.FORSOK, true),
+        UTVAOONAV("Arbeid med støtte", Tiltaksgruppe.FORSOK, true),
         UTVOPPFOPL("Utvidet oppfølging i opplæring", Tiltaksgruppe.OPPFOLG, true),
         VARLONTIL("Varig lønnstilskudd", Tiltaksgruppe.LONNTILS, false),
         VATIAROR("Varig tilrettelagt arbeid i ordinær virksomhet", Tiltaksgruppe.VARIGASV, false),

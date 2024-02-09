@@ -71,4 +71,5 @@ jobs:
         with:
           arguments: -Pversion=${{ steps.tag.outputs.version }} publish
         env:
+          PRECOMMIT_DISABLED: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

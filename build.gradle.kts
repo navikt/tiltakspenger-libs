@@ -79,7 +79,7 @@ subprojects {
     sourceSets["main"].resources.srcDirs("main")
     sourceSets["test"].resources.srcDirs("test")
 }
-
+/* TODO: Fiks slik at denne kjører lokalt, men ikke på deploy
 val preCommitTask = task("addPreCommitGitHookOnBuild") {
     println("⚈ ⚈ ⚈ Running Add Pre Commit Git Hook Script on Build ⚈ ⚈ ⚈")
     exec {
@@ -89,5 +89,5 @@ val preCommitTask = task("addPreCommitGitHookOnBuild") {
 }
 
 preCommitTask.onlyIf("addPreCommitGitHookOnBuild") {
-    System.getenv("PRECOMMIT_DISABLED") != "true"
-}
+    System.getenv("LOKALT") != "true"
+}*/

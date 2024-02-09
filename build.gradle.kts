@@ -81,13 +81,13 @@ subprojects {
 }
 
 val preCommitTask = task("addPreCommitGitHookOnBuild") {
-    onlyIf {
-        System.getenv()["GITHUB_ACTIONS"] != "true"
+    if (System.getenv()["GITHUB_ACTIONS"] == "true") {
+        println("Skipping!")
+    } else {
+        println("⚈ ⚈ ⚈ Running Add Pre Commit Git Hook Script on Build ⚈ ⚈ ⚈")
+        exec {
+            commandLine("cp", "./.scripts/pre-commit", "./.git/hooks")
+        }
+        println("✅ Added Pre Commit Git Hook Script.")
     }
-    println("⚈ ⚈ ⚈ Running Add Pre Commit Git Hook Script on Build ⚈ ⚈ ⚈")
-    println(System.getenv()["GITHUB_ACTIONS"])
-    exec {
-        commandLine("cp", "./.scripts/pre-commit", "./.git/hooks")
-    }
-    println("✅ Added Pre Commit Git Hook Script.")
 }

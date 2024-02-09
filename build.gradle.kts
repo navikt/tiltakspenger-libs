@@ -82,6 +82,7 @@ subprojects {
 
 val preCommitTask = task("addPreCommitGitHookOnBuild") {
     println("⚈ ⚈ ⚈ Running Add Pre Commit Git Hook Script on Build ⚈ ⚈ ⚈")
+    println(System.getenv()["GITHUB_ACTIONS"])
     exec {
         commandLine("cp", "./.scripts/pre-commit", "./.git/hooks")
     }

@@ -80,7 +80,7 @@ subprojects {
     sourceSets["test"].resources.srcDirs("test")
 }
 
-/*val preCommitTask = task("addPreCommitGitHookOnBuild") {
+val preCommitTask = task("addPreCommitGitHookOnBuild") {
     println("⚈ ⚈ ⚈ Running Add Pre Commit Git Hook Script on Build ⚈ ⚈ ⚈")
     exec {
         commandLine("cp", "./.scripts/pre-commit", "./.git/hooks")
@@ -89,5 +89,5 @@ subprojects {
 }
 
 preCommitTask.onlyIf("addPreCommitGitHookOnBuild") {
-    System.getenv("PRECOMMIT_DISABLED") == "true"
-}*/
+    System.getenv("PRECOMMIT_DISABLED") != "true"
+}

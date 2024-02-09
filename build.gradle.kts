@@ -87,6 +87,6 @@ val preCommitTask = task("addPreCommitGitHookOnBuild") {
     }
     println("✅ Added Pre Commit Git Hook Script.")
     onlyIf {
-        System.getenv("PRECOMMIT_DISABLED") != "true"
+        System.getenv("GITHUB_ACTIONS") != "true"
     }
 }

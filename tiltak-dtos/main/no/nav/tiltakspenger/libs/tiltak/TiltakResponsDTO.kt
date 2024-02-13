@@ -29,8 +29,6 @@ data class TiltakResponsDTO(
         val arrangørnavn: String,
         val typeNavn: String,
         val arenaKode: TiltakType,
-        val fom: LocalDate?,
-        val tom: LocalDate?,
     )
 
     enum class DeltakerStatusDTO(val status: String, val rettTilÅSøke: Boolean) {

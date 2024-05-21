@@ -66,7 +66,11 @@ jobs:
           body: |
             Changes in this Release
             ${{ steps.notes.outputs.CHANGELOG }}
-
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+          check-latest: true
       - uses: gradle/gradle-build-action@v3
         with:
           arguments: -Pversion=${{ steps.tag.outputs.version }} publish

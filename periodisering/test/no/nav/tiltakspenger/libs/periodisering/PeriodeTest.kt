@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
-class PeriodeKtTest {
+class PeriodeTest {
 
     private val periode1 = Periode(fra = 13.mai(2022), til = 18.mai(2022))
     private val periode2 = Periode(fra = 17.mai(2022), til = 21.mai(2022))

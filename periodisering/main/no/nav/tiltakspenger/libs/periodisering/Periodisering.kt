@@ -125,4 +125,15 @@ data class Periodisering<T> private constructor(
             perioderMedVerdi.sortedBy { it.periode.fra }.map { "\n" + it.toString() }
         })"
     }
+
+    fun utvid(nyeTotalePeriode: Periode): Periodisering<T> {
+        require(nyeTotalePeriode.inneholderHele(totalePeriode)) { "Kan ikke utvide, ny periode $nyeTotalePeriode inneholder ikke hele den eksisterende perioden $totalePeriode" }
+        val nyePerioder = nyeTotalePeriode.trekkFra(listOf(totalePeriode))
+        return this.copy(
+            totalePeriode = nyeTotalePeriode,
+            defaultVerdi = this.defaultVerdi,
+            perioderMedVerdi = (this.perioderMedVerdi + nyePerioder.map { PeriodeMedVerdi(defaultVerdi, it) })
+                .sortedBy { it.periode.fra },
+        )
+    }
 }

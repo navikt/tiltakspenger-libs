@@ -7,7 +7,6 @@ import com.google.common.collect.Range
 import com.google.common.collect.RangeSet
 import com.google.common.collect.TreeRangeSet
 import java.time.LocalDate
-import java.util.stream.Collectors
 
 class LocalDateDiscreteDomain : DiscreteDomain<LocalDate>() {
     override fun next(value: LocalDate): LocalDate {
@@ -114,7 +113,7 @@ class Periode(fra: LocalDate, til: LocalDate) {
         listOf(this).leggSammenMed(annenPeriode, true)
 
     fun tilDager(): List<LocalDate> {
-        return fra.datesUntil(til.plusDays(1)).collect(Collectors.toList())
+        return fra.datesUntil(til.plusDays(1)).toList()
     }
 }
 

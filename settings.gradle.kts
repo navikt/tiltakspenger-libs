@@ -10,5 +10,6 @@ include(
     "lt-dtos",
     "ufore-dtos",
     "overgangsstonad-dtos",
-    "tiltak-dtos"
+    "tiltak-dtos",
+    "periodisering",
 )

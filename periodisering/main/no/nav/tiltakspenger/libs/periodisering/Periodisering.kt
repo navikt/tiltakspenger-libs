@@ -74,7 +74,7 @@ data class Periodisering<T> private constructor(
 
     private fun setPeriodeMedVerdi(delPeriodeMedVerdi: PeriodeMedVerdi<T>): Periodisering<T> {
         if (!totalePeriode.inneholderHele(delPeriodeMedVerdi.periode)) {
-            throw IllegalArgumentException("Angitt periode er ikke innenfor $totalePeriode")
+            throw IllegalArgumentException("Angitt periode ${delPeriodeMedVerdi.periode} er ikke innenfor $totalePeriode")
         }
         val nyePerioderMedSammeVerdi = perioderMedVerdi
             .perioderMedSammeVerdi(delPeriodeMedVerdi.verdi)

@@ -1,5 +1,5 @@
 val kotestVersion = "5.9.0"
-val mockkVersion = "1.13.10"
+val mockkVersion = "1.13.11"
 
 dependencies {
     implementation("com.google.guava:guava:33.2.0-jre")

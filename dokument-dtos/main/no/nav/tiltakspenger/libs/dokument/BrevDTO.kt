@@ -1,17 +1,18 @@
 package no.nav.tiltakspenger.libs.dokument
 
-import java.time.LocalDate
-
 class BrevDTO(
-    val personaliaDTO: PersonaliaDTO,
-    val tiltaksinfoDTO: TiltaksinfoDTO,
+    val personalia: PersonaliaDTO,
+    val tiltaksinfo: TiltaksinfoDTO,
     val fraDato: String,
     val tilDato: String,
     val saksnummer: String,
     val barnetillegg: Boolean,
     val saksbehandler: String,
+    val beslutter: String,
     val kontor: String,
-    val datoForUtsending: LocalDate,
+    val datoForUtsending: String,
+    val sats: Int,
+    val satsBarn: Int,
 )
 
 data class PersonaliaDTO(

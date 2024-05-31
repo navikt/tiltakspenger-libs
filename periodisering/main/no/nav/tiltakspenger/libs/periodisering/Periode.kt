@@ -44,6 +44,10 @@ class Periode(fra: LocalDate, til: LocalDate) {
         get() = range.tilOgMed()
 
     fun kompletter(perioder: List<Periode>): List<Periode> {
+        val overlappendePerioder = perioder.filter { periode -> this.overlapperMed(periode) }
+        if (overlappendePerioder.inneholderOverlapp()) {
+            throw IllegalArgumentException("Periodene kan ikke inneholde overlapp")
+        }
         return emptyList()
     }
 

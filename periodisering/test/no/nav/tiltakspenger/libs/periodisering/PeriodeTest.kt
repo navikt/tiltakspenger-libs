@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.periodisering
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -320,6 +321,14 @@ class PeriodeTest {
 
         overlappendePerioder.size shouldBe 1
         overlappendePerioder.first() shouldBe Periode(fra = 22.mai(2022), til = 30.mai(2022))
+    }
+
+    @Test
+    fun `når man kaller på kompletter-funksjonen med perioder som overlapper, skal det kastes en feil'`() {
+        val periodeSomSkalKompletteres = Periode(fra = 1.januar(2022), til = 31.januar(2022))
+        val subPeriode1 = Periode(fra = 15.januar(2022), til = 16.januar(2022))
+        val subPeriode2 = Periode(fra = 16.januar(2022), til = 17.januar(2022))
+        shouldThrow<IllegalArgumentException> { periodeSomSkalKompletteres.kompletter(listOf(subPeriode1, subPeriode2)) }
     }
 
     @Test

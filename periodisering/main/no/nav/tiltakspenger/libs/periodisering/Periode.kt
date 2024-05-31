@@ -44,11 +44,37 @@ class Periode(fra: LocalDate, til: LocalDate) {
         get() = range.tilOgMed()
 
     fun kompletter(perioder: List<Periode>): List<Periode> {
-        val overlappendePerioder = perioder.filter { periode -> this.overlapperMed(periode) }
+        val overlappendePerioder = perioder
+            .filter { periode -> this.overlapperMed(periode) }
+            .sortedBy { periode -> periode.fra }
+
         if (overlappendePerioder.inneholderOverlapp()) {
             throw IllegalArgumentException("Periodene kan ikke inneholde overlapp")
         }
-        return emptyList()
+        if (overlappendePerioder.any { !inneholderHele(it) }) {
+            throw IllegalArgumentException("Alle periodene må være innenfor hoved-perioden")
+        }
+
+        var mangelPeriode = Periode(fra = this.fra, til = this.til)
+        val nyePerioder = mutableListOf<Periode>()
+        overlappendePerioder.forEach { periode ->
+            if (mangelPeriode.fra.isBefore(periode.fra)) {
+                nyePerioder.add(Periode(fra = mangelPeriode.fra, til = periode.fra.minusDays(1)))
+                nyePerioder.add(periode)
+            } else if (mangelPeriode.fra.isEqual(periode.fra)) {
+                nyePerioder.add(periode)
+            }
+            if (periode.til.isBefore(this.til)) {
+                mangelPeriode = Periode(fra = periode.til.plusDays(1), til = this.til)
+            }
+        }
+
+        val nyePerioderHarHullPåSlutten = nyePerioder.maxOf { it.til }.isBefore(this.til)
+        if (nyePerioderHarHullPåSlutten) {
+            nyePerioder.add(mangelPeriode)
+        }
+
+        return nyePerioder
     }
 
     fun inneholderHele(periode: Periode) = this.range.encloses(periode.range)

@@ -321,4 +321,29 @@ class PeriodeTest {
         overlappendePerioder.size shouldBe 1
         overlappendePerioder.first() shouldBe Periode(fra = 22.mai(2022), til = 30.mai(2022))
     }
+
+    @Test
+    fun `når man kaller på kompletter-funksjonen på en periode skal man få en liste av sub-perioder som, sammen med de periodene man har oppgitt, dekker hele basis-perioden`() {
+        val periodeSomSkalKompletteres = Periode(fra = 1.januar(2022), til = 31.januar(2022))
+        val subPeriode1 = Periode(fra = 15.januar(2022), til = 16.januar(2022))
+        val subPeriode2 = Periode(fra = 20.januar(2022), til = 22.januar(2022))
+        val allePerioder = periodeSomSkalKompletteres.kompletter(listOf(subPeriode1, subPeriode2))
+
+        allePerioder.size shouldBe 5
+
+        allePerioder.get(0).fra shouldBe 1.januar(2022)
+        allePerioder.get(0).til shouldBe 14.januar(2022)
+
+        allePerioder.get(1).fra shouldBe 15.januar(2022)
+        allePerioder.get(1).til shouldBe 16.januar(2022)
+
+        allePerioder.get(2).fra shouldBe 17.januar(2022)
+        allePerioder.get(2).til shouldBe 19.januar(2022)
+
+        allePerioder.get(3).fra shouldBe 20.januar(2022)
+        allePerioder.get(3).til shouldBe 22.januar(2022)
+
+        allePerioder.get(4).fra shouldBe 23.januar(2022)
+        allePerioder.get(4).til shouldBe 31.januar(2022)
+    }
 }

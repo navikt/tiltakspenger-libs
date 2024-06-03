@@ -5,20 +5,22 @@ Denne klassen representerer en sammenhengende periode som kan ha ulike verdier f
 Perioden kan ikke ha "hull" som ikke har en verdi
  */
 data class Periodisering<T> private constructor(
-    val totalePeriode: Periode,
-    private val defaultVerdi: T,
     private val perioderMedVerdi: List<PeriodeMedVerdi<T>>,
 ) {
+    val totalePeriode
+        get() = Periode(
+            perioderMedVerdi.minOf { it.periode.fra },
+            perioderMedVerdi.maxOf { it.periode.til },
+        )
+
     companion object {
         operator fun <T> invoke(
-            defaultVerdi: T,
+            initiellVerdi: T,
             totalePeriode: Periode,
         ): Periodisering<T> {
             return Periodisering(
-                totalePeriode = totalePeriode,
-                defaultVerdi = defaultVerdi,
                 perioderMedVerdi =
-                listOf(PeriodeMedVerdi(defaultVerdi, totalePeriode)),
+                listOf(PeriodeMedVerdi(initiellVerdi, totalePeriode)),
             )
         }
 
@@ -54,19 +56,15 @@ data class Periodisering<T> private constructor(
                 }
             }
         }.let {
-            Periodisering(
-                this.totalePeriode,
-                sammensattVerdi(this.defaultVerdi, other.defaultVerdi),
-                it,
-            )
+            Periodisering(it)
         }
     }
 
-    fun <U> map(ekstrahertVerdi: (T) -> U): Periodisering<U> =
+    fun <U> map(kombinertVerdi: (T) -> U): Periodisering<U> =
         this.perioderMedVerdi
-            .map { PeriodeMedVerdi(ekstrahertVerdi(it.verdi), it.periode) }
+            .map { PeriodeMedVerdi(kombinertVerdi(it.verdi), it.periode) }
             .slåSammenTilstøtendePerioder()
-            .let { Periodisering(this.totalePeriode, ekstrahertVerdi(this.defaultVerdi), it) }
+            .let { Periodisering(it) }
 
     fun perioder(): List<PeriodeMedVerdi<T>> = perioderMedVerdi.sortedBy { it.periode.fra }
 
@@ -83,11 +81,7 @@ data class Periodisering<T> private constructor(
         val nyePerioderMedUlikVerdi = perioderMedVerdi
             .perioderMedUlikVerdi(delPeriodeMedVerdi.verdi)
             .trekkFra(delPeriodeMedVerdi)
-        return Periodisering(
-            totalePeriode,
-            defaultVerdi,
-            nyePerioderMedSammeVerdi + nyePerioderMedUlikVerdi,
-        )
+        return Periodisering(nyePerioderMedSammeVerdi + nyePerioderMedUlikVerdi)
     }
 
     // Krever IKKE at alle elementer i lista har samme verdi for å fungere
@@ -96,7 +90,7 @@ data class Periodisering<T> private constructor(
 
     // Krever at alle elementer i lista har samme verdi for å fungere!
     private fun <T> List<PeriodeMedVerdi<T>>.leggSammenPerioderMedSammeVerdi(godtaOverlapp: Boolean = true): List<PeriodeMedVerdi<T>> {
-        if (!this.allePerioderHarSammeVerdi()) {
+        if (!this.harAllePerioderSammeVerdi()) {
             throw IllegalArgumentException("Kan bare legge sammen perioder med samme verdi")
         }
         if (!godtaOverlapp && this.map { it.periode }.inneholderOverlapp()) {
@@ -121,19 +115,19 @@ data class Periodisering<T> private constructor(
         (this + periodeMedVerdi).leggSammenPerioderMedSammeVerdi(false)
 
     override fun toString(): String {
-        return "PeriodeMedVerdier(totalePeriode=$totalePeriode, defaultVerdi=$defaultVerdi, perioderMedVerdi=${
+        return "PeriodeMedVerdier(totalePeriode=$totalePeriode, perioderMedVerdi=${
             perioderMedVerdi.sortedBy { it.periode.fra }.map { "\n" + it.toString() }
         })"
     }
 
-    fun utvid(nyeTotalePeriode: Periode): Periodisering<T> {
+    fun utvid(verdi: T, nyeTotalePeriode: Periode): Periodisering<T> {
         require(nyeTotalePeriode.inneholderHele(totalePeriode)) { "Kan ikke utvide, ny periode $nyeTotalePeriode inneholder ikke hele den eksisterende perioden $totalePeriode" }
         val nyePerioder = nyeTotalePeriode.trekkFra(listOf(totalePeriode))
         return this.copy(
-            totalePeriode = nyeTotalePeriode,
-            defaultVerdi = this.defaultVerdi,
-            perioderMedVerdi = (this.perioderMedVerdi + nyePerioder.map { PeriodeMedVerdi(defaultVerdi, it) })
+            perioderMedVerdi = (this.perioderMedVerdi + nyePerioder.map { PeriodeMedVerdi(verdi, it) })
                 .sortedBy { it.periode.fra },
         )
     }
+
+    fun inneholderKun(verdi: T): Boolean = perioderMedVerdi.all { it.verdi == verdi }
 }

@@ -9,7 +9,7 @@ data class PeriodeMedVerdi<T>(
     val periode: Periode,
 )
 
-internal fun <T> List<PeriodeMedVerdi<T>>.allePerioderHarSammeVerdi() =
+internal fun <T> List<PeriodeMedVerdi<T>>.harAllePerioderSammeVerdi(): Boolean =
     this.map { it.verdi }.distinct().size <= 1
 
 internal fun <T> List<PeriodeMedVerdi<T>>.perioderMedSammeVerdi(verdi: T): List<PeriodeMedVerdi<T>> =

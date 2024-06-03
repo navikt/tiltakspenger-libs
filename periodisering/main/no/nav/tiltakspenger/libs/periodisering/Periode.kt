@@ -43,6 +43,72 @@ class Periode(fra: LocalDate, til: LocalDate) {
     val til: LocalDate
         get() = range.tilOgMed()
 
+    fun kompletter(perioder: List<Periode>): List<Periode> {
+        val overlappendePerioder = perioder
+            .filter { periode -> this.overlapperMed(periode) }
+            .sortedBy { periode -> periode.fra }
+
+        if (overlappendePerioder.inneholderOverlapp()) {
+            throw IllegalArgumentException("Periodene kan ikke inneholde overlapp")
+        }
+        if (overlappendePerioder.any { !inneholderHele(it) }) {
+            throw IllegalArgumentException("Alle periodene må være innenfor hoved-perioden")
+        }
+
+        val mangelPerioder = this.trekkFra(perioder)
+        return (mangelPerioder + perioder).sortedBy { it.fra }
+    }
+
+    fun mergeInnIPerioder(perioder: List<Periode>): List<Periode> {
+        if (perioder.inneholderOverlapp()) {
+            throw IllegalArgumentException("Kan ikke merge inn periode hvis periodene som er der fra før overlapper med hverandre")
+        }
+
+        val nyePerioder = mutableListOf<Periode>()
+        perioder.map { periode ->
+            if (!this.overlapperMed(periode)) {
+                nyePerioder.add(periode)
+            }
+        }
+
+        fun leggTilPeriodeMedForkortetTildato(periode: Periode) {
+            val nyTildato = this.fra.minusDays(1)
+            val forkortetPeriode = Periode(fra = periode.fra, til = nyTildato)
+            nyePerioder.add(forkortetPeriode)
+        }
+
+        fun leggTilPeriodeMedForskjøvetFradato(periode: Periode) {
+            val nyFradato = this.til.plusDays(1)
+            val periodeMedForskjøvetFradato = Periode(fra = nyFradato, til = periode.til)
+            nyePerioder.add(periodeMedForskjøvetFradato)
+        }
+
+        val periodeSomDekkerHele = perioder.find { periode -> periode.inneholderHele(this) }
+        if (periodeSomDekkerHele != null) {
+            if (periodeSomDekkerHele.fra.isBefore(this.fra)) {
+                leggTilPeriodeMedForkortetTildato(periodeSomDekkerHele)
+            }
+            if (periodeSomDekkerHele.til.isAfter(this.til)) {
+                leggTilPeriodeMedForskjøvetFradato(periodeSomDekkerHele)
+            }
+        } else {
+            val perioderSomOverlapperDelvis = perioder
+                .filter { (this.overlapperMed(it) && !this.inneholderHele(it)) }
+                .sortedBy { it.fra }
+
+            perioderSomOverlapperDelvis.forEach { periodeMedDelvisOverlapp ->
+                if (periodeMedDelvisOverlapp.fra.isBefore(this.fra)) {
+                    leggTilPeriodeMedForkortetTildato(periodeMedDelvisOverlapp)
+                } else {
+                    leggTilPeriodeMedForskjøvetFradato(periodeMedDelvisOverlapp)
+                }
+            }
+        }
+
+        nyePerioder.add(this)
+        return nyePerioder.sortedBy { it.fra }
+    }
+
     fun inneholderHele(periode: Periode) = this.range.encloses(periode.range)
 
     fun overlapperMed(periode: Periode) = try {

@@ -103,8 +103,12 @@ class Periode(fra: LocalDate, til: LocalDate) {
 
         val periodeSomDekkerHele = perioder.find { periode -> periode.inneholderHele(this) }
         if (periodeSomDekkerHele != null) {
-            leggTilPeriodeMedForkortetTildato(periodeSomDekkerHele)
-            leggTilPeriodeMedForskjøvetFradato(periodeSomDekkerHele)
+            if (periodeSomDekkerHele.fra.isBefore(this.fra)) {
+                leggTilPeriodeMedForkortetTildato(periodeSomDekkerHele)
+            }
+            if (periodeSomDekkerHele.til.isAfter(this.til)) {
+                leggTilPeriodeMedForskjøvetFradato(periodeSomDekkerHele)
+            }
         } else {
             val perioderSomOverlapperDelvis = perioder
                 .filter { (this.overlapperMed(it) && !this.inneholderHele(it)) }

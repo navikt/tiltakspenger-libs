@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.periodisering
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -320,5 +321,92 @@ class PeriodeTest {
 
         overlappendePerioder.size shouldBe 1
         overlappendePerioder.first() shouldBe Periode(fra = 22.mai(2022), til = 30.mai(2022))
+    }
+
+    @Test
+    fun `når man kaller på kompletter-funksjonen med perioder som overlapper skal det kastes en feil'`() {
+        val periodeSomSkalKompletteres = Periode(fra = 1.januar(2022), til = 31.januar(2022))
+        val subPeriode1 = Periode(fra = 15.januar(2022), til = 16.januar(2022))
+        val subPeriode2 = Periode(fra = 16.januar(2022), til = 17.januar(2022))
+        shouldThrow<IllegalArgumentException> { periodeSomSkalKompletteres.kompletter(listOf(subPeriode1, subPeriode2)) }
+    }
+
+    @Test
+    fun `når man kaller på kompletter-funksjonen med perioder som går utenfor hovedperioden skal det kastes en feil'`() {
+        val periodeSomSkalKompletteres = Periode(fra = 1.januar(2022), til = 31.januar(2022))
+        val subPeriode1 = Periode(fra = 31.januar(2022), til = 1.februar(2022))
+        shouldThrow<IllegalArgumentException> { periodeSomSkalKompletteres.kompletter(listOf(subPeriode1)) }
+    }
+
+    @Test
+    fun `når man kaller på kompletter-funksjonen på en periode skal man få en liste av sub-perioder som, sammen med de periodene man har oppgitt, dekker hele basis-perioden`() {
+        val periodeSomSkalKompletteres = Periode(fra = 1.januar(2022), til = 31.januar(2022))
+        val subPeriode1 = Periode(fra = 1.januar(2022), til = 1.januar(2022))
+        val subPeriode2 = Periode(fra = 20.januar(2022), til = 22.januar(2022))
+        val subPeriode3 = Periode(fra = 15.januar(2022), til = 16.januar(2022))
+        val allePerioder = periodeSomSkalKompletteres.kompletter(listOf(subPeriode1, subPeriode2, subPeriode3))
+        allePerioder shouldBe listOf(
+            Periode(fra = 1.januar(2022), til = 1.januar(2022)),
+            Periode(fra = 2.januar(2022), til = 14.januar(2022)),
+            Periode(fra = 15.januar(2022), til = 16.januar(2022)),
+            Periode(fra = 17.januar(2022), til = 19.januar(2022)),
+            Periode(fra = 20.januar(2022), til = 22.januar(2022)),
+            Periode(fra = 23.januar(2022), til = 31.januar(2022)),
+        )
+    }
+
+    @Test
+    fun `kompletter-funksjonen skal ta høyde for at en av periodene som oppgis slutter på samme dato som hovedperioden`() {
+        val periodeSomSkalKompletteres = Periode(fra = 1.januar(2022), til = 31.januar(2022))
+        val subPeriode = Periode(fra = 31.januar(2022), til = 31.januar(2022))
+        val allePerioder = periodeSomSkalKompletteres.kompletter(listOf(subPeriode))
+        allePerioder shouldBe listOf(
+            Periode(fra = 1.januar(2022), til = 30.januar(2022)),
+            Periode(fra = 31.januar(2022), til = 31.januar(2022)),
+        )
+    }
+
+    @Test
+    fun `mergeInnIPerioder skal returnere en liste med perioder hvor periode-instansen har blitt merget inn, slik at alle periodene i kombinasjon danner en sammenhengende periode uten overlapp seg imellom`() {
+        val periode = Periode(fra = 15.januar(2022), til = 20.januar(2022))
+        val andrePerioder = listOf(
+            Periode(fra = 1.januar(2022), til = 14.januar(2022)),
+            Periode(fra = 15.januar(2022), til = 17.januar(2022)),
+            Periode(fra = 18.januar(2022), til = 21.januar(2022)),
+            Periode(fra = 22.januar(2022), til = 31.januar(2022)),
+        )
+        val sammenslåttePerioder = periode.mergeInnIPerioder(andrePerioder)
+        sammenslåttePerioder shouldBe listOf(
+            Periode(fra = 1.januar(2022), til = 14.januar(2022)),
+            Periode(fra = 15.januar(2022), til = 20.januar(2022)),
+            Periode(fra = 21.januar(2022), til = 21.januar(2022)),
+            Periode(fra = 22.januar(2022), til = 31.januar(2022)),
+        )
+    }
+
+    @Test
+    fun `mergeInnIPerioder skal ta høyde for at perioden som merges inn allerede er helt dekket av en eksisterende periode`() {
+        val periode = Periode(fra = 15.januar(2022), til = 20.januar(2022))
+        val andrePerioder = listOf(
+            Periode(fra = 1.januar(2022), til = 31.januar(2022)),
+        )
+        val sammenslåttePerioder = periode.mergeInnIPerioder(andrePerioder)
+        sammenslåttePerioder shouldBe listOf(
+            Periode(fra = 1.januar(2022), til = 14.januar(2022)),
+            Periode(fra = 15.januar(2022), til = 20.januar(2022)),
+            Periode(fra = 21.januar(2022), til = 31.januar(2022)),
+        )
+    }
+
+    @Test
+    fun `mergeInnIPerioder skal kaste en IllegalArgumentException dersom noen av periodene i periode-lista overlapper med hverandre`() {
+        val perioder = listOf(
+            Periode(fra = 1.januar(2022), til = 2.januar(2022)),
+            Periode(fra = 2.januar(2022), til = 3.januar(2022)),
+        )
+        shouldThrow<IllegalArgumentException> {
+            val periode = Periode(fra = 1.januar(2022), til = 2.januar(2022))
+            periode.mergeInnIPerioder(perioder)
+        }
     }
 }

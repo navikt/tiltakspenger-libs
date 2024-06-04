@@ -14,6 +14,15 @@ data class Periodisering<T> private constructor(
         )
 
     companion object {
+
+        fun <T> fraPeriodeListe(perioderMedVerdi: List<PeriodeMedVerdi<T>>): Periodisering<T> {
+            require(
+                perioderMedVerdi.sortedBy { it.periode.fra }.zipWithNext()
+                    .all { it.second.periode.fra == it.first.periode.til.plusDays(1) },
+            ) { "Periodene utgjør ikke en gyldig periodisering" }
+            return Periodisering(perioderMedVerdi)
+        }
+
         operator fun <T> invoke(
             initiellVerdi: T,
             totalePeriode: Periode,

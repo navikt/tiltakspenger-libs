@@ -1,4 +1,4 @@
-val kotestVersion = "5.9.0"
+val kotestVersion = "5.9.1"
 val mockkVersion = "1.13.11"
 
 dependencies {

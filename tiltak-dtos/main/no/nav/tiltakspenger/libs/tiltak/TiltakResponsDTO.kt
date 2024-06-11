@@ -182,8 +182,8 @@ data class TiltakResponsDTO(
         BIO("Bedriftsintern opplæring (BIO)", Tiltaksgruppe.BIO, false),
         TESTING("Lenes testtiltak", Tiltaksgruppe.OPPFOLG, false),
         NYTEST("Nytt testtiltak", Tiltaksgruppe.ARBTREN, false),
-        INDOPPRF("Resultatbasert finansiering av formidlingsbistand", Tiltaksgruppe.FORSOK, true),
-        SUPPEMP("Supported Employment", Tiltaksgruppe.FORSOK, true),
+        INDOPPRF("Resultatbasert finansiering av formidlingsbistand", Tiltaksgruppe.FORSOK, false),
+        SUPPEMP("Supported Employment", Tiltaksgruppe.FORSOK, false),
     }
 
 

@@ -186,7 +186,6 @@ data class TiltakResponsDTO(
         SUPPEMP("Supported Employment", Tiltaksgruppe.FORSOK, false),
     }
 
-
     enum class DeltakerStatusType(val navn: String, val girRettTilÅASøke: Boolean) {
         DELAVB("Deltakelse avbrutt", true),
         FULLF("Fullført", true),

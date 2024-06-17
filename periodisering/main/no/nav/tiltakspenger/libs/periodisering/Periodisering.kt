@@ -33,6 +33,7 @@ data class Periodisering<T> private constructor(
             )
         }
 
+        // Tryner hvis det ikke er minst ett element i lista
         fun <T> List<Periodisering<T>>.reduser(sammensattVerdi: (T, T) -> T): Periodisering<T> {
             return this.reduce { total: Periodisering<T>, next: Periodisering<T> ->
                 total.kombiner(next, sammensattVerdi).slåSammenTilstøtendePerioder()

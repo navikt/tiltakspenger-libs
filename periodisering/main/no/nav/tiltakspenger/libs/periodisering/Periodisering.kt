@@ -4,9 +4,16 @@ package no.nav.tiltakspenger.libs.periodisering
 Denne klassen representerer en sammenhengende periode som kan ha ulike verdier for ulike deler av perioden.
 Perioden kan ikke ha "hull" som ikke har en verdi
  */
-data class Periodisering<T> private constructor(
+data class Periodisering<T>(
     private val perioderMedVerdi: List<PeriodeMedVerdi<T>>,
 ) {
+    init {
+        require(
+            perioderMedVerdi.sortedBy { it.periode.fra }.zipWithNext()
+                .all { it.second.periode.fra == it.first.periode.til.plusDays(1) },
+        ) { "Ugyldig periodisering, hull tillates ikke" }
+    }
+
     val totalePeriode
         get() = Periode(
             perioderMedVerdi.minOf { it.periode.fra },
@@ -14,14 +21,6 @@ data class Periodisering<T> private constructor(
         )
 
     companion object {
-
-        fun <T> fraPeriodeListe(perioderMedVerdi: List<PeriodeMedVerdi<T>>): Periodisering<T> {
-            require(
-                perioderMedVerdi.sortedBy { it.periode.fra }.zipWithNext()
-                    .all { it.second.periode.fra == it.first.periode.til.plusDays(1) },
-            ) { "Periodene utgjør ikke en gyldig periodisering" }
-            return Periodisering(perioderMedVerdi)
-        }
 
         operator fun <T> invoke(
             initiellVerdi: T,
@@ -33,8 +32,11 @@ data class Periodisering<T> private constructor(
             )
         }
 
-        // Tryner hvis det ikke er minst ett element i lista
         fun <T> List<Periodisering<T>>.reduser(sammensattVerdi: (T, T) -> T): Periodisering<T> {
+            require(this.isNotEmpty()) {
+                "Ulovlig operasjon, listen med periodiseringer kan ikke være tom"
+            }
+
             return this.reduce { total: Periodisering<T>, next: Periodisering<T> ->
                 total.kombiner(next, sammensattVerdi).slåSammenTilstøtendePerioder()
             }
@@ -125,7 +127,7 @@ data class Periodisering<T> private constructor(
         (this + periodeMedVerdi).leggSammenPerioderMedSammeVerdi(false)
 
     override fun toString(): String {
-        return "PeriodeMedVerdier(totalePeriode=$totalePeriode, perioderMedVerdi=${
+        return "Periodisering(totalePeriode=$totalePeriode, perioderMedVerdi=${
             perioderMedVerdi.sortedBy { it.periode.fra }.map { "\n" + it.toString() }
         })"
     }
@@ -139,5 +141,19 @@ data class Periodisering<T> private constructor(
         )
     }
 
+    //
     fun inneholderKun(verdi: T): Boolean = perioderMedVerdi.all { it.verdi == verdi }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Periodisering<*>
+
+        return perioderMedVerdi.sortedBy { it.periode.fra } == other.perioderMedVerdi.sortedBy { it.periode.fra }
+    }
+
+    override fun hashCode(): Int {
+        return perioderMedVerdi.hashCode()
+    }
 }

@@ -8,29 +8,37 @@ import com.google.common.collect.RangeSet
 import com.google.common.collect.TreeRangeSet
 import java.time.LocalDate
 
-class LocalDateDiscreteDomain : DiscreteDomain<LocalDate>() {
-    override fun next(value: LocalDate): LocalDate {
-        return value.plusDays(1)
+/*
+En Periode med LocalDate.MIN og/eller LocalDate.MAX er ment å tilsvare en åpen periode
+Så bruk LocalDate.MIN/MAX i stedet for null
+ */
+class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
+
+    class LocalDateDiscreteDomain : DiscreteDomain<LocalDate>() {
+        override fun next(value: LocalDate): LocalDate {
+            return value.plusDays(1)
+        }
+
+        override fun previous(value: LocalDate): LocalDate {
+            return value.minusDays(1)
+        }
+
+        override fun distance(start: LocalDate, end: LocalDate): Long {
+            return start.until(end).days.toLong()
+        }
     }
 
-    override fun previous(value: LocalDate): LocalDate {
-        return value.minusDays(1)
+    init {
+        require(!fraOgMed.isAfter(tilOgMed)) { "$fraOgMed kan ikke være etter $tilOgMed" }
     }
-
-    override fun distance(start: LocalDate, end: LocalDate): Long {
-        return start.until(end).days.toLong()
-    }
-}
-
-class Periode(fra: LocalDate, til: LocalDate) {
 
     companion object {
         val domain = LocalDateDiscreteDomain()
     }
 
-    val range: Range<LocalDate> = lagRangeFraFraOgTil(fra, til)
+    val range: Range<LocalDate> = lagRangeAvFraOgTil(fraOgMed, tilOgMed)
 
-    private fun lagRangeFraFraOgTil(fra: LocalDate, til: LocalDate): Range<LocalDate> =
+    private fun lagRangeAvFraOgTil(fra: LocalDate, til: LocalDate): Range<LocalDate> =
         when {
             fra == LocalDate.MIN && til == LocalDate.MAX -> Range.all<LocalDate>().canonical(domain)
             fra == LocalDate.MIN && til != LocalDate.MAX -> Range.atMost(til).canonical(domain)
@@ -73,13 +81,13 @@ class Periode(fra: LocalDate, til: LocalDate) {
 
         fun leggTilPeriodeMedForkortetTildato(periode: Periode) {
             val nyTildato = this.fra.minusDays(1)
-            val forkortetPeriode = Periode(fra = periode.fra, til = nyTildato)
+            val forkortetPeriode = Periode(fraOgMed = periode.fra, tilOgMed = nyTildato)
             nyePerioder.add(forkortetPeriode)
         }
 
         fun leggTilPeriodeMedForskjøvetFradato(periode: Periode) {
             val nyFradato = this.til.plusDays(1)
-            val periodeMedForskjøvetFradato = Periode(fra = nyFradato, til = periode.til)
+            val periodeMedForskjøvetFradato = Periode(fraOgMed = nyFradato, tilOgMed = periode.til)
             nyePerioder.add(periodeMedForskjøvetFradato)
         }
 

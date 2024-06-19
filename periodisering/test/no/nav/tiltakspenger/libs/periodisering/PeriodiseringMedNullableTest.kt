@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test
 
 class PeriodiseringMedNullableTest {
 
-    private val totalePeriode = Periode(fra = 13.mai(2022), til = 21.mai(2022))
-    private val periode1 = Periode(fra = 13.mai(2022), til = 18.mai(2022))
-    private val periode2 = Periode(fra = 17.mai(2022), til = 21.mai(2022))
-    private val periode3 = Periode(fra = 19.mai(2022), til = 20.mai(2022))
+    private val totalePeriode = Periode(fraOgMed = 13.mai(2022), tilOgMed = 21.mai(2022))
+    private val periode1 = Periode(fraOgMed = 13.mai(2022), tilOgMed = 18.mai(2022))
+    private val periode2 = Periode(fraOgMed = 17.mai(2022), tilOgMed = 21.mai(2022))
+    private val periode3 = Periode(fraOgMed = 19.mai(2022), tilOgMed = 20.mai(2022))
 
     @Test
     fun `skal kunne sette null i periodene`() {

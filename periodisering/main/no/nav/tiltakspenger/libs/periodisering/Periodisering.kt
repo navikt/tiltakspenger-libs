@@ -4,24 +4,23 @@ package no.nav.tiltakspenger.libs.periodisering
 Denne klassen representerer en sammenhengende periode som kan ha ulike verdier for ulike deler av perioden.
 Perioden kan ikke ha "hull" som ikke har en verdi
  */
-data class Periodisering<T> private constructor(
+data class Periodisering<T>(
     private val perioderMedVerdi: List<PeriodeMedVerdi<T>>,
 ) {
+    init {
+        require(
+            perioderMedVerdi.sortedBy { it.periode.fraOgMed }.zipWithNext()
+                .all { it.second.periode.fraOgMed == it.first.periode.tilOgMed.plusDays(1) },
+        ) { "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter" }
+    }
+
     val totalePeriode
         get() = Periode(
-            perioderMedVerdi.minOf { it.periode.fra },
-            perioderMedVerdi.maxOf { it.periode.til },
+            perioderMedVerdi.minOf { it.periode.fraOgMed },
+            perioderMedVerdi.maxOf { it.periode.tilOgMed },
         )
 
     companion object {
-
-        fun <T> fraPeriodeListe(perioderMedVerdi: List<PeriodeMedVerdi<T>>): Periodisering<T> {
-            require(
-                perioderMedVerdi.sortedBy { it.periode.fra }.zipWithNext()
-                    .all { it.second.periode.fra == it.first.periode.til.plusDays(1) },
-            ) { "Periodene utgjør ikke en gyldig periodisering" }
-            return Periodisering(perioderMedVerdi)
-        }
 
         operator fun <T> invoke(
             initiellVerdi: T,
@@ -34,6 +33,10 @@ data class Periodisering<T> private constructor(
         }
 
         fun <T> List<Periodisering<T>>.reduser(sammensattVerdi: (T, T) -> T): Periodisering<T> {
+            require(this.isNotEmpty()) {
+                "Ulovlig operasjon, listen med periodiseringer kan ikke være tom"
+            }
+
             return this.reduce { total: Periodisering<T>, next: Periodisering<T> ->
                 total.kombiner(next, sammensattVerdi).slåSammenTilstøtendePerioder()
             }
@@ -75,7 +78,7 @@ data class Periodisering<T> private constructor(
             .slåSammenTilstøtendePerioder()
             .let { Periodisering(it) }
 
-    fun perioder(): List<PeriodeMedVerdi<T>> = perioderMedVerdi.sortedBy { it.periode.fra }
+    fun perioder(): List<PeriodeMedVerdi<T>> = perioderMedVerdi.sortedBy { it.periode.fraOgMed }
 
     // Private hjelpemetoder:
 
@@ -124,8 +127,8 @@ data class Periodisering<T> private constructor(
         (this + periodeMedVerdi).leggSammenPerioderMedSammeVerdi(false)
 
     override fun toString(): String {
-        return "PeriodeMedVerdier(totalePeriode=$totalePeriode, perioderMedVerdi=${
-            perioderMedVerdi.sortedBy { it.periode.fra }.map { "\n" + it.toString() }
+        return "Periodisering(totalePeriode=$totalePeriode, perioderMedVerdi=${
+            perioderMedVerdi.sortedBy { it.periode.fraOgMed }.map { "\n" + it.toString() }
         })"
     }
 
@@ -134,9 +137,23 @@ data class Periodisering<T> private constructor(
         val nyePerioder = nyeTotalePeriode.trekkFra(listOf(totalePeriode))
         return this.copy(
             perioderMedVerdi = (this.perioderMedVerdi + nyePerioder.map { PeriodeMedVerdi(verdi, it) })
-                .sortedBy { it.periode.fra },
+                .sortedBy { it.periode.fraOgMed },
         )
     }
 
+    //
     fun inneholderKun(verdi: T): Boolean = perioderMedVerdi.all { it.verdi == verdi }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Periodisering<*>
+
+        return perioderMedVerdi.sortedBy { it.periode.fraOgMed } == other.perioderMedVerdi.sortedBy { it.periode.fraOgMed }
+    }
+
+    override fun hashCode(): Int {
+        return perioderMedVerdi.hashCode()
+    }
 }

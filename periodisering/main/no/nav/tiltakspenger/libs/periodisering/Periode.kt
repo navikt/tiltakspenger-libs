@@ -8,45 +8,53 @@ import com.google.common.collect.RangeSet
 import com.google.common.collect.TreeRangeSet
 import java.time.LocalDate
 
-class LocalDateDiscreteDomain : DiscreteDomain<LocalDate>() {
-    override fun next(value: LocalDate): LocalDate {
-        return value.plusDays(1)
+/*
+En Periode med LocalDate.MIN og/eller LocalDate.MAX er ment å tilsvare en åpen periode
+Så bruk LocalDate.MIN/MAX i stedet for null
+ */
+class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
+
+    class LocalDateDiscreteDomain : DiscreteDomain<LocalDate>() {
+        override fun next(value: LocalDate): LocalDate {
+            return value.plusDays(1)
+        }
+
+        override fun previous(value: LocalDate): LocalDate {
+            return value.minusDays(1)
+        }
+
+        override fun distance(start: LocalDate, end: LocalDate): Long {
+            return start.until(end).days.toLong()
+        }
     }
 
-    override fun previous(value: LocalDate): LocalDate {
-        return value.minusDays(1)
+    init {
+        require(!fraOgMed.isAfter(tilOgMed)) { "$fraOgMed kan ikke være etter $tilOgMed" }
     }
-
-    override fun distance(start: LocalDate, end: LocalDate): Long {
-        return start.until(end).days.toLong()
-    }
-}
-
-class Periode(fra: LocalDate, til: LocalDate) {
 
     companion object {
         val domain = LocalDateDiscreteDomain()
     }
 
-    val range: Range<LocalDate> = lagRangeFraFraOgTil(fra, til)
+    val range: Range<LocalDate> = lagRangeAvFomOgTom(fraOgMed, tilOgMed)
 
-    private fun lagRangeFraFraOgTil(fra: LocalDate, til: LocalDate): Range<LocalDate> =
+    private fun lagRangeAvFomOgTom(fraOgMed: LocalDate, tilOgMed: LocalDate): Range<LocalDate> =
         when {
-            fra == LocalDate.MIN && til == LocalDate.MAX -> Range.all<LocalDate>().canonical(domain)
-            fra == LocalDate.MIN && til != LocalDate.MAX -> Range.atMost(til).canonical(domain)
-            fra != LocalDate.MIN && til == LocalDate.MAX -> Range.atLeast(fra).canonical(domain)
-            else -> Range.closed(fra, til).canonical(domain)
+            fraOgMed == LocalDate.MIN && tilOgMed == LocalDate.MAX -> Range.all<LocalDate>().canonical(domain)
+            fraOgMed == LocalDate.MIN && tilOgMed != LocalDate.MAX -> Range.atMost(tilOgMed).canonical(domain)
+            fraOgMed != LocalDate.MIN && tilOgMed == LocalDate.MAX -> Range.atLeast(fraOgMed).canonical(domain)
+            else -> Range.closed(fraOgMed, tilOgMed).canonical(domain)
         }
 
-    val fra: LocalDate
+    val fraOgMed: LocalDate
         get() = range.fraOgMed()
-    val til: LocalDate
+    val tilOgMed: LocalDate
         get() = range.tilOgMed()
 
     fun kompletter(perioder: List<Periode>): List<Periode> {
         val overlappendePerioder = perioder
             .filter { periode -> this.overlapperMed(periode) }
-            .sortedBy { periode -> periode.fra }
+            .sortedBy { periode -> periode.fraOgMed }
 
         if (overlappendePerioder.inneholderOverlapp()) {
             throw IllegalArgumentException("Periodene kan ikke inneholde overlapp")
@@ -56,7 +64,7 @@ class Periode(fra: LocalDate, til: LocalDate) {
         }
 
         val mangelPerioder = this.trekkFra(perioder)
-        return (mangelPerioder + perioder).sortedBy { it.fra }
+        return (mangelPerioder + perioder).sortedBy { it.fraOgMed }
     }
 
     fun mergeInnIPerioder(perioder: List<Periode>): List<Periode> {
@@ -72,32 +80,32 @@ class Periode(fra: LocalDate, til: LocalDate) {
         }
 
         fun leggTilPeriodeMedForkortetTildato(periode: Periode) {
-            val nyTildato = this.fra.minusDays(1)
-            val forkortetPeriode = Periode(fra = periode.fra, til = nyTildato)
+            val nyTildato = this.fraOgMed.minusDays(1)
+            val forkortetPeriode = Periode(fraOgMed = periode.fraOgMed, tilOgMed = nyTildato)
             nyePerioder.add(forkortetPeriode)
         }
 
         fun leggTilPeriodeMedForskjøvetFradato(periode: Periode) {
-            val nyFradato = this.til.plusDays(1)
-            val periodeMedForskjøvetFradato = Periode(fra = nyFradato, til = periode.til)
+            val nyFradato = this.tilOgMed.plusDays(1)
+            val periodeMedForskjøvetFradato = Periode(fraOgMed = nyFradato, tilOgMed = periode.tilOgMed)
             nyePerioder.add(periodeMedForskjøvetFradato)
         }
 
         val periodeSomDekkerHele = perioder.find { periode -> periode.inneholderHele(this) }
         if (periodeSomDekkerHele != null) {
-            if (periodeSomDekkerHele.fra.isBefore(this.fra)) {
+            if (periodeSomDekkerHele.fraOgMed.isBefore(this.fraOgMed)) {
                 leggTilPeriodeMedForkortetTildato(periodeSomDekkerHele)
             }
-            if (periodeSomDekkerHele.til.isAfter(this.til)) {
+            if (periodeSomDekkerHele.tilOgMed.isAfter(this.tilOgMed)) {
                 leggTilPeriodeMedForskjøvetFradato(periodeSomDekkerHele)
             }
         } else {
             val perioderSomOverlapperDelvis = perioder
                 .filter { (this.overlapperMed(it) && !this.inneholderHele(it)) }
-                .sortedBy { it.fra }
+                .sortedBy { it.fraOgMed }
 
             perioderSomOverlapperDelvis.forEach { periodeMedDelvisOverlapp ->
-                if (periodeMedDelvisOverlapp.fra.isBefore(this.fra)) {
+                if (periodeMedDelvisOverlapp.fraOgMed.isBefore(this.fraOgMed)) {
                     leggTilPeriodeMedForkortetTildato(periodeMedDelvisOverlapp)
                 } else {
                     leggTilPeriodeMedForskjøvetFradato(periodeMedDelvisOverlapp)
@@ -106,7 +114,7 @@ class Periode(fra: LocalDate, til: LocalDate) {
         }
 
         nyePerioder.add(this)
-        return nyePerioder.sortedBy { it.fra }
+        return nyePerioder.sortedBy { it.fraOgMed }
     }
 
     fun inneholderHele(periode: Periode) = this.range.encloses(periode.range)
@@ -157,14 +165,14 @@ class Periode(fra: LocalDate, til: LocalDate) {
     }
 
     override fun toString(): String {
-        return "Periode(fra=$fra til=$til)"
+        return "Periode(fraOgMed=$fraOgMed tilOgMed=$tilOgMed)"
     }
 
     fun inneholder(dato: LocalDate): Boolean = range.contains(dato)
 
-    fun etter(dato: LocalDate): Boolean = this.fra.isAfter(dato)
+    fun etter(dato: LocalDate): Boolean = this.fraOgMed.isAfter(dato)
 
-    fun før(dato: LocalDate): Boolean = this.til.isBefore(dato)
+    fun før(dato: LocalDate): Boolean = this.tilOgMed.isBefore(dato)
 
     fun trekkFra(andrePerioder: List<Periode>): List<Periode> {
         val opprinneligeRangeSet =
@@ -179,7 +187,7 @@ class Periode(fra: LocalDate, til: LocalDate) {
         listOf(this).leggSammenMed(annenPeriode, true)
 
     fun tilDager(): List<LocalDate> {
-        return fra.datesUntil(til.plusDays(1)).toList()
+        return fraOgMed.datesUntil(tilOgMed.plusDays(1)).toList()
     }
 }
 

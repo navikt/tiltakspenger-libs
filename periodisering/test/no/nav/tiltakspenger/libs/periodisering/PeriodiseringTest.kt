@@ -60,4 +60,28 @@ class PeriodiseringTest {
         )
         periodisering1 shouldBeEqual periodisering2
     }
+
+    @Test
+    fun `skal ikke kunne opprette en periodisering med duplikate perioder`() {
+        shouldThrow<IllegalArgumentException> {
+            Periodisering(
+                listOf(
+                    PeriodeMedVerdi("foo", Periode(LocalDate.of(2023, 1, 1), LocalDate.of(2023, 1, 20))),
+                    PeriodeMedVerdi("bar", Periode(LocalDate.of(2023, 1, 1), LocalDate.of(2023, 1, 20))),
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `skal ikke kunne opprette en periodisering med overlappende perioder`() {
+        shouldThrow<IllegalArgumentException> {
+            Periodisering(
+                listOf(
+                    PeriodeMedVerdi("foo", Periode(LocalDate.of(2023, 1, 1), LocalDate.of(2023, 1, 20))),
+                    PeriodeMedVerdi("bar", Periode(LocalDate.of(2023, 1, 10), LocalDate.of(2023, 1, 30))),
+                ),
+            )
+        }
+    }
 }

@@ -110,10 +110,10 @@ class PeriodeTest {
         val periodeTo = Periode(fraOgMed = 6.mai(2022), tilOgMed = 12.mai(2022))
         val perioder = periodeEn.trekkFra(listOf(periodeTo))
         assertEquals(2, perioder.size)
-        assertEquals(3.mai(2022), perioder[0].fra)
-        assertEquals(5.mai(2022), perioder[0].til)
-        assertEquals(13.mai(2022), perioder[1].fra)
-        assertEquals(15.mai(2022), perioder[1].til)
+        assertEquals(3.mai(2022), perioder[0].fraOgMed)
+        assertEquals(5.mai(2022), perioder[0].tilOgMed)
+        assertEquals(13.mai(2022), perioder[1].fraOgMed)
+        assertEquals(15.mai(2022), perioder[1].tilOgMed)
     }
 
     @Test
@@ -122,8 +122,8 @@ class PeriodeTest {
         val periodeTo = Periode(fraOgMed = 6.mai(2022), tilOgMed = 18.mai(2022))
         val perioder = periodeEn.trekkFra(listOf(periodeTo))
         assertEquals(1, perioder.size)
-        assertEquals(3.mai(2022), perioder[0].fra)
-        assertEquals(5.mai(2022), perioder[0].til)
+        assertEquals(3.mai(2022), perioder[0].fraOgMed)
+        assertEquals(5.mai(2022), perioder[0].tilOgMed)
     }
 
     @Test
@@ -133,12 +133,12 @@ class PeriodeTest {
         val periodeTre = Periode(fraOgMed = 10.mai(2022), tilOgMed = 12.mai(2022))
         val perioder = periodeEn.trekkFra(listOf(periodeTo, periodeTre))
         assertEquals(3, perioder.size)
-        assertEquals(3.mai(2022), perioder[0].fra)
-        assertEquals(5.mai(2022), perioder[0].til)
-        assertEquals(9.mai(2022), perioder[1].fra)
-        assertEquals(9.mai(2022), perioder[1].til)
-        assertEquals(13.mai(2022), perioder[2].fra)
-        assertEquals(15.mai(2022), perioder[2].til)
+        assertEquals(3.mai(2022), perioder[0].fraOgMed)
+        assertEquals(5.mai(2022), perioder[0].tilOgMed)
+        assertEquals(9.mai(2022), perioder[1].fraOgMed)
+        assertEquals(9.mai(2022), perioder[1].tilOgMed)
+        assertEquals(13.mai(2022), perioder[2].fraOgMed)
+        assertEquals(15.mai(2022), perioder[2].tilOgMed)
     }
 
     @Test
@@ -148,10 +148,10 @@ class PeriodeTest {
         val periodeTre = Periode(fraOgMed = 10.mai(2022), tilOgMed = 12.mai(2022))
         val perioder = periodeEn.trekkFra(listOf(periodeTo, periodeTre))
         assertEquals(2, perioder.size)
-        assertEquals(3.mai(2022), perioder[0].fra)
-        assertEquals(5.mai(2022), perioder[0].til)
-        assertEquals(13.mai(2022), perioder[1].fra)
-        assertEquals(15.mai(2022), perioder[1].til)
+        assertEquals(3.mai(2022), perioder[0].fraOgMed)
+        assertEquals(5.mai(2022), perioder[0].tilOgMed)
+        assertEquals(13.mai(2022), perioder[1].fraOgMed)
+        assertEquals(15.mai(2022), perioder[1].tilOgMed)
     }
 
     @Test

@@ -9,15 +9,15 @@ data class Periodisering<T>(
 ) {
     init {
         require(
-            perioderMedVerdi.sortedBy { it.periode.fra }.zipWithNext()
-                .all { it.second.periode.fra == it.first.periode.til.plusDays(1) },
-        ) { "Ugyldig periodisering, hull tillates ikke" }
+            perioderMedVerdi.sortedBy { it.periode.fraOgMed }.zipWithNext()
+                .all { it.second.periode.fraOgMed == it.first.periode.tilOgMed.plusDays(1) },
+        ) { "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter" }
     }
 
     val totalePeriode
         get() = Periode(
-            perioderMedVerdi.minOf { it.periode.fra },
-            perioderMedVerdi.maxOf { it.periode.til },
+            perioderMedVerdi.minOf { it.periode.fraOgMed },
+            perioderMedVerdi.maxOf { it.periode.tilOgMed },
         )
 
     companion object {
@@ -78,7 +78,7 @@ data class Periodisering<T>(
             .slåSammenTilstøtendePerioder()
             .let { Periodisering(it) }
 
-    fun perioder(): List<PeriodeMedVerdi<T>> = perioderMedVerdi.sortedBy { it.periode.fra }
+    fun perioder(): List<PeriodeMedVerdi<T>> = perioderMedVerdi.sortedBy { it.periode.fraOgMed }
 
     // Private hjelpemetoder:
 
@@ -128,7 +128,7 @@ data class Periodisering<T>(
 
     override fun toString(): String {
         return "Periodisering(totalePeriode=$totalePeriode, perioderMedVerdi=${
-            perioderMedVerdi.sortedBy { it.periode.fra }.map { "\n" + it.toString() }
+            perioderMedVerdi.sortedBy { it.periode.fraOgMed }.map { "\n" + it.toString() }
         })"
     }
 
@@ -137,7 +137,7 @@ data class Periodisering<T>(
         val nyePerioder = nyeTotalePeriode.trekkFra(listOf(totalePeriode))
         return this.copy(
             perioderMedVerdi = (this.perioderMedVerdi + nyePerioder.map { PeriodeMedVerdi(verdi, it) })
-                .sortedBy { it.periode.fra },
+                .sortedBy { it.periode.fraOgMed },
         )
     }
 
@@ -150,7 +150,7 @@ data class Periodisering<T>(
 
         other as Periodisering<*>
 
-        return perioderMedVerdi.sortedBy { it.periode.fra } == other.perioderMedVerdi.sortedBy { it.periode.fra }
+        return perioderMedVerdi.sortedBy { it.periode.fraOgMed } == other.perioderMedVerdi.sortedBy { it.periode.fraOgMed }
     }
 
     override fun hashCode(): Int {

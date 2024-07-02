@@ -11,7 +11,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import no.nav.tiltakspenger.libs.person.Person
-import no.nav.tiltakspenger.libs.personklient.pdl.PDLClientError.Ikke2xx
+import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.Ikke2xx
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -23,11 +23,11 @@ import kotlin.time.toJavaDuration
 /**
  * @param endepunkt Hele URLen til PDL-tjenesten. F.eks https://pdl-api.prod-fss-pub.nais.io/graphql
  */
-internal class PdlHttpClient(
+internal class FellesHttpPersonklient(
     private val endepunkt: String,
     private val tema: String = "IND",
     connectTimeout: Duration = 20.seconds,
-) : PdlClient {
+) : FellesPersonklient {
     private val client = HttpClient.newBuilder()
         .connectTimeout(connectTimeout.toJavaDuration())
         .followRedirects(HttpClient.Redirect.NEVER)
@@ -47,7 +47,7 @@ internal class PdlHttpClient(
     override fun hentPerson(
         ident: String,
         token: String,
-    ): Either<PDLClientError, Pair<Person, List<String>>> {
+    ): Either<FellesPersonklientError, Pair<Person, List<String>>> {
         return Either.catch {
             // TODO jah: Send med correlation id
             val request = HttpRequest.newBuilder()
@@ -66,13 +66,13 @@ internal class PdlHttpClient(
                     Either.catch {
                         objectMapper.readValue<HentPersonResponse>(body)
                     }.mapLeft {
-                        PDLClientError.DeserializationException(it)
+                        FellesPersonklientError.DeserializationException(it)
                     }.map { it.toPerson() }.flatten()
                 } else {
                     Ikke2xx(status = httpResponse.statusCode(), body = body).left()
                 }
             }
-        }.mapLeft { PDLClientError.NetworkError(it) }.flatten()
+        }.mapLeft { FellesPersonklientError.NetworkError(it) }.flatten()
     }
 }
 

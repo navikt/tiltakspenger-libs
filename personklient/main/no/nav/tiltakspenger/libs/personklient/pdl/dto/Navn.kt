@@ -3,7 +3,7 @@ package no.nav.tiltakspenger.libs.personklient.pdl.dto
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
-import no.nav.tiltakspenger.libs.personklient.pdl.PDLClientError
+import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError
 
 internal data class Navn(
     val fornavn: String,
@@ -13,12 +13,12 @@ internal data class Navn(
     override val folkeregistermetadata: FolkeregisterMetadata?,
 ) : Changeable
 
-internal fun avklarNavn(navn: List<Navn>): Either<PDLClientError, Navn> {
-    if (navn.isEmpty()) return PDLClientError.IngenNavnFunnet.left()
+internal fun avklarNavn(navn: List<Navn>): Either<FellesPersonklientError, Navn> {
+    if (navn.isEmpty()) return FellesPersonklientError.IngenNavnFunnet.left()
     return navn
         .sortedByDescending { getEndringstidspunktOrNull(it) }
         .firstOrNull { !kildeErUdokumentert(it.metadata) }?.right()
-        ?: PDLClientError.NavnKunneIkkeAvklares.left()
+        ?: FellesPersonklientError.NavnKunneIkkeAvklares.left()
 }
 
 internal fun kildeErUdokumentert(metadata: EndringsMetadata) =

@@ -5,9 +5,9 @@ import arrow.core.left
 import arrow.core.raise.either
 import arrow.core.right
 import no.nav.tiltakspenger.libs.person.Person
-import no.nav.tiltakspenger.libs.personklient.pdl.PDLClientError.FantIkkePerson
-import no.nav.tiltakspenger.libs.personklient.pdl.PDLClientError.ResponsManglerPerson
-import no.nav.tiltakspenger.libs.personklient.pdl.PDLClientError.UkjentFeil
+import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.FantIkkePerson
+import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.ResponsManglerPerson
+import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.UkjentFeil
 import no.nav.tiltakspenger.libs.personklient.pdl.dto.AdressebeskyttelseGradering
 import no.nav.tiltakspenger.libs.personklient.pdl.dto.GeografiskTilknytning
 import no.nav.tiltakspenger.libs.personklient.pdl.dto.PdlPerson
@@ -29,7 +29,7 @@ internal data class HentPersonResponse(
     val data: PdlResponseData? = null,
     val errors: List<PdlError> = emptyList(),
 ) {
-    private fun extractPerson(): Either<PDLClientError, PdlPerson> {
+    private fun extractPerson(): Either<FellesPersonklientError, PdlPerson> {
         return if (this.errors.isNotEmpty()) {
             if (errors.any { it.message == FANT_IKKE_PERSON }) {
                 FantIkkePerson.left()
@@ -46,7 +46,7 @@ internal data class HentPersonResponse(
         return data?.hentGeografiskTilknytning
     }
 
-    fun toPerson(): Either<PDLClientError, Pair<Person, List<String>>> {
+    fun toPerson(): Either<FellesPersonklientError, Pair<Person, List<String>>> {
         return either {
             val person = extractPerson().bind()
             val navn = avklarNavn(person.navn).bind()

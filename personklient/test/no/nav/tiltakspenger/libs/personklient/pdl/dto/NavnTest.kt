@@ -2,7 +2,7 @@ package no.nav.tiltakspenger.libs.personklient.pdl.dto
 
 import arrow.core.left
 import arrow.core.right
-import no.nav.tiltakspenger.libs.personklient.pdl.PDLClientError
+import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -40,7 +40,7 @@ internal class NavnTest {
             ),
         )
         assertTrue(avklartNavn.isLeft())
-        assertEquals(PDLClientError.NavnKunneIkkeAvklares.left(), avklartNavn)
+        assertEquals(FellesPersonklientError.NavnKunneIkkeAvklares.left(), avklartNavn)
     }
 
     @Test

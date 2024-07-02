@@ -12,4 +12,5 @@ include(
     "overgangsstonad-dtos",
     "tiltak-dtos",
     "periodisering",
+    "personklient",
 )

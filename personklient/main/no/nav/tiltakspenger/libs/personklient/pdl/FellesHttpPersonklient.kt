@@ -44,7 +44,7 @@ internal class FellesHttpPersonklient(
 
     private val uri = URI.create(endepunkt)
 
-    override fun hentPerson(
+    override suspend fun hentPerson(
         ident: String,
         token: String,
     ): Either<FellesPersonklientError, Pair<Person, List<String>>> {

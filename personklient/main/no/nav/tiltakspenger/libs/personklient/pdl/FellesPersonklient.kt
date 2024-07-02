@@ -10,7 +10,7 @@ interface FellesPersonklient {
     /**
      * TODO jah: Mulig å splitte denne i en med/uten barn.
      */
-    fun hentPerson(
+    suspend fun hentPerson(
         ident: String,
         token: String,
     ): Either<FellesPersonklientError, Pair<Person, List<String>>>

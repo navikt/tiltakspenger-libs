@@ -24,6 +24,8 @@ dependencies {
     testImplementation("com.marcinziolo:kotlin-wiremock:2.1.1")
     testImplementation("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
 
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.8.1")
+
 }
 
 configurations.all {

@@ -9,6 +9,7 @@ import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeTypeOf
+import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.DeserializationException
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.UkjentFeil
 import org.junit.jupiter.api.Test
@@ -29,7 +30,9 @@ internal class FellesHttpPersonklientTest {
             }
 
             val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
-            pdlClient.hentPerson("ident", "token").shouldBeRight()
+            runTest {
+                pdlClient.hentPerson("ident", "token").shouldBeRight()
+            }
         }
     }
 
@@ -45,16 +48,18 @@ internal class FellesHttpPersonklientTest {
             }
 
             val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
-            pdlClient.hentPerson("ident", "token").getOrNull()!!.also {
-                val person = it.first
-                val barnsIdenter = it.second
-                barnsIdenter.size shouldBe 0
-                person.barnUtenFolkeregisteridentifikator.size shouldBe 1
-                person.barnUtenFolkeregisteridentifikator.first().fornavn shouldBe "Geometrisk"
-                person.barnUtenFolkeregisteridentifikator.first().mellomnavn shouldBe "Sprudlende"
-                person.barnUtenFolkeregisteridentifikator.first().etternavn shouldBe "Jakt"
-                person.barnUtenFolkeregisteridentifikator.first().fødselsdato shouldBe LocalDate.of(2016, 5, 23)
-                person.barnUtenFolkeregisteridentifikator.first().statsborgerskap shouldBe "BHS"
+            runTest {
+                pdlClient.hentPerson("ident", "token").getOrNull()!!.also {
+                    val person = it.first
+                    val barnsIdenter = it.second
+                    barnsIdenter.size shouldBe 0
+                    person.barnUtenFolkeregisteridentifikator.size shouldBe 1
+                    person.barnUtenFolkeregisteridentifikator.first().fornavn shouldBe "Geometrisk"
+                    person.barnUtenFolkeregisteridentifikator.first().mellomnavn shouldBe "Sprudlende"
+                    person.barnUtenFolkeregisteridentifikator.first().etternavn shouldBe "Jakt"
+                    person.barnUtenFolkeregisteridentifikator.first().fødselsdato shouldBe LocalDate.of(2016, 5, 23)
+                    person.barnUtenFolkeregisteridentifikator.first().statsborgerskap shouldBe "BHS"
+                }
             }
         }
     }
@@ -70,16 +75,18 @@ internal class FellesHttpPersonklientTest {
                 body = pdlErrorResponse
             }
             val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
-            pdlClient.hentPerson("ident", "token").swap().getOrNull()!! shouldBe UkjentFeil(
-                errors = listOf(
-                    PdlError(
-                        message = "Validation error of type FieldUndefined: Field 'rettIdentitetErUkjentadsa' in type 'FalskIdentitet' is undefined @ 'hentPerson/falskIdentitet/rettIdentitetErUkjentadsa'",
-                        locations = listOf(PdlErrorLocation(line = 5, column = 7)),
-                        path = null,
-                        extensions = PdlErrorExtension(code = null, classification = "ValidationError"),
+            runTest {
+                pdlClient.hentPerson("ident", "token").swap().getOrNull()!! shouldBe UkjentFeil(
+                    errors = listOf(
+                        PdlError(
+                            message = "Validation error of type FieldUndefined: Field 'rettIdentitetErUkjentadsa' in type 'FalskIdentitet' is undefined @ 'hentPerson/falskIdentitet/rettIdentitetErUkjentadsa'",
+                            locations = listOf(PdlErrorLocation(line = 5, column = 7)),
+                            path = null,
+                            extensions = PdlErrorExtension(code = null, classification = "ValidationError"),
+                        ),
                     ),
-                ),
-            )
+                )
+            }
         }
     }
 
@@ -96,8 +103,9 @@ internal class FellesHttpPersonklientTest {
             }
 
             val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
-
-            pdlClient.hentPerson("ident", "token").shouldBeLeft(FellesPersonklientError.ResponsManglerPerson)
+            runTest {
+                pdlClient.hentPerson("ident", "token").shouldBeLeft(FellesPersonklientError.ResponsManglerPerson)
+            }
         }
     }
 
@@ -114,11 +122,12 @@ internal class FellesHttpPersonklientTest {
             }
 
             val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
-
-            pdlClient.hentPerson("ident", "token").swap().getOrNull()!!.also {
-                it.shouldBeTypeOf<DeserializationException>()
-                it.exception.shouldBeTypeOf<com.fasterxml.jackson.core.JsonParseException>()
-                it.exception.message shouldContain "Unrecognized token 'asd'"
+            runTest {
+                pdlClient.hentPerson("ident", "token").swap().getOrNull()!!.also {
+                    it.shouldBeTypeOf<DeserializationException>()
+                    it.exception.shouldBeTypeOf<com.fasterxml.jackson.core.JsonParseException>()
+                    it.exception.message shouldContain "Unrecognized token 'asd'"
+                }
             }
         }
     }
@@ -134,8 +143,9 @@ internal class FellesHttpPersonklientTest {
                 body = pdlResponseManglerFolkeregisterdata
             }
             val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
-
-            pdlClient.hentPerson("ident", "token").shouldBeRight()
+            runTest {
+                pdlClient.hentPerson("ident", "token").shouldBeRight()
+            }
         }
     }
 }

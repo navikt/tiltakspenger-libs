@@ -2,23 +2,23 @@ package no.nav.tiltakspenger.libs.personklient.pdl
 
 internal fun hentPersonQuery(ident: String): GraphqlQuery {
     return GraphqlQuery(
-        query = query(ident),
+        query = query,
         variables = mapOf(
             "ident" to ident,
         ),
     )
 }
 
-private fun query(ident: String) = """
-query($ident: ID!){
-    hentGeografiskTilknytning(ident: $ident) {
+private val query = """
+query(${'$'}ident: ID!){
+    hentGeografiskTilknytning(ident: ${'$'}ident) {
         gtType,
         gtKommune,
         gtBydel,
         gtLand,
         regel
     }
-    hentPerson(ident: $ident) {
+    hentPerson(ident: ${'$'}ident) {
         adressebeskyttelse(historikk: false) {
             gradering
             folkeregistermetadata {

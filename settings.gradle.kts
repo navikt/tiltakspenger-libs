@@ -13,4 +13,6 @@ include(
     "tiltak-dtos",
     "periodisering",
     "personklient",
+    "jobber",
+    "common",
 )

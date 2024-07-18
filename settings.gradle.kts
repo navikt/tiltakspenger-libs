@@ -15,4 +15,5 @@ include(
     "personklient",
     "jobber",
     "common",
+    "persistering",
 )

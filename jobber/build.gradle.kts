@@ -1,5 +1,5 @@
 val jacksonVersion = "2.17.2"
-val mockkVersion = "1.13.11"
+val mockkVersion = "1.13.12"
 val kotestVersion = "5.9.1"
 dependencies {
     implementation(project(":common"))

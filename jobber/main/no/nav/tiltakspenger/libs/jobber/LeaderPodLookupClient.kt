@@ -21,7 +21,7 @@ import kotlin.time.toJavaDuration
  * @param electorPath Full URL til leader-elector sidecar. Dokumentasjonen sier den skal ligge i environment variable $ELECTOR_PATH
  * Docs: https://doc.nais.io/services/leader-election/
  */
-internal class LeaderPodLookupClient(
+class LeaderPodLookupClient(
     private val electorPath: String,
     private val logger: KLogger,
     connectTimeout: kotlin.time.Duration = 1.seconds,

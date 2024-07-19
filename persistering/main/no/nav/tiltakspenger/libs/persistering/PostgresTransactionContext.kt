@@ -27,12 +27,12 @@ class PostgresTransactionContext(
 
     companion object {
 
-        fun <T> TransactionContext?.withOptionalTransaction(
+        fun <T> TransactionContext?.withTransaction(
             sessionFactory: SessionFactory,
             action: (session: TransactionalSession) -> T,
         ): T {
-            return (this ?: sessionFactory.newTransactionContext()).withTransaction {
-                action(it)
+            return sessionFactory.withTransactionContext(this) { transactionContext ->
+                transactionContext.withTransaction { transactionalSession -> action(transactionalSession) }
             }
         }
 

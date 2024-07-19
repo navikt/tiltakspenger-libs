@@ -30,10 +30,4 @@ interface SessionFactory {
 
     /** Bruker en eksisterende context og starter sesjonen hvis den ikke er åpen */
     fun <T> use(transactionContext: TransactionContext, action: (TransactionContext) -> T): T
-
-    /** Lager en ny context - starter ikke sesjonen. */
-    fun newSessionContext(): SessionContext
-
-    /** Lager en ny context - starter ikke sesjonen. */
-    fun newTransactionContext(): TransactionContext
 }

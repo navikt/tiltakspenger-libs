@@ -22,9 +22,9 @@ import javax.sql.DataSource
 internal class PostgresTransactionContextTest {
 
     companion object {
-        lateinit var dataSource: DataSource
-        lateinit var sessionCounter: SessionCounter
-        val postgres = PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"))
+        private lateinit var dataSource: DataSource
+        private lateinit var sessionCounter: SessionCounter
+        private val postgres = PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"))
 
         private val logger = KotlinLogging.logger { }
 

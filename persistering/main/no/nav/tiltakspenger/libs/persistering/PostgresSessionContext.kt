@@ -24,12 +24,12 @@ open class PostgresSessionContext(
 
     companion object {
 
-        fun <T> SessionContext?.withOptionalSession(
+        fun <T> SessionContext?.withSession(
             sessionFactory: SessionFactory,
             action: (session: Session) -> T,
         ): T {
-            return (this ?: sessionFactory.newSessionContext()).withSession {
-                action(it)
+            return sessionFactory.withSessionContext(this) { sessionContext ->
+                sessionContext.withSession { session -> action(session) }
             }
         }
 

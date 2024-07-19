@@ -14,9 +14,8 @@ class PostgresSessionFactory(
     private val sessionCounter: SessionCounter,
 ) : SessionFactory {
 
-    /** Lager en ny context - starter ikke sesjonen.
-     * DEPRECATION: Use nullable paramters and withSessionContext(sessionContext: SessionContext?, action) instead */
-    override fun newSessionContext(): PostgresSessionContext {
+    /** Lager en ny context - starter ikke sesjonen. */
+    private fun newSessionContext(): PostgresSessionContext {
         return PostgresSessionContext(dataSource, sessionCounter)
     }
 
@@ -68,10 +67,8 @@ class PostgresSessionFactory(
      *
      * Merk: Man må kalle withTransaction {...} før man kaller withSession {...} hvis ikke får man en [IllegalStateException]
      * withSession {...} vil kjøre inne i den samme transaksjonen.
-     *
-     * DEPRECATION: Use nullable paramters and withTransactionContext(tx: TransactionContext?, action) instead
      * */
-    override fun newTransactionContext(): PostgresTransactionContext {
+    private fun newTransactionContext(): PostgresTransactionContext {
         return PostgresTransactionContext(dataSource, sessionCounter)
     }
 

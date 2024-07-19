@@ -47,9 +47,9 @@ class LeaderPodLookupClient(
                 val body = httpResponse.body()
                 if (httpResponse.isSuccess()) {
                     Either.catch {
-                        logger.error("LeaderPodLookup: json-respons fra leader-elector sidecar manglet keyen 'name'. Uri: $uri, body: $body, status: ${httpResponse.statusCode()}")
                         objectMapper.readTree(body).get("name").asText(null)
                     }.mapLeft {
+                        logger.error("LeaderPodLookup: json-respons fra leader-elector sidecar manglet keyen 'name'. Uri: $uri, body: $body, status: ${httpResponse.statusCode()}")
                         LeaderPodLookupFeil.UkjentSvarFraLeaderElectorContainer
                     }
                 } else {

@@ -55,10 +55,12 @@ subprojects {
 
     publishing {
         publications {
-            create<MavenPublication>("mavenJava") {
-                artifactId = project.name
-                version = project.findProperty("version")?.toString() ?: "0.0.0"
-                from(components["java"])
+            if (project.name != "persistering") {
+                create<MavenPublication>("mavenJava") {
+                    artifactId = project.name
+                    version = project.findProperty("version")?.toString() ?: "0.0.0"
+                    from(components["java"])
+                }
             }
         }
 

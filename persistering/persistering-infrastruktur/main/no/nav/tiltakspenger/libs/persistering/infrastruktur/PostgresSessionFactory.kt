@@ -1,9 +1,12 @@
-package no.nav.tiltakspenger.libs.persistering
+package no.nav.tiltakspenger.libs.persistering.infrastruktur
 
 import kotliquery.Session
 import kotliquery.TransactionalSession
-import no.nav.tiltakspenger.libs.persistering.PostgresSessionContext.Companion.withSession
-import no.nav.tiltakspenger.libs.persistering.PostgresTransactionContext.Companion.withTransaction
+import no.nav.tiltakspenger.libs.persistering.domene.SessionContext
+import no.nav.tiltakspenger.libs.persistering.domene.SessionFactory
+import no.nav.tiltakspenger.libs.persistering.domene.TransactionContext
+import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresSessionContext.Companion.withSession
+import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresTransactionContext.Companion.withTransaction
 import javax.sql.DataSource
 
 /**

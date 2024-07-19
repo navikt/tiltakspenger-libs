@@ -1,13 +1,13 @@
-package no.nav.tiltakspenger.libs.persistering
+package no.nav.tiltakspenger.libs.persistering.infrastruktur
 
 import arrow.core.Either
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotliquery.queryOf
 import mu.KotlinLogging
-import no.nav.tiltakspenger.libs.persistering.PostgresSessionContext.Companion.withSession
-import no.nav.tiltakspenger.libs.persistering.PostgresTransactionContext.Companion.withSession
-import no.nav.tiltakspenger.libs.persistering.PostgresTransactionContext.Companion.withTransaction
+import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresSessionContext.Companion.withSession
+import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresTransactionContext.Companion.withSession
+import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresTransactionContext.Companion.withTransaction
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test

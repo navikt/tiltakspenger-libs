@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.persistering
+package no.nav.tiltakspenger.libs.persistering.domene
 
 /** Holder en sesjon åpen på tvers av repo-kall. Ikke trådsikker. */
 interface SessionContext {

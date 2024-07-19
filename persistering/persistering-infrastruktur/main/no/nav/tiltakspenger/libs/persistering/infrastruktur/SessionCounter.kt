@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.persistering
+package no.nav.tiltakspenger.libs.persistering.infrastruktur
 
 import mu.KLogger
 import kotlin.concurrent.getOrSet

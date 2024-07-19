@@ -1,13 +1,16 @@
-package no.nav.tiltakspenger.libs.persistering
+package no.nav.tiltakspenger.libs.persistering.infrastruktur
 
 import arrow.core.Either
 import arrow.core.getOrElse
 import kotliquery.Session
 import kotliquery.sessionOf
 import kotliquery.using
+import no.nav.tiltakspenger.libs.persistering.domene.SessionContext
+import no.nav.tiltakspenger.libs.persistering.domene.SessionFactory
+import no.nav.tiltakspenger.libs.persistering.domene.TransactionContext
 import org.slf4j.LoggerFactory
 import javax.sql.DataSource
-import no.nav.tiltakspenger.libs.persistering.PostgresTransactionContext.Companion.withSession as transactionContextWithSession
+import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresTransactionContext.Companion.withSession as transactionContextWithSession
 
 /**
  * Bør på sikt flyttes til common/infrastructure/persistence

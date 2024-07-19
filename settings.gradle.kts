@@ -15,5 +15,6 @@ include(
     "personklient",
     "jobber",
     "common",
-    "persistering",
+    "persistering:persistering-infrastruktur",
+    "persistering:persistering-domene",
 )

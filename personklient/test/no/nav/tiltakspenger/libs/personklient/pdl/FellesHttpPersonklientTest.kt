@@ -29,7 +29,7 @@ internal class FellesHttpPersonklientTest {
                 body = pdlResponse
             }
 
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runTest {
                 pdlClient.hentPerson("ident", "token").shouldBeRight()
             }
@@ -47,7 +47,7 @@ internal class FellesHttpPersonklientTest {
                 body = pdlResponseManglendeIdentPåBarn
             }
 
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runTest {
                 pdlClient.hentPerson("ident", "token").getOrNull()!!.also {
                     val person = it.first
@@ -74,7 +74,7 @@ internal class FellesHttpPersonklientTest {
                 header = "Content-Type" to "application/json"
                 body = pdlErrorResponse
             }
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runTest {
                 pdlClient.hentPerson("ident", "token").swap().getOrNull()!! shouldBe UkjentFeil(
                     errors = listOf(
@@ -102,7 +102,7 @@ internal class FellesHttpPersonklientTest {
                 body = response
             }
 
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runTest {
                 pdlClient.hentPerson("ident", "token").shouldBeLeft(FellesPersonklientError.ResponsManglerPerson)
             }
@@ -121,7 +121,7 @@ internal class FellesHttpPersonklientTest {
                 body = response
             }
 
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runTest {
                 pdlClient.hentPerson("ident", "token").swap().getOrNull()!!.also {
                     it.shouldBeTypeOf<DeserializationException>()
@@ -142,7 +142,7 @@ internal class FellesHttpPersonklientTest {
                 header = "Content-Type" to "application/json"
                 body = pdlResponseManglerFolkeregisterdata
             }
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 10.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runTest {
                 pdlClient.hentPerson("ident", "token").shouldBeRight()
             }

@@ -151,6 +151,10 @@ class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
         return rangeSet.asRanges().toPerioder()
     }
 
+    fun tilstøter(other: Periode): Boolean {
+        return this.range.isConnected(other.range)
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Periode) return false
@@ -201,6 +205,20 @@ fun List<Periode>.inneholderOverlapp(): Boolean {
         }
     }
     return false
+}
+
+fun List<Periode>.inneholderOverlappEllerTilstøter(): Boolean {
+    return this.inneholderOverlapp() || this.tilstøter()
+}
+
+/**
+ * @return true dersom to eller flere perioder tilstøter
+ */
+fun List<Periode>.tilstøter(): Boolean {
+    return this
+        .sortedWith(compareBy<Periode> { it.fraOgMed }.thenBy { it.tilOgMed })
+        .zipWithNext()
+        .any { (a, b) -> a.tilstøter(b) }
 }
 
 fun List<Periode>.leggSammen(godtaOverlapp: Boolean = true): List<Periode> {

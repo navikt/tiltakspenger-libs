@@ -11,6 +11,15 @@ internal enum class AdressebeskyttelseGradering {
     STRENGT_FORTROLIG,
     FORTROLIG,
     UGRADERT,
+    ;
+
+    internal fun toPersonDto(adressebeskyttelse: AdressebeskyttelseGradering) =
+        when (adressebeskyttelse) {
+            STRENGT_FORTROLIG_UTLAND -> no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering.STRENGT_FORTROLIG_UTLAND
+            STRENGT_FORTROLIG -> no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering.STRENGT_FORTROLIG
+            FORTROLIG -> no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering.FORTROLIG
+            UGRADERT -> no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering.UGRADERT
+        }
 }
 
 internal data class Adressebeskyttelse(

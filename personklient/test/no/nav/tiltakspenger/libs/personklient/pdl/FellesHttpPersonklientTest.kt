@@ -1,6 +1,5 @@
 package no.nav.tiltakspenger.libs.personklient.pdl
 
-import com.github.tomakehurst.wiremock.WireMockServer
 import com.marcinziolo.kotlin.wiremock.equalTo
 import com.marcinziolo.kotlin.wiremock.post
 import com.marcinziolo.kotlin.wiremock.returns
@@ -12,6 +11,7 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.DeserializationException
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.UkjentFeil
+import no.nav.tiltakspenger.libs.personklient.pdl.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.milliseconds
@@ -147,15 +147,5 @@ internal class FellesHttpPersonklientTest {
                 pdlClient.hentPerson("ident", "token").shouldBeRight()
             }
         }
-    }
-}
-
-private fun withWireMockServer(block: (WireMockServer) -> Unit) {
-    val wireMockServer = WireMockServer(0)
-    wireMockServer.start()
-    try {
-        block(wireMockServer)
-    } finally {
-        wireMockServer.stop()
     }
 }

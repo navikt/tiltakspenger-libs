@@ -25,8 +25,10 @@ import kotlin.time.toJavaDuration
  */
 internal class FellesHttpPersonklient(
     private val endepunkt: String,
+    // Individstønad (det gamle navnet på tiltakspenger)
     private val tema: String = "IND",
-    connectTimeout: Duration = 20.seconds,
+    connectTimeout: Duration = 1.seconds,
+    private val timeout: Duration = 1.seconds,
 ) : FellesPersonklient {
     private val client = HttpClient.newBuilder()
         .connectTimeout(connectTimeout.toJavaDuration())
@@ -56,7 +58,9 @@ internal class FellesHttpPersonklient(
                 .header("Accept", "application/json")
                 .header("Content-Type", "application/json")
                 .header("Tema", tema)
+                // https://behandlingskatalog.intern.nav.no/process/purpose/TILTAKSPENGER/7b1ef0b2-9d17-413e-8bc3-0efed8adc623
                 .header("behandlingsnummer", "B470")
+                .timeout(timeout.toJavaDuration())
                 .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(hentPersonQuery(ident))))
                 .build()
 

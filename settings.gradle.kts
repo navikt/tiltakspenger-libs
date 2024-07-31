@@ -15,6 +15,7 @@ include(
     "personklient",
     "jobber",
     "common",
+    "test-common",
     "persistering:persistering-infrastruktur",
     "persistering:persistering-domene",
 )

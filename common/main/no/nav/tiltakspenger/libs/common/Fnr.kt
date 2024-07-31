@@ -3,12 +3,14 @@ package no.nav.tiltakspenger.libs.common
 /**
  * Kommentar jah: Denne kan vel flyttes til libs-common eller noe lignende?
  */
-data class Fnr(private val fnr: String) {
+data class Fnr private constructor(
+    val verdi: String,
+) {
 
     private val fnrPattern = Regex("[0-9]{11}")
 
     init {
-        validate(fnr)
+        validate(verdi)
     }
 
     override fun toString(): String = "***********"
@@ -22,14 +24,23 @@ data class Fnr(private val fnr: String) {
          * @return null hvis fnr er ugyldig. Regel: [fnrPattern]
          */
         @Suppress("unused")
-        fun tryCreate(fnr: String): Fnr? {
+        fun tryFromString(fnr: String): Fnr? {
             return try {
                 Fnr(fnr)
             } catch (e: UgyldigFnrException) {
                 null
             }
         }
+
+        /**
+         * @throws UgyldigFnrException hvis fnr er ugyldig. Regel: [fnrPattern]
+         */
+        fun fromString(fnr: String): Fnr {
+            return Fnr(fnr)
+        }
     }
 }
 
-class UgyldigFnrException(@Suppress("unused") val unparsed: String) : RuntimeException("Ugyldig fnr.")
+data class UgyldigFnrException(@Suppress("unused") val unparsed: String) : RuntimeException("Ugyldig fnr.") {
+    override fun toString(): String = "***********"
+}

@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.personklient.pdl
 
 import arrow.core.Either
+import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.person.Person
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -11,7 +12,7 @@ interface FellesPersonklient {
      * TODO jah: Mulig å splitte denne i en med/uten barn.
      */
     suspend fun hentPerson(
-        ident: String,
+        fnr: Fnr,
         token: String,
     ): Either<FellesPersonklientError, Pair<Person, List<String>>>
 

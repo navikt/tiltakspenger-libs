@@ -1,10 +1,12 @@
 package no.nav.tiltakspenger.libs.personklient.pdl
 
-internal fun hentPersonQuery(ident: String): GraphqlQuery {
+import no.nav.tiltakspenger.libs.common.Fnr
+
+internal fun hentPersonQuery(fnr: Fnr): GraphqlQuery {
     return GraphqlQuery(
         query = query,
         variables = mapOf(
-            "ident" to ident,
+            "ident" to fnr.toString(),
         ),
     )
 }

@@ -15,6 +15,7 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
+    implementation(project(":common"))
 
     testImplementation(platform("org.junit:junit-bom:5.10.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -32,6 +33,7 @@ dependencies {
     testImplementation("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.8.1")
+    implementation(project(":test-common"))
 
 }
 

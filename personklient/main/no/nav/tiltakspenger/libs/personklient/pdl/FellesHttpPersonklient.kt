@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.person.Person
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.Ikke2xx
 import java.net.URI
@@ -47,7 +48,7 @@ internal class FellesHttpPersonklient(
     private val uri = URI.create(endepunkt)
 
     override suspend fun hentPerson(
-        ident: String,
+        fnr: Fnr,
         token: String,
     ): Either<FellesPersonklientError, Pair<Person, List<String>>> {
         return Either.catch {
@@ -61,7 +62,7 @@ internal class FellesHttpPersonklient(
                 // https://behandlingskatalog.intern.nav.no/process/purpose/TILTAKSPENGER/7b1ef0b2-9d17-413e-8bc3-0efed8adc623
                 .header("behandlingsnummer", "B470")
                 .timeout(timeout.toJavaDuration())
-                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(hentPersonQuery(ident))))
+                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(hentPersonQuery(fnr))))
                 .build()
 
             client.send(request, HttpResponse.BodyHandlers.ofString()).let { httpResponse ->

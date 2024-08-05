@@ -40,6 +40,9 @@ data class UlidBase(private val stringValue: String) : Ulid {
     override fun compareTo(other: Ulid) = this.toString().compareTo(other.toString())
 }
 
+// Ikke legg inn IDer som ikke brukes på tvers av repoer i fellesbiblioteket.
+
+/** Brukes på tvers av tiltakspenger sine egne tjenester. */
 data class SakId private constructor(private val ulid: UlidBase) : Ulid by ulid {
     companion object {
         private const val PREFIX = "sak"
@@ -51,6 +54,7 @@ data class SakId private constructor(private val ulid: UlidBase) : Ulid by ulid 
     }
 }
 
+/** Brukes på tvers av tiltakspenger sine egne tjenester. */
 data class BehandlingId private constructor(private val ulid: UlidBase) : Ulid by ulid {
     companion object {
         private const val PREFIX = "beh"
@@ -62,6 +66,7 @@ data class BehandlingId private constructor(private val ulid: UlidBase) : Ulid b
     }
 }
 
+/** Brukes på tvers av tiltakspenger sine egne tjenester. */
 data class SøknadId private constructor(private val ulid: UlidBase) : Ulid by ulid {
     companion object {
         private const val PREFIX = "soknad"
@@ -73,39 +78,7 @@ data class SøknadId private constructor(private val ulid: UlidBase) : Ulid by u
     }
 }
 
-data class SøkerId private constructor(private val ulid: UlidBase) : Ulid by ulid {
-    companion object {
-        private const val PREFIX = "soker"
-        fun random() = SøkerId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
-
-        fun fromString(stringValue: String) = SøkerId(ulid = UlidBase(stringValue))
-
-        fun fromUUID(uuid: UUID) = SøkerId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
-    }
-}
-
-data class SakspplysningId private constructor(private val ulid: UlidBase) : Ulid by ulid {
-    companion object {
-        private const val PREFIX = "sopp"
-        fun random() = SakspplysningId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
-
-        fun fromDb(stringValue: String) = SakspplysningId(ulid = UlidBase(stringValue))
-
-        fun fromUUID(uuid: UUID) = SakspplysningId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
-    }
-}
-
-data class VurderingId private constructor(private val ulid: UlidBase) : Ulid by ulid {
-    companion object {
-        private const val PREFIX = "vurd"
-        fun random() = VurderingId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
-
-        fun fromDb(stringValue: String) = VurderingId(ulid = UlidBase(stringValue))
-
-        fun fromUUID(uuid: UUID) = VurderingId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
-    }
-}
-
+/** Brukes på tvers av tiltakspenger sine egne tjenester. */
 data class VedtakId private constructor(private val ulid: UlidBase) : Ulid by ulid {
     companion object {
         private const val PREFIX = "vedtak"
@@ -117,36 +90,12 @@ data class VedtakId private constructor(private val ulid: UlidBase) : Ulid by ul
     }
 }
 
-data class AttesteringId private constructor(private val ulid: UlidBase) : Ulid by ulid {
-    companion object {
-        private const val PREFIX = "att"
-        fun random() = AttesteringId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
-
-        fun fromDb(stringValue: String) = AttesteringId(ulid = UlidBase(stringValue))
-
-        fun fromUUID(uuid: UUID) = AttesteringId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
-    }
-}
-
-data class TiltakId private constructor(private val ulid: UlidBase) : Ulid by ulid {
-    companion object {
-        private const val PREFIX = "takt"
-        fun random() = TiltakId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
-
-        fun fromDb(stringValue: String) = TiltakId(ulid = UlidBase(stringValue))
-
-        fun fromString(stringValue: String) = TiltakId(ulid = UlidBase(stringValue))
-
-        fun fromUUID(uuid: UUID) = TiltakId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
-    }
-}
-
 private fun ulidToUuid(ulid: String): UUID {
     val (most, least) = ulidStringToLongs(ulid)
     return UUID(most, least)
 }
 
-private fun uuidToUlid(uuid: UUID): ULID {
+fun uuidToUlid(uuid: UUID): ULID {
     val buffer = ByteBuffer.allocate(16)
     buffer.putLong(uuid.mostSignificantBits)
     buffer.putLong(uuid.leastSignificantBits)

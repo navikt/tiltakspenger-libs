@@ -6,7 +6,7 @@ internal fun hentPersonQuery(fnr: Fnr): GraphqlQuery {
     return GraphqlQuery(
         query = query,
         variables = mapOf(
-            "ident" to fnr.toString(),
+            "ident" to fnr.verdi,
         ),
     )
 }

@@ -9,6 +9,7 @@ interface Ulid : Comparable<Ulid> {
     fun prefixPart(): String
     fun ulidPart(): String
     fun uuid(): UUID = ulidToUuid(ulidPart())
+    fun uuidPart(): String
     override fun toString(): String
 }
 
@@ -36,6 +37,9 @@ data class UlidBase(private val stringValue: String) : Ulid {
 
     override fun prefixPart(): String = stringValue.split("_").first()
     override fun ulidPart(): String = stringValue.split("_").last()
+
+    /** Kopiert fra Ulid.kt i tiltakspenger-utbetaling. Brukes for å generere ID som sendes til hel ved og OS/UR. De har en begrensning på 30 tegn. */
+    override fun uuidPart() = this.ulidPart().substring(11, 26)
     override fun toString() = stringValue
     override fun compareTo(other: Ulid) = this.toString().compareTo(other.toString())
 }

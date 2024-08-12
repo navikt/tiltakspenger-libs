@@ -4,7 +4,7 @@ val kotestVersion = "5.9.1"
 val testContainersVersion = "1.20.1"
 
 dependencies {
-    implementation(project(":persistering:persistering-domene"))
+    implementation(project(":persistering:domene"))
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
     implementation("io.arrow-kt:arrow-core:1.2.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")

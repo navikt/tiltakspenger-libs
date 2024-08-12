@@ -43,6 +43,6 @@ configurations.all {
     exclude(group = "junit", module = "junit")
 }
 
-tasks.named<Jar>("jar") {
+tasks.withType<Jar> {
     archiveBaseName.set("personklient-infrastruktur")
 }

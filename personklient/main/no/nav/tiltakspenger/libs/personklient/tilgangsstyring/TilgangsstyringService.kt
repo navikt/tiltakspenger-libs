@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.left
 import arrow.core.right
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import no.nav.tiltakspenger.libs.common.AccessToken
@@ -30,11 +31,11 @@ class TilgangsstyringService(
         correlationId: CorrelationId,
     ): Either<KunneIkkeGjøreTilgangskontroll, Boolean> {
         return coroutineScope {
-            val adressebeskyttelseDeferred = async {
+            val adressebeskyttelseDeferred = async(Dispatchers.IO) {
                 fellesPersonTilgangsstyringsklient.enkel(fnr, token)
             }
 
-            val erSkjermetPersonDeferred = async {
+            val erSkjermetPersonDeferred = async(Dispatchers.IO) {
                 skjermingClient.erSkjermetPerson(fnr = fnr, token = token, correlationId = correlationId)
             }
 

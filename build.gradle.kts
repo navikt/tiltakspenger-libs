@@ -14,6 +14,9 @@ allprojects {
 }
 
 subprojects {
+    if (project.name in listOf("persistering", "personklient")) {
+        return@subprojects
+    }
     group = "com.github.navikt.tiltakspenger-libs"
 
     apply(plugin = "org.jetbrains.kotlin.jvm")
@@ -55,12 +58,10 @@ subprojects {
 
     publishing {
         publications {
-            if (project.name != "persistering" && project.name != "personklient") {
-                create<MavenPublication>("mavenJava") {
-                    artifactId = project.name
-                    version = project.findProperty("version")?.toString() ?: "0.0.0"
-                    from(components["java"])
-                }
+            create<MavenPublication>("mavenJava") {
+                artifactId = project.name
+                version = project.findProperty("version")?.toString() ?: "0.0.0"
+                from(components["java"])
             }
         }
 

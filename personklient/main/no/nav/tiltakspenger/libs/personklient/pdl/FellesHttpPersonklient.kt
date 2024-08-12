@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
-import no.nav.tiltakspenger.libs.person.Person
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.Ikke2xx
 import java.net.URI
 import java.net.http.HttpClient
@@ -49,8 +49,9 @@ internal class FellesHttpPersonklient(
 
     override suspend fun hentPerson(
         fnr: Fnr,
-        token: String,
-    ): Either<FellesPersonklientError, Pair<Person, List<String>>> {
+        token: AccessToken,
+        jsonRequestBody: String,
+    ): Either<FellesPersonklientError, String> {
         return Either.catch {
             // TODO jah: Send med correlation id
             val request = HttpRequest.newBuilder()
@@ -62,7 +63,7 @@ internal class FellesHttpPersonklient(
                 // https://behandlingskatalog.intern.nav.no/process/purpose/TILTAKSPENGER/7b1ef0b2-9d17-413e-8bc3-0efed8adc623
                 .header("behandlingsnummer", "B470")
                 .timeout(timeout.toJavaDuration())
-                .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(hentPersonQuery(fnr))))
+                .POST(HttpRequest.BodyPublishers.ofString(jsonRequestBody))
                 .build()
 
             client.send(request, HttpResponse.BodyHandlers.ofString()).let { httpResponse ->
@@ -72,7 +73,7 @@ internal class FellesHttpPersonklient(
                         objectMapper.readValue<HentPersonResponse>(body)
                     }.mapLeft {
                         FellesPersonklientError.DeserializationException(it)
-                    }.map { it.toPerson() }.flatten()
+                    }.map { it.extractData() }.flatten()
                 } else {
                     Ikke2xx(status = httpResponse.statusCode(), body = body).left()
                 }

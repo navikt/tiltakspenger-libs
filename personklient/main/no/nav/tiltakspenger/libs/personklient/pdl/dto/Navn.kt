@@ -5,7 +5,7 @@ import arrow.core.left
 import arrow.core.right
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError
 
-internal data class Navn(
+data class Navn(
     val fornavn: String,
     val etternavn: String,
     val mellomnavn: String? = null,
@@ -13,7 +13,7 @@ internal data class Navn(
     override val folkeregistermetadata: FolkeregisterMetadata?,
 ) : Changeable
 
-internal fun avklarNavn(navn: List<Navn>): Either<FellesPersonklientError, Navn> {
+fun avklarNavn(navn: List<Navn>): Either<FellesPersonklientError, Navn> {
     if (navn.isEmpty()) return FellesPersonklientError.IngenNavnFunnet.left()
     return navn
         .sortedByDescending { getEndringstidspunktOrNull(it) }
@@ -21,5 +21,5 @@ internal fun avklarNavn(navn: List<Navn>): Either<FellesPersonklientError, Navn>
         ?: FellesPersonklientError.NavnKunneIkkeAvklares.left()
 }
 
-internal fun kildeErUdokumentert(metadata: EndringsMetadata) =
+fun kildeErUdokumentert(metadata: EndringsMetadata) =
     metadata.master == Kilde.PDL && metadata.endringer.nyeste()?.kilde == Kilde.BRUKER_SELV

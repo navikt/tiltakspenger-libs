@@ -1,6 +1,6 @@
 package no.nav.tiltakspenger.libs.personklient.pdl.dto
 
-internal data class PdlPerson(
+data class PdlPerson(
     val navn: List<Navn>,
     val foedsel: List<Fødsel>,
     val adressebeskyttelse: List<Adressebeskyttelse>,

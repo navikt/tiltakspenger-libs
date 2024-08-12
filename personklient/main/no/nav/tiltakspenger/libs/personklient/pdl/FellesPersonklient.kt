@@ -1,8 +1,8 @@
 package no.nav.tiltakspenger.libs.personklient.pdl
 
 import arrow.core.Either
+import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
-import no.nav.tiltakspenger.libs.person.Person
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -13,8 +13,9 @@ interface FellesPersonklient {
      */
     suspend fun hentPerson(
         fnr: Fnr,
-        token: String,
-    ): Either<FellesPersonklientError, Pair<Person, List<String>>>
+        token: AccessToken,
+        jsonRequestBody: String,
+    ): Either<FellesPersonklientError, String>
 
     companion object {
         fun create(

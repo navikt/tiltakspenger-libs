@@ -5,7 +5,7 @@ sealed interface FellesPersonklientError {
     data object NavnKunneIkkeAvklares : FellesPersonklientError
     data object FødselKunneIkkeAvklares : FellesPersonklientError
     data object AdressebeskyttelseKunneIkkeAvklares : FellesPersonklientError
-    data object ResponsManglerPerson : FellesPersonklientError
+    data object ResponsManglerData : FellesPersonklientError
     data object FantIkkePerson : FellesPersonklientError
     data class NetworkError(val exception: Throwable) : FellesPersonklientError
     data class DeserializationException(val exception: Throwable) : FellesPersonklientError

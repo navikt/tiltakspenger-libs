@@ -3,33 +3,33 @@ package no.nav.tiltakspenger.libs.personklient.pdl.dto
 import no.nav.tiltakspenger.libs.person.BarnUtenFolkeregisteridentifikator
 import java.time.LocalDate
 
-internal enum class ForelderBarnRelasjonRolle {
+enum class ForelderBarnRelasjonRolle {
     BARN,
     MOR,
     FAR,
     MEDMOR,
 }
 
-internal data class Personnavn(
+data class Personnavn(
     val fornavn: String,
     val mellomnavn: String?,
     val etternavn: String,
 )
 
-internal enum class KjoennType {
+enum class KjoennType {
     MANN,
     KVINNE,
     UKJENT,
 }
 
-internal data class RelatertBiPerson(
+data class RelatertBiPerson(
     val navn: Personnavn?,
     val foedselsdato: LocalDate?,
     val statsborgerskap: String?,
     val kjoenn: KjoennType?,
 )
 
-internal data class ForelderBarnRelasjon(
+data class ForelderBarnRelasjon(
     val relatertPersonsIdent: String?,
     val relatertPersonsRolle: ForelderBarnRelasjonRolle,
     val minRolleForPerson: ForelderBarnRelasjonRolle?,
@@ -38,7 +38,7 @@ internal data class ForelderBarnRelasjon(
     override val metadata: EndringsMetadata,
 ) : Changeable
 
-internal fun List<ForelderBarnRelasjon>.toIdenterForBarnIFolkeregisteret(): List<String> {
+fun List<ForelderBarnRelasjon>.toIdenterForBarnIFolkeregisteret(): List<String> {
     return this
         .asSequence()
         .filter { it.relatertPersonsRolle == ForelderBarnRelasjonRolle.BARN }
@@ -48,7 +48,7 @@ internal fun List<ForelderBarnRelasjon>.toIdenterForBarnIFolkeregisteret(): List
         .toList()
 }
 
-internal fun List<ForelderBarnRelasjon>.toBarnUtenforFolkeregisteret(): List<BarnUtenFolkeregisteridentifikator> {
+fun List<ForelderBarnRelasjon>.toBarnUtenforFolkeregisteret(): List<BarnUtenFolkeregisteridentifikator> {
     return this
         .asSequence()
         .filter { it.relatertPersonsRolle == ForelderBarnRelasjonRolle.BARN }

@@ -6,7 +6,7 @@ import arrow.core.right
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError
 import no.nav.tiltakspenger.libs.personklient.pdl.dto.AdressebeskyttelseGradering.UGRADERT
 
-internal enum class AdressebeskyttelseGradering {
+enum class AdressebeskyttelseGradering {
     STRENGT_FORTROLIG_UTLAND,
     STRENGT_FORTROLIG,
     FORTROLIG,
@@ -20,15 +20,19 @@ internal enum class AdressebeskyttelseGradering {
             FORTROLIG -> no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering.FORTROLIG
             UGRADERT -> no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering.UGRADERT
         }
+
+    fun erFortrolig() = this == FORTROLIG
+    fun erStrengtFortrolig() = this == STRENGT_FORTROLIG
+    fun erStrengtFortroligUtland() = this == STRENGT_FORTROLIG_UTLAND
 }
 
-internal data class Adressebeskyttelse(
+data class Adressebeskyttelse(
     val gradering: AdressebeskyttelseGradering,
     override val folkeregistermetadata: FolkeregisterMetadata? = null,
     override val metadata: EndringsMetadata,
 ) : Changeable
 
-internal fun avklarGradering(gradering: List<Adressebeskyttelse>): Either<FellesPersonklientError, AdressebeskyttelseGradering> {
+fun avklarGradering(gradering: List<Adressebeskyttelse>): Either<FellesPersonklientError, AdressebeskyttelseGradering> {
     return if (gradering.isEmpty()) {
         UGRADERT.right()
     } else {

@@ -6,7 +6,7 @@ import arrow.core.right
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError
 import java.time.LocalDate
 
-internal data class Fødsel(
+data class Fødsel(
     val foedselsdato: LocalDate,
     override val folkeregistermetadata: FolkeregisterMetadata,
     override val metadata: EndringsMetadata,
@@ -15,7 +15,7 @@ internal data class Fødsel(
 internal const val FREG = "FREG"
 internal fun String.isFreg() = this.equals(FREG, ignoreCase = true)
 
-internal fun avklarFødsel(foedsler: List<Fødsel>): Either<FellesPersonklientError, Fødsel> {
+fun avklarFødsel(foedsler: List<Fødsel>): Either<FellesPersonklientError, Fødsel> {
     val foedslerSortert = foedsler.sortedByDescending { getEndringstidspunktOrNull(it) }
     val foedselFreg = foedslerSortert.find { it.metadata.master.isFreg() }
     return foedselFreg?.right() ?: foedslerSortert.firstOrNull()?.right()

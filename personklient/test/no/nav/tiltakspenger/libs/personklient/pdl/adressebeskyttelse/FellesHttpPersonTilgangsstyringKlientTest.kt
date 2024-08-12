@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.personklient.pdl.pip
+package no.nav.tiltakspenger.libs.personklient.pdl.adressebeskyttelse
 
 import com.fasterxml.jackson.core.JsonParseException
 import com.github.tomakehurst.wiremock.WireMockServer
@@ -16,6 +16,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import no.nav.tiltakspenger.libs.common.AccessToken
+import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering.STRENGT_FORTROLIG
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering.STRENGT_FORTROLIG_UTLAND
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering.UGRADERT
@@ -30,11 +32,11 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
     @Test
     fun `en person`() {
         withWireMockServer { wiremock ->
-            val ident = "12345678901"
+            val ident = Fnr.fromString("12345678901")
             wiremock.post(
                 """
                 {
-                    "$ident": {
+                    "${ident.verdi}": {
                         "person": {
                             "adressebeskyttelse": [
                                 {"gradering": "STRENGT_FORTROLIG"},
@@ -47,12 +49,15 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
             )
 
             val pdlClient =
-                FellesHttpPersonTilgangsstyringKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+                FellesHttpAdressebeskyttelseKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runTest {
-                pdlClient.bolk(listOf(ident), "token") shouldBeRight (
+                pdlClient.bolk(listOf(ident), AccessToken("token")) shouldBeRight (
                     mapOf(ident to listOf(STRENGT_FORTROLIG, STRENGT_FORTROLIG_UTLAND))
                     )
-                pdlClient.enkel(ident, "token") shouldBeRight listOf(STRENGT_FORTROLIG, STRENGT_FORTROLIG_UTLAND)
+                pdlClient.enkel(ident, AccessToken("token")) shouldBeRight listOf(
+                    STRENGT_FORTROLIG,
+                    STRENGT_FORTROLIG_UTLAND,
+                )
             }
         }
     }
@@ -60,21 +65,21 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
     @Test
     fun `skal hente adressebeskyttelse`() {
         withWireMockServer { wiremock ->
-            val ident1 = "12345678901"
-            val ident2 = "10987654321"
+            val ident1 = Fnr.fromString("12345678901")
+            val ident2 = Fnr.fromString("10987654321")
             wiremock.post(
                 """
                 {
-                    "$ident1": {"person": {"adressebeskyttelse": [ {"gradering": "STRENGT_FORTROLIG" } ]}},
-                    "$ident2": {"person": {"adressebeskyttelse": [ {"gradering": "UGRADERT" } ]}}
+                    "${ident1.verdi}": {"person": {"adressebeskyttelse": [ {"gradering": "STRENGT_FORTROLIG" } ]}},
+                    "${ident2.verdi}": {"person": {"adressebeskyttelse": [ {"gradering": "UGRADERT" } ]}}
                 }
                 """.trimIndent(),
             )
 
             val pdlClient =
-                FellesHttpPersonTilgangsstyringKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+                FellesHttpAdressebeskyttelseKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runTest {
-                pdlClient.bolk(listOf(ident1, ident2), "token") shouldBeRight (
+                pdlClient.bolk(listOf(ident1, ident2), AccessToken("token")) shouldBeRight (
                     mapOf(
                         ident1 to listOf(STRENGT_FORTROLIG),
                         ident2 to listOf(UGRADERT),
@@ -86,34 +91,34 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
 
     @Test
     fun `skal håndtere at identen ikke finnes`() {
-        val ident = "12312312312"
+        val ident = Fnr.fromString("12312312312")
         withWireMockServer { wiremock ->
             wiremock.post(
-                """{"$ident": null}""",
+                """{"${ident.verdi}": null}""",
             )
 
             val pdlClient =
-                FellesHttpPersonTilgangsstyringKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+                FellesHttpAdressebeskyttelseKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
 
             runTest {
-                pdlClient.bolk(listOf(ident), "token") shouldBeRight (mapOf(ident to null))
+                pdlClient.bolk(listOf(ident), AccessToken("token")) shouldBeRight (mapOf(ident to null))
             }
         }
     }
 
     @Test
     fun `skal håndtere at graderingslisten er tom`() {
-        val ident = "12312312312"
+        val ident = Fnr.fromString("12312312312")
         withWireMockServer { wiremock ->
             wiremock.post(
-                """{"$ident": {"person": {"adressebeskyttelse": []}}}""",
+                """{"${ident.verdi}": {"person": {"adressebeskyttelse": []}}}""",
             )
 
             val pdlClient =
-                FellesHttpPersonTilgangsstyringKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+                FellesHttpAdressebeskyttelseKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
 
             runTest {
-                pdlClient.bolk(listOf(ident), "token") shouldBeRight (
+                pdlClient.bolk(listOf(ident), AccessToken("token")) shouldBeRight (
                     mapOf(ident to emptyList<AdressebeskyttelseGradering>())
                     )
             }
@@ -130,10 +135,10 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
             }
 
             val pdlClient =
-                FellesHttpPersonTilgangsstyringKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+                FellesHttpAdressebeskyttelseKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runTest {
-                pdlClient.bolk(listOf("12345678901"), "token").leftOrNull()!!.shouldBe(
-                    FellesPipError.Ikke2xx(
+                pdlClient.bolk(listOf(Fnr.fromString("12345678901")), AccessToken("token")).leftOrNull()!!.shouldBe(
+                    FellesAdressebeskyttelseError.Ikke2xx(
                         500,
                         "",
                     ),
@@ -153,10 +158,10 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
             }
 
             val pdlClient =
-                FellesHttpPersonTilgangsstyringKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+                FellesHttpAdressebeskyttelseKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runTest {
-                pdlClient.bolk(listOf("12345678901"), "token").leftOrNull()!!.also {
-                    it.shouldBeInstanceOf<FellesPipError.DeserializationException>()
+                pdlClient.bolk(listOf(Fnr.fromString("12345678901")), AccessToken("token")).leftOrNull()!!.also {
+                    it.shouldBeInstanceOf<FellesAdressebeskyttelseError.DeserializationException>()
                     it.exception.shouldBeInstanceOf<JsonParseException>()
                 }
             }
@@ -177,11 +182,11 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
             }
 
             val pdlClient =
-                FellesHttpPersonTilgangsstyringKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+                FellesHttpAdressebeskyttelseKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
             runBlocking {
                 val job = async {
                     try {
-                        val result = pdlClient.bolk(listOf("12345678901"), "token")
+                        val result = pdlClient.bolk(listOf(Fnr.fromString("12345678901")), AccessToken("token"))
                         fail("Should have been cancelled. Result was: $result")
                     } catch (it: CancellationException) {
                         it.shouldBeInstanceOf<CancellationException>()
@@ -208,13 +213,14 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
             }
 
             val pdlClient =
-                FellesHttpPersonTilgangsstyringKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 1.milliseconds)
+                FellesHttpAdressebeskyttelseKlient(endepunkt = wiremock.baseUrl(), connectTimeout = 1.milliseconds)
             runTest {
-                pdlClient.bolk(listOf("12345678901"), "token").leftOrNull()!!.shouldBeEqualToComparingFields(
-                    FellesPipError.NetworkError(
-                        HttpConnectTimeoutException("HTTP connect timed out"),
-                    ),
-                )
+                pdlClient.bolk(listOf(Fnr.fromString("12345678901")), AccessToken("token")).leftOrNull()!!
+                    .shouldBeEqualToComparingFields(
+                        FellesAdressebeskyttelseError.NetworkError(
+                            HttpConnectTimeoutException("HTTP connect timed out"),
+                        ),
+                    )
             }
         }
     }

@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.personklient.pdl.pip
+package no.nav.tiltakspenger.libs.personklient.pdl.adressebeskyttelse
 
 import arrow.core.Either
 import arrow.core.flatten
@@ -13,6 +13,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.withContext
+import no.nav.tiltakspenger.libs.common.AccessToken
+import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering
 import no.nav.tiltakspenger.libs.personklient.pdl.isSuccess
 import java.net.URI
@@ -26,11 +28,11 @@ import kotlin.time.toJavaDuration
 /**
  * https://pdl-pip-api.dev.intern.nav.no/swagger-ui/index.html#/
  */
-internal class FellesHttpPersonTilgangsstyringKlient(
+internal class FellesHttpAdressebeskyttelseKlient(
     endepunkt: String,
     connectTimeout: Duration = 1.seconds,
     private val timeout: Duration = 1.seconds,
-) : FellesPersonTilgangsstyringsklient {
+) : FellesAdressebeskyttelseKlient {
     private val client = HttpClient.newBuilder()
         .connectTimeout(connectTimeout.toJavaDuration())
         .followRedirects(HttpClient.Redirect.NEVER)
@@ -48,21 +50,21 @@ internal class FellesHttpPersonTilgangsstyringKlient(
     private val uri = URI.create(endepunkt)
 
     override suspend fun enkel(
-        ident: String,
-        token: String,
-    ): Either<FellesPipError, List<AdressebeskyttelseGradering>?> {
-        return bolk(listOf(ident), token).map {
-            it[ident]
+        fnr: Fnr,
+        token: AccessToken,
+    ): Either<FellesAdressebeskyttelseError, List<AdressebeskyttelseGradering>?> {
+        return bolk(listOf(fnr), token).map {
+            it[fnr]
         }
     }
 
     override suspend fun bolk(
-        identer: List<String>,
-        token: String,
-    ): Either<FellesPipError, Map<String, List<AdressebeskyttelseGradering>?>> {
+        fnrListe: List<Fnr>,
+        token: AccessToken,
+    ): Either<FellesAdressebeskyttelseError, Map<Fnr, List<AdressebeskyttelseGradering>?>> {
         return withContext(Dispatchers.IO) {
             Either.catch {
-                val request = createRequest(token, identer)
+                val request = createRequest(token, fnrListe)
 
                 val httpResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()
                 val body = httpResponse.body()
@@ -70,35 +72,36 @@ internal class FellesHttpPersonTilgangsstyringKlient(
                     Either.catch {
                         objectMapper.readValue<Map<String, PipPersondataResponse?>>(body)
                     }.mapLeft {
-                        FellesPipError.DeserializationException(it)
+                        FellesAdressebeskyttelseError.DeserializationException(it)
                     }.map {
                         it.mapValues { (_, value) -> value?.toPersonDtoGradering() }
+                            .mapKeys { (key, _) -> Fnr.fromString(key) }
                     }
                 } else {
-                    FellesPipError.Ikke2xx(status = httpResponse.statusCode(), body = body).left()
+                    FellesAdressebeskyttelseError.Ikke2xx(status = httpResponse.statusCode(), body = body).left()
                 }
             }.mapLeft {
                 // Either.catch slipper igjennom CancellationException som er ønskelig.
-                FellesPipError.NetworkError(it)
+                FellesAdressebeskyttelseError.NetworkError(it)
             }.flatten()
         }
     }
 
     private fun createRequest(
-        token: String,
-        identer: List<String>,
+        token: AccessToken,
+        fnrListe: List<Fnr>,
     ): HttpRequest? = HttpRequest.newBuilder()
         .uri(uri)
         .timeout(timeout.toJavaDuration())
         .header("Authorization", "Bearer $token")
         .header("Accept", "application/json")
         .header("Content-Type", "application/json")
-        .POST(createBody(identer))
+        .POST(createBody(fnrListe))
         .build()
 
-    private fun createBody(identer: List<String>): HttpRequest.BodyPublisher? =
+    private fun createBody(fnrListe: List<Fnr>): HttpRequest.BodyPublisher? =
         HttpRequest.BodyPublishers.ofString(
-            identer.joinToString(
+            fnrListe.joinToString(
                 separator = ",",
                 prefix = "[",
                 postfix = "]",

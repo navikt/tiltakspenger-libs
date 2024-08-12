@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.personklient.pdl.pip
+package no.nav.tiltakspenger.libs.personklient.pdl.adressebeskyttelse
 
 import no.nav.tiltakspenger.libs.personklient.pdl.dto.AdressebeskyttelseGradering
 

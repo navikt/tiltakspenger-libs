@@ -55,7 +55,7 @@ subprojects {
 
     publishing {
         publications {
-            if (project.name != "persistering") {
+            if (project.name != "persistering" && project.name != "personklient") {
                 create<MavenPublication>("mavenJava") {
                     artifactId = project.name
                     version = project.findProperty("version")?.toString() ?: "0.0.0"

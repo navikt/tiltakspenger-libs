@@ -1,5 +1,8 @@
 package no.nav.tiltakspenger.libs.tiltak
 
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -7,8 +10,9 @@ data class TiltakResponsDTO(
     val tiltak: List<TiltakDTO>? = null,
     val feil: FeilmeldingDTO? = null,
 ) {
-
-    enum class FeilmeldingDTO(val melding: String) {
+    enum class FeilmeldingDTO(
+        val melding: String,
+    ) {
         UkjentFeil("Ukjent feil"),
     }
 
@@ -31,7 +35,10 @@ data class TiltakResponsDTO(
         val arenaKode: TiltakType,
     )
 
-    enum class DeltakerStatusDTO(val status: String, val rettTilÅSøke: Boolean) {
+    enum class DeltakerStatusDTO(
+        val status: String,
+        val rettTilÅSøke: Boolean,
+    ) {
         VENTER_PA_OPPSTART("Venter på oppstart", true),
         DELTAR("Deltar", true),
         HAR_SLUTTET("Har sluttet", true),
@@ -46,7 +53,9 @@ data class TiltakResponsDTO(
         VURDERES("Vurderes", false),
     }
 
-    enum class Tiltaksgruppe(val navn: String) {
+    enum class Tiltaksgruppe(
+        val navn: String,
+    ) {
         AFT("Arbeidsforberedende trening"),
         AMB("Tiltak i arbeidsmarkedsbedrift"),
         ARBPRAKS("Arbeidspraksis"),
@@ -69,7 +78,11 @@ data class TiltakResponsDTO(
         MIDSYSS("Midlertidig sysselsetting"),
     }
 
-    enum class TiltakType(val navn: String, val tiltaksgruppe: Tiltaksgruppe, val rettPåTiltakspenger: Boolean) {
+    enum class TiltakType(
+        val navn: String,
+        val tiltaksgruppe: Tiltaksgruppe,
+        val rettPåTiltakspenger: Boolean,
+    ) {
         // gir rett
         ARBTREN("Arbeidstrening", Tiltaksgruppe.ARBTREN, true),
         GRUPPEAMO("Gruppe AMO", Tiltaksgruppe.OPPL, true),
@@ -136,7 +149,11 @@ data class TiltakResponsDTO(
         BREVKURS("Brevkurs", Tiltaksgruppe.UTFAS, false),
         DIVTILT("Diverse tiltak", Tiltaksgruppe.UTFAS, false),
         FLEKSJOBB("Fleksibel jobb - lønnstilskudd av lengre varighet", Tiltaksgruppe.UTFAS, false),
-        TILRTILSK("Forebyggings- og tilretteleggingstilskudd IA virksomheter og BHT-honorar", Tiltaksgruppe.UTFAS, false),
+        TILRTILSK(
+            "Forebyggings- og tilretteleggingstilskudd IA virksomheter og BHT-honorar",
+            Tiltaksgruppe.UTFAS,
+            false,
+        ),
         KAT("Formidlingstjenester", Tiltaksgruppe.UTFAS, false),
         VALS("Formidlingstjenester - Ventelønn", Tiltaksgruppe.UTFAS, false),
         GRUNNSKOLE("Grunnskole", Tiltaksgruppe.UTFAS, false),
@@ -186,7 +203,10 @@ data class TiltakResponsDTO(
         SUPPEMP("Supported Employment", Tiltaksgruppe.FORSOK, false),
     }
 
-    enum class DeltakerStatusType(val navn: String, val girRettTilÅASøke: Boolean) {
+    enum class DeltakerStatusType(
+        val navn: String,
+        val girRettTilÅASøke: Boolean,
+    ) {
         DELAVB("Deltakelse avbrutt", true),
         FULLF("Fullført", true),
         GJENN("Gjennomføres", true),
@@ -204,3 +224,27 @@ data class TiltakResponsDTO(
         VENTELISTE("Venteliste", false),
     }
 }
+
+object TiltakstypeGirIkkeRett
+
+fun TiltakResponsDTO.TiltakType.toTiltakstypeSomGirRett(): Either<TiltakstypeGirIkkeRett, TiltakstypeSomGirRett> =
+    when (this) {
+        TiltakResponsDTO.TiltakType.ARBFORB -> TiltakstypeSomGirRett.ARBEIDSFORBEREDENDE_TRENING.right()
+        TiltakResponsDTO.TiltakType.ARBRRHDAG -> TiltakstypeSomGirRett.ARBEIDSRETTET_REHABILITERING.right()
+        TiltakResponsDTO.TiltakType.ARBTREN -> TiltakstypeSomGirRett.ARBEIDSTRENING.right()
+        TiltakResponsDTO.TiltakType.AVKLARAG -> TiltakstypeSomGirRett.AVKLARING.right()
+        TiltakResponsDTO.TiltakType.DIGIOPPARB -> TiltakstypeSomGirRett.DIGITAL_JOBBKLUBB.right()
+        TiltakResponsDTO.TiltakType.ENKELAMO -> TiltakstypeSomGirRett.ENKELTPLASS_AMO.right()
+        TiltakResponsDTO.TiltakType.ENKFAGYRKE -> TiltakstypeSomGirRett.ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG.right()
+        TiltakResponsDTO.TiltakType.FORSOPPLEV -> TiltakstypeSomGirRett.FORSØK_OPPLÆRING_LENGRE_VARIGHET.right()
+        TiltakResponsDTO.TiltakType.GRUPPEAMO -> TiltakstypeSomGirRett.GRUPPE_AMO.right()
+        TiltakResponsDTO.TiltakType.GRUFAGYRKE -> TiltakstypeSomGirRett.GRUPPE_VGS_OG_HØYERE_YRKESFAG.right()
+        TiltakResponsDTO.TiltakType.HOYEREUTD -> TiltakstypeSomGirRett.HØYERE_UTDANNING.right()
+        TiltakResponsDTO.TiltakType.INDJOBSTOT -> TiltakstypeSomGirRett.INDIVIDUELL_JOBBSTØTTE.right()
+        TiltakResponsDTO.TiltakType.IPSUNG -> TiltakstypeSomGirRett.INDIVIDUELL_KARRIERESTØTTE_UNG.right()
+        TiltakResponsDTO.TiltakType.JOBBK -> TiltakstypeSomGirRett.JOBBKLUBB.right()
+        TiltakResponsDTO.TiltakType.INDOPPFAG -> TiltakstypeSomGirRett.OPPFØLGING.right()
+        TiltakResponsDTO.TiltakType.UTVAOONAV -> TiltakstypeSomGirRett.UTVIDET_OPPFØLGING_I_NAV.right()
+        TiltakResponsDTO.TiltakType.UTVOPPFOPL -> TiltakstypeSomGirRett.UTVIDET_OPPFØLGING_I_OPPLÆRING.right()
+        else -> TiltakstypeGirIkkeRett.left()
+    }

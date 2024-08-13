@@ -5,7 +5,6 @@ val kotestVersion = "5.9.1"
 dependencies {
     implementation(project(":person-dtos"))
 
-
     implementation("io.arrow-kt:arrow-core:1.2.4")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
@@ -16,7 +15,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
     implementation(project(":common"))
-    implementation(project(":personklient:domene"))
+    implementation(project(":personklient:personklient-domene"))
 
     testImplementation(platform("org.junit:junit-bom:5.10.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -35,7 +34,6 @@ dependencies {
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.8.1")
     testImplementation(project(":test-common"))
-
 }
 
 configurations.all {

@@ -331,5 +331,10 @@ fun TiltakResponsDTO.TiltakType.toTiltakstypeSomGirRett(): Either<TiltakstypeGir
         TiltakResponsDTO.TiltakType.NYTEST,
         TiltakResponsDTO.TiltakType.INDOPPRF,
         TiltakResponsDTO.TiltakType.SUPPEMP,
+        TiltakResponsDTO.TiltakType.FORSAMOGRU,
+        TiltakResponsDTO.TiltakType.FORSAMOENK,
+        TiltakResponsDTO.TiltakType.FORSFAGGRU,
+        TiltakResponsDTO.TiltakType.FORSFAGENK,
+        TiltakResponsDTO.TiltakType.FORSHOYUTD,
         -> TiltakstypeGirIkkeRett.left()
     }

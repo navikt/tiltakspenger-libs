@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.tiltak
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
+import java.lang.RuntimeException
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -246,6 +247,7 @@ fun TiltakResponsDTO.TiltakType.toTiltakstypeSomGirRett(): Either<TiltakstypeGir
         TiltakResponsDTO.TiltakType.INDOPPFAG -> TiltakstypeSomGirRett.OPPFØLGING.right()
         TiltakResponsDTO.TiltakType.UTVAOONAV -> TiltakstypeSomGirRett.UTVIDET_OPPFØLGING_I_NAV.right()
         TiltakResponsDTO.TiltakType.UTVOPPFOPL -> TiltakstypeSomGirRett.UTVIDET_OPPFØLGING_I_OPPLÆRING.right()
+
         TiltakResponsDTO.TiltakType.REFINO,
         TiltakResponsDTO.TiltakType.MIDLONTIL,
         TiltakResponsDTO.TiltakType.VARLONTIL,
@@ -331,10 +333,14 @@ fun TiltakResponsDTO.TiltakType.toTiltakstypeSomGirRett(): Either<TiltakstypeGir
         TiltakResponsDTO.TiltakType.NYTEST,
         TiltakResponsDTO.TiltakType.INDOPPRF,
         TiltakResponsDTO.TiltakType.SUPPEMP,
+        -> TiltakstypeGirIkkeRett.left()
+
+        // Vi skal ikke gjøre utbetalinger på forsøk i vår løsning
+        // https://nav-it.slack.com/archives/C02CPSB47JL/p1723626621267979?thread_ts=1723617446.548409&cid=C02CPSB47JL
         TiltakResponsDTO.TiltakType.FORSAMOGRU,
         TiltakResponsDTO.TiltakType.FORSAMOENK,
         TiltakResponsDTO.TiltakType.FORSFAGGRU,
         TiltakResponsDTO.TiltakType.FORSFAGENK,
         TiltakResponsDTO.TiltakType.FORSHOYUTD,
-        -> TiltakstypeGirIkkeRett.left()
+        -> throw RuntimeException("Kan ikke gjøre utbetalinger på forsøk i vår løsning (tiltaktype: $this)")
     }

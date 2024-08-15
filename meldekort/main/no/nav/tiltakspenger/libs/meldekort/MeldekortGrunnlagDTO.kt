@@ -40,6 +40,7 @@ enum class StatusDTO {
 
 data class TiltakDTO(
     val periodeDTO: PeriodeDTO,
+    // TODO jah: Vurder å bruke enumen her.
     val typeKode: String,
     val antDagerIUken: Int,
 )

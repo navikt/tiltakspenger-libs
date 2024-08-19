@@ -2,7 +2,7 @@ val kotestVersion = "5.9.1"
 val mockkVersion = "1.13.12"
 
 dependencies {
-    implementation("com.google.guava:guava:33.2.1-jre")
+    implementation("com.google.guava:guava:33.3.0-jre")
 
     testImplementation(platform("org.junit:junit-bom:5.11.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")

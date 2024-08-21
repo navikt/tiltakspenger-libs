@@ -16,17 +16,10 @@ data class Personnavn(
     val etternavn: String,
 )
 
-enum class KjoennType {
-    MANN,
-    KVINNE,
-    UKJENT,
-}
-
 data class RelatertBiPerson(
     val navn: Personnavn?,
     val foedselsdato: LocalDate?,
     val statsborgerskap: String?,
-    val kjoenn: KjoennType?,
 )
 
 data class ForelderBarnRelasjon(

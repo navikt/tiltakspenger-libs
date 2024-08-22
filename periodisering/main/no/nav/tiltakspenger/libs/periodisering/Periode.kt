@@ -7,6 +7,8 @@ import com.google.common.collect.Range
 import com.google.common.collect.RangeSet
 import com.google.common.collect.TreeRangeSet
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import kotlin.math.abs
 
 /*
 En Periode med LocalDate.MIN og/eller LocalDate.MAX er ment å tilsvare en åpen periode
@@ -50,6 +52,8 @@ class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
         get() = range.fraOgMed()
     val tilOgMed: LocalDate
         get() = range.tilOgMed()
+
+    val antallDager: Long = abs(fraOgMed.until(tilOgMed, ChronoUnit.DAYS))
 
     fun kompletter(perioder: List<Periode>): List<Periode> {
         val overlappendePerioder = perioder

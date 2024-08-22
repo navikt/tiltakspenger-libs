@@ -88,9 +88,21 @@ data class VedtakId private constructor(private val ulid: UlidBase) : Ulid by ul
         private const val PREFIX = "vedtak"
         fun random() = VedtakId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
 
-        fun fromDb(stringValue: String) = VedtakId(ulid = UlidBase(stringValue))
+        fun fromString(stringValue: String) = VedtakId(ulid = UlidBase(stringValue))
 
         fun fromUUID(uuid: UUID) = VedtakId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
+    }
+}
+
+/** Brukes på tvers av tiltakspenger sine egne tjenester. */
+data class MeldekortId private constructor(private val ulid: UlidBase) : Ulid by ulid {
+    companion object {
+        private const val PREFIX = "meldekort"
+        fun random() = MeldekortId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
+
+        fun fromString(stringValue: String) = MeldekortId(ulid = UlidBase(stringValue))
+
+        fun fromString(uuid: UUID) = MeldekortId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
     }
 }
 

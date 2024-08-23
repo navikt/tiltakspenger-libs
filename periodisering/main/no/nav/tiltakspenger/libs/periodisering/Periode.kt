@@ -8,26 +8,24 @@ import com.google.common.collect.RangeSet
 import com.google.common.collect.TreeRangeSet
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import kotlin.math.abs
 
 /*
 En Periode med LocalDate.MIN og/eller LocalDate.MAX er ment å tilsvare en åpen periode
 Så bruk LocalDate.MIN/MAX i stedet for null
  */
-class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
-
+class Periode(
+    fraOgMed: LocalDate,
+    tilOgMed: LocalDate,
+) {
     class LocalDateDiscreteDomain : DiscreteDomain<LocalDate>() {
-        override fun next(value: LocalDate): LocalDate {
-            return value.plusDays(1)
-        }
+        override fun next(value: LocalDate): LocalDate = value.plusDays(1)
 
-        override fun previous(value: LocalDate): LocalDate {
-            return value.minusDays(1)
-        }
+        override fun previous(value: LocalDate): LocalDate = value.minusDays(1)
 
-        override fun distance(start: LocalDate, end: LocalDate): Long {
-            return start.until(end).days.toLong()
-        }
+        override fun distance(
+            start: LocalDate,
+            end: LocalDate,
+        ): Long = start.until(end).days.toLong()
     }
 
     init {
@@ -40,7 +38,10 @@ class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
 
     val range: Range<LocalDate> = lagRangeAvFomOgTom(fraOgMed, tilOgMed)
 
-    private fun lagRangeAvFomOgTom(fraOgMed: LocalDate, tilOgMed: LocalDate): Range<LocalDate> =
+    private fun lagRangeAvFomOgTom(
+        fraOgMed: LocalDate,
+        tilOgMed: LocalDate,
+    ): Range<LocalDate> =
         when {
             fraOgMed == LocalDate.MIN && tilOgMed == LocalDate.MAX -> Range.all<LocalDate>().canonical(domain)
             fraOgMed == LocalDate.MIN && tilOgMed != LocalDate.MAX -> Range.atMost(tilOgMed).canonical(domain)
@@ -53,12 +54,14 @@ class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
     val tilOgMed: LocalDate
         get() = range.tilOgMed()
 
-    val antallDager: Long = abs(fraOgMed.until(tilOgMed, ChronoUnit.DAYS))
+    /** Inkluderer første og siste dag. */
+    val antallDager: Long = ChronoUnit.DAYS.between(fraOgMed, tilOgMed.plusDays(1))
 
     fun kompletter(perioder: List<Periode>): List<Periode> {
-        val overlappendePerioder = perioder
-            .filter { periode -> this.overlapperMed(periode) }
-            .sortedBy { periode -> periode.fraOgMed }
+        val overlappendePerioder =
+            perioder
+                .filter { periode -> this.overlapperMed(periode) }
+                .sortedBy { periode -> periode.fraOgMed }
 
         if (overlappendePerioder.inneholderOverlapp()) {
             throw IllegalArgumentException("Periodene kan ikke inneholde overlapp")
@@ -104,9 +107,10 @@ class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
                 leggTilPeriodeMedForskjøvetFradato(periodeSomDekkerHele)
             }
         } else {
-            val perioderSomOverlapperDelvis = perioder
-                .filter { (this.overlapperMed(it) && !this.inneholderHele(it)) }
-                .sortedBy { it.fraOgMed }
+            val perioderSomOverlapperDelvis =
+                perioder
+                    .filter { (this.overlapperMed(it) && !this.inneholderHele(it)) }
+                    .sortedBy { it.fraOgMed }
 
             perioderSomOverlapperDelvis.forEach { periodeMedDelvisOverlapp ->
                 if (periodeMedDelvisOverlapp.fraOgMed.isBefore(this.fraOgMed)) {
@@ -123,17 +127,19 @@ class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
 
     fun inneholderHele(periode: Periode) = this.range.encloses(periode.range)
 
-    fun overlapperMed(periode: Periode) = try {
-        !this.range.intersection(periode.range).isEmpty
-    } catch (iae: IllegalArgumentException) {
-        false
-    }
+    fun overlapperMed(periode: Periode) =
+        try {
+            !this.range.intersection(periode.range).isEmpty
+        } catch (iae: IllegalArgumentException) {
+            false
+        }
 
-    fun overlappendePeriode(periode: Periode): Periode? = try {
-        this.range.intersection(periode.range).toPeriode()
-    } catch (e: Exception) {
-        null
-    }
+    fun overlappendePeriode(periode: Periode): Periode? =
+        try {
+            this.range.intersection(periode.range).toPeriode()
+        } catch (e: Exception) {
+            null
+        }
 
     fun overlappendePerioder(perioder: List<Periode>): List<Periode> {
         val rangeSet: RangeSet<LocalDate> = TreeRangeSet.create()
@@ -155,9 +161,7 @@ class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
         return rangeSet.asRanges().toPerioder()
     }
 
-    fun tilstøter(other: Periode): Boolean {
-        return this.range.isConnected(other.range)
-    }
+    fun tilstøter(other: Periode): Boolean = this.range.isConnected(other.range)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -168,13 +172,9 @@ class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
         return true
     }
 
-    override fun hashCode(): Int {
-        return range.hashCode()
-    }
+    override fun hashCode(): Int = range.hashCode()
 
-    override fun toString(): String {
-        return "Periode(fraOgMed=$fraOgMed tilOgMed=$tilOgMed)"
-    }
+    override fun toString(): String = "Periode(fraOgMed=$fraOgMed tilOgMed=$tilOgMed)"
 
     fun inneholder(dato: LocalDate): Boolean = range.contains(dato)
 
@@ -191,12 +191,9 @@ class Periode(fraOgMed: LocalDate, tilOgMed: LocalDate) {
         return ranges.filter { !it.canonical(domain).isEmpty }.map { it.toPeriode() }
     }
 
-    fun leggTil(annenPeriode: Periode): List<Periode> =
-        listOf(this).leggSammenMed(annenPeriode, true)
+    fun leggTil(annenPeriode: Periode): List<Periode> = listOf(this).leggSammenMed(annenPeriode, true)
 
-    fun tilDager(): List<LocalDate> {
-        return fraOgMed.datesUntil(tilOgMed.plusDays(1)).toList()
-    }
+    fun tilDager(): List<LocalDate> = fraOgMed.datesUntil(tilOgMed.plusDays(1)).toList()
 }
 
 fun List<Periode>.inneholderOverlapp(): Boolean {
@@ -211,19 +208,16 @@ fun List<Periode>.inneholderOverlapp(): Boolean {
     return false
 }
 
-fun List<Periode>.inneholderOverlappEllerTilstøter(): Boolean {
-    return this.inneholderOverlapp() || this.tilstøter()
-}
+fun List<Periode>.inneholderOverlappEllerTilstøter(): Boolean = this.inneholderOverlapp() || this.tilstøter()
 
 /**
  * @return true dersom to eller flere perioder tilstøter
  */
-fun List<Periode>.tilstøter(): Boolean {
-    return this
+fun List<Periode>.tilstøter(): Boolean =
+    this
         .sortedWith(compareBy<Periode> { it.fraOgMed }.thenBy { it.tilOgMed })
         .zipWithNext()
         .any { (a, b) -> a.tilstøter(b) }
-}
 
 fun List<Periode>.leggSammen(godtaOverlapp: Boolean = true): List<Periode> {
     if (!godtaOverlapp && this.inneholderOverlapp()) {
@@ -234,23 +228,24 @@ fun List<Periode>.leggSammen(godtaOverlapp: Boolean = true): List<Periode> {
     return rangeSet.asRanges().toPerioder()
 }
 
-fun List<Periode>.leggSammenMed(periode: Periode, godtaOverlapp: Boolean = true): List<Periode> {
-    return (this + periode).leggSammen(godtaOverlapp)
-}
+fun List<Periode>.leggSammenMed(
+    periode: Periode,
+    godtaOverlapp: Boolean = true,
+): List<Periode> = (this + periode).leggSammen(godtaOverlapp)
 
-fun List<Periode>.leggSammenMed(perioder: List<Periode>, godtaOverlapp: Boolean = true): List<Periode> {
-    return (this + perioder).leggSammen(godtaOverlapp)
-}
+fun List<Periode>.leggSammenMed(
+    perioder: List<Periode>,
+    godtaOverlapp: Boolean = true,
+): List<Periode> = (this + perioder).leggSammen(godtaOverlapp)
 
-fun List<Periode>.overlappendePerioder(other: List<Periode>): List<Periode> {
-    return this.flatMap { thisPeriode ->
-        other.map { otherPeriode ->
-            thisPeriode.overlappendePeriode(otherPeriode)
-        }
-    }
-        .filterNotNull()
+fun List<Periode>.overlappendePerioder(other: List<Periode>): List<Periode> =
+    this
+        .flatMap { thisPeriode ->
+            other.map { otherPeriode ->
+                thisPeriode.overlappendePeriode(otherPeriode)
+            }
+        }.filterNotNull()
         .leggSammen()
-}
 
 fun List<Periode>.trekkFra(perioder: List<Periode>): List<Periode> {
     val rangeSet = TreeRangeSet.create<LocalDate>()
@@ -260,7 +255,9 @@ fun List<Periode>.trekkFra(perioder: List<Periode>): List<Periode> {
 }
 
 fun Set<Range<LocalDate>>.toPerioder() = this.map { it.toPeriode() }
+
 fun Range<LocalDate>.toPeriode(): Periode = Periode(this.fraOgMed(), this.tilOgMed())
+
 fun Range<LocalDate>.fraOgMed(): LocalDate =
     if (this.hasLowerBound()) {
         if (this.lowerBoundType() == BoundType.CLOSED) this.lowerEndpoint() else this.lowerEndpoint().plusDays(1)

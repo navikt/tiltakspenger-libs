@@ -11,7 +11,7 @@ repositories {
     }
 }
 dependencies {
-    implementation("com.github.navikt.tiltakspenger-libs:person-dtos:0.0.7")
+    implementation("com.github.navikt.tiltakspenger-libs:person-dtos:$felleslibVersion")
 }
 ```
 

@@ -54,8 +54,16 @@ class Periode(
     val tilOgMed: LocalDate
         get() = range.tilOgMed()
 
-    /** Inkluderer første og siste dag. */
-    val antallDager: Long = ChronoUnit.DAYS.between(fraOgMed, tilOgMed.plusDays(1))
+    /**
+     * Inkluderer første og siste dag.
+     * @throws IllegalArgumentException hvis [tilOgMed] er LocalDate.MAX
+     */
+    val antallDager: Long by lazy {
+        if (fraOgMed == LocalDate.MIN || tilOgMed == LocalDate.MAX) {
+            throw IllegalArgumentException("Det gir ikke mening å beregne antall dager for en periode som går fra LocalDate.MIN til LocalDate.MAX")
+        }
+        ChronoUnit.DAYS.between(fraOgMed, tilOgMed) + 1
+    }
 
     fun kompletter(perioder: List<Periode>): List<Periode> {
         val overlappendePerioder =

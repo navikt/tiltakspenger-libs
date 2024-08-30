@@ -33,10 +33,10 @@ class Periode(
     }
 
     companion object {
-        val domain = LocalDateDiscreteDomain()
+        val domain by lazy { LocalDateDiscreteDomain() }
     }
 
-    val range: Range<LocalDate> = lagRangeAvFomOgTom(fraOgMed, tilOgMed)
+    val range: Range<LocalDate> by lazy { lagRangeAvFomOgTom(fraOgMed, tilOgMed) }
 
     private fun lagRangeAvFomOgTom(
         fraOgMed: LocalDate,
@@ -49,10 +49,8 @@ class Periode(
             else -> Range.closed(fraOgMed, tilOgMed).canonical(domain)
         }
 
-    val fraOgMed: LocalDate
-        get() = range.fraOgMed()
-    val tilOgMed: LocalDate
-        get() = range.tilOgMed()
+    val fraOgMed: LocalDate by lazy { range.fraOgMed() }
+    val tilOgMed: LocalDate by lazy { range.tilOgMed() }
 
     /**
      * Inkluderer første og siste dag.

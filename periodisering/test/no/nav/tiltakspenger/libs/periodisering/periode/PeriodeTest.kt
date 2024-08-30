@@ -434,4 +434,9 @@ class PeriodeTest {
             periode.mergeInnIPerioder(perioder)
         }
     }
+
+    @Test
+    fun `Støtt Periode(MIN,MAX)`() {
+        Periode(LocalDate.MIN, LocalDate.MAX)
+    }
 }

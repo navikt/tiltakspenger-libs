@@ -17,5 +17,4 @@ include(
     "test-common",
     "persistering:persistering-infrastruktur",
     "persistering:persistering-domene",
-    "meldekort",
 )

@@ -43,7 +43,7 @@ data class UlidBase(
 
     override fun ulidPart(): String = stringValue.split("_").last()
 
-    /** Kopiert fra Ulid.kt i tiltakspenger-utbetaling. Brukes for å generere ID som sendes til hel ved og OS/UR. De har en begrensning på 30 tegn. */
+    /** Brukes for å generere ID som sendes til hel ved og OS/UR. De har en begrensning på 30 tegn. */
     override fun uuidPart() = this.ulidPart().substring(11, 26)
 
     override fun toString() = stringValue

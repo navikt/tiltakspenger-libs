@@ -62,7 +62,10 @@ data class SakId private constructor(
 
         fun random() = SakId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
 
-        fun fromString(stringValue: String) = SakId(ulid = UlidBase(stringValue))
+        fun fromString(stringValue: String): SakId {
+            require(stringValue.startsWith(PREFIX)) { "Prefix må starte med $PREFIX. Dette er nok ikke en SakId ($stringValue)" }
+            return SakId(ulid = UlidBase(stringValue))
+        }
 
         fun fromUUID(uuid: UUID) = SakId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
     }
@@ -77,7 +80,10 @@ data class BehandlingId private constructor(
 
         fun random() = BehandlingId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
 
-        fun fromString(stringValue: String) = BehandlingId(ulid = UlidBase(stringValue))
+        fun fromString(stringValue: String): BehandlingId {
+            require(stringValue.startsWith(PREFIX)) { "Prefix må starte med $PREFIX. Dette er nok ikke en BehandlingId ($stringValue)" }
+            return BehandlingId(ulid = UlidBase(stringValue))
+        }
 
         fun fromUUID(uuid: UUID) = BehandlingId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
     }
@@ -92,7 +98,10 @@ data class SøknadId private constructor(
 
         fun random() = SøknadId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
 
-        fun fromString(stringValue: String) = SøknadId(ulid = UlidBase(stringValue))
+        fun fromString(stringValue: String): SøknadId {
+            require(stringValue.startsWith(PREFIX)) { "Prefix må starte med $PREFIX. Dette er nok ikke en SøknadId ($stringValue)" }
+            return SøknadId(ulid = UlidBase(stringValue))
+        }
 
         fun fromUUID(uuid: UUID) = SøknadId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
     }
@@ -107,7 +116,10 @@ data class VedtakId private constructor(
 
         fun random() = VedtakId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
 
-        fun fromString(stringValue: String) = VedtakId(ulid = UlidBase(stringValue))
+        fun fromString(stringValue: String): VedtakId {
+            require(stringValue.startsWith(PREFIX)) { "Prefix må starte med $PREFIX. Dette er nok ikke en VedtakId ($stringValue)" }
+            return VedtakId(ulid = UlidBase(stringValue))
+        }
 
         fun fromUUID(uuid: UUID) = VedtakId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
     }
@@ -119,7 +131,10 @@ data class MeldekortId private constructor(private val ulid: UlidBase) : Ulid by
         private const val PREFIX = "meldekort"
         fun random() = MeldekortId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
 
-        fun fromString(stringValue: String) = MeldekortId(ulid = UlidBase(stringValue))
+        fun fromString(stringValue: String): MeldekortId {
+            require(stringValue.startsWith(PREFIX)) { "Prefix må starte med $PREFIX. Dette er nok ikke en MeldekortId ($stringValue)" }
+            return MeldekortId(ulid = UlidBase(stringValue))
+        }
 
         fun fromString(uuid: UUID) = MeldekortId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
     }

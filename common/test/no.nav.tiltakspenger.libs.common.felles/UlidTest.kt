@@ -26,30 +26,30 @@ internal class UlidTest {
     }
 
     @Test
-    fun `test fromDb negativ test`() {
-        val utenGyldigSkilletegn = "HH"
+    fun `test fromString negativ test`() {
+        val utenGyldigSkilletegn = "beh"
         shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($utenGyldigSkilletegn), skal bestå av to deler skilt med _") {
             BehandlingId.fromString(utenGyldigSkilletegn)
         }
 
-        val utenPrefiks = "_HH"
-        shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($utenPrefiks), prefiks er tom") {
-            BehandlingId.fromString(utenPrefiks)
-        }
-
-        val utenUlid = "HH_"
+        val utenUlid = "beh_"
         shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($utenUlid), ulid er ugyldig") {
             BehandlingId.fromString(utenUlid)
         }
 
-        val ugyldigTegniUlid = "HH_1234567890123456789U123456"
+        val ugyldigTegniUlid = "beh_1234567890123456789U123456"
         shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($ugyldigTegniUlid), ulid er ugyldig") {
             BehandlingId.fromString(ugyldigTegniUlid)
         }
 
-        val ugyldigUlid = "HH_UU_JJ"
+        val ugyldigUlid = "beh_UU_JJ"
         shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($ugyldigUlid), skal bestå av prefiks + ulid") {
             BehandlingId.fromString(ugyldigUlid)
+        }
+
+        val feilPrefix = "baloo_"
+        shouldThrowWithMessage<IllegalArgumentException>("Prefix må starte med beh. Dette er nok ikke en BehandlingId ($feilPrefix)") {
+            BehandlingId.fromString(feilPrefix)
         }
     }
 

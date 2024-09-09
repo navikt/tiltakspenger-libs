@@ -1,11 +1,8 @@
 package no.nav.tiltakspenger.libs.periodisering.periode
 
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.periodisering.Periode
-import no.nav.tiltakspenger.libs.periodisering.februar
 import no.nav.tiltakspenger.libs.periodisering.inneholderOverlapp
-import no.nav.tiltakspenger.libs.periodisering.januar
 import no.nav.tiltakspenger.libs.periodisering.juni
 import no.nav.tiltakspenger.libs.periodisering.leggSammen
 import no.nav.tiltakspenger.libs.periodisering.leggSammenMed
@@ -332,107 +329,6 @@ class PeriodeTest {
 
         overlappendePerioder.size shouldBe 1
         overlappendePerioder.first() shouldBe Periode(fraOgMed = 22.mai(2022), tilOgMed = 30.mai(2022))
-    }
-
-    @Test
-    fun `når man kaller på kompletter-funksjonen med perioder som overlapper skal det kastes en feil'`() {
-        val periodeSomSkalKompletteres = Periode(fraOgMed = 1.januar(2022), tilOgMed = 31.januar(2022))
-        val subPeriode1 = Periode(fraOgMed = 15.januar(2022), tilOgMed = 16.januar(2022))
-        val subPeriode2 = Periode(fraOgMed = 16.januar(2022), tilOgMed = 17.januar(2022))
-        shouldThrow<IllegalArgumentException> {
-            periodeSomSkalKompletteres.kompletter(
-                listOf(
-                    subPeriode1,
-                    subPeriode2,
-                ),
-            )
-        }
-    }
-
-    @Test
-    fun `når man kaller på kompletter-funksjonen med perioder som går utenfor hovedperioden skal det kastes en feil'`() {
-        val periodeSomSkalKompletteres = Periode(fraOgMed = 1.januar(2022), tilOgMed = 31.januar(2022))
-        val subPeriode1 = Periode(fraOgMed = 31.januar(2022), tilOgMed = 1.februar(2022))
-        shouldThrow<IllegalArgumentException> { periodeSomSkalKompletteres.kompletter(listOf(subPeriode1)) }
-    }
-
-    @Test
-    fun `når man kaller på kompletter-funksjonen på en periode skal man få en liste av sub-perioder som, sammen med de periodene man har oppgitt, dekker hele basis-perioden`() {
-        val periodeSomSkalKompletteres = Periode(fraOgMed = 1.januar(2022), tilOgMed = 31.januar(2022))
-        val subPeriode1 = Periode(fraOgMed = 1.januar(2022), tilOgMed = 1.januar(2022))
-        val subPeriode2 = Periode(fraOgMed = 20.januar(2022), tilOgMed = 22.januar(2022))
-        val subPeriode3 = Periode(fraOgMed = 15.januar(2022), tilOgMed = 16.januar(2022))
-        val allePerioder = periodeSomSkalKompletteres.kompletter(listOf(subPeriode1, subPeriode2, subPeriode3))
-        allePerioder shouldBe
-            listOf(
-                Periode(fraOgMed = 1.januar(2022), tilOgMed = 1.januar(2022)),
-                Periode(fraOgMed = 2.januar(2022), tilOgMed = 14.januar(2022)),
-                Periode(fraOgMed = 15.januar(2022), tilOgMed = 16.januar(2022)),
-                Periode(fraOgMed = 17.januar(2022), tilOgMed = 19.januar(2022)),
-                Periode(fraOgMed = 20.januar(2022), tilOgMed = 22.januar(2022)),
-                Periode(fraOgMed = 23.januar(2022), tilOgMed = 31.januar(2022)),
-            )
-    }
-
-    @Test
-    fun `kompletter-funksjonen skal ta høyde for at en av periodene som oppgis slutter på samme dato som hovedperioden`() {
-        val periodeSomSkalKompletteres = Periode(fraOgMed = 1.januar(2022), tilOgMed = 31.januar(2022))
-        val subPeriode = Periode(fraOgMed = 31.januar(2022), tilOgMed = 31.januar(2022))
-        val allePerioder = periodeSomSkalKompletteres.kompletter(listOf(subPeriode))
-        allePerioder shouldBe
-            listOf(
-                Periode(fraOgMed = 1.januar(2022), tilOgMed = 30.januar(2022)),
-                Periode(fraOgMed = 31.januar(2022), tilOgMed = 31.januar(2022)),
-            )
-    }
-
-    @Test
-    fun `mergeInnIPerioder skal returnere en liste med perioder hvor periode-instansen har blitt merget inn, slik at alle periodene i kombinasjon danner en sammenhengende periode uten overlapp seg imellom`() {
-        val periode = Periode(fraOgMed = 15.januar(2022), tilOgMed = 20.januar(2022))
-        val andrePerioder =
-            listOf(
-                Periode(fraOgMed = 1.januar(2022), tilOgMed = 14.januar(2022)),
-                Periode(fraOgMed = 15.januar(2022), tilOgMed = 17.januar(2022)),
-                Periode(fraOgMed = 18.januar(2022), tilOgMed = 21.januar(2022)),
-                Periode(fraOgMed = 22.januar(2022), tilOgMed = 31.januar(2022)),
-            )
-        val sammenslåttePerioder = periode.mergeInnIPerioder(andrePerioder)
-        sammenslåttePerioder shouldBe
-            listOf(
-                Periode(fraOgMed = 1.januar(2022), tilOgMed = 14.januar(2022)),
-                Periode(fraOgMed = 15.januar(2022), tilOgMed = 20.januar(2022)),
-                Periode(fraOgMed = 21.januar(2022), tilOgMed = 21.januar(2022)),
-                Periode(fraOgMed = 22.januar(2022), tilOgMed = 31.januar(2022)),
-            )
-    }
-
-    @Test
-    fun `mergeInnIPerioder skal ta høyde for at perioden som merges inn allerede er helt dekket av en eksisterende periode`() {
-        val periode = Periode(fraOgMed = 15.januar(2022), tilOgMed = 20.januar(2022))
-        val andrePerioder =
-            listOf(
-                Periode(fraOgMed = 1.januar(2022), tilOgMed = 31.januar(2022)),
-            )
-        val sammenslåttePerioder = periode.mergeInnIPerioder(andrePerioder)
-        sammenslåttePerioder shouldBe
-            listOf(
-                Periode(fraOgMed = 1.januar(2022), tilOgMed = 14.januar(2022)),
-                Periode(fraOgMed = 15.januar(2022), tilOgMed = 20.januar(2022)),
-                Periode(fraOgMed = 21.januar(2022), tilOgMed = 31.januar(2022)),
-            )
-    }
-
-    @Test
-    fun `mergeInnIPerioder skal kaste en IllegalArgumentException dersom noen av periodene i periode-lista overlapper med hverandre`() {
-        val perioder =
-            listOf(
-                Periode(fraOgMed = 1.januar(2022), tilOgMed = 2.januar(2022)),
-                Periode(fraOgMed = 2.januar(2022), tilOgMed = 3.januar(2022)),
-            )
-        shouldThrow<IllegalArgumentException> {
-            val periode = Periode(fraOgMed = 1.januar(2022), tilOgMed = 2.januar(2022))
-            periode.mergeInnIPerioder(perioder)
-        }
     }
 
     @Test

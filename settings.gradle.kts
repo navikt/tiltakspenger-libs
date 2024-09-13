@@ -9,6 +9,7 @@ include(
     "ufore-dtos",
     "overgangsstonad-dtos",
     "tiltak-dtos",
+    "soknad-dtos",
     "periodisering",
     "personklient:personklient-infrastruktur",
     "personklient:personklient-domene",

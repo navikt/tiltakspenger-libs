@@ -6,12 +6,12 @@ import java.time.LocalDateTime
 data class SøknadDTO(
     val versjon: String,
     val søknadId: String,
-    val dokInfo: DokumentInfoDTO,
+    val journalpostId: String,
     val personopplysninger: PersonopplysningerDTO,
     val tiltak: SøknadsTiltakDTO,
     val barnetilleggPdl: List<BarnetilleggDTO>,
     val barnetilleggManuelle: List<BarnetilleggDTO>,
-    val vedlegg: List<DokumentInfoDTO>,
+    val vedlegg: Int,
     val kvp: PeriodeSpmDTO,
     val intro: PeriodeSpmDTO,
     val institusjon: PeriodeSpmDTO,
@@ -24,12 +24,6 @@ data class SøknadDTO(
     val jobbsjansen: PeriodeSpmDTO,
     val trygdOgPensjon: PeriodeSpmDTO,
     val opprettet: LocalDateTime,
-)
-
-data class DokumentInfoDTO(
-    val journalpostId: String,
-    val dokumentInfoId: String,
-    val filnavn: String,
 )
 
 data class PersonopplysningerDTO(

@@ -17,7 +17,7 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":personklient:personklient-domene"))
 
-    testImplementation(platform("org.junit:junit-bom:5.11.0"))
+    testImplementation(platform("org.junit:junit-bom:5.11.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
     testImplementation("io.mockk:mockk:$mockkVersion")

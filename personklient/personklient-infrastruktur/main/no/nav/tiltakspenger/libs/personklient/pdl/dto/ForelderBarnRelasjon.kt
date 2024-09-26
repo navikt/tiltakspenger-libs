@@ -17,17 +17,17 @@ data class Personnavn(
 )
 
 data class RelatertBiPerson(
-    val navn: Personnavn?,
-    val foedselsdato: LocalDate?,
-    val statsborgerskap: String?,
+    val navn: Personnavn? = null,
+    val foedselsdato: LocalDate? = null,
+    val statsborgerskap: String? = null,
 )
 
 data class ForelderBarnRelasjon(
-    val relatertPersonsIdent: String?,
+    val relatertPersonsIdent: String? = null,
     val relatertPersonsRolle: ForelderBarnRelasjonRolle,
-    val minRolleForPerson: ForelderBarnRelasjonRolle?,
-    val relatertPersonUtenFolkeregisteridentifikator: RelatertBiPerson?,
-    override val folkeregistermetadata: FolkeregisterMetadata?,
+    val minRolleForPerson: ForelderBarnRelasjonRolle? = null,
+    val relatertPersonUtenFolkeregisteridentifikator: RelatertBiPerson? = null,
+    override val folkeregistermetadata: FolkeregisterMetadata? = null,
     override val metadata: EndringsMetadata,
 ) : Changeable
 

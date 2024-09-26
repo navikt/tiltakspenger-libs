@@ -10,7 +10,7 @@ data class Navn(
     val etternavn: String,
     val mellomnavn: String? = null,
     override val metadata: EndringsMetadata,
-    override val folkeregistermetadata: FolkeregisterMetadata?,
+    override val folkeregistermetadata: FolkeregisterMetadata? = null,
 ) : Changeable
 
 fun avklarNavn(navn: List<Navn>): Either<FellesPersonklientError, Navn> {

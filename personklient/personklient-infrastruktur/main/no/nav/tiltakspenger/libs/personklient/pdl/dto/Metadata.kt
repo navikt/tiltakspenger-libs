@@ -15,6 +15,6 @@ fun List<Endring>.nyeste(): Endring? = this
     .maxByOrNull { it.registrert!! }
 
 data class EndringsMetadata(
-    val endringer: List<Endring>,
+    val endringer: List<Endring> = emptyList(),
     val master: String,
 )

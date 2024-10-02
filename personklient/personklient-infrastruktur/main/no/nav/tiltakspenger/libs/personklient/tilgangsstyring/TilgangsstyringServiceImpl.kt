@@ -57,6 +57,12 @@ class TilgangsstyringServiceImpl(
         }
     }
 
+    override suspend fun adressebeskyttelseEnkel(fnr: Fnr): Either<KunneIkkeGjøreTilgangskontroll, List<AdressebeskyttelseGradering>?> {
+        val adressebeskyttelse = fellesPersonTilgangsstyringsklient.enkel(fnr)
+            .getOrElse { return KunneIkkeGjøreTilgangskontroll.Adressebeskyttelse(it).left() } ?: return KunneIkkeGjøreTilgangskontroll.UkjentIdent.left()
+        return adressebeskyttelse.right()
+    }
+
     companion object {
         /**
          * Kun ment og kalle denne med systembrukere

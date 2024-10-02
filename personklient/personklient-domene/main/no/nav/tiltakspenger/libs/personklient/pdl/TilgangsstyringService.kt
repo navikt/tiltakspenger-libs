@@ -4,6 +4,7 @@ import arrow.core.Either
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.common.Roller
+import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering
 
 interface TilgangsstyringService {
     suspend fun harTilgangTilPerson(
@@ -11,4 +12,6 @@ interface TilgangsstyringService {
         roller: Roller,
         correlationId: CorrelationId,
     ): Either<KunneIkkeGjøreTilgangskontroll, Boolean>
+
+    suspend fun adressebeskyttelseEnkel(fnr: Fnr): Either<KunneIkkeGjøreTilgangskontroll, List<AdressebeskyttelseGradering>?>
 }

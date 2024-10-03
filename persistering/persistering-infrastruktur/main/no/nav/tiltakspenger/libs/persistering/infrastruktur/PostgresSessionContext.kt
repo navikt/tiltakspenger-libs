@@ -58,6 +58,7 @@ open class PostgresSessionContext(
                     sessionOf(
                         dataSource = dataSource,
                         returnGeneratedKey = true,
+                        strict = true,
                     ).also { session = it },
                 ) {
                     if (disableSessionCounter) {

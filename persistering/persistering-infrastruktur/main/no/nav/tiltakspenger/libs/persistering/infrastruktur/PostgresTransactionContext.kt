@@ -56,6 +56,7 @@ class PostgresTransactionContext(
                     sessionOf(
                         dataSource = dataSource,
                         returnGeneratedKey = true,
+                        strict = true,
                     ),
                 ) { session ->
                     session.transaction { transactionalSession ->

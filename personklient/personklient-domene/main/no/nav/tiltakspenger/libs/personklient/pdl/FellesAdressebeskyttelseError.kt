@@ -1,8 +1,10 @@
 package no.nav.tiltakspenger.libs.personklient.pdl
 
 sealed interface FellesAdressebeskyttelseError {
-    data class NetworkError(val exception: Throwable) : FellesAdressebeskyttelseError
-    data class DeserializationException(val exception: Throwable) : FellesAdressebeskyttelseError
+    val exception: Throwable?
+
+    data class NetworkError(override val exception: Throwable) : FellesAdressebeskyttelseError
+    data class DeserializationException(override val exception: Throwable) : FellesAdressebeskyttelseError
 
     /**
      * @param body Bør nok ikke logges til vanlig logg, siden den kan inneholde fødselsnummer og gradering.
@@ -10,5 +12,7 @@ sealed interface FellesAdressebeskyttelseError {
     data class Ikke2xx(
         val status: Int,
         val body: String?,
-    ) : FellesAdressebeskyttelseError
+    ) : FellesAdressebeskyttelseError {
+        override val exception = null
+    }
 }

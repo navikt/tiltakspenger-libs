@@ -23,10 +23,10 @@ import kotlin.time.toJavaDuration
 
 /**
  * @param endepunkt Hele URLen til PDL-tjenesten. F.eks https://pdl-api.prod-fss-pub.nais.io/graphql
+ * @param tema Tema for henvendelsen. F.eks "IND" for individstønad (det gamle navnet på tiltakspenger)
  */
 internal class FellesHttpPersonklient(
     private val endepunkt: String,
-    // Individstønad (det gamle navnet på tiltakspenger)
     private val tema: String = "IND",
     connectTimeout: Duration = 1.seconds,
     private val timeout: Duration = 1.seconds,

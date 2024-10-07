@@ -8,9 +8,6 @@ import kotlin.time.Duration.Companion.seconds
 
 interface FellesPersonklient {
 
-    /**
-     * TODO jah: Mulig å splitte denne i en med/uten barn.
-     */
     suspend fun hentPerson(
         fnr: Fnr,
         token: AccessToken,

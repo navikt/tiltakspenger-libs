@@ -7,6 +7,7 @@ import arrow.core.right
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import mu.KLogger
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr
@@ -76,6 +77,7 @@ class TilgangsstyringServiceImpl(
             getSkjermingToken: suspend () -> AccessToken,
             connectTimeout: Duration = 1.seconds,
             timeout: Duration = 1.seconds,
+            sikkerlogg: KLogger?,
         ): TilgangsstyringService {
             return TilgangsstyringServiceImpl(
                 fellesPersonTilgangsstyringsklient = FellesAdressebeskyttelseKlient.create(
@@ -83,12 +85,14 @@ class TilgangsstyringServiceImpl(
                     getToken = getPdlPipToken,
                     connectTimeout = connectTimeout,
                     timeout = timeout,
+                    sikkerlogg = sikkerlogg,
                 ),
                 skjermingClient = FellesSkjermingsklient.create(
                     endepunkt = skjermingBaseUrl,
                     getToken = getSkjermingToken,
                     connectTimeout = connectTimeout,
                     timeout = timeout,
+                    sikkerlogg = sikkerlogg,
                 ),
             )
         }

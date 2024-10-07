@@ -57,7 +57,9 @@ class TilgangsstyringServiceImpl(
         }
     }
 
-    override suspend fun adressebeskyttelseEnkel(fnr: Fnr): Either<KunneIkkeGjøreTilgangskontroll, List<AdressebeskyttelseGradering>?> {
+    override suspend fun adressebeskyttelseEnkel(
+        fnr: Fnr,
+    ): Either<KunneIkkeGjøreTilgangskontroll, List<AdressebeskyttelseGradering>?> {
         val adressebeskyttelse = fellesPersonTilgangsstyringsklient.enkel(fnr)
             .getOrElse { return KunneIkkeGjøreTilgangskontroll.Adressebeskyttelse(it).left() } ?: return KunneIkkeGjøreTilgangskontroll.UkjentIdent.left()
         return adressebeskyttelse.right()
@@ -69,7 +71,7 @@ class TilgangsstyringServiceImpl(
          */
         fun create(
             skjermingBaseUrl: String,
-            pdlPipUrl: String,
+            pdlPipBaseUrl: String,
             getPdlPipToken: suspend () -> AccessToken,
             getSkjermingToken: suspend () -> AccessToken,
             connectTimeout: Duration = 1.seconds,
@@ -77,7 +79,7 @@ class TilgangsstyringServiceImpl(
         ): TilgangsstyringService {
             return TilgangsstyringServiceImpl(
                 fellesPersonTilgangsstyringsklient = FellesAdressebeskyttelseKlient.create(
-                    endepunkt = pdlPipUrl,
+                    baseUrl = pdlPipBaseUrl,
                     getToken = getPdlPipToken,
                     connectTimeout = connectTimeout,
                     timeout = timeout,

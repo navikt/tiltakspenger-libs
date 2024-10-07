@@ -7,11 +7,17 @@ import no.nav.tiltakspenger.libs.common.Roller
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering
 
 interface TilgangsstyringService {
+    /**
+     * Sjekker kode 6, 7 og egen ansatt (skjermet).
+     */
     suspend fun harTilgangTilPerson(
         fnr: Fnr,
         roller: Roller,
         correlationId: CorrelationId,
     ): Either<KunneIkkeGjøreTilgangskontroll, Boolean>
 
-    suspend fun adressebeskyttelseEnkel(fnr: Fnr): Either<KunneIkkeGjøreTilgangskontroll, List<AdressebeskyttelseGradering>?>
+    /** Sjekker kun kode 6 og 7. */
+    suspend fun adressebeskyttelseEnkel(
+        fnr: Fnr,
+    ): Either<KunneIkkeGjøreTilgangskontroll, List<AdressebeskyttelseGradering>?>
 }

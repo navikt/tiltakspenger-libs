@@ -30,7 +30,7 @@ import kotlin.time.toJavaDuration
  * https://pdl-pip-api.dev.intern.nav.no/swagger-ui/index.html#/
  */
 internal class FellesHttpAdressebeskyttelseKlient(
-    endepunkt: String,
+    baseUrl: String,
     private val getToken: suspend () -> AccessToken,
     connectTimeout: Duration = 1.seconds,
     private val timeout: Duration = 1.seconds,
@@ -49,7 +49,7 @@ internal class FellesHttpAdressebeskyttelseKlient(
         .enable(DeserializationFeature.FAIL_ON_NUMBERS_FOR_ENUMS)
         .build()
 
-    private val uri = URI.create(endepunkt)
+    private val personBolkUri = URI.create("$baseUrl/api/v1/personBolk")
 
     override suspend fun enkel(
         fnr: Fnr,
@@ -91,7 +91,7 @@ internal class FellesHttpAdressebeskyttelseKlient(
         token: AccessToken,
         fnrListe: List<Fnr>,
     ): HttpRequest? = HttpRequest.newBuilder()
-        .uri(uri)
+        .uri(personBolkUri)
         .timeout(timeout.toJavaDuration())
         .header("Authorization", "Bearer ${token.value}")
         .header("Accept", "application/json")

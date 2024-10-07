@@ -26,12 +26,12 @@ interface FellesAdressebeskyttelseKlient {
 
     companion object {
         fun create(
-            endepunkt: String,
+            baseUrl: String,
             getToken: suspend () -> AccessToken,
             connectTimeout: Duration = 1.seconds,
             timeout: Duration = 1.seconds,
         ): FellesAdressebeskyttelseKlient = FellesHttpAdressebeskyttelseKlient(
-            endepunkt = endepunkt,
+            baseUrl = baseUrl,
             getToken = getToken,
             connectTimeout = connectTimeout,
             timeout = timeout,

@@ -52,7 +52,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
 
             val pdlClient =
                 FellesHttpAdressebeskyttelseKlient(
-                    endepunkt = wiremock.baseUrl(),
+                    baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
                 )
@@ -84,7 +84,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
 
             val pdlClient =
                 FellesHttpAdressebeskyttelseKlient(
-                    endepunkt = wiremock.baseUrl(),
+                    baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
                 )
@@ -109,7 +109,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
 
             val pdlClient =
                 FellesHttpAdressebeskyttelseKlient(
-                    endepunkt = wiremock.baseUrl(),
+                    baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
                 )
@@ -130,7 +130,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
 
             val pdlClient =
                 FellesHttpAdressebeskyttelseKlient(
-                    endepunkt = wiremock.baseUrl(),
+                    baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
                 )
@@ -147,14 +147,14 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
     fun `not 200`() {
         withWireMockServer { wiremock ->
             wiremock.post {
-                url equalTo "/"
+                url equalTo "/api/v1/personBolk"
             } returns {
                 statusCode = 500
             }
 
             val pdlClient =
                 FellesHttpAdressebeskyttelseKlient(
-                    endepunkt = wiremock.baseUrl(),
+                    baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
                 )
@@ -173,7 +173,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
     fun `deserialisering feiler`() {
         withWireMockServer { wiremock ->
             wiremock.post {
-                url equalTo "/"
+                url equalTo "/api/v1/personBolk"
             } returns {
                 statusCode = 200
                 body = "not json"
@@ -181,7 +181,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
 
             val pdlClient =
                 FellesHttpAdressebeskyttelseKlient(
-                    endepunkt = wiremock.baseUrl(),
+                    baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
                 )
@@ -198,7 +198,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
     fun `cancellation exception`() {
         withWireMockServer { wiremock ->
             wiremock.post {
-                url equalTo "/"
+                url equalTo "/api/v1/personBolk"
             } returns {
                 delay fixedMs 200
                 statusCode = 200
@@ -209,7 +209,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
 
             val pdlClient =
                 FellesHttpAdressebeskyttelseKlient(
-                    endepunkt = wiremock.baseUrl(),
+                    baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
                 )
@@ -244,7 +244,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
 
             val pdlClient =
                 FellesHttpAdressebeskyttelseKlient(
-                    endepunkt = wiremock.baseUrl(),
+                    baseUrl = wiremock.baseUrl(),
                     connectTimeout = 1.milliseconds,
                     getToken = getToken,
                 )
@@ -262,7 +262,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
 
 private fun WireMockServer.post(jsonBody: String) {
     this.post {
-        url equalTo "/"
+        url equalTo "/api/v1/personBolk"
     } returns {
         statusCode = 200
         header = "Content-Type" to "application/json"

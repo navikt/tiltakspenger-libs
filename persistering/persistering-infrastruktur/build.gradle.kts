@@ -10,7 +10,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("com.github.seratch:kotliquery:1.9.0")
 
-    testImplementation(platform("org.junit:junit-bom:5.11.1"))
+    testImplementation(platform("org.junit:junit-bom:5.11.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
     testImplementation("io.mockk:mockk:$mockkVersion")

@@ -64,13 +64,13 @@ class FellesHttpSkjermingsklient(
         }
     }
 
-    private fun createRequest(
+    private suspend fun createRequest(
         fnr: Fnr,
         correlationId: CorrelationId,
     ): HttpRequest? = HttpRequest.newBuilder()
         .uri(uri)
         .timeout(timeout.toJavaDuration())
-        .header("Authorization", "Bearer $getToken()")
+        .header("Authorization", "Bearer ${getToken()}")
         .header("Accept", "application/json")
         .header("Content-Type", "application/json")
         .header(NAV_CALL_ID_HEADER, correlationId.value)

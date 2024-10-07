@@ -68,17 +68,17 @@ internal class FellesHttpAdressebeskyttelseKlient(
 
                 val httpResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()
                 val body = httpResponse.body()
+                val status = httpResponse.statusCode()
                 if (httpResponse.isSuccess()) {
                     Either.catch {
-                        objectMapper.readValue<Map<String, PipPersondataResponse?>>(body)
-                    }.mapLeft {
-                        FellesAdressebeskyttelseError.DeserializationException(it)
-                    }.map {
-                        it.mapValues { (_, value) -> value?.toPersonDtoGradering() }
+                        val response = objectMapper.readValue<Map<String, PipPersondataResponse?>>(body)
+                        response.mapValues { (_, value) -> value?.toPersonDtoGradering() }
                             .mapKeys { (key, _) -> Fnr.fromString(key) }
+                    }.mapLeft {
+                        FellesAdressebeskyttelseError.DeserializationException(body, status, it)
                     }
                 } else {
-                    FellesAdressebeskyttelseError.Ikke2xx(status = httpResponse.statusCode(), body = body).left()
+                    FellesAdressebeskyttelseError.Ikke2xx(status = status, body = body).left()
                 }
             }.mapLeft {
                 // Either.catch slipper igjennom CancellationException som er ønskelig.

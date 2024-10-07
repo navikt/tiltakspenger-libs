@@ -47,14 +47,15 @@ class FellesHttpSkjermingsklient(
 
                 val httpResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()
                 val body = httpResponse.body()
+                val status = httpResponse.statusCode()
                 if (httpResponse.isSuccess()) {
                     Either.catch {
                         body.lowercase().toBooleanStrict()
                     }.mapLeft {
-                        FellesSkjermingError.DeserializationException(it)
+                        FellesSkjermingError.DeserializationException(it, body, status)
                     }
                 } else {
-                    FellesSkjermingError.Ikke2xx(status = httpResponse.statusCode(), body = body).left()
+                    FellesSkjermingError.Ikke2xx(status = status, body = body).left()
                 }
             }.mapLeft {
                 // Either.catch slipper igjennom CancellationException som er ønskelig.

@@ -67,13 +67,16 @@ class FellesHttpSkjermingsklient(
     private suspend fun createRequest(
         fnr: Fnr,
         correlationId: CorrelationId,
-    ): HttpRequest? = HttpRequest.newBuilder()
-        .uri(uri)
-        .timeout(timeout.toJavaDuration())
-        .header("Authorization", "Bearer ${getToken()}")
-        .header("Accept", "application/json")
-        .header("Content-Type", "application/json")
-        .header(NAV_CALL_ID_HEADER, correlationId.value)
-        .POST(HttpRequest.BodyPublishers.ofString("{\"personident\":\"${fnr.verdi}\"}"))
-        .build()
+    ): HttpRequest? {
+        val token: String = getToken().value
+        return HttpRequest.newBuilder()
+            .uri(uri)
+            .timeout(timeout.toJavaDuration())
+            .header("Authorization", "Bearer $token")
+            .header("Accept", "application/json")
+            .header("Content-Type", "application/json")
+            .header(NAV_CALL_ID_HEADER, correlationId.value)
+            .POST(HttpRequest.BodyPublishers.ofString("{\"personident\":\"${fnr.verdi}\"}"))
+            .build()
+    }
 }

@@ -105,7 +105,7 @@ internal class FellesHttpAdressebeskyttelseKlient(
                 separator = ",",
                 prefix = "[",
                 postfix = "]",
-                transform = { "\"$it\"" },
+                transform = { "\"${it.verdi}\"" },
             ),
         )
 }

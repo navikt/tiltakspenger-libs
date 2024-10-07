@@ -36,9 +36,10 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
         withWireMockServer { wiremock ->
             val ident = Fnr.fromString("12345678901")
             wiremock.post(
+                "[\"12345678901\"]",
                 """
                 {
-                    "${ident.verdi}": {
+                    "12345678901": {
                         "person": {
                             "adressebeskyttelse": [
                                 {"gradering": "STRENGT_FORTROLIG"},
@@ -74,10 +75,11 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
             val ident1 = Fnr.fromString("12345678901")
             val ident2 = Fnr.fromString("10987654321")
             wiremock.post(
+                "[\"12345678901\",\"10987654321\"]",
                 """
                 {
-                    "${ident1.verdi}": {"person": {"adressebeskyttelse": [ {"gradering": "STRENGT_FORTROLIG" } ]}},
-                    "${ident2.verdi}": {"person": {"adressebeskyttelse": [ {"gradering": "UGRADERT" } ]}}
+                    "12345678901": {"person": {"adressebeskyttelse": [ {"gradering": "STRENGT_FORTROLIG" } ]}},
+                    "10987654321": {"person": {"adressebeskyttelse": [ {"gradering": "UGRADERT" } ]}}
                 }
                 """.trimIndent(),
             )
@@ -104,7 +106,8 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
         val ident = Fnr.fromString("12312312312")
         withWireMockServer { wiremock ->
             wiremock.post(
-                """{"${ident.verdi}": null}""",
+                "[\"12312312312\"]",
+                """{"12312312312": null}""",
             )
 
             val pdlClient =
@@ -125,7 +128,8 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
         val ident = Fnr.fromString("12312312312")
         withWireMockServer { wiremock ->
             wiremock.post(
-                """{"${ident.verdi}": {"person": {"adressebeskyttelse": []}}}""",
+                "[\"12312312312\"]",
+                """{"12312312312": {"person": {"adressebeskyttelse": []}}}""",
             )
 
             val pdlClient =
@@ -260,13 +264,17 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
     }
 }
 
-private fun WireMockServer.post(jsonBody: String) {
+private fun WireMockServer.post(
+    assertRequestBody: String,
+    responseBody: String,
+) {
     this.post {
         url equalTo "/api/v1/personBolk"
+        body equalTo assertRequestBody
     } returns {
         statusCode = 200
         header = "Content-Type" to "application/json"
         // language=JSON
-        body = jsonBody
+        body = responseBody
     }
 }

@@ -9,6 +9,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeTypeOf
 import kotlinx.coroutines.test.runTest
+import mu.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.common.random
@@ -33,7 +34,7 @@ internal class FellesHttpPersonklientTest {
                 body = pdlResponse
             }
 
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds, sikkerlogg = KotlinLogging.logger {})
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "{}").shouldBeRight()
             }
@@ -50,7 +51,7 @@ internal class FellesHttpPersonklientTest {
                 header = "Content-Type" to "application/json"
                 body = pdlErrorResponse
             }
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds, sikkerlogg = KotlinLogging.logger {})
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body").swap().getOrNull()!! shouldBe UkjentFeil(
                     errors = listOf(
@@ -78,7 +79,7 @@ internal class FellesHttpPersonklientTest {
                 body = response
             }
 
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds, sikkerlogg = KotlinLogging.logger {})
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body").shouldBeLeft(FellesPersonklientError.ResponsManglerData)
             }
@@ -97,7 +98,7 @@ internal class FellesHttpPersonklientTest {
                 body = response
             }
 
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds, sikkerlogg = KotlinLogging.logger {})
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body").swap().getOrNull()!!.also {
                     it.shouldBeTypeOf<DeserializationException>()
@@ -118,7 +119,7 @@ internal class FellesHttpPersonklientTest {
                 header = "Content-Type" to "application/json"
                 body = pdlResponseManglerFolkeregisterdata
             }
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds)
+            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds, sikkerlogg = KotlinLogging.logger {})
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body").shouldBeRight()
             }

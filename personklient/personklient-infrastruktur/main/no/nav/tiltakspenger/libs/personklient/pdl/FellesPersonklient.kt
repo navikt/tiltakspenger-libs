@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.personklient.pdl
 
 import arrow.core.Either
+import mu.KLogger
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
 import kotlin.time.Duration
@@ -21,11 +22,13 @@ interface FellesPersonklient {
             tema: String = "IND",
             connectTimeout: Duration = 1.seconds,
             timeout: Duration = 1.seconds,
+            sikkerlogg: KLogger?,
         ): FellesPersonklient = FellesHttpPersonklient(
             endepunkt = endepunkt,
             tema = tema,
             connectTimeout = connectTimeout,
             timeout = timeout,
+            sikkerlogg = sikkerlogg,
         )
     }
 }

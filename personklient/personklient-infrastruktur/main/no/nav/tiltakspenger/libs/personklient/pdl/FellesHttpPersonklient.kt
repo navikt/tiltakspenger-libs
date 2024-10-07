@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import mu.KLogger
+import mu.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.Ikke2xx
@@ -30,6 +32,8 @@ internal class FellesHttpPersonklient(
     private val tema: String = "IND",
     connectTimeout: Duration = 1.seconds,
     private val timeout: Duration = 1.seconds,
+    private val logg: KLogger? = KotlinLogging.logger {},
+    private val sikkerlogg: KLogger?,
 ) : FellesPersonklient {
     private val client = HttpClient.newBuilder()
         .connectTimeout(connectTimeout.toJavaDuration())
@@ -67,18 +71,35 @@ internal class FellesHttpPersonklient(
                 .build()
 
             client.send(request, HttpResponse.BodyHandlers.ofString()).let { httpResponse ->
-                val body = httpResponse.body()
+                val responseBody = httpResponse.body()
+                val status = httpResponse.statusCode()
                 if (httpResponse.isSuccess()) {
                     Either.catch {
-                        objectMapper.readValue<HentPersonResponse>(body)
+                        objectMapper.readValue<HentPersonResponse>(responseBody)
                     }.mapLeft {
+                        logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
+                            "Feil ved deserialisering av PDL-respons. status=$status. Se sikkerlogg for mer kontekst."
+                        }
+                        sikkerlogg?.error(it) { "Feil ved deserialisering av PDL-respons. status=$status. response=$responseBody. request=$jsonRequestBody" }
                         FellesPersonklientError.DeserializationException(it)
                     }.map { it.extractData() }.flatten()
                 } else {
-                    Ikke2xx(status = httpResponse.statusCode(), body = body).left()
+                    logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
+                        "Feil status ved henting av person fra PDL. status=$status. Se sikkerlogg for mer kontekst."
+                    }
+                    sikkerlogg?.error(RuntimeException("Trigger stacktrace for debug.")) {
+                        "Feil status ved henting av person fra PDL. status=$status. response=$responseBody. request=$jsonRequestBody"
+                    }
+                    Ikke2xx(status = status, body = responseBody).left()
                 }
             }
-        }.mapLeft { FellesPersonklientError.NetworkError(it) }.flatten()
+        }.mapLeft {
+            logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
+                "Ukjent feil ved henting av person fra PDL. Se sikkerlogg for mer kontekst."
+            }
+            sikkerlogg?.error(it) { "Ukjent feil ved henting av person fra PDL. request: $jsonRequestBody" }
+            FellesPersonklientError.NetworkError(it)
+        }.flatten()
     }
 }
 

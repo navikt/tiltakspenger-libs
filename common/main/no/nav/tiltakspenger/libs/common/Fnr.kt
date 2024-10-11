@@ -1,8 +1,5 @@
 package no.nav.tiltakspenger.libs.common
 
-/**
- * Kommentar jah: Denne kan vel flyttes til libs-common eller noe lignende?
- */
 data class Fnr private constructor(
     val verdi: String,
 ) {

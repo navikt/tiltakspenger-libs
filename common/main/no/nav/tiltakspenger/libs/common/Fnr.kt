@@ -13,6 +13,7 @@ data class Fnr private constructor(
     override fun toString(): String = "***********"
 
     private fun validate(fnr: String) {
+        // TODO post-mvp jah: På et tidspunkt vil vi måtte akseptere fødselsnumre som ikke er 11 siffer. Kanskje det er like greit å bare sjekke at den ikke er non-blank og trimme spaces på begge sider?
         if (!fnr.matches(fnrPattern)) throw UgyldigFnrException(fnr)
     }
 

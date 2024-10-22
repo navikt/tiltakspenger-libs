@@ -7,7 +7,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
     implementation("io.arrow-kt:arrow-core:1.2.4")
-    implementation("org.jetbrains.kotlinx:atomicfu:0.25.0")
+    implementation("org.jetbrains.kotlinx:atomicfu:0.26.0")
 
     testImplementation(platform("org.junit:junit-bom:5.11.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")

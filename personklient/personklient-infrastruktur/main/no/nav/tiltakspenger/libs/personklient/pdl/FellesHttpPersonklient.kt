@@ -60,7 +60,7 @@ internal class FellesHttpPersonklient(
             // TODO jah: Send med correlation id
             val request = HttpRequest.newBuilder()
                 .uri(uri)
-                .header("Authorization", "Bearer ${token.value}")
+                .header("Authorization", "Bearer ${token.token}")
                 .header("Accept", "application/json")
                 .header("Content-Type", "application/json")
                 .header("Tema", tema)
@@ -89,6 +89,10 @@ internal class FellesHttpPersonklient(
                     }
                     sikkerlogg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                         "Feil status ved henting av person fra PDL. status=$status. response=$responseBody. request=$jsonRequestBody"
+                    }
+                    if (status == 401 || status == 403) {
+                        logg?.error(RuntimeException("Trigger stacktrace for debug.")) { "Invaliderer cache for systemtoken mot PDL. status: $status." }
+                        token.invaliderCache()
                     }
                     Ikke2xx(status = status, body = responseBody).left()
                 }

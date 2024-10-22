@@ -115,7 +115,7 @@ internal class FellesHttpAdressebeskyttelseKlient(
         return HttpRequest.newBuilder()
             .uri(personBolkUri)
             .timeout(timeout.toJavaDuration())
-            .header("Authorization", "Bearer ${token.value}")
+            .header("Authorization", "Bearer ${token.token}")
             .header("Accept", "application/json")
             .header("Content-Type", "application/json")
             .POST(HttpRequest.BodyPublishers.ofString(jsonPayload))

@@ -85,7 +85,7 @@ class FellesHttpSkjermingsklient(
         correlationId: CorrelationId,
         jsonPayload: String,
     ): HttpRequest? {
-        val token: String = getToken().value
+        val token: String = getToken().token
         return HttpRequest.newBuilder()
             .uri(uri)
             .timeout(timeout.toJavaDuration())

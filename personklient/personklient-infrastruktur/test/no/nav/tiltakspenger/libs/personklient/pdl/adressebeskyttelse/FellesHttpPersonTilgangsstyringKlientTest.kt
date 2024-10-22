@@ -27,10 +27,12 @@ import no.nav.tiltakspenger.libs.personklient.pdl.common.withWireMockServer
 import no.nav.tiltakspenger.libs.personklient.pdl.dto.AdressebeskyttelseGradering
 import org.junit.jupiter.api.Test
 import java.net.http.HttpConnectTimeoutException
+import java.time.Instant
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class FellesHttpPersonTilgangsstyringKlientTest {
-    private val getToken = suspend { AccessToken("token") }
+
+    private val getToken = suspend { AccessToken("token", Instant.now().plusSeconds(3600)) {} }
 
     @Test
     fun `en person`() {

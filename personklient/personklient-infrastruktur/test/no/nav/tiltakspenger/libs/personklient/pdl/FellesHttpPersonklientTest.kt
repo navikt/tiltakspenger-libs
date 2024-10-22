@@ -17,11 +17,12 @@ import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.Deseri
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.UkjentFeil
 import no.nav.tiltakspenger.libs.personklient.pdl.common.withWireMockServer
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class FellesHttpPersonklientTest {
 
-    private val token = AccessToken("token")
+    private val token = AccessToken("token", Instant.now().plusSeconds(3600)) {}
 
     @Test
     fun `should be able to serialize non-errors`() {
@@ -34,7 +35,11 @@ internal class FellesHttpPersonklientTest {
                 body = pdlResponse
             }
 
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds, sikkerlogg = KotlinLogging.logger {})
+            val pdlClient = FellesHttpPersonklient(
+                endepunkt = wiremock.baseUrl(),
+                connectTimeout = 100.milliseconds,
+                sikkerlogg = KotlinLogging.logger {},
+            )
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "{}").shouldBeRight()
             }
@@ -51,7 +56,11 @@ internal class FellesHttpPersonklientTest {
                 header = "Content-Type" to "application/json"
                 body = pdlErrorResponse
             }
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds, sikkerlogg = KotlinLogging.logger {})
+            val pdlClient = FellesHttpPersonklient(
+                endepunkt = wiremock.baseUrl(),
+                connectTimeout = 100.milliseconds,
+                sikkerlogg = KotlinLogging.logger {},
+            )
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body").swap().getOrNull()!! shouldBe UkjentFeil(
                     errors = listOf(
@@ -79,9 +88,14 @@ internal class FellesHttpPersonklientTest {
                 body = response
             }
 
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds, sikkerlogg = KotlinLogging.logger {})
+            val pdlClient = FellesHttpPersonklient(
+                endepunkt = wiremock.baseUrl(),
+                connectTimeout = 100.milliseconds,
+                sikkerlogg = KotlinLogging.logger {},
+            )
             runTest {
-                pdlClient.hentPerson(Fnr.random(), token, "body").shouldBeLeft(FellesPersonklientError.ResponsManglerData)
+                pdlClient.hentPerson(Fnr.random(), token, "body")
+                    .shouldBeLeft(FellesPersonklientError.ResponsManglerData)
             }
         }
     }
@@ -98,7 +112,11 @@ internal class FellesHttpPersonklientTest {
                 body = response
             }
 
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds, sikkerlogg = KotlinLogging.logger {})
+            val pdlClient = FellesHttpPersonklient(
+                endepunkt = wiremock.baseUrl(),
+                connectTimeout = 100.milliseconds,
+                sikkerlogg = KotlinLogging.logger {},
+            )
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body").swap().getOrNull()!!.also {
                     it.shouldBeTypeOf<DeserializationException>()
@@ -119,7 +137,11 @@ internal class FellesHttpPersonklientTest {
                 header = "Content-Type" to "application/json"
                 body = pdlResponseManglerFolkeregisterdata
             }
-            val pdlClient = FellesHttpPersonklient(endepunkt = wiremock.baseUrl(), connectTimeout = 100.milliseconds, sikkerlogg = KotlinLogging.logger {})
+            val pdlClient = FellesHttpPersonklient(
+                endepunkt = wiremock.baseUrl(),
+                connectTimeout = 100.milliseconds,
+                sikkerlogg = KotlinLogging.logger {},
+            )
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body").shouldBeRight()
             }

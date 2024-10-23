@@ -9,7 +9,7 @@ dependencies {
     implementation("io.arrow-kt:arrow-core:1.2.4")
     implementation("org.jetbrains.kotlinx:atomicfu:0.26.0")
 
-    testImplementation(platform("org.junit:junit-bom:5.11.2"))
+    testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 
     testImplementation("io.mockk:mockk:$mockkVersion")

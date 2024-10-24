@@ -28,7 +28,7 @@ dependencies {
     testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.4.0")
     testImplementation("io.kotest:kotest-extensions:$kotestVersion")
 
-    testImplementation("org.wiremock:wiremock:3.9.1")
+    testImplementation("org.wiremock:wiremock:3.9.2")
     testImplementation("com.marcinziolo:kotlin-wiremock:2.1.1")
     testImplementation("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
 

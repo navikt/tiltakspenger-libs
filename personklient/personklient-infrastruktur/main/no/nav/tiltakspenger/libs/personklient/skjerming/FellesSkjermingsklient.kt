@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.personklient.skjerming
 
 import arrow.core.Either
+import arrow.core.NonEmptyList
 import mu.KLogger
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
@@ -14,6 +15,11 @@ interface FellesSkjermingsklient {
         fnr: Fnr,
         correlationId: CorrelationId,
     ): Either<FellesSkjermingError, Boolean>
+
+    suspend fun erSkjermetPersoner(
+        fnrListe: NonEmptyList<Fnr>,
+        correlationId: CorrelationId,
+    ): Either<FellesSkjermingError, Map<Fnr, Boolean>>
 
     companion object {
         fun create(

@@ -46,7 +46,8 @@ class FellesHttpSkjermingsklient(
         .followRedirects(HttpClient.Redirect.NEVER)
         .build()
 
-    private val uri = URI.create("$endepunkt/skjermet")
+    private val uriSkjermet = URI.create("$endepunkt/skjermet")
+    private val uriSkjermetBulk = URI.create("$endepunkt/skjermetBulk")
 
     companion object {
         const val NAV_CALL_ID_HEADER = "Nav-Call-Id"
@@ -68,7 +69,7 @@ class FellesHttpSkjermingsklient(
         return withContext(Dispatchers.IO) {
             Either.catch {
                 val jsonPayload = "{\"personident\":\"${fnr.verdi}\"}"
-                val request = createRequest(correlationId, jsonPayload)
+                val request = createRequest(correlationId, jsonPayload, uriSkjermet)
 
                 val httpResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()
                 val responseJson = httpResponse.body()
@@ -108,7 +109,7 @@ class FellesHttpSkjermingsklient(
         return withContext(Dispatchers.IO) {
             Either.catch {
                 val jsonPayload = """{"personidenter":[${fnrListe.map { "\"${it.verdi}\"" }.joinToString(",")}]}"""
-                val request = createRequest(correlationId, jsonPayload)
+                val request = createRequest(correlationId, jsonPayload, uriSkjermetBulk)
 
                 val httpResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()
                 val responseJson = httpResponse.body()
@@ -144,6 +145,7 @@ class FellesHttpSkjermingsklient(
     private suspend fun createRequest(
         correlationId: CorrelationId,
         jsonPayload: String,
+        uri: URI,
     ): HttpRequest? {
         val token: String = getToken().token
         return HttpRequest.newBuilder()

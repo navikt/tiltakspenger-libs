@@ -122,7 +122,7 @@ internal class FellesHttpAdressebeskyttelseKlient(
             .build()
     }
 
-    private fun createJsonPayload(fnrListe: List<Fnr>): String = fnrListe.joinToString(
+    private fun createJsonPayload(fnrListe: List<Fnr>): String = fnrListe.distinct().joinToString(
         separator = ",",
         prefix = "[",
         postfix = "]",

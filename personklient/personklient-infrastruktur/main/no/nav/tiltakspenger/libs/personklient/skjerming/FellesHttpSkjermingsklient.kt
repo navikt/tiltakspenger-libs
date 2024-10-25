@@ -108,7 +108,8 @@ class FellesHttpSkjermingsklient(
     ): Either<FellesSkjermingError, Map<Fnr, Boolean>> {
         return withContext(Dispatchers.IO) {
             Either.catch {
-                val jsonPayload = """{"personidenter":[${fnrListe.map { "\"${it.verdi}\"" }.joinToString(",")}]}"""
+                val jsonPayload =
+                    """{"personidenter":[${fnrListe.distinct().map { "\"${it.verdi}\"" }.joinToString(",")}]}"""
                 val request = createRequest(correlationId, jsonPayload, uriSkjermetBulk)
 
                 val httpResponse = client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()

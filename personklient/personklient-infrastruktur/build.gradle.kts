@@ -1,4 +1,4 @@
-val jacksonVersion = "2.18.0"
+val jacksonVersion = "2.18.1"
 val mockkVersion = "1.13.13"
 val kotestVersion = "5.9.1"
 

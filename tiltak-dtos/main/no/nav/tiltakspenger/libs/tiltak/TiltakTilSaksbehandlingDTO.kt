@@ -5,6 +5,7 @@ import java.time.LocalDate
 
 data class TiltakTilSaksbehandlingDTO(
     val id: String,
+    val gjennomføringId: String?,
     val deltakelseFom: LocalDate?,
     val deltakelseTom: LocalDate?,
     val typeNavn: String,

@@ -11,9 +11,9 @@ data class Roller(
 
     fun harStrengtFortroligAdresse(): Boolean = value.contains(Rolle.STRENGT_FORTROLIG_ADRESSE)
 
-    fun harSaksbehandlerEllerBehandler(): Boolean =
-        value in
-            listOf(
-                listOf(Rolle.SAKSBEHANDLER, Rolle.BESLUTTER),
-            )
+    fun erSaksbehandler(): Boolean = value.contains(Rolle.SAKSBEHANDLER)
+
+    fun erBeslutter(): Boolean = value.contains(Rolle.BESLUTTER)
+
+    fun erSaksbehandlerEllerBeslutter(): Boolean = any { it == Rolle.SAKSBEHANDLER || it == Rolle.BESLUTTER }
 }

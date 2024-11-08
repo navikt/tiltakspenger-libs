@@ -4,7 +4,6 @@ include(
     "person-dtos",
     "arenatiltak-dtos",
     "arenaytelser-dtos",
-    "overgangsstonad-dtos",
     "tiltak-dtos",
     "soknad-dtos",
     "periodisering",

@@ -14,7 +14,7 @@ import no.nav.tiltakspenger.libs.ktor.common.respond500InternalServerError
 import kotlin.text.startsWith
 import kotlin.text.substring
 
-internal suspend inline fun ApplicationCall.withSaksbehandler(
+suspend inline fun ApplicationCall.withSaksbehandler(
     tokenService: TokenService,
     crossinline block: suspend (Saksbehandler) -> Unit,
 ) {
@@ -30,7 +30,7 @@ internal suspend inline fun ApplicationCall.withSaksbehandler(
     }
 }
 
-internal suspend inline fun ApplicationCall.withSystembruker(
+suspend inline fun ApplicationCall.withSystembruker(
     tokenService: TokenService,
     crossinline block: suspend (Systembruker) -> Unit,
 ) {
@@ -46,11 +46,17 @@ internal suspend inline fun ApplicationCall.withSystembruker(
     }
 }
 
-internal suspend inline fun ApplicationCall.withBruker(
+suspend inline fun ApplicationCall.withBruker(
     tokenService: TokenService,
     crossinline block: suspend (Bruker) -> Unit,
 ) {
-    val token = getBearerToken() ?: return
+    val authHeader = request.headers["Authorization"]
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
+        this.response.headers.append("WWW-Authenticate", "Bearer realm=\"tiltakspenger-saksbehandling-api\"")
+        this.respond(HttpStatusCode.Unauthorized)
+    }
+    val token = authHeader!!.substring(7)
     tokenService.validerOgHentBruker(token)
         .onLeft {
             when (it) {
@@ -80,19 +86,4 @@ internal suspend inline fun ApplicationCall.withBruker(
                 block(it)
             }
         }
-}
-
-internal suspend fun ApplicationCall.getBearerToken(): String? {
-    val authHeader = request.headers["Authorization"] ?: return respondWithChallenge()
-    if (!authHeader.startsWith("Bearer ")) {
-        return respondWithChallenge()
-    }
-    return authHeader.substring(7)
-}
-
-private suspend fun ApplicationCall.respondWithChallenge(): String? {
-    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
-    this.response.headers.append("WWW-Authenticate", "Bearer realm=\"tiltakspenger-saksbehandling-api\"")
-    this.respond(HttpStatusCode.Unauthorized)
-    return null
 }

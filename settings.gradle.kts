@@ -5,7 +5,6 @@ include(
     "arenatiltak-dtos",
     "arenaytelser-dtos",
     "dokument-dtos",
-    "skjerming-dtos",
     "overgangsstonad-dtos",
     "tiltak-dtos",
     "soknad-dtos",

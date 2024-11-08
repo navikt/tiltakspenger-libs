@@ -4,9 +4,9 @@ import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.left
 import arrow.core.right
-import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.atomicfu.atomic
 import mu.KLogger
+import no.nav.tiltakspenger.libs.json.objectMapper
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -26,8 +26,6 @@ class LeaderPodLookupClient(
     private val logger: KLogger,
     connectTimeout: kotlin.time.Duration = 1.seconds,
 ) : LeaderPodLookup {
-
-    private val objectMapper = ObjectMapper()
 
     private val client = HttpClient.newBuilder()
         .connectTimeout(connectTimeout.toJavaDuration())

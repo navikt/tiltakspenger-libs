@@ -4,5 +4,5 @@ import arrow.core.Either
 import no.nav.tiltakspenger.libs.common.Bruker
 
 interface TokenService {
-    suspend fun validerOgHentBruker(token: String): Either<Valideringsfeil, Bruker>
+    suspend fun validerOgHentBruker(token: String): Either<Valideringsfeil, Bruker<*, *>>
 }

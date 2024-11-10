@@ -4,6 +4,8 @@ dependencies {
     api(project(":common"))
     api(project(":persistering:persistering-domene"))
 
+    api("io.arrow-kt:arrow-core:1.2.4")
+
     api("io.kotest:kotest-assertions-core:$kotestVersion")
     api("io.kotest:kotest-assertions-json:$kotestVersion")
     api("io.kotest.extensions:kotest-assertions-arrow:1.4.0")
@@ -19,6 +21,8 @@ dependencies {
     api("com.marcinziolo:kotlin-wiremock:2.1.1")
     api("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.9.0")
+
+    api("ch.qos.logback:logback-classic:1.5.6")
 }
 
 configurations.all {

@@ -1,9 +1,7 @@
 val ktorVersion = "3.0.1"
-
-val kotlinxCoroutinesVersion = "1.9.0"
 dependencies {
     implementation(project(":common"))
-    implementation(project(":auth-core"))
+    api(project(":auth-core"))
     implementation(project(":ktor-common"))
 
     implementation("io.arrow-kt:arrow-core:1.2.4")
@@ -12,7 +10,28 @@ dependencies {
     compileOnly("io.ktor:ktor-server-core:$ktorVersion")
     compileOnly("io.ktor:ktor-server-core-jvm:$ktorVersion")
 
+    testImplementation(project(":auth-test-core"))
     testImplementation(project(":test-common"))
+    testImplementation(project(":ktor-test-common"))
+
+    testImplementation("io.ktor:ktor-server-test-host-jvm:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-call-id:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-call-logging:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-core:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-cors:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-default-headers-jvm:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-host-common:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-host-common-jvm:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
+    testImplementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-status-pages:$ktorVersion")
+    testImplementation("io.ktor:ktor-utils:$ktorVersion")
+
+
 }
 
 configurations.all {

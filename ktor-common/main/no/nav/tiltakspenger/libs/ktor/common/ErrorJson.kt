@@ -66,6 +66,18 @@ suspend fun ApplicationCall.respond404NotFound(errorJson: ErrorJson) {
     this.respondError(HttpStatusCode.NotFound, errorJson)
 }
 
+suspend fun ApplicationCall.respond409Conflict(melding: String, kode: String) {
+    this.respondError(
+        status = HttpStatusCode.Conflict,
+        melding = melding,
+        kode = kode,
+    )
+}
+
+suspend fun ApplicationCall.respond409Conflict(errorJson: ErrorJson) {
+    this.respondError(HttpStatusCode.Conflict, errorJson)
+}
+
 suspend fun ApplicationCall.respondError(status: HttpStatusCode, melding: String, kode: String) {
     this.respondError(
         status = status,

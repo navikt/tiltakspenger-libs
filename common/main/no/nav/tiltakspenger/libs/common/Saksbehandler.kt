@@ -5,8 +5,8 @@ data class Saksbehandler(
     // TODO post-mvp: Dersom brukernavn og epost ikke brukes, fjerne disse fra Saksbehandler. Brukernavn utledes fra epost og det føles ikke idéelt.
     override val brukernavn: String,
     val epost: String,
-    override val roller: Roller,
-) : Bruker {
+    override val roller: Saksbehandlerroller,
+) : Bruker<Saksbehandlerrolle, Saksbehandlerroller> {
     fun erSaksbehandler() = roller.erSaksbehandler()
 
     fun erBeslutter() = roller.erBeslutter()

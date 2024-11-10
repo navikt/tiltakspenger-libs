@@ -7,9 +7,12 @@ import com.marcinziolo.kotlin.wiremock.get
 import com.marcinziolo.kotlin.wiremock.returns
 import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.matchers.shouldBe
-import no.nav.tiltakspenger.libs.common.Rolle
-import no.nav.tiltakspenger.libs.common.Roller
+import no.nav.tiltakspenger.libs.common.GenerellSystembruker
+import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
+import no.nav.tiltakspenger.libs.common.GenerellSystembrukerroller
 import no.nav.tiltakspenger.libs.common.Saksbehandler
+import no.nav.tiltakspenger.libs.common.Saksbehandlerrolle
+import no.nav.tiltakspenger.libs.common.Saksbehandlerroller
 import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -36,10 +39,11 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 clientId = clientId,
                 autoriserteBrukerroller = listOf(
                     AdRolle(
-                        Rolle.SAKSBEHANDLER,
+                        Saksbehandlerrolle.SAKSBEHANDLER,
                         saksbehandlerUUID.toString(),
                     ),
                 ),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -48,7 +52,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                     navIdent = "Z12345",
                     brukernavn = "Sak Behandler",
                     epost = "Sak.Behandler@nav.no",
-                    roller = Roller(listOf(Rolle.SAKSBEHANDLER)),
+                    roller = Saksbehandlerroller(listOf(Saksbehandlerrolle.SAKSBEHANDLER)),
                 )
             }
         }
@@ -72,10 +76,11 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 clientId = clientId,
                 autoriserteBrukerroller = listOf(
                     AdRolle(
-                        Rolle.SAKSBEHANDLER,
+                        Saksbehandlerrolle.SAKSBEHANDLER,
                         UUID.randomUUID().toString(),
                     ),
                 ),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwtGenerator.jwkAsString)
 
@@ -84,7 +89,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                     navIdent = "Z12345",
                     brukernavn = "Sak Behandler",
                     epost = "Sak.Behandler@nav.no",
-                    roller = Roller(emptyList()),
+                    roller = Saksbehandlerroller(emptyList()),
                 )
             }
         }
@@ -106,6 +111,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -149,6 +155,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk1)
 
@@ -190,6 +197,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk1)
 
@@ -211,6 +219,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             kotlinx.coroutines.test.runTest {
                 tokenService.validerOgHentBruker(invalidJwt) shouldBe Valideringsfeil.UgyldigToken.KunneIkkeDekodeToken.left()
@@ -235,6 +244,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -261,6 +271,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -287,6 +298,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -313,6 +325,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -339,6 +352,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -365,6 +379,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -392,6 +407,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = wrongIssuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -418,6 +434,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -442,6 +459,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse("""{"keys":[]}""")
 
@@ -467,6 +485,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.get {
                 url equalTo "/"
@@ -499,6 +518,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -525,6 +545,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -554,6 +575,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -583,6 +605,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -612,6 +635,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -640,6 +664,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -669,6 +694,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
                 issuer = issuer,
                 clientId = clientId,
                 autoriserteBrukerroller = emptyList(),
+                systembrukerMapper = ::mapper,
             )
             wiremock.prepareJwkResponse(jwk)
 
@@ -689,4 +715,36 @@ private fun WireMockServer.prepareJwkResponse(jwk: String) {
         header = "Content-Type" to "application/json"
         body = jwk
     }
+}
+
+private data class TestSystembruker(
+    override val brukernavn: String,
+    override val roller: Systembrukerroller,
+) : GenerellSystembruker<Systembrukerrolle, Systembrukerroller>
+
+private enum class Systembrukerrolle : GenerellSystembrukerrolle {
+    LAGE_HENDELSER,
+    HENTE_DATA,
+}
+
+private data class Systembrukerroller(
+    override val value: Set<Systembrukerrolle>,
+) : GenerellSystembrukerroller<Systembrukerrolle>, Set<Systembrukerrolle> by value {
+
+    constructor(vararg roller: Systembrukerrolle) : this(roller.toSet())
+    constructor(roller: Collection<Systembrukerrolle>) : this(roller.toSet())
+
+    fun harLageHendelser(): Boolean = value.contains(Systembrukerrolle.LAGE_HENDELSER)
+    fun harHenteData(): Boolean = value.contains(Systembrukerrolle.HENTE_DATA)
+}
+
+private fun mapper(brukernavn: String, roller: Set<String>): TestSystembruker {
+    return TestSystembruker(
+        brukernavn = brukernavn,
+        roller = Systembrukerroller(
+            roller.map {
+                Systembrukerrolle.valueOf(it)
+            }.toSet(),
+        ),
+    )
 }

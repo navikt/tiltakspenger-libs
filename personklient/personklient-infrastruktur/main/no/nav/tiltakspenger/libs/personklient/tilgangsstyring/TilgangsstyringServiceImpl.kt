@@ -13,7 +13,7 @@ import mu.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr
-import no.nav.tiltakspenger.libs.common.Roller
+import no.nav.tiltakspenger.libs.common.Saksbehandlerroller
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering
 import no.nav.tiltakspenger.libs.personklient.pdl.KunneIkkeGjøreTilgangskontroll
 import no.nav.tiltakspenger.libs.personklient.pdl.TilgangsstyringService
@@ -39,7 +39,7 @@ class TilgangsstyringServiceImpl(
 
     override suspend fun harTilgangTilPersoner(
         fnrListe: NonEmptyList<Fnr>,
-        roller: Roller,
+        roller: Saksbehandlerroller,
         correlationId: CorrelationId,
     ): Either<KunneIkkeGjøreTilgangskontroll, Map<Fnr, Boolean>> {
         return coroutineScope {
@@ -80,7 +80,7 @@ class TilgangsstyringServiceImpl(
 
     override suspend fun harTilgangTilPerson(
         fnr: Fnr,
-        roller: Roller,
+        roller: Saksbehandlerroller,
         correlationId: CorrelationId,
     ): Either<KunneIkkeGjøreTilgangskontroll, Boolean> {
         return coroutineScope {
@@ -151,7 +151,7 @@ class TilgangsstyringServiceImpl(
     }
 }
 
-private fun List<AdressebeskyttelseGradering>.harTilgangTilPerson(roller: Roller): Boolean {
+private fun List<AdressebeskyttelseGradering>.harTilgangTilPerson(roller: Saksbehandlerroller): Boolean {
     return this.all {
         when (it) {
             AdressebeskyttelseGradering.FORTROLIG -> roller.harFortroligAdresse()

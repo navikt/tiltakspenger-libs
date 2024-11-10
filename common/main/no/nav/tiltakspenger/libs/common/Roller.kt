@@ -1,19 +1,6 @@
 package no.nav.tiltakspenger.libs.common
 
-data class Roller(
-    val value: List<Rolle>,
-) : List<Rolle> by value {
-    fun harRolle(rolle: Rolle): Boolean = value.contains(rolle)
-
-    fun harSkjerming(): Boolean = value.contains(Rolle.SKJERMING)
-
-    fun harFortroligAdresse(): Boolean = value.contains(Rolle.FORTROLIG_ADRESSE)
-
-    fun harStrengtFortroligAdresse(): Boolean = value.contains(Rolle.STRENGT_FORTROLIG_ADRESSE)
-
-    fun erSaksbehandler(): Boolean = value.contains(Rolle.SAKSBEHANDLER)
-
-    fun erBeslutter(): Boolean = value.contains(Rolle.BESLUTTER)
-
-    fun erSaksbehandlerEllerBeslutter(): Boolean = any { it == Rolle.SAKSBEHANDLER || it == Rolle.BESLUTTER }
+interface Roller<R : Rolle> : Set<R> {
+    fun harRolle(rolle: R): Boolean = contains(rolle)
+    val value: Set<R>
 }

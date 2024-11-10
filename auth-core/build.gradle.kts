@@ -11,8 +11,8 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 
     // Auth
-    implementation("com.auth0:java-jwt:4.4.0")
-    implementation("com.auth0:jwks-rsa:0.22.1")
+    api("com.auth0:java-jwt:4.4.0")
+    api("com.auth0:jwks-rsa:0.22.1")
 
     testImplementation(project(":test-common"))
 }

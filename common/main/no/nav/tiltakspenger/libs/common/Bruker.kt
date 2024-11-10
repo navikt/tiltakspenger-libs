@@ -1,6 +1,6 @@
 package no.nav.tiltakspenger.libs.common
 
-interface Bruker {
+interface Bruker<R : Rolle, RR : Roller<R>> {
     val brukernavn: String
-    val roller: Roller
+    val roller: RR
 }

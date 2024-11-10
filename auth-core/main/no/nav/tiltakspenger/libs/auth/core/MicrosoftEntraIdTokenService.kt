@@ -18,10 +18,9 @@ import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil.UgyldigToken.KunneIkk
 import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil.UgyldigToken.ManglerClaim
 import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil.UgyldigToken.UlikKid
 import no.nav.tiltakspenger.libs.common.Bruker
-import no.nav.tiltakspenger.libs.common.Rolle
-import no.nav.tiltakspenger.libs.common.Roller
+import no.nav.tiltakspenger.libs.common.GenerellSystembruker
 import no.nav.tiltakspenger.libs.common.Saksbehandler
-import no.nav.tiltakspenger.libs.common.Systembruker
+import no.nav.tiltakspenger.libs.common.Saksbehandlerroller
 import java.net.URI
 import java.security.interfaces.RSAPublicKey
 import java.util.concurrent.TimeUnit
@@ -36,13 +35,15 @@ import java.util.concurrent.TimeUnit
  * @param clientId vår klient-id - se https://doc.nais.io/auth/explanations/#signature-validation
  * @param acceptIssuedAtLeeway Merk at denne er i sekunder. Kan overstyres for tester.
  * @param acceptNotBeforeLeeway Merk at denne er i sekunder. Kan overstyres for tester.
+ * @param systembrukerMapper 1. param: Brukernavn, 2. param: Roller som er knyttet til ad-brukeren. Se [GenerellSystembruker]. Vil være unik per applikasjon. Strengene vil være trimmet og gjort om til lowercase.
  */
-class MicrosoftEntraIdTokenService(
+class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<*, *>>(
     url: String,
     private val issuer: String,
     private val clientId: String,
+    // TODO post-mvp jah: Kan vurdere å splitte denne fila i 2 deler, en for systembruker og en for brukere.
     private val autoriserteBrukerroller: List<AdRolle>,
-    private val autoriserteSystemtokenroller: Roller = Roller(listOf(Rolle.LAGE_HENDELSER, Rolle.HENTE_DATA)),
+    private val systembrukerMapper: (String, Set<String>) -> SB,
     private val acceptIssuedAtLeeway: Long = 5,
     private val acceptNotBeforeLeeway: Long = 5,
     // See: https://github.com/auth0/jwks-rsa-java
@@ -50,15 +51,15 @@ class MicrosoftEntraIdTokenService(
         .cached(10, 24, TimeUnit.HOURS)
         .rateLimited(10, 1, TimeUnit.MINUTES)
         .build(),
-    private val sikkerlogg: mu.KLogger? = null,
+    private val sikkerlogg: mu.KLogger? = no.nav.tiltakspenger.libs.logging.sikkerlogg,
     private val logger: mu.KLogger? = KotlinLogging.logger { },
 ) : TokenService {
 
     /**
      * Validerer token og henter brukerinformasjon.
-     * Vi fjerner alle roller som ikke er forhåndsgodkjent i [autoriserteBrukerroller] og [autoriserteSystemtokenroller].
+     * Vi fjerner alle roller som ikke er forhåndsgodkjent i [autoriserteBrukerroller] og [systembrukerMapper].
      */
-    override suspend fun validerOgHentBruker(token: String): Either<Valideringsfeil, Bruker> {
+    override suspend fun validerOgHentBruker(token: String): Either<Valideringsfeil, Bruker<*, *>> {
         return Either.catch {
             val decoded: DecodedJWT = Either.catch {
                 JWT.decode(token)!!
@@ -112,32 +113,25 @@ class MicrosoftEntraIdTokenService(
         }
     }
 
-    private fun DecodedJWT.hentSystembruker(): Either<Valideringsfeil, Systembruker> {
+    private fun DecodedJWT.hentSystembruker(): Either<Valideringsfeil, GenerellSystembruker<*, *>> {
         validerOidOgSubject().getOrElse { return it.left() }
 
         val brukernavn = this.getClaimAsString("azp_name").getOrElse { return it.left() }
 
         // I denne klassen prøver vi kun å identifisere feil ved tokenet eller om tokenet er utgått. Hvis tokenet mangler roller, er det en 403 feil og håndteres i ressursene.
-        val roller = this
+        val systembruker = this
             .getClaim("roles")
             .asList(String::class.java)
-            ?.mapNotNull {
-                autoriserteSystemtokenroller.find { autorisertRolle ->
-                    it.lowercase() == autorisertRolle.toString().lowercase()
-                }
-            }
-            ?.let { Roller(it) }
+            ?.mapNotNull { it.trim().lowercase() }
+            ?.let { systembrukerMapper(brukernavn, it.toSet()) }
             ?: run {
                 logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'roles' i token." }
                 sikkerlogg?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'roles' i token. Dekodet token: ${this.token}. Raw token: $token" }
                 return ManglerClaim("roles").left()
             }
 
-        logger?.debug { "token-validering: Token validering OK for systembruker $brukernavn med roller $roller" }
-        return Systembruker(
-            brukernavn = brukernavn,
-            roller = roller,
-        ).right()
+        logger?.debug { "token-validering: Token validering OK for systembruker $brukernavn med roller $systembruker" }
+        return systembruker.right()
     }
 
     private fun DecodedJWT.hentSaksbehander(): Either<Valideringsfeil, Saksbehandler> {
@@ -150,7 +144,7 @@ class MicrosoftEntraIdTokenService(
             .asList(String::class.java)
             ?.mapNotNull {
                 autoriserteBrukerroller.find { autorisertRolle -> it == autorisertRolle.objectId }?.name
-            }?.let { Roller(it) }
+            }?.let { Saksbehandlerroller(it) }
             ?: run {
                 logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'groups' i token." }
                 sikkerlogg?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'groups' i token. Dekodet token: ${this.token}. Raw token: $token" }
@@ -173,7 +167,7 @@ class MicrosoftEntraIdTokenService(
         throwable: Throwable,
         decoded: DecodedJWT,
         token: String,
-    ): Either<Valideringsfeil, Bruker> {
+    ): Either<Valideringsfeil, Bruker<*, *>> {
         return when (throwable) {
             is NetworkException -> {
                 logger?.error(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Nettverksfeil ved henting av JWK. Se sikkerlogg for mer kontekst." }

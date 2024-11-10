@@ -6,8 +6,8 @@ import io.ktor.server.response.respond
 import no.nav.tiltakspenger.libs.auth.core.TokenService
 import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil
 import no.nav.tiltakspenger.libs.common.Bruker
+import no.nav.tiltakspenger.libs.common.GenerellSystembruker
 import no.nav.tiltakspenger.libs.common.Saksbehandler
-import no.nav.tiltakspenger.libs.common.Systembruker
 import no.nav.tiltakspenger.libs.ktor.common.respond401Unauthorized
 import no.nav.tiltakspenger.libs.ktor.common.respond403Forbidden
 import no.nav.tiltakspenger.libs.ktor.common.respond500InternalServerError
@@ -18,7 +18,7 @@ suspend inline fun ApplicationCall.withSaksbehandler(
     tokenService: TokenService,
     crossinline block: suspend (Saksbehandler) -> Unit,
 ) {
-    return withBruker(tokenService) {
+    return withBruker<Bruker<*, *>>(tokenService) {
         if (it is Saksbehandler) {
             block(it)
         } else {
@@ -30,12 +30,12 @@ suspend inline fun ApplicationCall.withSaksbehandler(
     }
 }
 
-suspend inline fun ApplicationCall.withSystembruker(
+suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.withSystembruker(
     tokenService: TokenService,
-    crossinline block: suspend (Systembruker) -> Unit,
+    crossinline block: suspend (B) -> Unit,
 ) {
-    return withBruker(tokenService) {
-        if (it is Systembruker) {
+    return withBruker<Bruker<*, *>>(tokenService) {
+        if (it is B) {
             block(it)
         } else {
             this.respond403Forbidden(
@@ -46,17 +46,18 @@ suspend inline fun ApplicationCall.withSystembruker(
     }
 }
 
-suspend inline fun ApplicationCall.withBruker(
+suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
     tokenService: TokenService,
-    crossinline block: suspend (Bruker) -> Unit,
+    crossinline block: suspend (B) -> Unit,
 ) {
     val authHeader = request.headers["Authorization"]
     if (authHeader == null || !authHeader.startsWith("Bearer ")) {
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
         this.response.headers.append("WWW-Authenticate", "Bearer realm=\"tiltakspenger-saksbehandling-api\"")
         this.respond(HttpStatusCode.Unauthorized)
+        return
     }
-    val token = authHeader!!.substring(7)
+    val token = authHeader.substring(7)
     tokenService.validerOgHentBruker(token)
         .onLeft {
             when (it) {
@@ -83,7 +84,7 @@ suspend inline fun ApplicationCall.withBruker(
                     kode = "mangler_rolle",
                 )
             } else {
-                block(it)
+                block(it as B)
             }
         }
 }

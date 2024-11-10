@@ -4,7 +4,7 @@ import arrow.core.Either
 import arrow.core.NonEmptyList
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr
-import no.nav.tiltakspenger.libs.common.Roller
+import no.nav.tiltakspenger.libs.common.Saksbehandlerroller
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering
 
 interface TilgangsstyringService {
@@ -13,7 +13,7 @@ interface TilgangsstyringService {
      */
     suspend fun harTilgangTilPerson(
         fnr: Fnr,
-        roller: Roller,
+        roller: Saksbehandlerroller,
         correlationId: CorrelationId,
     ): Either<KunneIkkeGjøreTilgangskontroll, Boolean>
 
@@ -22,7 +22,7 @@ interface TilgangsstyringService {
      */
     suspend fun harTilgangTilPersoner(
         fnrListe: NonEmptyList<Fnr>,
-        roller: Roller,
+        roller: Saksbehandlerroller,
         correlationId: CorrelationId,
     ): Either<KunneIkkeGjøreTilgangskontroll, Map<Fnr, Boolean>>
 

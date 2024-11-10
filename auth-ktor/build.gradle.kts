@@ -2,7 +2,7 @@ val ktorVersion = "3.0.1"
 dependencies {
     implementation(project(":common"))
     api(project(":auth-core"))
-    implementation(project(":ktor-common"))
+    api(project(":ktor-common"))
 
     implementation("io.arrow-kt:arrow-core:1.2.4")
 

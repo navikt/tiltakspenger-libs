@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.logging
 
+import mu.KLogger
 import mu.KotlinLogging
 
-val sikkerlogg = KotlinLogging.logger("tjenestekall")
+val sikkerlogg: KLogger by lazy { KotlinLogging.logger("tjenestekall") }

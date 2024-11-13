@@ -1,7 +1,5 @@
 dependencies {
-    implementation(project(":common"))
     implementation(project(":json"))
-    implementation(project(":periodisering"))
 }
 
 configurations.all {

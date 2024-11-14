@@ -69,7 +69,7 @@ internal val pdlResponse = """
       "navn": [
         {
           "fornavn": "Lykkelig",
-          "mellomnavn": null,
+          "mellomnavn": "",
           "etternavn": "Eksamen",
           "folkeregistermetadata": {
             "aarsak": null,
@@ -93,7 +93,7 @@ internal val pdlResponse = """
           }
         }
       ],
-      "foedsel": [
+      "foedselsdato": [
         {
           "foedselsdato": "1984-07-04",
           "folkeregistermetadata": {

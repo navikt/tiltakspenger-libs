@@ -19,9 +19,10 @@ import kotlin.text.substring
 suspend inline fun ApplicationCall.withSaksbehandler(
     tokenService: TokenService,
     logger: KLogger = mu.KotlinLogging.logger {},
+    svarMed403HvisIngenRoller: Boolean = true,
     crossinline block: suspend (Saksbehandler) -> Unit,
 ) {
-    return withBruker<Bruker<*, *>>(tokenService) {
+    return withBruker<Bruker<*, *>>(tokenService, svarMed403HvisIngenRoller = svarMed403HvisIngenRoller) {
         if (it is Saksbehandler) {
             block(it)
         } else {
@@ -37,9 +38,10 @@ suspend inline fun ApplicationCall.withSaksbehandler(
 suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.withSystembruker(
     tokenService: TokenService,
     logger: KLogger = mu.KotlinLogging.logger {},
+    svarMed403HvisIngenRoller: Boolean = true,
     crossinline block: suspend (B) -> Unit,
 ) {
-    return withBruker<Bruker<*, *>>(tokenService) {
+    return withBruker<Bruker<*, *>>(tokenService, svarMed403HvisIngenRoller = svarMed403HvisIngenRoller) {
         if (it is B) {
             block(it)
         } else {
@@ -55,6 +57,7 @@ suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.with
 suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
     tokenService: TokenService,
     logger: KLogger = mu.KotlinLogging.logger {},
+    svarMed403HvisIngenRoller: Boolean = true,
     crossinline block: suspend (B) -> Unit,
 ) {
     val authHeader = request.headers["Authorization"]
@@ -88,8 +91,8 @@ suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
             }
         }
         .onRight {
-            if (it.roller.isEmpty()) {
-                logger.warn { "Brukeren ${it.brukernavn} har ingen forhåndsgodkjente roller. Svarer 403 Forbidden." }
+            if (svarMed403HvisIngenRoller && it.roller.isEmpty()) {
+                logger.warn { "Brukeren ${(it as? Saksbehandler)?.navIdent ?: it.brukernavn} har ingen forhåndsgodkjente roller. Svarer 403 Forbidden." }
                 this.respond403Forbidden(
                     melding = "Brukeren må ha minst en autorisert rolle for å aksessere denne ressursen",
                     kode = "mangler_rolle",

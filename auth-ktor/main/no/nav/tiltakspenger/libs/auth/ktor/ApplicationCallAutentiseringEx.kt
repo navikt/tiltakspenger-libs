@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.auth.ktor
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
+import mu.KLogger
 import no.nav.tiltakspenger.libs.auth.core.TokenService
 import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil
 import no.nav.tiltakspenger.libs.common.Bruker
@@ -11,17 +12,20 @@ import no.nav.tiltakspenger.libs.common.Saksbehandler
 import no.nav.tiltakspenger.libs.ktor.common.respond401Unauthorized
 import no.nav.tiltakspenger.libs.ktor.common.respond403Forbidden
 import no.nav.tiltakspenger.libs.ktor.common.respond500InternalServerError
+import no.nav.tiltakspenger.libs.logging.sikkerlogg
 import kotlin.text.startsWith
 import kotlin.text.substring
 
 suspend inline fun ApplicationCall.withSaksbehandler(
     tokenService: TokenService,
+    logger: KLogger = mu.KotlinLogging.logger {},
     crossinline block: suspend (Saksbehandler) -> Unit,
 ) {
     return withBruker<Bruker<*, *>>(tokenService) {
         if (it is Saksbehandler) {
             block(it)
         } else {
+            logger.warn { "Brukeren ${it.brukernavn} er ikke en saksbehandler. Svarer 403 Forbidden. Roller: ${it.roller}" }
             this.respond403Forbidden(
                 melding = "Brukeren er ikke en saksbehandler",
                 kode = "ikke_saksbehandler",
@@ -32,12 +36,14 @@ suspend inline fun ApplicationCall.withSaksbehandler(
 
 suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.withSystembruker(
     tokenService: TokenService,
+    logger: KLogger = mu.KotlinLogging.logger {},
     crossinline block: suspend (B) -> Unit,
 ) {
     return withBruker<Bruker<*, *>>(tokenService) {
         if (it is B) {
             block(it)
         } else {
+            logger.warn { "Brukeren ${it.brukernavn} er ikke en systembruker. Svarer 403 Forbidden. Roller: ${it.roller}" }
             this.respond403Forbidden(
                 melding = "Brukeren er ikke en systembruker",
                 kode = "ikke_systembruker",
@@ -48,6 +54,7 @@ suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.with
 
 suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
     tokenService: TokenService,
+    logger: KLogger = mu.KotlinLogging.logger {},
     crossinline block: suspend (B) -> Unit,
 ) {
     val authHeader = request.headers["Authorization"]
@@ -55,12 +62,15 @@ suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
         this.response.headers.append("WWW-Authenticate", "Bearer realm=\"tiltakspenger-saksbehandling-api\"")
         this.respond(HttpStatusCode.Unauthorized)
+        logger.warn { "Authorization header mangler eller er ikke av typen Bearer. Svarer 401 Unauthorized. Se sikkerlogg mer kontekst." }
+        sikkerlogg.warn { "Authorization header mangler eller er ikke av typen Bearer. Svarer 401 Unauthorized. Authorization header: $authHeader" }
         return
     }
     val token = authHeader.substring(7)
     tokenService.validerOgHentBruker(token)
         .onLeft {
             when (it) {
+                // Alle disse skal logges i MicrosoftEntraIdTokenService
                 is Valideringsfeil.KunneIkkeHenteJwk -> this.respond500InternalServerError(
                     melding = "Feil ved henting av JWK. Denne requesten kan prøves på nytt.",
                     kode = "feil_ved_henting_av_jwk",
@@ -79,6 +89,7 @@ suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
         }
         .onRight {
             if (it.roller.isEmpty()) {
+                logger.warn { "Brukeren ${it.brukernavn} har ingen forhåndsgodkjente roller. Svarer 403 Forbidden." }
                 this.respond403Forbidden(
                     melding = "Brukeren må ha minst en autorisert rolle for å aksessere denne ressursen",
                     kode = "mangler_rolle",

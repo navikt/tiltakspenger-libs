@@ -3,6 +3,7 @@ dependencies {
     implementation(project(":common"))
     api(project(":auth-core"))
     api(project(":ktor-common"))
+    api(project(":logging"))
 
     implementation("io.arrow-kt:arrow-core:1.2.4")
 

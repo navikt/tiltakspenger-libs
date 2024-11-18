@@ -19,6 +19,8 @@ import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil.UgyldigToken.ManglerC
 import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil.UgyldigToken.UlikKid
 import no.nav.tiltakspenger.libs.common.Bruker
 import no.nav.tiltakspenger.libs.common.GenerellSystembruker
+import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
+import no.nav.tiltakspenger.libs.common.GenerellSystembrukerroller
 import no.nav.tiltakspenger.libs.common.Saksbehandler
 import no.nav.tiltakspenger.libs.common.Saksbehandlerroller
 import java.net.URI
@@ -37,13 +39,15 @@ import java.util.concurrent.TimeUnit
  * @param acceptNotBeforeLeeway Merk at denne er i sekunder. Kan overstyres for tester.
  * @param systembrukerMapper 1. param: Brukernavn, 2. param: Roller som er knyttet til ad-brukeren. Se [GenerellSystembruker]. Vil være unik per applikasjon. Strengene vil være trimmet og gjort om til lowercase.
  */
-class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<*, *>>(
+
+class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembrukerrolle, GenerellSystembrukerroller<GenerellSystembrukerrolle>>>(
     url: String,
     private val issuer: String,
     private val clientId: String,
     // TODO post-mvp jah: Kan vurdere å splitte denne fila i 2 deler, en for systembruker og en for brukere.
     private val autoriserteBrukerroller: List<AdRolle>,
-    private val systembrukerMapper: (String, Set<String>) -> SB,
+    private val systembrukerMapper: (klientId: String, klientnavn: String, Set<String>) -> SB,
+    private val inkluderScopes: Boolean = false,
     private val acceptIssuedAtLeeway: Long = 5,
     private val acceptNotBeforeLeeway: Long = 5,
     // See: https://github.com/auth0/jwks-rsa-java
@@ -116,21 +120,22 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<*, *>>(
     private fun DecodedJWT.hentSystembruker(): Either<Valideringsfeil, GenerellSystembruker<*, *>> {
         validerOidOgSubject().getOrElse { return it.left() }
 
-        val brukernavn = this.getClaimAsString("azp_name").getOrElse { return it.left() }
+        val azp = this.getClaimAsString("azp").getOrElse { return it.left() }
+        val azpName = this.getClaimAsString("azp_name").getOrElse { return it.left() }
 
         // I denne klassen prøver vi kun å identifisere feil ved tokenet eller om tokenet er utgått. Hvis tokenet mangler roller, er det en 403 feil og håndteres i ressursene.
         val systembruker = this
             .getClaim("roles")
             .asList(String::class.java)
             ?.mapNotNull { it.trim().lowercase() }
-            ?.let { systembrukerMapper(brukernavn, it.toSet()) }
+            ?.let { systembrukerMapper(azp, azpName, it.toSet()) }
             ?: run {
                 logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'roles' i token." }
                 sikkerlogg?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'roles' i token. Dekodet token: ${this.token}. Raw token: $token" }
                 return ManglerClaim("roles").left()
             }
 
-        logger?.debug { "token-validering: Token validering OK for systembruker $brukernavn med roller $systembruker" }
+        logger?.debug { "token-validering: Token validering OK for systembruker. klientNavn: $azpName. KlientId: $azp. Roller ${systembruker.roller}." }
         return systembruker.right()
     }
 
@@ -151,6 +156,24 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<*, *>>(
                 return ManglerClaim("groups").left()
             }
 
+        val azp = this.getClaimAsString("azp").getOrElse { return it.left() }
+        val azpName = this.getClaimAsString("azp_name").getOrElse { return it.left() }
+
+        val scopes = if (inkluderScopes) {
+            this.getClaim("scp")
+                .asString()
+                ?.split(" ")
+                ?.map { it.trim().lowercase() }
+                ?.let { systembrukerMapper(azp, azpName, it.toSet()) }
+                ?: run {
+                    logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'scp' i token." }
+                    sikkerlogg?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'scp' i token. Dekodet token: ${this.token}. Raw token: $token" }
+                    return ManglerClaim("scp").left()
+                }
+        } else {
+            systembrukerMapper(azp, azpName, emptySet())
+        }.roller
+
         logger?.debug { "token-validering: Token validering OK for saksbehandler $navIdent med roller $roller" }
         // TODO post-mvp jah: Siden vi bruker 2.0, kan vi plukke ut 'family_name' og 'given_name' dersom 'profile' scope er satt i tiltakspenger-saksbehandling for å ha et backupnavn dersom Microsoft graph api eller nom-kallene feiler. Merk, de må være nullable. Se: https://learn.microsoft.com/en-us/entra/identity-platform/optional-claims-reference
         return Saksbehandler(
@@ -158,6 +181,9 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<*, *>>(
             brukernavn = epostToBrukernavn(epost),
             epost = epost,
             roller = roller,
+            scopes = scopes,
+            klientId = azp,
+            klientnavn = azpName,
         ).right()
     }
 

@@ -5,11 +5,11 @@ import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
 import no.nav.tiltakspenger.libs.common.GenerellSystembrukerroller
 
 internal fun systembrukerMapperForTest(
-    brukernavn: String,
+    klientId: String = "klientId",
+    klientnavn: String = "klientnavn",
     roller: Set<String>,
 ): TestSystembruker {
     return TestSystembruker(
-        brukernavn = brukernavn,
         roller = TestSystembrukerroller(
             roller.map {
                 when (it) {
@@ -19,12 +19,15 @@ internal fun systembrukerMapperForTest(
                 }
             }.toSet(),
         ),
+        klientId = klientId,
+        klientnavn = klientnavn,
     )
 }
 
 data class TestSystembruker(
-    override val brukernavn: String,
     override val roller: TestSystembrukerroller,
+    override val klientId: String,
+    override val klientnavn: String,
 ) : GenerellSystembruker<TestSystembrukerrolle, TestSystembrukerroller>
 
 enum class TestSystembrukerrolle : GenerellSystembrukerrolle {

@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package no.nav.tiltakspenger.libs.auth.test.core
 
 import com.auth0.jwk.JwkProvider
@@ -5,6 +7,8 @@ import no.nav.tiltakspenger.libs.auth.core.AdRolle
 import no.nav.tiltakspenger.libs.auth.core.MicrosoftEntraIdTokenService
 import no.nav.tiltakspenger.libs.auth.core.TokenService
 import no.nav.tiltakspenger.libs.common.GenerellSystembruker
+import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
+import no.nav.tiltakspenger.libs.common.GenerellSystembrukerroller
 import no.nav.tiltakspenger.libs.common.Saksbehandlerrolle
 
 fun tokenServiceForTest(
@@ -16,7 +20,7 @@ fun tokenServiceForTest(
     acceptIssuedAtLeeway: Long = 0,
     acceptNotBeforeLeeway: Long = 0,
     autoriserteBrukerroller: List<AdRolle> = Saksbehandlerrolle.entries.map { AdRolle(it, "ROLE_${it.name}") },
-    systembrukerMapper: (String, Set<String>) -> GenerellSystembruker<*, *> = ::systembrukerMapperForTest,
+    systembrukerMapper: (klientId: String, klientnavn: String, Set<String>) -> GenerellSystembruker<GenerellSystembrukerrolle, GenerellSystembrukerroller<GenerellSystembrukerrolle>> = ::systembrukerMapperForTest as (String, String, Set<String>) -> GenerellSystembruker<GenerellSystembrukerrolle, GenerellSystembrukerroller<GenerellSystembrukerrolle>>,
 ): TokenService {
     return MicrosoftEntraIdTokenService(
         url = url,

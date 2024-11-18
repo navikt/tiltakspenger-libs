@@ -19,14 +19,20 @@ import kotlin.text.substring
 suspend inline fun ApplicationCall.withSaksbehandler(
     tokenService: TokenService,
     logger: KLogger = mu.KotlinLogging.logger {},
-    svarMed403HvisIngenRoller: Boolean = true,
+    svarMed403HvisIngenSaksbehandlerRoller: Boolean = true,
+    svarMed403HvisIngenScopes: Boolean = true,
     crossinline block: suspend (Saksbehandler) -> Unit,
 ) {
-    return withBruker<Bruker<*, *>>(tokenService, svarMed403HvisIngenRoller = svarMed403HvisIngenRoller) {
+    return withBruker<Bruker<*, *>>(
+        tokenService = tokenService,
+        svarMed403HvisIngenSaksbehandlerRoller = svarMed403HvisIngenSaksbehandlerRoller,
+        svarMed403HvisIngenScopes = svarMed403HvisIngenScopes,
+        svarMed403HvisIngenSystembrukerRoller = false,
+    ) {
         if (it is Saksbehandler) {
             block(it)
         } else {
-            logger.warn { "Brukeren ${it.brukernavn} er ikke en saksbehandler. Svarer 403 Forbidden. Roller: ${it.roller}" }
+            logger.warn { "Brukeren er ikke en saksbehandler. Svarer 403 Forbidden. Roller: ${it.roller}. NavIdent: ${it.navIdent}. Klientnavn: ${it.klientnavn}. KlientId: ${it.klientId}" }
             this.respond403Forbidden(
                 melding = "Brukeren er ikke en saksbehandler",
                 kode = "ikke_saksbehandler",
@@ -38,14 +44,20 @@ suspend inline fun ApplicationCall.withSaksbehandler(
 suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.withSystembruker(
     tokenService: TokenService,
     logger: KLogger = mu.KotlinLogging.logger {},
-    svarMed403HvisIngenRoller: Boolean = true,
+    svarMed403HvisIngenSystembrukerRoller: Boolean = true,
     crossinline block: suspend (B) -> Unit,
 ) {
-    return withBruker<Bruker<*, *>>(tokenService, svarMed403HvisIngenRoller = svarMed403HvisIngenRoller) {
+    // Scopes og saksbehandlerroller er kun aktuelt for on-behalf-og token.
+    return withBruker<Bruker<*, *>>(
+        tokenService = tokenService,
+        svarMed403HvisIngenSaksbehandlerRoller = false,
+        svarMed403HvisIngenScopes = false,
+        svarMed403HvisIngenSystembrukerRoller = svarMed403HvisIngenSystembrukerRoller,
+    ) {
         if (it is B) {
             block(it)
         } else {
-            logger.warn { "Brukeren ${it.brukernavn} er ikke en systembruker. Svarer 403 Forbidden. Roller: ${it.roller}" }
+            logger.warn { "Brukeren er ikke en systembruker. Svarer 403 Forbidden. Roller: ${it.roller}. NavIdent: ${it.navIdent}. Klientnavn: ${it.klientnavn}. KlientId: ${it.klientId}" }
             this.respond403Forbidden(
                 melding = "Brukeren er ikke en systembruker",
                 kode = "ikke_systembruker",
@@ -57,7 +69,9 @@ suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.with
 suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
     tokenService: TokenService,
     logger: KLogger = mu.KotlinLogging.logger {},
-    svarMed403HvisIngenRoller: Boolean = true,
+    svarMed403HvisIngenSaksbehandlerRoller: Boolean = true,
+    svarMed403HvisIngenSystembrukerRoller: Boolean = true,
+    svarMed403HvisIngenScopes: Boolean = true,
     crossinline block: suspend (B) -> Unit,
 ) {
     val authHeader = request.headers["Authorization"]
@@ -91,14 +105,38 @@ suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
             }
         }
         .onRight {
-            if (svarMed403HvisIngenRoller && it.roller.isEmpty()) {
-                logger.warn { "Brukeren ${(it as? Saksbehandler)?.navIdent ?: it.brukernavn} har ingen forhåndsgodkjente roller. Svarer 403 Forbidden." }
-                this.respond403Forbidden(
-                    melding = "Brukeren må ha minst en autorisert rolle for å aksessere denne ressursen",
-                    kode = "mangler_rolle",
-                )
-            } else {
-                block(it as B)
+            when (it) {
+                is Saksbehandler -> {
+                    if (svarMed403HvisIngenSaksbehandlerRoller && it.roller.isEmpty()) {
+                        logger.warn { "Brukeren har ingen forhåndsgodkjente roller. Svarer 403 Forbidden. NavIdent: ${it.navIdent}. Klientnavn: ${it.klientnavn}. KlientId: ${it.klientId}" }
+                        this.respond403Forbidden(
+                            melding = "Brukeren må ha minst en autorisert rolle for å aksessere denne ressursen",
+                            kode = "mangler_rolle",
+                        )
+                        return
+                    }
+                    if (svarMed403HvisIngenScopes && it.scopes.isEmpty()) {
+                        logger.warn { "Brukeren har ingen forhåndsgodkjente scopes. Svarer 403 Forbidden. NavIdent: ${it.navIdent}. Klientnavn: ${it.klientnavn}. KlientId: ${it.klientId}. Roller: ${it.roller}. Scopes: ${it.scopes}" }
+                        this.respond403Forbidden(
+                            melding = "Brukeren må ha minst en autorisert scope for å aksessere denne ressursen",
+                            kode = "mangler_scope",
+                        )
+                    } else {
+                        block(it as B)
+                    }
+                }
+
+                is GenerellSystembruker -> {
+                    if (svarMed403HvisIngenSystembrukerRoller && it.roller.isEmpty()) {
+                        logger.warn { "Brukeren har ingen forhåndsgodkjente roller. Svarer 403 Forbidden. NavIdent: ${it.navIdent}. Klientnavn: ${it.klientnavn}. KlientId: ${it.klientId}" }
+                        this.respond403Forbidden(
+                            melding = "Brukeren må ha minst en autorisert rolle for å aksessere denne ressursen",
+                            kode = "mangler_rolle",
+                        )
+                        return
+                    }
+                    block(it as B)
+                }
             }
         }
 }

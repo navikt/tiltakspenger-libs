@@ -130,22 +130,25 @@ class TilgangsstyringServiceImpl(
             connectTimeout: Duration = 1.seconds,
             timeout: Duration = 1.seconds,
             sikkerlogg: KLogger?,
+            fellesPersonTilgangsstyringsklient: FellesAdressebeskyttelseKlient = FellesAdressebeskyttelseKlient.create(
+                baseUrl = pdlPipBaseUrl,
+                getToken = getPdlPipToken,
+                connectTimeout = connectTimeout,
+                timeout = timeout,
+                sikkerlogg = sikkerlogg,
+            ),
+            skjermingClient: FellesSkjermingsklient = FellesSkjermingsklient.create(
+                endepunkt = skjermingBaseUrl,
+                getToken = getSkjermingToken,
+                connectTimeout = connectTimeout,
+                timeout = timeout,
+                sikkerlogg = sikkerlogg,
+            ),
+
         ): TilgangsstyringService {
             return TilgangsstyringServiceImpl(
-                fellesPersonTilgangsstyringsklient = FellesAdressebeskyttelseKlient.create(
-                    baseUrl = pdlPipBaseUrl,
-                    getToken = getPdlPipToken,
-                    connectTimeout = connectTimeout,
-                    timeout = timeout,
-                    sikkerlogg = sikkerlogg,
-                ),
-                skjermingClient = FellesSkjermingsklient.create(
-                    endepunkt = skjermingBaseUrl,
-                    getToken = getSkjermingToken,
-                    connectTimeout = connectTimeout,
-                    timeout = timeout,
-                    sikkerlogg = sikkerlogg,
-                ),
+                fellesPersonTilgangsstyringsklient = fellesPersonTilgangsstyringsklient,
+                skjermingClient = skjermingClient,
             )
         }
     }

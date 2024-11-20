@@ -29,7 +29,7 @@ class TilgangsstyringServiceImpl(
     private val fellesPersonTilgangsstyringsklient: FellesAdressebeskyttelseKlient,
     private val skjermingClient: FellesSkjermingsklient,
     private val logger: KLogger? = KotlinLogging.logger {},
-    private val sikkerlogg: KLogger? = KotlinLogging.logger {},
+    private val sikkerlogg: KLogger? = no.nav.tiltakspenger.libs.logging.sikkerlogg,
 ) : TilgangsstyringService {
 
     private val harLoggetManglerISkjermingPip = mutableSetOf<Fnr>()

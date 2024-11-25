@@ -104,7 +104,7 @@ data class TiltakResponsDTO(
         JOBBK("Jobbklubb", Tiltaksgruppe.OPPFOLG, true),
         INDOPPFAG("Oppfølging", Tiltaksgruppe.OPPFOLG, true),
         INDJOBSTOT("Individuell jobbstøtte (IPS)", Tiltaksgruppe.OPPFOLG, true),
-        DIGIOPPARB("Digitalt oppfølgingstiltak for arbeidsledige (jobbklubb)", Tiltaksgruppe.OPPFOLG, true),
+        DIGIOPPARB("Digitalt jobbsøkerkurs", Tiltaksgruppe.OPPFOLG, true),
         UTVOPPFOPL("Utvidet oppfølging i opplæring", Tiltaksgruppe.OPPFOLG, true),
         IPSUNG("Individuell karrierestøtte (IPS Ung)", Tiltaksgruppe.OPPFOLG, true),
 

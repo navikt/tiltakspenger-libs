@@ -9,6 +9,13 @@ Perioden kan ikke ha "hull" som ikke har en verdi
 data class Periodisering<T>(
     private val perioderMedVerdi: List<PeriodeMedVerdi<T>>,
 ) {
+    constructor(vararg periodeMedVerdi: PeriodeMedVerdi<T>) : this(periodeMedVerdi.toList())
+
+    constructor(
+        initiellVerdi: T,
+        totalePeriode: Periode,
+    ) : this(PeriodeMedVerdi(initiellVerdi, totalePeriode))
+
     init {
         require(
             perioderMedVerdi
@@ -22,22 +29,17 @@ data class Periodisering<T>(
         ) { "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter" }
     }
 
-    val totalePeriode
-        get() =
-            Periode(
-                perioderMedVerdi.minOf { it.periode.fraOgMed },
-                perioderMedVerdi.maxOf { it.periode.tilOgMed },
-            )
+    val totalePeriode by lazy {
+        Periode(
+            perioderMedVerdi.minOf { it.periode.fraOgMed },
+            perioderMedVerdi.maxOf { it.periode.tilOgMed },
+        )
+    }
 
     companion object {
-        operator fun <T> invoke(
-            initiellVerdi: T,
-            totalePeriode: Periode,
-        ): Periodisering<T> =
-            Periodisering(
-                perioderMedVerdi =
-                listOf(PeriodeMedVerdi(initiellVerdi, totalePeriode)),
-            )
+        fun <T> empty(): Periodisering<T> {
+            return Periodisering(emptyList())
+        }
 
         fun <T> List<Periodisering<T>>.reduser(sammensattVerdi: (T, T) -> T): Periodisering<T> {
             require(this.isNotEmpty()) {
@@ -52,7 +54,8 @@ data class Periodisering<T>(
 
     // Offentlig API:
 
-    fun slåSammenTilstøtendePerioder(): Periodisering<T> = this.copy(perioderMedVerdi = perioderMedVerdi.slåSammenTilstøtendePerioder())
+    fun slåSammenTilstøtendePerioder(): Periodisering<T> =
+        this.copy(perioderMedVerdi = perioderMedVerdi.slåSammenTilstøtendePerioder())
 
     fun setVerdiForDelPeriode(
         verdi: T,
@@ -148,6 +151,26 @@ data class Periodisering<T>(
             perioderMedVerdi =
             (this.perioderMedVerdi + nyePerioder.map { PeriodeMedVerdi(verdi, it) })
                 .sortedBy { it.periode.fraOgMed },
+        )
+    }
+
+    fun krymp(
+        nyeTotalePeriode: Periode,
+    ): Periodisering<T> {
+        if (nyeTotalePeriode == totalePeriode) {
+            // Optimalisering
+            return this
+        }
+        require(nyeTotalePeriode.fraOgMed >= totalePeriode.fraOgMed && nyeTotalePeriode.tilOgMed <= totalePeriode.tilOgMed) {
+            "Kan ikke krympe, ny periode $nyeTotalePeriode må ligge innenfor $totalePeriode"
+        }
+        val beholdte = perioderMedVerdi.mapNotNull { periodeMedVerdi ->
+            periodeMedVerdi.periode.overlappendePeriode(nyeTotalePeriode)?.let { overlappendePeriode ->
+                periodeMedVerdi.copy(periode = overlappendePeriode)
+            }
+        }
+        return this.copy(
+            perioderMedVerdi = beholdte.sortedBy { it.periode.fraOgMed },
         )
     }
 

@@ -17,7 +17,7 @@ dependencies {
     api("io.mockk:mockk:$mockkVersion")
     api("io.mockk:mockk-dsl-jvm:$mockkVersion")
 
-    api("org.wiremock:wiremock:3.9.2")
+    api("org.wiremock:wiremock:3.10.0")
     api("com.marcinziolo:kotlin-wiremock:2.1.1")
     api("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.9.0")

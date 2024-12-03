@@ -149,13 +149,17 @@ fun List<Periode>.inneholderOverlapp(): Boolean {
 fun List<Periode>.inneholderOverlappEllerTilstøter(): Boolean = this.inneholderOverlapp() || this.tilstøter()
 
 /**
- * @return true dersom to eller flere perioder tilstøter
+ * @return true dersom listen har mindre enn to elementer, eller to eller flere perioder tilstøter
  */
-fun List<Periode>.tilstøter(): Boolean =
-    this
+fun List<Periode>.tilstøter(): Boolean {
+    if (this.size < 2) {
+        return true
+    }
+    return this
         .sortedWith(compareBy<Periode> { it.fraOgMed }.thenBy { it.tilOgMed })
         .zipWithNext()
         .any { (a, b) -> a.tilstøter(b) }
+}
 
 fun List<Periode>.leggSammen(godtaOverlapp: Boolean = true): List<Periode> {
     if (!godtaOverlapp && this.inneholderOverlapp()) {

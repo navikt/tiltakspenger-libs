@@ -8,6 +8,18 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
 internal class Periode_tilstøterTest {
+
+    @Test
+    fun `ingen elementer gir true`() {
+        emptyList<Periode>().tilstøter().shouldBeTrue()
+    }
+
+    @Test
+    fun `ett element gir true`() {
+        val periode1 = Periode(LocalDate.of(2021, 1, 1), LocalDate.of(2021, 1, 10))
+        listOf(periode1).tilstøter().shouldBeTrue()
+    }
+
     @Test
     fun `fraOgMed dagen etter tilOgMed tilstøter`() {
         val periode1 = Periode(LocalDate.of(2021, 1, 1), LocalDate.of(2021, 1, 10))

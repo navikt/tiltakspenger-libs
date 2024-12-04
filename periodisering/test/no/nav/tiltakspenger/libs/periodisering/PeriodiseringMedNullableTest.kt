@@ -18,7 +18,7 @@ class PeriodiseringMedNullableTest {
             .setVerdiForDelPeriode(null, periode2)
             .setVerdiForDelPeriode(null, periode3)
 
-        periodisering.perioder().size shouldBe 2
+        periodisering.size shouldBe 2
     }
 
     @Test
@@ -37,7 +37,7 @@ class PeriodiseringMedNullableTest {
             }
         }
 
-        total.perioder().size shouldBe 1
-        total.perioder().first().verdi shouldBe 6
+        total.size shouldBe 1
+        total.first().verdi shouldBe 6
     }
 }

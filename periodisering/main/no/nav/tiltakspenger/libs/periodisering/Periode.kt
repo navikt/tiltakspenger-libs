@@ -99,7 +99,10 @@ class Periode(
         return rangeSet.asRanges().toPerioder()
     }
 
-    fun tilstøter(other: Periode): Boolean = this.range.isConnected(other.range)
+    /**
+     * Sjekker om til og med i LHS er dagen før fra og med i RHS
+     */
+    fun tilstøter(other: Periode): Boolean = this.tilOgMed.plusDays(1) == other.fraOgMed
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -146,19 +149,19 @@ fun List<Periode>.inneholderOverlapp(): Boolean {
     return false
 }
 
-fun List<Periode>.inneholderOverlappEllerTilstøter(): Boolean = this.inneholderOverlapp() || this.tilstøter()
-
 /**
- * @return true dersom listen har mindre enn to elementer, eller to eller flere perioder tilstøter
+ * Sjekker at for hver til og med er dagen før neste fra og med. Brukes gjerne i sammenhenger der man periodiserer en vedtaksperiode. Dette skal tilsvare logikken i [Periodisering]
+ *
+ * Vil returnere false dersom listen ikke er sortert, har hull eller overlapp.
+ * @return true dersom listen har mindre enn to elementer, eller alle periodene tilstøter hverandre.
  */
 fun List<Periode>.tilstøter(): Boolean {
     if (this.size < 2) {
         return true
     }
     return this
-        .sortedWith(compareBy<Periode> { it.fraOgMed }.thenBy { it.tilOgMed })
         .zipWithNext()
-        .any { (a, b) -> a.tilstøter(b) }
+        .all { (a, b) -> a.tilstøter(b) }
 }
 
 fun List<Periode>.leggSammen(godtaOverlapp: Boolean = true): List<Periode> {

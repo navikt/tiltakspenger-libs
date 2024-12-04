@@ -18,8 +18,7 @@ class PeriodeMedVerdierAvLikTypeTest {
             Periodisering(
                 Utfall.IKKE_OPPFYLT,
                 Periode(1.oktober(2023), 10.oktober(2023)),
-            )
-                .setVerdiForDelPeriode(Utfall.OPPFYLT, Periode(6.oktober(2023), 10.oktober(2023)))
+            ).setVerdiForDelPeriode(Utfall.OPPFYLT, Periode(6.oktober(2023), 10.oktober(2023)))
 
         val dagpenger =
             Periodisering(
@@ -28,15 +27,13 @@ class PeriodeMedVerdierAvLikTypeTest {
             )
 
         val vedtak: Periodisering<Utfall> = aap.kombiner(dagpenger, ::kombinerToUfall)
-        vedtak.perioder().size shouldBe 2
+        vedtak.size shouldBe 2
 
-        vedtak.perioder().count { it.verdi == Utfall.OPPFYLT } shouldBe 1
-        vedtak.perioder()
-            .find { it.verdi == Utfall.OPPFYLT }!!.periode shouldBe Periode(6.oktober(2023), 10.oktober(2023))
+        vedtak.count { it.verdi == Utfall.OPPFYLT } shouldBe 1
+        vedtak.find { it.verdi == Utfall.OPPFYLT }!!.periode shouldBe Periode(6.oktober(2023), 10.oktober(2023))
 
-        vedtak.perioder().count { it.verdi == Utfall.IKKE_OPPFYLT } shouldBe 1
-        vedtak.perioder()
-            .find { it.verdi == Utfall.IKKE_OPPFYLT }!!.periode shouldBe Periode(1.oktober(2023), 5.oktober(2023))
+        vedtak.count { it.verdi == Utfall.IKKE_OPPFYLT } shouldBe 1
+        vedtak.find { it.verdi == Utfall.IKKE_OPPFYLT }!!.periode shouldBe Periode(1.oktober(2023), 5.oktober(2023))
     }
 
     @Test
@@ -72,18 +69,14 @@ class PeriodeMedVerdierAvLikTypeTest {
 
         val vedtak = alleVilkår.reduser(::kombinerToUfall)
         println(vedtak)
-        vedtak.perioder().size shouldBe 3
+        vedtak.size shouldBe 3
 
-        vedtak.perioder()
-            .count { it.verdi == Utfall.OPPFYLT } shouldBe 1
-        vedtak.perioder()
-            .filter { it.verdi == Utfall.OPPFYLT }
+        vedtak.count { it.verdi == Utfall.OPPFYLT } shouldBe 1
+        vedtak.filter { it.verdi == Utfall.OPPFYLT }
             .map { it.periode } shouldContainExactly listOf(Periode(3.oktober(2023), 4.oktober(2023)))
 
-        vedtak.perioder()
-            .count { it.verdi == Utfall.IKKE_OPPFYLT } shouldBe 2
-        vedtak.perioder()
-            .filter { it.verdi == Utfall.IKKE_OPPFYLT }.map { it.periode } shouldContainExactly listOf(
+        vedtak.count { it.verdi == Utfall.IKKE_OPPFYLT } shouldBe 2
+        vedtak.filter { it.verdi == Utfall.IKKE_OPPFYLT }.map { it.periode } shouldContainExactly listOf(
             Periode(1.oktober(2023), 2.oktober(2023)),
             Periode(5.oktober(2023), 10.oktober(2023)),
         )

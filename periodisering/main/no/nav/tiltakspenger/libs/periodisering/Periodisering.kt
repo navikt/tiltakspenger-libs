@@ -2,13 +2,14 @@ package no.nav.tiltakspenger.libs.periodisering
 
 import java.time.LocalDate
 
-/*
-Denne klassen representerer en sammenhengende periode som kan ha ulike verdier for ulike deler av perioden.
-Perioden kan ikke ha "hull" som ikke har en verdi
+/**
+ * Denne klassen representerer en sammenhengende periode som kan ha ulike verdier for ulike deler av perioden.
+ * Perioden kan ikke ha "hull" som ikke har en verdi og periodene kan ikke overlappe.
+ * Periodene må være sortert.
  */
 data class Periodisering<T>(
-    private val perioderMedVerdi: List<PeriodeMedVerdi<T>>,
-) {
+    val perioderMedVerdi: List<PeriodeMedVerdi<T>>,
+) : List<PeriodeMedVerdi<T>> by perioderMedVerdi {
     constructor(vararg periodeMedVerdi: PeriodeMedVerdi<T>) : this(periodeMedVerdi.toList())
 
     constructor(
@@ -16,23 +17,19 @@ data class Periodisering<T>(
         totalePeriode: Periode,
     ) : this(PeriodeMedVerdi(initiellVerdi, totalePeriode))
 
+    val perioder: List<Periode> by lazy { perioderMedVerdi.map { it.periode } }
+
     init {
         require(
-            perioderMedVerdi
-                .sortedBy { it.periode.fraOgMed }
-                .zipWithNext()
-                .all {
-                    it.second.periode.fraOgMed ==
-                        it.first.periode.tilOgMed
-                            .plusDays(1)
-                },
-        ) { "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter" }
+            zipWithNext()
+                .all { it.second.periode.fraOgMed == it.first.periode.tilOgMed.plusDays(1) },
+        ) { "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter. Perioder: ${this.perioder}" }
     }
 
     val totalePeriode by lazy {
         Periode(
-            perioderMedVerdi.minOf { it.periode.fraOgMed },
-            perioderMedVerdi.maxOf { it.periode.tilOgMed },
+            minOf { it.periode.fraOgMed },
+            maxOf { it.periode.tilOgMed },
         )
     }
 
@@ -70,16 +67,15 @@ data class Periodisering<T>(
             throw IllegalArgumentException("Perioder som skal kombineres må være like")
         }
 
-        return this.perioderMedVerdi
-            .flatMap { thisPeriodeMedVerdi ->
-                other.perioderMedVerdi.mapNotNull { otherPeriodeMedVerdi ->
-                    thisPeriodeMedVerdi.periode.overlappendePeriode(otherPeriodeMedVerdi.periode)?.let {
-                        PeriodeMedVerdi(sammensattVerdi(thisPeriodeMedVerdi.verdi, otherPeriodeMedVerdi.verdi), it)
-                    }
+        return this.flatMap { thisPeriodeMedVerdi ->
+            other.mapNotNull { otherPeriodeMedVerdi ->
+                thisPeriodeMedVerdi.periode.overlappendePeriode(otherPeriodeMedVerdi.periode)?.let {
+                    PeriodeMedVerdi(sammensattVerdi(thisPeriodeMedVerdi.verdi, otherPeriodeMedVerdi.verdi), it)
                 }
-            }.let {
-                Periodisering(it)
             }
+        }.let {
+            Periodisering(it.sortedBy { it.periode.fraOgMed })
+        }
     }
 
     fun <U> map(kombinertVerdi: (T) -> U): Periodisering<U> =
@@ -87,8 +83,6 @@ data class Periodisering<T>(
             .map { PeriodeMedVerdi(kombinertVerdi(it.verdi), it.periode) }
             .slåSammenTilstøtendePerioder()
             .let { Periodisering(it) }
-
-    fun perioder(): List<PeriodeMedVerdi<T>> = perioderMedVerdi.sortedBy { it.periode.fraOgMed }
 
     // Private hjelpemetoder:
 
@@ -105,7 +99,7 @@ data class Periodisering<T>(
             perioderMedVerdi
                 .perioderMedUlikVerdi(delPeriodeMedVerdi.verdi)
                 .trekkFra(delPeriodeMedVerdi)
-        return Periodisering(nyePerioderMedSammeVerdi + nyePerioderMedUlikVerdi)
+        return Periodisering((nyePerioderMedSammeVerdi + nyePerioderMedUlikVerdi).sortedBy { it.periode.fraOgMed })
     }
 
     // Krever IKKE at alle elementer i lista har samme verdi for å fungere
@@ -134,6 +128,7 @@ data class Periodisering<T>(
             .groupBy { it.verdi }
             .values
             .flatMap { listeMedLikeVerdier -> listeMedLikeVerdier.slåSammenTilstøtendePerioderMedSammeVerdi() }
+            .sortedBy { it.periode.fraOgMed }
 
     // Krever at alle elementer i lista har samme verdi for å fungere!
     private fun <T> List<PeriodeMedVerdi<T>>.leggTilPeriodeMedSammeVerdi(periodeMedVerdi: PeriodeMedVerdi<T>): List<PeriodeMedVerdi<T>> =
@@ -170,7 +165,7 @@ data class Periodisering<T>(
             }
         }
         return this.copy(
-            perioderMedVerdi = beholdte.sortedBy { it.periode.fraOgMed },
+            perioderMedVerdi = beholdte,
         )
     }
 
@@ -181,17 +176,6 @@ data class Periodisering<T>(
 
     override fun toString(): String =
         "Periodisering(totalePeriode=$totalePeriode, perioderMedVerdi=${
-            perioderMedVerdi.sortedBy { it.periode.fraOgMed }.map { "\n" + it.toString() }
+            perioderMedVerdi.map { "\n" + it.toString() }
         })"
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Periodisering<*>
-
-        return perioderMedVerdi.sortedBy { it.periode.fraOgMed } == other.perioderMedVerdi.sortedBy { it.periode.fraOgMed }
-    }
-
-    override fun hashCode(): Int = perioderMedVerdi.hashCode()
 }

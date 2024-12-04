@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.periodisering
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.equals.shouldBeEqual
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
@@ -31,25 +32,27 @@ class PeriodiseringTest {
                     PeriodeMedVerdi("bar", Periode(LocalDate.of(2023, 1, 22), LocalDate.of(2023, 1, 24))),
                 ),
             )
-        }
+        }.message shouldBe "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter. Perioder: [Periode(fraOgMed=2023-01-01 tilOgMed=2023-01-20), Periode(fraOgMed=2023-01-22 tilOgMed=2023-01-24)]"
     }
 
     @Test
-    fun `skal kunne opprette en periodisering med perioder i ikke-kronologisk rekkefølge`() {
-        Periodisering(
-            listOf(
-                PeriodeMedVerdi("bar", Periode(LocalDate.of(2023, 1, 22), LocalDate.of(2023, 1, 24))),
-                PeriodeMedVerdi("foo", Periode(LocalDate.of(2023, 1, 1), LocalDate.of(2023, 1, 21))),
-            ),
-        )
+    fun `skal ikke kunne opprette en periodisering med perioder i ikke-kronologisk rekkefølge`() {
+        shouldThrow<IllegalArgumentException> {
+            Periodisering(
+                listOf(
+                    PeriodeMedVerdi("bar", Periode(LocalDate.of(2023, 1, 22), LocalDate.of(2023, 1, 24))),
+                    PeriodeMedVerdi("foo", Periode(LocalDate.of(2023, 1, 1), LocalDate.of(2023, 1, 21))),
+                ),
+            )
+        }.message shouldBe "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter. Perioder: [Periode(fraOgMed=2023-01-22 tilOgMed=2023-01-24), Periode(fraOgMed=2023-01-01 tilOgMed=2023-01-21)]"
     }
 
     @Test
-    fun `to periodiseringer med like perioder i ulik rekkefølge skal være like`() {
+    fun `to periodiseringer med like perioderskal være like`() {
         val periodisering1 = Periodisering(
             listOf(
-                PeriodeMedVerdi("bar", Periode(LocalDate.of(2023, 1, 22), LocalDate.of(2023, 1, 24))),
                 PeriodeMedVerdi("foo", Periode(LocalDate.of(2023, 1, 1), LocalDate.of(2023, 1, 21))),
+                PeriodeMedVerdi("bar", Periode(LocalDate.of(2023, 1, 22), LocalDate.of(2023, 1, 24))),
             ),
         )
         val periodisering2 = Periodisering(

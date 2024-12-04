@@ -31,7 +31,7 @@ class PeriodeMedVerdierAvUlikTypeTest {
                 .setVerdiForDelPeriode(300L, Periode(8.oktober(2023), 8.oktober(2023)))
                 .setVerdiForDelPeriode(300L, Periode(9.oktober(2023), 9.oktober(2023)))
                 .setVerdiForDelPeriode(300L, Periode(10.oktober(2023), 10.oktober(2023)))
-        perioderMedDagsats.perioder().size shouldBe 1
+        perioderMedDagsats.size shouldBe 1
     }
 
     @Test
@@ -48,7 +48,7 @@ class PeriodeMedVerdierAvUlikTypeTest {
                 .setVerdiForDelPeriode(301L, Periode(8.oktober(2023), 8.oktober(2023)))
                 .setVerdiForDelPeriode(300L, Periode(9.oktober(2023), 9.oktober(2023)))
                 .setVerdiForDelPeriode(301L, Periode(10.oktober(2023), 10.oktober(2023)))
-        perioderMedDagsats.perioder().size shouldBe 10
+        perioderMedDagsats.size shouldBe 10
     }
 
     @Test
@@ -65,26 +65,26 @@ class PeriodeMedVerdierAvUlikTypeTest {
                 .setVerdiForDelPeriode(301L, Periode(8.oktober(2023), 8.oktober(2023)))
                 .setVerdiForDelPeriode(300L, Periode(9.oktober(2023), 9.oktober(2023)))
                 .setVerdiForDelPeriode(300L, Periode(10.oktober(2023), 10.oktober(2023)))
-        perioderMedDagsats.perioder().size shouldBe 5
-        perioderMedDagsats.perioder().count { it.verdi == 300L } shouldBe 3
-        perioderMedDagsats.perioder().count { it.verdi == 301L } shouldBe 2
-        perioderMedDagsats.perioder().count { it.verdi == 255L } shouldBe 0
+        perioderMedDagsats.size shouldBe 5
+        perioderMedDagsats.count { it.verdi == 300L } shouldBe 3
+        perioderMedDagsats.count { it.verdi == 301L } shouldBe 2
+        perioderMedDagsats.count { it.verdi == 255L } shouldBe 0
     }
 
     @Test
     fun `en periode som er en kombinasjon av to verdier kan splittes opp igjen i de enkeltstående verdiene`() {
         fun kontrollerDagsats(perioderMedDagsats: Periodisering<Long>) {
-            perioderMedDagsats.perioder().size shouldBe 2
-            perioderMedDagsats.perioder().count { it.verdi == 300L } shouldBe 1
-            perioderMedDagsats.perioder().count { it.verdi == 301L } shouldBe 1
-            perioderMedDagsats.perioder().count { it.verdi == 255L } shouldBe 0
+            perioderMedDagsats.size shouldBe 2
+            perioderMedDagsats.count { it.verdi == 300L } shouldBe 1
+            perioderMedDagsats.count { it.verdi == 301L } shouldBe 1
+            perioderMedDagsats.count { it.verdi == 255L } shouldBe 0
         }
 
         fun kontrollerAntallBarn(perioderMedAntallBarn: Periodisering<Int>) {
-            perioderMedAntallBarn.perioder().size shouldBe 3
-            perioderMedAntallBarn.perioder().count { it.verdi == 1 } shouldBe 2
-            perioderMedAntallBarn.perioder().count { it.verdi == 2 } shouldBe 1
-            perioderMedAntallBarn.perioder().count { it.verdi == 0 } shouldBe 0
+            perioderMedAntallBarn.size shouldBe 3
+            perioderMedAntallBarn.count { it.verdi == 1 } shouldBe 2
+            perioderMedAntallBarn.count { it.verdi == 2 } shouldBe 1
+            perioderMedAntallBarn.count { it.verdi == 0 } shouldBe 0
         }
 
         val perioderMedDagsats =
@@ -105,7 +105,7 @@ class PeriodeMedVerdierAvUlikTypeTest {
 
         val perioderMedDagsatsOgAntallBarn =
             perioderMedDagsats.kombiner(perioderMedAntallBarn, DagsatsOgAntallBarn::kombinerDagsatsOgAntallBarn)
-        perioderMedDagsatsOgAntallBarn.perioder().size shouldBe 4
+        perioderMedDagsatsOgAntallBarn.size shouldBe 4
 
         kontrollerDagsats(perioderMedDagsatsOgAntallBarn.map(DagsatsOgAntallBarn::trekkUtDagsats))
         kontrollerAntallBarn(perioderMedDagsatsOgAntallBarn.map(DagsatsOgAntallBarn::trekkUtAntallBarn))

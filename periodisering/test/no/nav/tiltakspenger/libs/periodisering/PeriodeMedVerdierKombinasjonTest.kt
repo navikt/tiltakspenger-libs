@@ -74,7 +74,7 @@ class PeriodeMedVerdierKombinasjonTest {
         val totaleVedtaksPerioder: Periodisering<UtfallOgDagsatsOgAntallBarn> =
             perioderMedDagsatsOgAntallBarn.kombiner(innvilgetPerioder, UtfallOgDagsatsOgAntallBarn::kombiner)
 
-        totaleVedtaksPerioder.perioder().size shouldBe 4
+        totaleVedtaksPerioder.size shouldBe 4
     }
 
     private fun kombinerToUfall(en: Utfall, to: Utfall): Utfall {

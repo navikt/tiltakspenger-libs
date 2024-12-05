@@ -1,7 +1,7 @@
 val javaVersion = JavaVersion.VERSION_21
 
 plugins {
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm") version "2.1.0"
     `maven-publish`
     `java-library`
     id("com.diffplug.spotless") version "6.25.0"

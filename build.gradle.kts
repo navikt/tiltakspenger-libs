@@ -1,4 +1,7 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 val javaVersion = JavaVersion.VERSION_21
+val jvmVersion = JvmTarget.JVM_21
 
 plugins {
     kotlin("jvm") version "2.1.0"
@@ -32,11 +35,15 @@ subprojects {
 
     tasks {
         compileKotlin {
-            kotlinOptions.jvmTarget = javaVersion.toString()
+            compilerOptions {
+                jvmTarget.set(jvmVersion)
+            }
         }
         compileTestKotlin {
-            kotlinOptions.jvmTarget = javaVersion.toString()
-            kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
+            compilerOptions {
+                jvmTarget.set(jvmVersion)
+                freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+            }
         }
         test {
             // JUnit 5 support
@@ -83,14 +90,15 @@ subprojects {
     sourceSets["test"].resources.srcDirs("test")
 }
 
-val preCommitTask = task("addPreCommitGitHookOnBuild") {
-    if (System.getenv()["GITHUB_ACTIONS"] == "true") {
-        println("Skipping!")
-    } else {
-        println("⚈ ⚈ ⚈ Running Add Pre Commit Git Hook Script on Build ⚈ ⚈ ⚈")
-        exec {
-            commandLine("cp", "./.scripts/pre-commit", "./.git/hooks")
+tasks {
+    register<Copy>("addPreCommitGitHookOnBuild") {
+        if (System.getenv()["GITHUB_ACTIONS"] == "true") {
+            println("Skipping!")
+        } else {
+            println("⚈ ⚈ ⚈ Running Add Pre Commit Git Hook Script on Build ⚈ ⚈ ⚈")
+            from(file(".scripts/pre-commit"))
+            into(file(".git/hooks"))
+            println("✅ Added Pre Commit Git Hook Script.")
         }
-        println("✅ Added Pre Commit Git Hook Script.")
     }
 }

@@ -134,13 +134,14 @@ data class Periodisering<T>(
     private fun <T> List<PeriodeMedVerdi<T>>.leggTilPeriodeMedSammeVerdi(periodeMedVerdi: PeriodeMedVerdi<T>): List<PeriodeMedVerdi<T>> =
         (this + periodeMedVerdi).leggSammenPerioderMedSammeVerdi(false)
 
+    /**
+     * Utvider periodiseringen før og etter nåværende perioder.
+     * Merk at vi ignorer ny verdi for overlappende perioder.
+     */
     fun utvid(
         verdi: T,
         nyeTotalePeriode: Periode,
     ): Periodisering<T> {
-        require(nyeTotalePeriode.inneholderHele(totalePeriode)) {
-            "Kan ikke utvide, ny periode $nyeTotalePeriode inneholder ikke hele den eksisterende perioden $totalePeriode"
-        }
         val nyePerioder = nyeTotalePeriode.trekkFra(listOf(totalePeriode))
         return this.copy(
             perioderMedVerdi =

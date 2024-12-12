@@ -5,7 +5,7 @@ package no.nav.tiltakspenger.libs.periodisering
  * Brukes for å lage en tidslinje av periodiserbare objekter, som f.eks. vedtak.
  */
 fun <T : Periodiserbar> List<T>.toTidslinje(): Periodisering<T> {
-    if (this.isEmpty()) return Periodisering(emptyList())
+    if (this.isEmpty()) return Periodisering.empty()
     if (this.size == 1) return Periodisering(this.first(), this.first().periode)
     this.map { it.opprettet }.distinct().let {
         require(it.size == this.size) { "Støtter ikke lage tidslinje når 2 elementer er opprettet samtidig." }

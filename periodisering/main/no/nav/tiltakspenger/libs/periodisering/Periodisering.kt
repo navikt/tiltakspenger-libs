@@ -8,6 +8,7 @@ import java.time.LocalDate
  * Periodene må være sortert.
  */
 data class Periodisering<T>(
+
     val perioderMedVerdi: List<PeriodeMedVerdi<T>>,
 ) : List<PeriodeMedVerdi<T>> by perioderMedVerdi {
     constructor(vararg periodeMedVerdi: PeriodeMedVerdi<T>) : this(periodeMedVerdi.toList())
@@ -35,7 +36,7 @@ data class Periodisering<T>(
 
     companion object {
         fun <T> empty(): Periodisering<T> {
-            return Periodisering(emptyList())
+            return Periodisering(emptyList<PeriodeMedVerdi<T>>())
         }
 
         fun <T> List<Periodisering<T>>.reduser(sammensattVerdi: (T, T) -> T): Periodisering<T> {
@@ -47,6 +48,14 @@ data class Periodisering<T>(
                 total.kombiner(next, sammensattVerdi).slåSammenTilstøtendePerioder()
             }
         }
+
+        operator fun <T : Periodiserbar> invoke(
+            vararg periode: T,
+        ) = Periodisering(periode.map { PeriodeMedVerdi(it, it.periode) })
+
+        operator fun <T : Periodiserbar> invoke(
+            perioder: List<T>,
+        ) = Periodisering(perioder.map { PeriodeMedVerdi(it, it.periode) })
     }
 
     // Offentlig API:

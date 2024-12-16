@@ -3,7 +3,7 @@ dependencies {
     implementation(project(":logging"))
     implementation(project(":json"))
 
-    implementation("io.arrow-kt:arrow-core:2.0.0")
+    implementation("io.arrow-kt:arrow-core:1.2.4")
     implementation("org.jetbrains.kotlinx:atomicfu:0.26.1")
 
     testImplementation(project(":test-common"))

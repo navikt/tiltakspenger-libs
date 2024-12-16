@@ -1,7 +1,7 @@
 dependencies {
     implementation(project(":common"))
     implementation(project(":person-dtos"))
-    implementation("io.arrow-kt:arrow-core:2.0.0")
+    implementation("io.arrow-kt:arrow-core:1.2.4")
 }
 
 configurations.all {

@@ -4,7 +4,7 @@ dependencies {
     implementation(project(":logging"))
     implementation(project(":json"))
     implementation(project(":persistering:persistering-domene"))
-    implementation("io.arrow-kt:arrow-core:2.0.0")
+    implementation("io.arrow-kt:arrow-core:1.2.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("com.github.seratch:kotliquery:1.9.0")
 

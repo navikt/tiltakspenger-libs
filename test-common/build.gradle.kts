@@ -11,7 +11,7 @@ dependencies {
     api("io.kotest.extensions:kotest-assertions-arrow:1.4.0")
     api("io.kotest:kotest-extensions:$kotestVersion")
 
-    api(platform("org.junit:junit-bom:5.11.3"))
+    api(platform("org.junit:junit-bom:5.11.4"))
     api("org.junit.jupiter:junit-jupiter")
 
     api("io.mockk:mockk:$mockkVersion")

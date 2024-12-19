@@ -25,7 +25,7 @@ data class DatadelingBehandlingDTO(
         UNDER_BEHANDLING,
         KLAR_TIL_BESLUTNING,
         UNDER_BESLUTNING,
-        INNVILGET,
+        VEDTATT,
     }
 }
 

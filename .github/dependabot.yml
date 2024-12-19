@@ -4,11 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: daily
-    # set limit to 1 as auto-merge seems to fail if more than 1
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 10
     assignees:
       - "@navikt/tpts"
-    # arrow 2.0 brekker integrasjon med jackson i mange apper
+    # arrow 2.0 brekker integrasjon med jackson i saksbehandling-api (og kanskje andre?)
     # TODO: fjern ignore når dette er fikset:
     # https://github.com/arrow-kt/arrow-integrations/issues/126
     # https://youtrack.jetbrains.com/issue/KT-72084/Reflection-ISE-This-is-should-be-simple-type-for-inline-class-with-delegated-Java-interface
@@ -19,6 +18,6 @@ updates:
     directory: "/"
     schedule:
       interval: daily
-    open-pull-requests-limit: 15
+    open-pull-requests-limit: 10
     assignees:
       - "@navikt/tpts"

@@ -22,7 +22,7 @@ dependencies {
     api("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.9.0")
 
-    api("ch.qos.logback:logback-classic:1.5.12")
+    api("ch.qos.logback:logback-classic:1.5.14")
 }
 
 configurations.all {

@@ -20,7 +20,7 @@ dependencies {
     api("org.wiremock:wiremock:3.10.0")
     api("com.marcinziolo:kotlin-wiremock:2.1.1")
     api("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.9.0")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.10.0")
 
     api("ch.qos.logback:logback-classic:1.5.14")
 }

@@ -11,8 +11,3 @@ dependencies {
     api("com.auth0:java-jwt:4.4.0")
     api("com.auth0:jwks-rsa:0.22.1")
 }
-
-configurations.all {
-    // exclude JUnit 4
-    exclude(group = "junit", module = "junit")
-}

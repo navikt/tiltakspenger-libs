@@ -16,8 +16,3 @@ dependencies {
 
     testImplementation(project(":test-common"))
 }
-
-configurations.all {
-    // exclude JUnit 4
-    exclude(group = "junit", module = "junit")
-}

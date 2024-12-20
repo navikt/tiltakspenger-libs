@@ -144,7 +144,6 @@ class TilgangsstyringServiceImpl(
                 timeout = timeout,
                 sikkerlogg = sikkerlogg,
             ),
-
         ): TilgangsstyringService {
             return TilgangsstyringServiceImpl(
                 fellesPersonTilgangsstyringsklient = fellesPersonTilgangsstyringsklient,

@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 val javaVersion = JavaVersion.VERSION_21
@@ -27,22 +28,29 @@ subprojects {
     apply(plugin = "java-library")
     apply(plugin = "com.diffplug.spotless")
 
+    dependencies {
+        testImplementation(platform("org.junit:junit-bom:5.11.4"))
+        testImplementation("org.junit.jupiter:junit-jupiter")
+        testImplementation("org.junit.jupiter:junit-jupiter-params")
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    }
+
     spotless {
         kotlin {
-            ktlint("0.48.2")
+            ktlint()
+                .editorConfigOverride(
+                    mapOf(
+                        "ktlint_standard_max-line-length" to "off",
+                    ),
+                )
         }
     }
 
     tasks {
-        compileKotlin {
+        kotlin {
             compilerOptions {
                 jvmTarget.set(jvmVersion)
-            }
-        }
-        compileTestKotlin {
-            compilerOptions {
-                jvmTarget.set(jvmVersion)
-                freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+                freeCompilerArgs.add("-Xconsistent-data-class-copy-visibility")
             }
         }
         test {
@@ -50,6 +58,11 @@ subprojects {
             useJUnitPlatform()
             // https://phauer.com/2018/best-practices-unit-testing-kotlin/
             systemProperty("junit.jupiter.testinstance.lifecycle.default", "per_class")
+            testLogging {
+                // We only want to log failed and skipped tests when running Gradle.
+                events("skipped", "failed")
+                exceptionFormat = TestExceptionFormat.FULL
+            }
         }
         withType<Jar> {
             duplicatesStrategy = DuplicatesStrategy.INCLUDE
@@ -88,6 +101,11 @@ subprojects {
     kotlin.sourceSets["test"].kotlin.srcDirs("test")
     sourceSets["main"].resources.srcDirs("main")
     sourceSets["test"].resources.srcDirs("test")
+}
+
+configurations.all {
+    // exclude JUnit 4
+    exclude(group = "junit", module = "junit")
 }
 
 tasks {

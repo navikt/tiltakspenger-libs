@@ -13,6 +13,8 @@ dependencies {
 
     api(platform("org.junit:junit-bom:5.11.4"))
     api("org.junit.jupiter:junit-jupiter")
+    api("org.junit.jupiter:junit-jupiter-params")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     api("io.mockk:mockk:$mockkVersion")
     api("io.mockk:mockk-dsl-jvm:$mockkVersion")
@@ -23,9 +25,4 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.10.0")
 
     api("ch.qos.logback:logback-classic:1.5.14")
-}
-
-configurations.all {
-    // exclude JUnit 4
-    exclude(group = "junit", module = "junit")
 }

@@ -19,11 +19,6 @@ dependencies {
     testImplementation("org.postgresql:postgresql:42.7.4")
 }
 
-configurations.all {
-    // exclude JUnit 4
-    exclude(group = "junit", module = "junit")
-}
-
 tasks.withType<Jar> {
     archiveBaseName.set("persistering-infrastruktur")
 }

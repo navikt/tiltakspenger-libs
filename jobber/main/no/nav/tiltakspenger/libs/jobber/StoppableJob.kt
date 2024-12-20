@@ -110,11 +110,17 @@ private fun startStoppableJob(
     return scheduleJob {
         Either.catch {
             if (runJobCheck.shouldRun()) {
-                if (enableDebuggingLogging) { log.debug("Kjører skeduleringsjobb '$jobName'.") }
+                if (enableDebuggingLogging) {
+                    log.debug("Kjører skeduleringsjobb '$jobName'.")
+                }
                 withCorrelationId(log, mdcCallIdKey) { job(it) }
-                if (enableDebuggingLogging) { log.debug("Fullførte skeduleringsjobb '$jobName'.") }
+                if (enableDebuggingLogging) {
+                    log.debug("Fullførte skeduleringsjobb '$jobName'.")
+                }
             } else {
-                if (enableDebuggingLogging) { log.debug("Skeduleringsjobb '$jobName' kjører ikke pga. startKriterier i runJobCheck. Eksempelvis er vi ikke leader pod.") }
+                if (enableDebuggingLogging) {
+                    log.debug("Skeduleringsjobb '$jobName' kjører ikke pga. startKriterier i runJobCheck. Eksempelvis er vi ikke leader pod.")
+                }
             }
         }.onLeft {
             log.error(

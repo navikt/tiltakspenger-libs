@@ -7,7 +7,7 @@ import no.nav.tiltakspenger.libs.periodisering.tilstøter
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
-internal class Periode_tilstøterTest {
+internal class PeriodeTilstøterTest {
 
     @Test
     fun `ingen elementer gir true`() {

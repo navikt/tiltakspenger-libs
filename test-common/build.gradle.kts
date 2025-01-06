@@ -24,5 +24,5 @@ dependencies {
     api("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.10.1")
 
-    api("ch.qos.logback:logback-classic:1.5.15")
+    api("ch.qos.logback:logback-classic:1.5.16")
 }

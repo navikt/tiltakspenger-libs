@@ -109,8 +109,7 @@ internal class PostgresTransactionContextTest {
 
     @Test
     fun rollback() {
-        PostgresSessionContext(dataSource, sessionCounter).withSession {
-                session ->
+        PostgresSessionContext(dataSource, sessionCounter).withSession { session ->
             session.run(
                 queryOf("create table rollback (test varchar not null)").asExecute,
             )

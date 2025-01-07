@@ -2,7 +2,8 @@ package no.nav.tiltakspenger.libs.common
 
 data class Saksbehandlerroller(
     override val value: Set<Saksbehandlerrolle>,
-) : Roller<Saksbehandlerrolle>, Set<Saksbehandlerrolle> by value {
+) : Roller<Saksbehandlerrolle>,
+    Set<Saksbehandlerrolle> by value {
 
     constructor(vararg roller: Saksbehandlerrolle) : this(roller.toSet())
     constructor(roller: Collection<Saksbehandlerrolle>) : this(roller.toSet())

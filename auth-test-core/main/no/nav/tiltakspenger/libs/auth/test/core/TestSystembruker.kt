@@ -37,7 +37,8 @@ enum class TestSystembrukerrolle : GenerellSystembrukerrolle {
 
 data class TestSystembrukerroller(
     override val value: Set<TestSystembrukerrolle>,
-) : GenerellSystembrukerroller<TestSystembrukerrolle>, Set<TestSystembrukerrolle> by value {
+) : GenerellSystembrukerroller<TestSystembrukerrolle>,
+    Set<TestSystembrukerrolle> by value {
 
     constructor(vararg roller: TestSystembrukerrolle) : this(roller.toSet())
     constructor(roller: Collection<TestSystembrukerrolle>) : this(roller.toSet())

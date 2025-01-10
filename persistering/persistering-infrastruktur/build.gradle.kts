@@ -6,7 +6,7 @@ dependencies {
     implementation(project(":persistering:persistering-domene"))
     implementation("io.arrow-kt:arrow-core:1.2.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-    implementation("com.github.seratch:kotliquery:1.9.0")
+    implementation("com.github.seratch:kotliquery:1.9.1")
 
     testImplementation(project(":test-common"))
 

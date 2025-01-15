@@ -16,7 +16,7 @@ dependencies {
     // need quarkus-junit-4-mock because of https://github.com/testcontainers/testcontainers-java/issues/970
     testImplementation("io.quarkus:quarkus-junit4-mock:3.17.5")
 
-    testImplementation("org.postgresql:postgresql:42.7.4")
+    testImplementation("org.postgresql:postgresql:42.7.5")
 }
 
 tasks.withType<Jar> {

@@ -117,7 +117,7 @@ class Periode(
 
     override fun toString(): String = "Periode(fraOgMed=$fraOgMed tilOgMed=$tilOgMed)"
 
-    fun tilNorskFormat(): String = " ${fraOgMed.format(norskDatoFormatter)}-${tilOgMed.format(norskDatoFormatter)}"
+    fun tilNorskFormat(): String = "${fraOgMed.format(norskDatoFormatter)}-${tilOgMed.format(norskDatoFormatter)}"
 
     fun inneholder(dato: LocalDate): Boolean = range.contains(dato)
 

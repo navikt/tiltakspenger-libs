@@ -1,7 +1,7 @@
 package no.nav.tiltakspenger.libs.periodisering
 
 import java.time.format.DateTimeFormatter
-import java.util.*
+import java.util.Locale
 
 val norskDatoFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern(
@@ -16,6 +16,16 @@ val norskDatoFormatter: DateTimeFormatter =
 val norskTidspunktFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern(
         "d. MMMM yyyy HH:mm:ss",
+        Locale
+            .Builder()
+            .setLanguage("no")
+            .setRegion("NO")
+            .build(),
+    )
+
+val norskDatoMedPunktumFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern(
+        "dd.MM.yyyy",
         Locale
             .Builder()
             .setLanguage("no")

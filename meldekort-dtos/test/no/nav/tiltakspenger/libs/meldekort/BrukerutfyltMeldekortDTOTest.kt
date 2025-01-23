@@ -46,6 +46,7 @@ class BrukerutfyltMeldekortDTOTest {
         val meldekort = BrukerutfyltMeldekortDTO(
             id = "01HMWNSTVP8XB3QR6GYKR2E7AE",
             meldeperiodeId = "01HMWNSTVP8XB3QR6GYKR2E7AF",
+            sakId = "01HMWNSTVP8XB3QR6GYKR2E7AG",
             periode = PeriodeDTO(
                 fraOgMed = startDate.toString(),
                 tilOgMed = endDate.toString(),
@@ -58,6 +59,7 @@ class BrukerutfyltMeldekortDTOTest {
             {
                 "id": "01HMWNSTVP8XB3QR6GYKR2E7AE",
                 "meldeperiodeId": "01HMWNSTVP8XB3QR6GYKR2E7AF",
+                "sakId": "01HMWNSTVP8XB3QR6GYKR2E7AG",
                 "periode": {
                     "fraOgMed": "2024-01-01",
                     "tilOgMed": "2024-01-14"

@@ -8,6 +8,6 @@ dependencies {
     api("io.arrow-kt:arrow-core:1.2.4")
 
     // Auth
-    api("com.auth0:java-jwt:4.4.0")
+    api("com.auth0:java-jwt:4.5.0")
     api("com.auth0:jwks-rsa:0.22.1")
 }

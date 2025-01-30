@@ -5,7 +5,7 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":personklient:personklient-domene"))
 
-    implementation("io.arrow-kt:arrow-core:1.2.4")
+    implementation("io.arrow-kt:arrow-core:2.0.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
 

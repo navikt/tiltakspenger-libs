@@ -24,6 +24,7 @@ data class SøknadDTO(
     val jobbsjansen: PeriodeSpmDTO,
     val trygdOgPensjon: PeriodeSpmDTO,
     val opprettet: LocalDateTime,
+    val saksnummer: String,
 )
 
 data class PersonopplysningerDTO(

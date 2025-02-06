@@ -5,7 +5,7 @@ dependencies {
     api(project(":test-common"))
     api(project(":auth-core"))
 
-    api("io.arrow-kt:arrow-core:1.2.4")
+    api("io.arrow-kt:arrow-core:2.0.1")
 
     // Auth
     api("com.auth0:java-jwt:4.5.0")

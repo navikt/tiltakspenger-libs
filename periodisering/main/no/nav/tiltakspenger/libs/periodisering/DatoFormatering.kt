@@ -32,3 +32,11 @@ val norskDatoMedPunktumFormatter: DateTimeFormatter =
             .setRegion("NO")
             .build(),
     )
+
+val norskUkedagOgDatoUtenÅrFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern(
+    "EEEE d. MMMM",
+    Locale.Builder()
+        .setLanguage("no")
+        .setRegion("NO")
+        .build(),
+)

@@ -25,6 +25,7 @@ class BrukerutfyltMeldekortDTOTest {
         val startDate = LocalDate.of(2024, 1, 1)
         val endDate = LocalDate.of(2024, 1, 14)
         val periode = Periode(startDate, endDate)
+        val journalpostId = "12345"
 
         val dager: Map<LocalDate, BrukerutfyltMeldekortDTO.Status> = buildMap {
             put(periode.fraOgMed, IKKE_RETT_TIL_TILTAKSPENGER)
@@ -53,6 +54,7 @@ class BrukerutfyltMeldekortDTOTest {
             ),
             mottatt = now,
             dager = dager,
+            journalpostId = journalpostId,
         )
 
         val expectedJson = """
@@ -80,7 +82,8 @@ class BrukerutfyltMeldekortDTOTest {
                     "2024-01-12": "IKKE_DELTATT",
                     "2024-01-13": "IKKE_REGISTRERT",
                     "2024-01-14": "IKKE_RETT_TIL_TILTAKSPENGER"
-                  }
+                  },
+                "journalpostId": "$journalpostId"
             }
         """.trimIndent()
 

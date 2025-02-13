@@ -18,6 +18,7 @@ data class BrukerutfyltMeldekortDTO(
     val periode: PeriodeDTO,
     val mottatt: LocalDateTime,
     val dager: Map<LocalDate, Status>,
+    val journalpostId: String,
 ) {
     enum class Status {
         DELTATT,

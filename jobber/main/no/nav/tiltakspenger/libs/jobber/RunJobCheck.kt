@@ -4,9 +4,14 @@ import java.net.InetAddress
 
 data class RunCheckFactory(
     private val leaderPodLookup: LeaderPodLookup,
+    private val applicationIsReady: () -> Boolean,
 ) {
     fun leaderPod(): LeaderPod {
         return LeaderPod(leaderPodLookup = leaderPodLookup)
+    }
+
+    fun isReady(): IsReady {
+        return IsReady { applicationIsReady() }
     }
 }
 
@@ -23,5 +28,13 @@ data class LeaderPod(
 ) : RunJobCheck {
     override fun shouldRun(): Boolean {
         return leaderPodLookup.amITheLeader(InetAddress.getLocalHost().hostName).isRight { it }
+    }
+}
+
+data class IsReady(
+    private val applicationIsReady: () -> Boolean,
+) : RunJobCheck {
+    override fun shouldRun(): Boolean {
+        return applicationIsReady()
     }
 }

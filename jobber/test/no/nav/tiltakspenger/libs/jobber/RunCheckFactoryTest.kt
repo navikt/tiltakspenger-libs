@@ -14,7 +14,7 @@ internal class RunCheckFactoryTest {
         val mock = mockk<LeaderPodLookup> {
             coEvery { amITheLeader(any()) } returns false.right()
         }
-        RunCheckFactory(leaderPodLookup = mock).let {
+        RunCheckFactory(leaderPodLookup = mock) { isReady() }.let {
             it.leaderPod().shouldRun() shouldBe false
             coVerify(exactly = 1) { mock.amITheLeader(any()) }
         }
@@ -25,7 +25,7 @@ internal class RunCheckFactoryTest {
         val mock = mockk<LeaderPodLookup> {
             coEvery { amITheLeader(any()) } returns true.right()
         }
-        RunCheckFactory(leaderPodLookup = mock).let {
+        RunCheckFactory(leaderPodLookup = mock) { isReady() }.let {
             it.leaderPod().shouldRun() shouldBe true
             coVerify(exactly = 1) { mock.amITheLeader(any()) }
         }
@@ -36,9 +36,29 @@ internal class RunCheckFactoryTest {
         val mock = mockk<LeaderPodLookup> {
             coEvery { amITheLeader(any()) } returns LeaderPodLookupFeil.Ikke2xx(500, "").left()
         }
-        RunCheckFactory(leaderPodLookup = mock).let {
+        RunCheckFactory(leaderPodLookup = mock) { isReady() }.let {
             it.leaderPod().shouldRun() shouldBe false
             coVerify(exactly = 1) { mock.amITheLeader(any()) }
         }
     }
+
+    @Test
+    fun `isready - false`() {
+        val mock = mockk<LeaderPodLookup>()
+        RunCheckFactory(leaderPodLookup = mock) { isNotReady() }
+            .isReady().shouldRun() shouldBe false
+    }
+
+    @Test
+    fun `isready - true`() {
+        val mock = mockk<LeaderPodLookup>()
+        RunCheckFactory(leaderPodLookup = mock) { isReady() }
+            .isReady().shouldRun() shouldBe true
+    }
+
+    private fun isReady(): Boolean =
+        true
+
+    private fun isNotReady(): Boolean =
+        false
 }

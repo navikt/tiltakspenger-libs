@@ -19,7 +19,7 @@ data class ArenaTiltaksaktivitetResponsDTO(
         val bedriftsnummer: String?,
         val deltakelsePeriode: DeltakelsesPeriodeDTO?,
         val deltakelseProsent: Float?,
-        val deltakerStatusType: DeltakerStatusType,
+        val deltakerStatusType: ArenaDeltakerStatusType,
         val statusSistEndret: LocalDate?,
         val begrunnelseInnsoeking: String?,
         val antallDagerPerUke: Float?,
@@ -168,23 +168,5 @@ data class ArenaTiltaksaktivitetResponsDTO(
         NYTEST("Nytt testtiltak", Tiltaksgruppe.ARBTREN, false),
         INDOPPRF("Resultatbasert finansiering av formidlingsbistand", Tiltaksgruppe.FORSOK, true),
         SUPPEMP("Supported Employment", Tiltaksgruppe.FORSOK, true),
-    }
-
-    enum class DeltakerStatusType(val navn: String) {
-        AKTUELL("Aktuell"),
-        AVSLAG("Fått avslag"),
-        DELAVB("Deltakelse avbrutt"),
-        FULLF("Fullført"),
-        GJENN("Gjennomføres"),
-        GJENN_AVB("Gjennomføring avbrutt"),
-        GJENN_AVL("Gjennomføring avlyst"),
-        IKKAKTUELL("Ikke aktuell"),
-        IKKEM("Ikke møtt"),
-        INFOMOETE("Informasjonsmøte"),
-        JATAKK("Takket ja til tilbud"),
-        NEITAKK("Takket nei til tilbud"),
-        TILBUD("Godkjent tiltaksplass"),
-        VENTELISTE("Venteliste"),
-        FEILREG("Feilregistrert"),
     }
 }

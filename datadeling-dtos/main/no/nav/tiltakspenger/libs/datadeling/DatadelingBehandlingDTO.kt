@@ -1,6 +1,5 @@
 package no.nav.tiltakspenger.libs.datadeling
 
-import no.nav.tiltakspenger.libs.json.serialize
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -13,8 +12,6 @@ data class DatadelingBehandlingDTO(
     val saksbehandler: String?,
     val beslutter: String?,
     val iverksattTidspunkt: LocalDateTime?,
-    val tiltak: DatadelingTiltakDTO,
-
     val fnr: String,
     val saksnummer: String,
     val søknadJournalpostId: String,
@@ -28,12 +25,3 @@ data class DatadelingBehandlingDTO(
         VEDTATT,
     }
 }
-
-data class DatadelingTiltakDTO(
-    val tiltakNavn: String,
-    val eksternTiltakdeltakerId: String,
-    val gjennomføringId: String?,
-)
-
-internal fun DatadelingTiltakDTO.toDbJson(): String =
-    serialize(this)

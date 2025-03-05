@@ -23,5 +23,6 @@ data class DatadelingBehandlingDTO(
         KLAR_TIL_BESLUTNING,
         UNDER_BESLUTNING,
         VEDTATT,
+        AVBRUTT,
     }
 }

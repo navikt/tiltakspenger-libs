@@ -179,6 +179,10 @@ data class Periodisering<T>(
         )
     }
 
+    fun overlapperMed(periode: Periode): Periodisering<T> {
+        return Periodisering(perioderMedVerdi.filter { it.periode.overlapperMed(periode) })
+    }
+
     /** Sjekker om alle verdiene er lik angitt verdi. */
     fun inneholderKun(verdi: T): Boolean = perioderMedVerdi.all { it.verdi == verdi }
 

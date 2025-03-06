@@ -179,8 +179,23 @@ data class Periodisering<T>(
         )
     }
 
+    // returnerer hele perioden uten å krympe den hvis det er overlapp
     fun overlapperMed(periode: Periode): Periodisering<T> {
         return Periodisering(perioderMedVerdi.filter { it.periode.overlapperMed(periode) })
+    }
+
+    // som krymp, men uten validering av at den nye perioden er innenfor opprinnelig total periode
+    fun overlappendePeriode(
+        nyeTotalePeriode: Periode,
+    ): Periodisering<T> {
+        val beholdte = perioderMedVerdi.mapNotNull { periodeMedVerdi ->
+            periodeMedVerdi.periode.overlappendePeriode(nyeTotalePeriode)?.let { overlappendePeriode ->
+                periodeMedVerdi.copy(periode = overlappendePeriode)
+            }
+        }
+        return this.copy(
+            perioderMedVerdi = beholdte,
+        )
     }
 
     /** Sjekker om alle verdiene er lik angitt verdi. */

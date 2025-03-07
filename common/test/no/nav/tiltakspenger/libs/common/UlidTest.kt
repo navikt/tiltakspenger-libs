@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.common.felles
+package no.nav.tiltakspenger.libs.common
 
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.comparables.shouldBeGreaterThan

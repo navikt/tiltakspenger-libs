@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.common.felles
+package no.nav.tiltakspenger.libs.common
 
 import io.kotest.matchers.collections.shouldHaveSize
 import no.nav.tiltakspenger.libs.common.nonDistinctBy

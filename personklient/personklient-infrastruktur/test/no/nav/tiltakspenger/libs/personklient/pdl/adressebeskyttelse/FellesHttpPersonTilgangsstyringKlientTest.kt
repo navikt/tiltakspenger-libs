@@ -1,12 +1,12 @@
 package no.nav.tiltakspenger.libs.personklient.pdl.adressebeskyttelse
 
+import arrow.core.right
 import com.fasterxml.jackson.core.JsonParseException
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.marcinziolo.kotlin.wiremock.equalTo
 import com.marcinziolo.kotlin.wiremock.fixedMs
 import com.marcinziolo.kotlin.wiremock.post
 import com.marcinziolo.kotlin.wiremock.returns
-import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.assertions.fail
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.shouldBe
@@ -62,13 +62,13 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     sikkerlogg = KotlinLogging.logger {},
                 )
             runTest {
-                pdlClient.bolk(listOf(ident)) shouldBeRight (
+                pdlClient.bolk(listOf(ident)) shouldBe (
                     mapOf(ident to listOf(STRENGT_FORTROLIG, STRENGT_FORTROLIG_UTLAND))
-                    )
-                pdlClient.enkel(ident) shouldBeRight listOf(
+                    ).right()
+                pdlClient.enkel(ident) shouldBe listOf(
                     STRENGT_FORTROLIG,
                     STRENGT_FORTROLIG_UTLAND,
-                )
+                ).right()
             }
         }
     }
@@ -96,12 +96,12 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     sikkerlogg = KotlinLogging.logger {},
                 )
             runTest {
-                pdlClient.bolk(listOf(ident1, ident2)) shouldBeRight (
+                pdlClient.bolk(listOf(ident1, ident2)) shouldBe (
                     mapOf(
                         ident1 to listOf(STRENGT_FORTROLIG),
                         ident2 to listOf(UGRADERT),
                     )
-                    )
+                    ).right()
             }
         }
     }
@@ -124,7 +124,7 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                 )
 
             runTest {
-                pdlClient.bolk(listOf(ident)) shouldBeRight (mapOf(ident to null))
+                pdlClient.bolk(listOf(ident)) shouldBe (mapOf(ident to null)).right()
             }
         }
     }
@@ -147,9 +147,9 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                 )
 
             runTest {
-                pdlClient.bolk(listOf(ident)) shouldBeRight (
+                pdlClient.bolk(listOf(ident)) shouldBe (
                     mapOf(ident to emptyList<AdressebeskyttelseGradering>())
-                    )
+                    ).right()
             }
         }
     }

@@ -5,7 +5,6 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.marcinziolo.kotlin.wiremock.equalTo
 import com.marcinziolo.kotlin.wiremock.get
 import com.marcinziolo.kotlin.wiremock.returns
-import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.common.GenerellSystembruker
 import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
@@ -283,7 +282,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
             wiremock.prepareJwkResponse(jwk)
 
             kotlinx.coroutines.test.runTest {
-                tokenService.validerOgHentBruker(jwt).shouldBeRight()
+                tokenService.validerOgHentBruker(jwt).getOrNull()!!
             }
         }
     }
@@ -310,7 +309,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
             wiremock.prepareJwkResponse(jwk)
 
             kotlinx.coroutines.test.runTest {
-                tokenService.validerOgHentBruker(jwt).shouldBeRight()
+                tokenService.validerOgHentBruker(jwt).getOrNull()!!
             }
         }
     }
@@ -364,7 +363,7 @@ internal class MicrosoftEntraIdTokenServiceTest {
             wiremock.prepareJwkResponse(jwk)
 
             kotlinx.coroutines.test.runTest {
-                tokenService.validerOgHentBruker(jwt).shouldBeRight()
+                tokenService.validerOgHentBruker(jwt).getOrNull()!!
             }
         }
     }

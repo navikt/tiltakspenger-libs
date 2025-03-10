@@ -8,7 +8,6 @@ dependencies {
 
     api("io.kotest:kotest-assertions-core:$kotestVersion")
     api("io.kotest:kotest-assertions-json:$kotestVersion")
-    api("io.kotest.extensions:kotest-assertions-arrow:2.0.0")
     api("io.kotest:kotest-extensions:$kotestVersion")
 
     api(platform("org.junit:junit-bom:5.12.0"))

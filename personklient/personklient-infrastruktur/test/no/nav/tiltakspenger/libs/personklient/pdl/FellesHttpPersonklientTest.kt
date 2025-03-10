@@ -1,10 +1,9 @@
 package no.nav.tiltakspenger.libs.personklient.pdl
 
+import arrow.core.left
 import com.marcinziolo.kotlin.wiremock.equalTo
 import com.marcinziolo.kotlin.wiremock.post
 import com.marcinziolo.kotlin.wiremock.returns
-import io.kotest.assertions.arrow.core.shouldBeLeft
-import io.kotest.assertions.arrow.core.shouldBeRight
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -41,7 +40,7 @@ internal class FellesHttpPersonklientTest {
                 sikkerlogg = KotlinLogging.logger {},
             )
             runTest {
-                pdlClient.hentPerson(Fnr.random(), token, "{}").shouldBeRight()
+                pdlClient.hentPerson(Fnr.random(), token, "{}").getOrNull()!!
             }
         }
     }
@@ -94,8 +93,7 @@ internal class FellesHttpPersonklientTest {
                 sikkerlogg = KotlinLogging.logger {},
             )
             runTest {
-                pdlClient.hentPerson(Fnr.random(), token, "body")
-                    .shouldBeLeft(FellesPersonklientError.ResponsManglerData)
+                pdlClient.hentPerson(Fnr.random(), token, "body") shouldBe FellesPersonklientError.ResponsManglerData.left()
             }
         }
     }
@@ -143,7 +141,7 @@ internal class FellesHttpPersonklientTest {
                 sikkerlogg = KotlinLogging.logger {},
             )
             runTest {
-                pdlClient.hentPerson(Fnr.random(), token, "body").shouldBeRight()
+                pdlClient.hentPerson(Fnr.random(), token, "body").getOrNull()!!
             }
         }
     }

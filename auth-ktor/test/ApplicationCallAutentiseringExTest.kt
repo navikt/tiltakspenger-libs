@@ -22,7 +22,7 @@ import no.nav.tiltakspenger.libs.auth.test.core.JwtGenerator
 import no.nav.tiltakspenger.libs.auth.test.core.TestSystembruker
 import no.nav.tiltakspenger.libs.auth.test.core.tokenServiceForTest
 import no.nav.tiltakspenger.libs.json.objectMapper
-import no.nav.tiltakspenger.vedtak.routes.defaultRequest
+import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequest
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 

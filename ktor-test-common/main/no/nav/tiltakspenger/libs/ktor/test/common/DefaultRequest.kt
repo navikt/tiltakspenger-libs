@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.vedtak.routes
+package no.nav.tiltakspenger.libs.ktor.test.common
 
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.headers

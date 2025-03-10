@@ -28,7 +28,7 @@ class MeldeperiodeDTOTest {
         }
         val meldeperiode = MeldeperiodeDTO(
             id = "01HMWNSTVP8XB3QR6GYKR2E7AE",
-            meldeperiodeKjedeId = "2024-01-01/2024-01-14",
+            kjedeId = "2024-01-01/2024-01-14",
             versjon = 1,
             fnr = "12345678901",
             saksnummer = "SAK123",
@@ -43,7 +43,7 @@ class MeldeperiodeDTOTest {
         val expectedJson = """
             {
                 "id": "01HMWNSTVP8XB3QR6GYKR2E7AE",
-                "meldeperiodeKjedeId": "2024-01-01/2024-01-14",
+                "kjedeId": "2024-01-01/2024-01-14",
                 "versjon": 1,
                 "fnr": "12345678901",
                 "saksnummer": "SAK123",

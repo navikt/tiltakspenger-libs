@@ -21,7 +21,7 @@ fun <T : Periodiserbar> List<T>.toTidslinje(): Periodisering<T> {
 }
 
 /**
- * Null i de periodene vi mangler i verdi
+ * Null i de periodene vi mangler i verdi :partyparrot:
  */
 fun <T : Periodiserbar> List<T>.toTidslinjeMedHull(): Periodisering<T?> {
     if (this.isEmpty()) return Periodisering.empty()

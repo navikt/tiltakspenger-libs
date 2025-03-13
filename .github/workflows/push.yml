@@ -23,7 +23,7 @@ jobs:
       - uses: gradle/gradle-build-action@v3
         with:
           arguments: test --continue --no-daemon --configuration-cache
-      - uses: dorny/test-reporter@v1.9.1
+      - uses: dorny/test-reporter@v2.0.0
         if: always()
         with:
           name: tests

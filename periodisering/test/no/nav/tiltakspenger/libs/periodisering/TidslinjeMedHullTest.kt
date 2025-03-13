@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class TidslinjeTest {
+class TidslinjeMedHullTest {
 
     @Test
     fun `en til en`() {
@@ -19,7 +19,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.000"),
             resultat = INNVILGET,
         )
-        listOf(v1).toTidslinje() shouldBe Periodisering(
+        listOf(v1).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v1, v1.periode),
             ),
@@ -40,7 +40,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = INNVILGET,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
+        listOf(v1, v2).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v2, v2.periode),
             ),
@@ -56,7 +56,7 @@ class TidslinjeTest {
             resultat = INNVILGET,
         )
         shouldThrow<IllegalArgumentException> {
-            listOf(v1, v1).toTidslinje()
+            listOf(v1, v1).toTidslinjeMedHull()
         }.message.shouldContain("Støtter ikke lage tidslinje når 2 elementer er opprettet samtidig.")
     }
 
@@ -74,7 +74,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
+        listOf(v1, v2).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v1, v1.periode),
                 PeriodeMedVerdi(v2, v2.periode),
@@ -96,7 +96,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
+        listOf(v1, v2).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v2, v2.periode),
             ),
@@ -117,7 +117,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
+        listOf(v1, v2).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v1, 1.januar(2024)..1.januar(2024)),
                 PeriodeMedVerdi(v2, 2.januar(2024)..30.januar(2024)),
@@ -140,7 +140,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
+        listOf(v1, v2).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v2, 1.januar(2024)..1.januar(2024)),
                 PeriodeMedVerdi(v1, 2.januar(2024)..31.januar(2024)),
@@ -162,7 +162,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
+        listOf(v1, v2).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v1, 1.januar(2024)..30.januar(2024)),
                 PeriodeMedVerdi(v2, 31.januar(2024)..31.januar(2024)),
@@ -184,7 +184,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
+        listOf(v1, v2).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v2, 1.januar(2024)..3.januar(2024)),
                 PeriodeMedVerdi(v1, 4.januar(2024)..31.januar(2024)),
@@ -206,7 +206,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
+        listOf(v1, v2).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v1, 1.januar(2024)..28.januar(2024)),
                 PeriodeMedVerdi(v2, 29.januar(2024)..31.januar(2024)),
@@ -228,7 +228,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
+        listOf(v1, v2).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v2, 1.januar(2024)..31.januar(2024)),
             ),
@@ -255,7 +255,7 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.002"),
             resultat = INNVILGET,
         )
-        listOf(v1, v2, v3).toTidslinje() shouldBe Periodisering(
+        listOf(v1, v2, v3).toTidslinjeMedHull() shouldBe Periodisering(
             listOf(
                 PeriodeMedVerdi(v3, 1.januar(2024)..31.januar(2024)),
             ),
@@ -263,44 +263,26 @@ class TidslinjeTest {
     }
 
     @Test
-    fun `støtter ikke hull`() {
+    fun `hull mellom periodene blir fyllt inn med nulls`() {
         val v1 = TestVedtak(
-            fom = LocalDate.of(2024, 1, 1),
-            tom = LocalDate.of(2024, 1, 31),
+            fom = 1.januar(2024),
+            tom = 31.januar(2024),
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.000"),
             resultat = INNVILGET,
         )
         val v2 = TestVedtak(
-            fom = LocalDate.of(2024, 2, 2),
-            tom = LocalDate.of(2024, 2, 29),
+            fom = 2.februar(2024),
+            tom = 29.februar(2024),
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        shouldThrow<IllegalArgumentException> {
-            Periodisering(
-                listOf(
-                    PeriodeMedVerdi(v1, v1.periode),
-                    PeriodeMedVerdi(v2, v2.periode),
-                ),
-            )
-        }.message.shouldContain("Ugyldig periodisering")
-    }
-}
 
-internal data class TestVedtak(
-    override val periode: Periode,
-    override val opprettet: LocalDateTime,
-    val resultat: Resultat,
-) : Periodiserbar {
-
-    constructor(fom: LocalDate, tom: LocalDate, opprettet: LocalDateTime, resultat: Resultat) : this(
-        Periode(fom, tom),
-        opprettet,
-        resultat,
-    )
-
-    enum class Resultat {
-        INNVILGET,
-        OPPHØRT,
+        listOf(v1, v2).toTidslinjeMedHull() shouldBe Periodisering(
+            listOf(
+                PeriodeMedVerdi(v1, 1.januar(2024)..31.januar(2024)),
+                PeriodeMedVerdi(null, 1.februar(2024)..1.februar(2024)),
+                PeriodeMedVerdi(v2, 2.februar(2024)..29.februar(2024)),
+            ),
+        )
     }
 }

@@ -19,3 +19,28 @@ fun <T : Periodiserbar> List<T>.toTidslinje(): Periodisering<T> {
             akkumulerteVedtak.utvid(vedtak, vedtak.periode)
         }
 }
+
+/**
+ * Null i de periodene vi mangler i verdi
+ */
+fun <T : Periodiserbar> List<T>.toTidslinjeMedHull(): Periodisering<T?> {
+    if (this.isEmpty()) return Periodisering.empty()
+    if (this.size == 1) return Periodisering(this.first(), this.first().periode)
+
+    this.map { it.opprettet }.distinct().let {
+        require(it.size == this.size) { "Støtter ikke lage tidslinje når 2 elementer er opprettet samtidig." }
+    }
+
+    val sortedByDescending = this.sorted()
+    return sortedByDescending
+        .fold(
+            Periodisering(
+                null,
+                this.map { it.periode }.let {
+                    Periode(it.minOf { it.fraOgMed }, it.maxOf { it.tilOgMed })
+                },
+            ),
+        ) { akkumulerteVedtak, vedtak ->
+            akkumulerteVedtak.setVerdiForDelPeriode(vedtak, vedtak.periode)
+        }
+}

@@ -7,6 +7,7 @@ import java.time.LocalDate
  * Perioden kan ikke ha "hull" som ikke har en verdi og periodene kan ikke overlappe.
  * Periodene må være sortert.
  */
+@Suppress("unused")
 data class Periodisering<T>(
 
     val perioderMedVerdi: List<PeriodeMedVerdi<T>>,
@@ -76,7 +77,7 @@ data class Periodisering<T>(
             throw IllegalArgumentException("Perioder som skal kombineres må være like")
         }
 
-        return this.flatMap { thisPeriodeMedVerdi ->
+        return this.perioderMedVerdi.flatMap { thisPeriodeMedVerdi ->
             other.mapNotNull { otherPeriodeMedVerdi ->
                 thisPeriodeMedVerdi.periode.overlappendePeriode(otherPeriodeMedVerdi.periode)?.let {
                     PeriodeMedVerdi(sammensattVerdi(thisPeriodeMedVerdi.verdi, otherPeriodeMedVerdi.verdi), it)
@@ -87,11 +88,26 @@ data class Periodisering<T>(
         }
     }
 
-    fun <U> map(kombinertVerdi: (T) -> U): Periodisering<U> =
-        this.perioderMedVerdi
+    fun <U> map(kombinertVerdi: (T) -> U): Periodisering<U> {
+        return this.perioderMedVerdi
             .map { PeriodeMedVerdi(kombinertVerdi(it.verdi), it.periode) }
             .slåSammenTilstøtendePerioder()
             .let { Periodisering(it) }
+    }
+
+    fun <U> flatMap(transform: (PeriodeMedVerdi<T>) -> List<PeriodeMedVerdi<U>>): Periodisering<U> {
+        return this.perioderMedVerdi
+            .flatMap { transform(it) }
+            .slåSammenTilstøtendePerioder()
+            .let { Periodisering(it) }
+    }
+
+    fun <U> flatMapPeriodisering(transform: (PeriodeMedVerdi<T>) -> Periodisering<U>): Periodisering<U> {
+        return this.perioderMedVerdi
+            .flatMap { transform(it).krymp(it.periode) }
+            .slåSammenTilstøtendePerioder()
+            .let { Periodisering(it) }
+    }
 
     // Private hjelpemetoder:
 

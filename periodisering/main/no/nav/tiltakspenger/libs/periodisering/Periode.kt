@@ -137,6 +137,16 @@ class Periode(
     fun leggTil(annenPeriode: Periode): List<Periode> = listOf(this).leggSammenMed(annenPeriode, true)
 
     fun tilDager(): List<LocalDate> = fraOgMed.datesUntil(tilOgMed.plusDays(1)).toList()
+
+    fun minusDager(dager: Long): Periode = Periode(fraOgMed.minusDays(dager), tilOgMed.minusDays(dager))
+    fun minus14Dager(): Periode = minusDager(14)
+    fun minusFraOgMed(dager: Long): Periode = Periode(fraOgMed.minusDays(dager), tilOgMed)
+    fun minusTilOgMed(dager: Long): Periode = Periode(fraOgMed, tilOgMed.minusDays(dager))
+
+    fun plusDager(dager: Long): Periode = Periode(fraOgMed.plusDays(dager), tilOgMed.plusDays(dager))
+    fun plus14Dager(): Periode = plusDager(14)
+    fun plusFraOgMed(dager: Long): Periode = Periode(fraOgMed.plusDays(dager), tilOgMed)
+    fun plusTilOgMed(dager: Long): Periode = Periode(fraOgMed, tilOgMed.plusDays(dager))
 }
 
 fun List<Periode>.inneholderOverlapp(): Boolean {

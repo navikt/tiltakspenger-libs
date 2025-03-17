@@ -29,8 +29,7 @@ jobs:
         with:
           gradle-version: wrapper
       - name: Test, build and publish
-        shell: bash
-        run: ./gradlew -Pversion=${{ env.NEW_VERSION }} build publish
+        run: ./gradlew -Pversion=${{ steps.tag.outputs.version }} build publish
         env:
           GITHUB_USERNAME: x-access-token
           GITHUB_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

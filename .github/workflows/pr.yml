@@ -20,11 +20,3 @@ jobs:
       - uses: gradle/gradle-build-action@v3
         with:
           arguments: test --continue --no-daemon --configuration-cache
-
-      - uses: dorny/test-reporter@v2.0.0
-        if: success() || failure()
-        with:
-          name: Test Result
-          path: "**/build/test-results/test/TEST-*.xml"
-          reporter: java-junit
-          token: ${{ secrets.GITHUB_TOKEN }}

@@ -228,3 +228,6 @@ fun Range<LocalDate>.tilOgMed(): LocalDate =
     } else {
         LocalDate.MAX
     }
+
+fun List<Periode>.overlapper(periode: Periode): Boolean = this.any { it.overlapperMed(periode) }
+fun List<Periode>.overlapperIkke(periode: Periode): Boolean = !this.any { it.overlapperMed(periode) }

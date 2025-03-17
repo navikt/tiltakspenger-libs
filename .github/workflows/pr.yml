@@ -16,7 +16,8 @@ jobs:
         with:
           java-version: 21
           distribution: 'temurin'
-
-      - uses: gradle/gradle-build-action@v3
+      - uses: gradle/actions/setup-gradle@v4
         with:
-          arguments: test --continue --no-daemon --configuration-cache
+          gradle-version: wrapper
+      - shell: bash
+        run: ./gradlew build

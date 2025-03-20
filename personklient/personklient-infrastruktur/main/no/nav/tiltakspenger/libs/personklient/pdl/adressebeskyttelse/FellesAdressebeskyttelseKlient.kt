@@ -1,7 +1,7 @@
 package no.nav.tiltakspenger.libs.personklient.pdl.adressebeskyttelse
 
 import arrow.core.Either
-import mu.KLogger
+import io.github.oshai.kotlinlogging.KLogger
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering

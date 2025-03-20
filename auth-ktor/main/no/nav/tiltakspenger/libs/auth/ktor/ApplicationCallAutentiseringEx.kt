@@ -1,9 +1,10 @@
 package no.nav.tiltakspenger.libs.auth.ktor
 
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
-import mu.KLogger
 import no.nav.tiltakspenger.libs.auth.core.TokenService
 import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil
 import no.nav.tiltakspenger.libs.common.Bruker
@@ -18,7 +19,7 @@ import kotlin.text.substring
 
 suspend inline fun ApplicationCall.withSaksbehandler(
     tokenService: TokenService,
-    logger: KLogger = mu.KotlinLogging.logger {},
+    logger: KLogger = KotlinLogging.logger {},
     svarMed403HvisIngenSaksbehandlerRoller: Boolean = true,
     svarMed403HvisIngenScopes: Boolean = true,
     crossinline block: suspend (Saksbehandler) -> Unit,
@@ -43,7 +44,7 @@ suspend inline fun ApplicationCall.withSaksbehandler(
 
 suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.withSystembruker(
     tokenService: TokenService,
-    logger: KLogger = mu.KotlinLogging.logger {},
+    logger: KLogger = KotlinLogging.logger {},
     svarMed403HvisIngenSystembrukerRoller: Boolean = true,
     crossinline block: suspend (B) -> Unit,
 ) {
@@ -68,7 +69,7 @@ suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.with
 
 suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
     tokenService: TokenService,
-    logger: KLogger = mu.KotlinLogging.logger {},
+    logger: KLogger = KotlinLogging.logger {},
     svarMed403HvisIngenSaksbehandlerRoller: Boolean = true,
     svarMed403HvisIngenSystembrukerRoller: Boolean = true,
     svarMed403HvisIngenScopes: Boolean = true,

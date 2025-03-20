@@ -11,9 +11,10 @@ import com.auth0.jwk.SigningKeyNotFoundException
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.DecodedJWT
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import mu.KotlinLogging
 import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil.UgyldigToken.KunneIkkeVerifisereToken
 import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil.UgyldigToken.ManglerClaim
 import no.nav.tiltakspenger.libs.auth.core.Valideringsfeil.UgyldigToken.UlikKid
@@ -55,8 +56,8 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
         .cached(10, 24, TimeUnit.HOURS)
         .rateLimited(10, 1, TimeUnit.MINUTES)
         .build(),
-    private val sikkerlogg: mu.KLogger? = no.nav.tiltakspenger.libs.logging.sikkerlogg,
-    private val logger: mu.KLogger? = KotlinLogging.logger { },
+    private val sikkerlogg: KLogger? = no.nav.tiltakspenger.libs.logging.sikkerlogg,
+    private val logger: KLogger? = KotlinLogging.logger { },
 ) : TokenService {
 
     /**

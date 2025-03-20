@@ -5,11 +5,11 @@ import arrow.core.getOrElse
 import com.github.benmanes.caffeine.cache.AsyncCache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.Expiry
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.future.future
 import kotlinx.coroutines.withContext
-import mu.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.json.lesTre
 import no.nav.tiltakspenger.libs.logging.sikkerlogg
@@ -86,7 +86,7 @@ class EntraIdSystemtokenHttpClient(
             val jsonResponse = httpResponse.body()
             val status = httpResponse.statusCode()
             if (status != 200) {
-                sikkerlogg.error("Feil ved henting av systemtoken mot $otherAppId. Status: $status. jsonResponse: $jsonResponse. uri: $uri.")
+                sikkerlogg.error { "Feil ved henting av systemtoken mot $otherAppId. Status: $status. jsonResponse: $jsonResponse. uri: $uri." }
                 throw RuntimeException("Feil ved henting av systemtoken mot $otherAppId. Status: $status. uri: $uri. Se sikkerlogg for detaljer.")
             }
             Either.catch {

@@ -1,10 +1,10 @@
 package no.nav.tiltakspenger.libs.ktor.common
 
 import arrow.core.Either
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveText
-import mu.KLogger
-import mu.KotlinLogging
 import no.nav.tiltakspenger.libs.json.deserialize
 import no.nav.tiltakspenger.libs.logging.sikkerlogg
 

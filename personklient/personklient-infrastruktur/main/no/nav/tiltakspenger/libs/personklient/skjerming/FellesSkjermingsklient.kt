@@ -2,7 +2,7 @@ package no.nav.tiltakspenger.libs.personklient.skjerming
 
 import arrow.core.Either
 import arrow.core.NonEmptyList
-import mu.KLogger
+import io.github.oshai.kotlinlogging.KLogger
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr

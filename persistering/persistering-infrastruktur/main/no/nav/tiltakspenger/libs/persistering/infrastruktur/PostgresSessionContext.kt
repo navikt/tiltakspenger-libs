@@ -2,13 +2,13 @@ package no.nav.tiltakspenger.libs.persistering.infrastruktur
 
 import arrow.core.Either
 import arrow.core.getOrElse
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotliquery.Session
 import kotliquery.sessionOf
 import kotliquery.using
 import no.nav.tiltakspenger.libs.persistering.domene.SessionContext
 import no.nav.tiltakspenger.libs.persistering.domene.SessionFactory
 import no.nav.tiltakspenger.libs.persistering.domene.TransactionContext
-import org.slf4j.LoggerFactory
 import javax.sql.DataSource
 import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresTransactionContext.Companion.withSession as transactionContextWithSession
 
@@ -20,7 +20,7 @@ open class PostgresSessionContext(
     private val sessionCounter: SessionCounter,
 ) : SessionContext {
 
-    private val log = LoggerFactory.getLogger(this::class.java)
+    private val log = KotlinLogging.logger {}
 
     // Det er viktig at sesjoner ikke opprettes utenfor en try-with-resource, som kan føre til connection-lekkasjer.
     private var session: Session? = null
@@ -84,7 +84,7 @@ open class PostgresSessionContext(
     override fun isClosed(): Boolean {
         if (session == null) return true
         return Either.catch { session!!.connection.underlying.isClosed }.getOrElse {
-            log.error("En feil skjedde når vi prøvde å sjekke om sesjonen var lukket", it)
+            log.error(it) { "En feil skjedde når vi prøvde å sjekke om sesjonen var lukket" }
             true
         }
     }

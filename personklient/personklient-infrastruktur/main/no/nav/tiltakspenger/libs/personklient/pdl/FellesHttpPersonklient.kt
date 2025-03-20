@@ -4,8 +4,8 @@ import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.left
 import com.fasterxml.jackson.module.kotlin.readValue
-import mu.KLogger
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.json.objectMapper

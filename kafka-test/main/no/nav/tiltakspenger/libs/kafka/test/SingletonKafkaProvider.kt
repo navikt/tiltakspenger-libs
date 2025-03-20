@@ -1,6 +1,6 @@
 package no.nav.tiltakspenger.libs.kafka.test
 
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.AdminClientConfig
 import org.testcontainers.kafka.KafkaContainer

@@ -24,7 +24,6 @@ import no.nav.tiltakspenger.libs.auth.test.core.tokenServiceForTest
 import no.nav.tiltakspenger.libs.json.objectMapper
 import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequest
 import org.junit.jupiter.api.Test
-import org.slf4j.LoggerFactory
 
 internal class ApplicationCallAutentiseringExTest {
 
@@ -102,9 +101,6 @@ internal class ApplicationCallAutentiseringExTest {
 
     @Test
     fun `Brukeren er ikke saksbehandler`() {
-        val resource = Thread.currentThread().contextClassLoader.getResource("logback-test.xml")
-        println("Logback test config path: $resource")
-        println("Logger factory: ${LoggerFactory.getILoggerFactory()}")
         runTest {
             testApplication {
                 val jwtGenerator = JwtGenerator()

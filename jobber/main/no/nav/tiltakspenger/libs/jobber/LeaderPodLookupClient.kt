@@ -4,8 +4,8 @@ import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.left
 import arrow.core.right
+import io.github.oshai.kotlinlogging.KLogger
 import kotlinx.atomicfu.atomic
-import mu.KLogger
 import no.nav.tiltakspenger.libs.json.objectMapper
 import java.net.URI
 import java.net.http.HttpClient
@@ -47,16 +47,16 @@ class LeaderPodLookupClient(
                     Either.catch {
                         objectMapper.readTree(body).get("name").asText(null)
                     }.mapLeft {
-                        logger.error("LeaderPodLookup: json-respons fra leader-elector sidecar manglet keyen 'name'. Uri: $uri, body: $body, status: ${httpResponse.statusCode()}")
+                        logger.error { "LeaderPodLookup: json-respons fra leader-elector sidecar manglet keyen 'name'. Uri: $uri, body: $body, status: ${httpResponse.statusCode()}" }
                         LeaderPodLookupFeil.UkjentSvarFraLeaderElectorContainer
                     }
                 } else {
-                    logger.error("LeaderPodLookup: Klarte ikke å kontakte leader-elector sidecar på uri $uri. Fikk status ${httpResponse.statusCode()} og body: $body")
+                    logger.error { "LeaderPodLookup: Klarte ikke å kontakte leader-elector sidecar på uri $uri. Fikk status ${httpResponse.statusCode()} og body: $body" }
                     LeaderPodLookupFeil.Ikke2xx(httpResponse.statusCode(), body).left()
                 }
             }
         }.mapLeft {
-            logger.error("Klarte ikke å kontakte leader-elector-containeren", it)
+            logger.error(it) { "Klarte ikke å kontakte leader-elector-containeren" }
             LeaderPodLookupFeil.KunneIkkeKontakteLeaderElectorContainer
         }.flatten().map { leaderHostname ->
             logger.debug { "Fant leder med navn '$leaderHostname'. Mitt hostname er '$localHostName'." }

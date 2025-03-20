@@ -1,8 +1,8 @@
 package no.nav.tiltakspenger.libs.common
 
 import arrow.core.Either
+import io.github.oshai.kotlinlogging.KLogger
 import kotlinx.coroutines.runBlocking
-import mu.KLogger
 import org.slf4j.MDC
 
 /**
@@ -46,7 +46,7 @@ suspend fun withCorrelationIdSuspend(
         Either.catch {
             MDC.remove(mdcKey)
         }.onLeft {
-            logger.error("En ukjent feil skjedde når vi prøvde fjerne $mdcKey fra MDC.", it)
+            logger.error(it) { "En ukjent feil skjedde når vi prøvde fjerne $mdcKey fra MDC." }
         }
     }
 }
@@ -56,9 +56,6 @@ private fun getCorrelationIdFromThreadLocal(
     mdcKey: String,
 ): CorrelationId? {
     return MDC.get(mdcKey)?.let { CorrelationId(it) } ?: null.also {
-        logger.error(
-            "Mangler '$mdcKey' på MDC. Er dette et asynk-kall? Da må det settes manuelt, så tidlig som mulig.",
-            RuntimeException("Genererer en stacktrace for enklere debugging."),
-        )
+        logger.error(RuntimeException("Genererer en stacktrace for enklere debugging.")) { "Mangler '$mdcKey' på MDC. Er dette et asynk-kall? Da må det settes manuelt, så tidlig som mulig." }
     }
 }

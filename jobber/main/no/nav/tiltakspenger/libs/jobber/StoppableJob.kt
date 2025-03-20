@@ -1,7 +1,7 @@
 package no.nav.tiltakspenger.libs.jobber
 
 import arrow.core.Either
-import mu.KLogger
+import io.github.oshai.kotlinlogging.KLogger
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.withCorrelationId
 import java.time.Duration
@@ -111,23 +111,21 @@ private fun startStoppableJob(
         Either.catch {
             if (runJobCheck.shouldRun()) {
                 if (enableDebuggingLogging) {
-                    log.debug("Kjører skeduleringsjobb '$jobName'.")
+                    log.debug { "Kjører skeduleringsjobb '$jobName'." }
                 }
                 withCorrelationId(log, mdcCallIdKey) { job(it) }
                 if (enableDebuggingLogging) {
-                    log.debug("Fullførte skeduleringsjobb '$jobName'.")
+                    log.debug { "Fullførte skeduleringsjobb '$jobName'." }
                 }
             } else {
                 if (enableDebuggingLogging) {
-                    log.debug("Skeduleringsjobb '$jobName' kjører ikke pga. startKriterier i runJobCheck. Eksempelvis er vi ikke leader pod.")
+                    log.debug { "Skeduleringsjobb '$jobName' kjører ikke pga. startKriterier i runJobCheck. Eksempelvis er vi ikke leader pod." }
                 }
             }
         }.onLeft {
-            log.error(
-                "Skeduleringsjobb '$jobName' feilet. Se sikkerlog for mer kontekst.",
-                RuntimeException("Trigger stacktrace for enklere debug."),
-            )
-            sikkerLogg.error("Skeduleringsjobb '$jobName' feilet med stacktrace:", it)
+            log.error(RuntimeException("Trigger stacktrace for enklere debug.")) { "Skeduleringsjobb '$jobName' feilet. Se sikkerlog for mer kontekst." }
+
+            sikkerLogg.error(it) { "Skeduleringsjobb '$jobName' feilet med stacktrace:" }
         }
     }.let { timer ->
         object : StoppableJob {
@@ -140,7 +138,7 @@ private fun startStoppableJob(
                         "Skeduleringsjobb '$jobName' stoppet. Pågående kjøringer ferdigstilles."
                     }
                 }.onLeft {
-                    log.error("Skeduleringsjobb '$jobName': Feil ved kall til stop()/kanseller Timer.", it)
+                    log.error(it) { "Skeduleringsjobb '$jobName': Feil ved kall til stop()/kanseller Timer." }
                 }
             }
         }

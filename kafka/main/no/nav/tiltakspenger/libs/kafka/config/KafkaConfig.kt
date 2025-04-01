@@ -11,5 +11,12 @@ interface KafkaConfig {
         groupId: String,
     ): Map<String, *>
 
+    fun <K, V> avroConsumerConfig(
+        keyDeserializer: Deserializer<K>,
+        valueDeserializer: Deserializer<V>,
+        groupId: String,
+        useSpecificAvroReader: Boolean,
+    ): Map<String, *>
+
     fun producerConfig(): Map<String, *>
 }

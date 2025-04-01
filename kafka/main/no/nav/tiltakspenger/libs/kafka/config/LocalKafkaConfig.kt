@@ -8,6 +8,7 @@ import org.apache.kafka.common.serialization.StringSerializer
 
 class LocalKafkaConfig(
     private val kafkaBrokers: String = System.getenv("KAFKA_BROKERS") ?: "localhost:9092",
+    private val avroSchemaRegistry: String = System.getenv("KAFKA_SCHEMA_REGISTRY") ?: "localhost:9092",
     private val kafkaAutoOffsetReset: String = "earliest",
 ) : KafkaConfig {
     override fun commonConfig() = mapOf(
@@ -26,6 +27,20 @@ class LocalKafkaConfig(
         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to valueDeserializer::class.java,
         ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG to MAX_POLL_INTERVAL_MS,
     ) + commonConfig()
+
+    override fun <K, V> avroConsumerConfig(
+        keyDeserializer: Deserializer<K>,
+        valueDeserializer: Deserializer<V>,
+        groupId: String,
+        useSpecificAvroReader: Boolean,
+    ) = mapOf(
+        "schema.registry.url" to avroSchemaRegistry,
+        "basic.auth.credentials.source" to "USER_INFO",
+    ) + consumerConfig(
+        keyDeserializer = keyDeserializer,
+        valueDeserializer = valueDeserializer,
+        groupId = groupId,
+    ) + mapOf("specific.avro.reader" to useSpecificAvroReader)
 
     override fun producerConfig() = mapOf(
         ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,

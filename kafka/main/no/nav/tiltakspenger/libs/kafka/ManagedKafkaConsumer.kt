@@ -17,6 +17,7 @@ import java.time.Duration
 import kotlin.RuntimeException
 
 class ManagedKafkaConsumer<K, V>(
+    private val kanLoggeKey: Boolean = true,
     private val topic: String,
     private val config: Map<String, *>,
     private val consume: suspend (key: K, value: V) -> Unit,
@@ -134,19 +135,25 @@ class ManagedKafkaConsumer<K, V>(
     }
 
     private suspend fun process(record: ConsumerRecord<K, V>) {
+        // noen topics bruker fnr som key, og da skal ikke disse logges til vanlig logg
+        val keyLogStatement = if (kanLoggeKey) {
+            "key=${record.key()} "
+        } else {
+            ""
+        }
         try {
             consume(record.key(), record.value())
             log.info {
                 "Consumed record for " +
                     "topic=${record.topic()} " +
-                    "key=${record.key()} " +
+                    keyLogStatement +
                     "partition=${record.partition()} " +
                     "offset=${record.offset()}"
             }
         } catch (t: Throwable) {
             val msg = "Failed to consume record for " +
                 "topic=${record.topic()} " +
-                "key=${record.key()} " +
+                keyLogStatement +
                 "partition=${record.partition()} " +
                 "offset=${record.offset()}"
             throw ConsumerProcessingException(msg, t)

@@ -21,7 +21,7 @@ dependencies {
     api("org.wiremock:wiremock:3.12.1")
     api("com.marcinziolo:kotlin-wiremock:2.1.1")
     api("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.10.1")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.10.2")
 
     api("ch.qos.logback:logback-classic:1.5.18")
 }

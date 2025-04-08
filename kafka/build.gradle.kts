@@ -1,4 +1,4 @@
-val kotlinxCoroutinesVersion = "1.10.1"
+val kotlinxCoroutinesVersion = "1.10.2"
 val kafkaClientsVersion = "4.0.0"
 dependencies {
     implementation(project(":logging"))

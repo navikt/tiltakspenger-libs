@@ -1,4 +1,4 @@
-val kotlinxCoroutinesVersion = "1.10.1"
+val kotlinxCoroutinesVersion = "1.10.2"
 dependencies {
     implementation(project(":common"))
     implementation(project(":json"))

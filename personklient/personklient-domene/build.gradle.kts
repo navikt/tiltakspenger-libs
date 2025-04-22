@@ -1,7 +1,7 @@
 dependencies {
     implementation(project(":common"))
     implementation(project(":person-dtos"))
-    implementation("io.arrow-kt:arrow-core:2.0.1")
+    implementation("io.arrow-kt:arrow-core:2.1.0")
 }
 
 tasks.withType<Jar> {

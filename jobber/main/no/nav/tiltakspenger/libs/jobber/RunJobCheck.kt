@@ -20,7 +20,7 @@ interface RunJobCheck {
 }
 
 fun List<RunJobCheck>.shouldRun(): Boolean {
-    return map { it.shouldRun() }.all { it }
+    return all { it.shouldRun() }
 }
 
 data class LeaderPod(

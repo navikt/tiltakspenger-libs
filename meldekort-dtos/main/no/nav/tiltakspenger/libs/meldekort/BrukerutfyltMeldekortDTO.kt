@@ -27,6 +27,5 @@ data class BrukerutfyltMeldekortDTO(
         FRAVÆR_ANNET,
         IKKE_DELTATT,
         IKKE_REGISTRERT,
-        IKKE_RETT_TIL_TILTAKSPENGER,
     }
 }

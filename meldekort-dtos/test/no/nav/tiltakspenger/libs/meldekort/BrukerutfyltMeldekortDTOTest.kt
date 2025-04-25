@@ -10,7 +10,6 @@ import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.FRAV�
 import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.FRAVÆR_SYKT_BARN
 import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.IKKE_DELTATT
 import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.IKKE_REGISTRERT
-import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.IKKE_RETT_TIL_TILTAKSPENGER
 import no.nav.tiltakspenger.libs.periodisering.Periode
 import no.nav.tiltakspenger.libs.periodisering.PeriodeDTO
 import org.junit.jupiter.api.Test
@@ -28,7 +27,7 @@ class BrukerutfyltMeldekortDTOTest {
         val journalpostId = "12345"
 
         val dager: Map<LocalDate, BrukerutfyltMeldekortDTO.Status> = buildMap {
-            put(periode.fraOgMed, IKKE_RETT_TIL_TILTAKSPENGER)
+            put(periode.fraOgMed, DELTATT)
             put(periode.fraOgMed.plusDays(1), DELTATT)
             put(periode.fraOgMed.plusDays(2), FRAVÆR_ANNET)
             put(periode.fraOgMed.plusDays(3), FRAVÆR_SYKT_BARN)
@@ -41,7 +40,7 @@ class BrukerutfyltMeldekortDTOTest {
             put(periode.fraOgMed.plusDays(10), IKKE_DELTATT)
             put(periode.fraOgMed.plusDays(11), IKKE_DELTATT)
             put(periode.fraOgMed.plusDays(12), IKKE_REGISTRERT)
-            put(periode.tilOgMed, IKKE_RETT_TIL_TILTAKSPENGER)
+            put(periode.tilOgMed, IKKE_REGISTRERT)
         }
 
         val meldekort = BrukerutfyltMeldekortDTO(
@@ -68,7 +67,7 @@ class BrukerutfyltMeldekortDTOTest {
                 },
                 "mottatt": "2024-01-23T12:00:00",
                 "dager": {
-                    "2024-01-01": "IKKE_RETT_TIL_TILTAKSPENGER",
+                    "2024-01-01": "DELTATT",
                     "2024-01-02": "DELTATT",
                     "2024-01-03": "FRAVÆR_ANNET",
                     "2024-01-04": "FRAVÆR_SYKT_BARN",
@@ -81,7 +80,7 @@ class BrukerutfyltMeldekortDTOTest {
                     "2024-01-11": "IKKE_DELTATT",
                     "2024-01-12": "IKKE_DELTATT",
                     "2024-01-13": "IKKE_REGISTRERT",
-                    "2024-01-14": "IKKE_RETT_TIL_TILTAKSPENGER"
+                    "2024-01-14": "IKKE_REGISTRERT"
                   },
                 "journalpostId": "$journalpostId"
             }

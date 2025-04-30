@@ -1,3 +1,3 @@
 dependencies {
-    implementation("io.arrow-kt:arrow-core:2.1.0")
+    implementation("io.arrow-kt:arrow-core:2.1.1")
 }

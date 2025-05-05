@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.common
+package no.nav.tiltakspenger.libs.meldekort
 
 import ulid.ULID
 import java.util.UUID

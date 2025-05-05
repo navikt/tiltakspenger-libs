@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.common
+package no.nav.tiltakspenger.libs.meldekort
 
 import no.nav.tiltakspenger.libs.periodisering.Periode
 import java.time.DayOfWeek

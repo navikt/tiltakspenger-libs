@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.periodisering
 
+import no.nav.tiltakspenger.libs.common.singleOrNullOrThrow
 import java.time.LocalDate
 
 /**
@@ -156,8 +157,29 @@ data class Periodisering<T>(
             .sortedBy { it.periode.fraOgMed }
 
     // Krever at alle elementer i lista har samme verdi for å fungere!
-    private fun <T> List<PeriodeMedVerdi<T>>.leggTilPeriodeMedSammeVerdi(periodeMedVerdi: PeriodeMedVerdi<T>): List<PeriodeMedVerdi<T>> =
-        (this + periodeMedVerdi).leggSammenPerioderMedSammeVerdi(false)
+    private fun <T> List<PeriodeMedVerdi<T>>.leggTilPeriodeMedSammeVerdi(periodeMedVerdi: PeriodeMedVerdi<T>): List<PeriodeMedVerdi<T>> {
+        return (this + periodeMedVerdi).leggSammenPerioderMedSammeVerdi(false)
+    }
+
+    /**
+     * Merk at vi ikke vil kaste feil, selvom den nye perioden ikke overlapper den gamle.
+     * Tenkt at denne erstatter kombinasjonsbruk av utvid + krymp.
+     * Dersom det ikke gir mening og sende inn en default-verdi (i de tilfellene periodiseringen vil overlappe den nye perioden), kan man heller bruke [krymp]
+     *
+     * @return En ny periodisering med perioden til den innsendte [periode]. Dersom verdien finnes i nåværende periodisering beholdes den, hvis den ikke finnes får dagen den innsendte [defaultVerdiDersomDenMangler]
+     * @throws IllegalArgumentException dersom den nåværende periodiseringen inneholder overlapp for angitt periode.
+     */
+    fun nyPeriode(
+        periode: Periode,
+        defaultVerdiDersomDenMangler: T,
+    ): Periodisering<T> {
+        return Periodisering(
+            periode.tilDager().map { dag ->
+                val verdi = perioderMedVerdi.singleOrNullOrThrow { it.periode.inneholder(dag) }?.verdi ?: defaultVerdiDersomDenMangler
+                PeriodeMedVerdi(verdi, Periode(dag, dag))
+            }.slåSammenTilstøtendePerioder(),
+        )
+    }
 
     /**
      * Utvider periodiseringen før og etter nåværende perioder.

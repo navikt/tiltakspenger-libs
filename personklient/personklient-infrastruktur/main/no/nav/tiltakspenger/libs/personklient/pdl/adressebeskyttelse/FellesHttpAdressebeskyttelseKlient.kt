@@ -3,7 +3,10 @@ package no.nav.tiltakspenger.libs.personklient.pdl.adressebeskyttelse
 import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.left
+import arrow.core.right
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +37,10 @@ internal class FellesHttpAdressebeskyttelseKlient(
     private val logg: KLogger? = KotlinLogging.logger {},
     private val sikkerlogg: KLogger?,
 ) : FellesAdressebeskyttelseKlient {
+    private val cache: Cache<Fnr, List<AdressebeskyttelseGradering>> = Caffeine.newBuilder()
+        .expireAfterWrite(java.time.Duration.ofMinutes(60))
+        .build()
+
     private val client = HttpClient.newBuilder()
         .connectTimeout(connectTimeout.toJavaDuration())
         .followRedirects(HttpClient.Redirect.NEVER)
@@ -44,8 +51,13 @@ internal class FellesHttpAdressebeskyttelseKlient(
     override suspend fun enkel(
         fnr: Fnr,
     ): Either<FellesAdressebeskyttelseError, List<AdressebeskyttelseGradering>?> {
+        cache.getIfPresent(fnr)?.let {
+            return it.right()
+        }
         return bolk(listOf(fnr)).map {
-            it[fnr]
+            val adressebeskyttelse = it[fnr]
+            adressebeskyttelse?.let { v -> cache.put(fnr, v) }
+            return@map adressebeskyttelse
         }
     }
 

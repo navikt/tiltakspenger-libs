@@ -102,7 +102,7 @@ class PeriodiseringKrympTest {
     @Test
     fun `støtter nullable`() {
         val periode1 = Periode(start, midt.minusDays(1))
-        val hull = Periode(midt,midt)
+        val hull = Periode(midt, midt)
         val periode2 = Periode(midt.plusDays(1), slutt)
         val nyPeriode = Periode(start.plusDays(1), slutt.minusDays(1))
         val verdi1 = "v1"
@@ -113,9 +113,9 @@ class PeriodiseringKrympTest {
             PeriodeMedVerdi(verdi2, periode2),
         )
         periodisering.krymp(nyPeriode) shouldBe Periodisering(
-            PeriodeMedVerdi(verdi1, Periode(start.plusDays(1),midt.minusDays(1))),
+            PeriodeMedVerdi(verdi1, Periode(start.plusDays(1), midt.minusDays(1))),
             PeriodeMedVerdi(null, hull),
-            PeriodeMedVerdi(verdi2, Periode(midt.plusDays(1),slutt.minusDays(1))),
+            PeriodeMedVerdi(verdi2, Periode(midt.plusDays(1), slutt.minusDays(1))),
         )
     }
 }

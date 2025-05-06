@@ -1,4 +1,4 @@
-val jacksonVersion = "2.18.3"
+val jacksonVersion = "2.19.0"
 dependencies {
     // Json
     api("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")

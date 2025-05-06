@@ -1,5 +1,8 @@
 package no.nav.tiltakspenger.libs.meldekort
 
+import no.nav.tiltakspenger.libs.common.Ulid
+import no.nav.tiltakspenger.libs.common.UlidBase
+import no.nav.tiltakspenger.libs.common.uuidToUlid
 import ulid.ULID
 import java.util.UUID
 

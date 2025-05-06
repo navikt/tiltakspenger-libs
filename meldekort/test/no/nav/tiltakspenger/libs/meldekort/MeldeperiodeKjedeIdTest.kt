@@ -1,7 +1,7 @@
 package no.nav.tiltakspenger.libs.common
 
 import io.kotest.matchers.shouldBe
-import no.nav.tiltakspenger.libs.common.MeldeperiodeKjedeId
+import no.nav.tiltakspenger.libs.meldekort.MeldeperiodeKjedeId
 import no.nav.tiltakspenger.libs.periodisering.Periode
 import org.junit.jupiter.api.Test
 import java.time.LocalDate

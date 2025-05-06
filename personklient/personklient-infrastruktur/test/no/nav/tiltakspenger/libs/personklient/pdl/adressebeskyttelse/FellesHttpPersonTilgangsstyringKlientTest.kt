@@ -3,6 +3,9 @@ package no.nav.tiltakspenger.libs.personklient.pdl.adressebeskyttelse
 import arrow.core.right
 import com.fasterxml.jackson.core.JsonParseException
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock.exactly
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.marcinziolo.kotlin.wiremock.equalTo
 import com.marcinziolo.kotlin.wiremock.fixedMs
 import com.marcinziolo.kotlin.wiremock.post
@@ -270,6 +273,49 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                             HttpConnectTimeoutException("HTTP connect timed out"),
                         ),
                     )
+            }
+        }
+    }
+
+    @Test
+    fun `oppslag på en person caches`() {
+        withWireMockServer { wiremock ->
+            val ident = Fnr.fromString("12345678901")
+            wiremock.post(
+                "[\"12345678901\"]",
+                """
+                {
+                    "12345678901": {
+                        "person": {
+                            "adressebeskyttelse": [
+                                {"gradering": "STRENGT_FORTROLIG"},
+                                {"gradering": "STRENGT_FORTROLIG_UTLAND"}
+                            ]
+                        }
+                    }
+                }
+                """.trimIndent(),
+            )
+
+            val pdlClient =
+                FellesHttpAdressebeskyttelseKlient(
+                    baseUrl = wiremock.baseUrl(),
+                    connectTimeout = 100.milliseconds,
+                    getToken = getToken,
+                    sikkerlogg = KotlinLogging.logger {},
+                )
+            runTest {
+                pdlClient.enkel(ident) shouldBe listOf(
+                    STRENGT_FORTROLIG,
+                    STRENGT_FORTROLIG_UTLAND,
+                ).right()
+
+                pdlClient.enkel(ident) shouldBe listOf(
+                    STRENGT_FORTROLIG,
+                    STRENGT_FORTROLIG_UTLAND,
+                ).right()
+
+                wiremock.verify(exactly(1), postRequestedFor(urlEqualTo("/api/v1/personBolk")))
             }
         }
     }

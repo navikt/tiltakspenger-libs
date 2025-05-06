@@ -23,6 +23,7 @@ include(
     "logging",
     "datadeling-dtos",
     "meldekort-dtos",
+    "meldekort",
     "kafka",
     "kafka-test"
 )

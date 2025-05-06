@@ -37,7 +37,7 @@ internal class FellesHttpAdressebeskyttelseKlient(
     private val logg: KLogger? = KotlinLogging.logger {},
     private val sikkerlogg: KLogger?,
 ) : FellesAdressebeskyttelseKlient {
-    private val cache: Cache<Fnr, List<AdressebeskyttelseGradering>> = Caffeine.newBuilder()
+    private val cache: Cache<String, List<AdressebeskyttelseGradering>> = Caffeine.newBuilder()
         .expireAfterWrite(java.time.Duration.ofMinutes(60))
         .build()
 
@@ -51,12 +51,12 @@ internal class FellesHttpAdressebeskyttelseKlient(
     override suspend fun enkel(
         fnr: Fnr,
     ): Either<FellesAdressebeskyttelseError, List<AdressebeskyttelseGradering>?> {
-        cache.getIfPresent(fnr)?.let {
+        cache.getIfPresent(fnr.verdi)?.let {
             return it.right()
         }
         return bolk(listOf(fnr)).map {
             val adressebeskyttelse = it[fnr]
-            adressebeskyttelse?.let { v -> cache.put(fnr, v) }
+            adressebeskyttelse?.let { v -> cache.put(fnr.verdi, v) }
             return@map adressebeskyttelse
         }
     }

@@ -32,7 +32,7 @@ class PeriodiseringTest {
                     PeriodeMedVerdi("bar", Periode(LocalDate.of(2023, 1, 22), LocalDate.of(2023, 1, 24))),
                 ),
             )
-        }.message shouldBe "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter. Perioder: [Periode(fraOgMed=2023-01-01 tilOgMed=2023-01-20), Periode(fraOgMed=2023-01-22 tilOgMed=2023-01-24)]"
+        }.message shouldBe "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter. Perioder: [1.–20. januar 2023, 22.–24. januar 2023]"
     }
 
     @Test
@@ -44,7 +44,7 @@ class PeriodiseringTest {
                     PeriodeMedVerdi("foo", Periode(LocalDate.of(2023, 1, 1), LocalDate.of(2023, 1, 21))),
                 ),
             )
-        }.message shouldBe "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter. Perioder: [Periode(fraOgMed=2023-01-22 tilOgMed=2023-01-24), Periode(fraOgMed=2023-01-01 tilOgMed=2023-01-21)]"
+        }.message shouldBe "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter. Perioder: [22.–24. januar 2023, 1.–21. januar 2023]"
     }
 
     @Test

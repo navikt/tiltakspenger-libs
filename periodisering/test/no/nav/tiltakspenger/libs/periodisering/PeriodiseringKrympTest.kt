@@ -42,7 +42,7 @@ class PeriodiseringKrympTest {
         val verdi = "test"
         shouldThrow<IllegalArgumentException> {
             Periodisering(verdi, originalPeriode).krymp(nyPeriode)
-        }.message shouldBe "Kan ikke krympe, ny periode Periode(fraOgMed=2023-12-31 tilOgMed=2024-06-01) må ligge innenfor Periode(fraOgMed=2024-01-01 tilOgMed=2024-12-31)"
+        }.message shouldBe "Kan ikke krympe, ny periode 31. desember 2023 – 1. juni 2024 må ligge innenfor 1. januar – 31. desember 2024"
     }
 
     @Test
@@ -52,7 +52,7 @@ class PeriodiseringKrympTest {
         val verdi = "test"
         shouldThrow<IllegalArgumentException> {
             Periodisering(verdi, originalPeriode).krymp(nyPeriode)
-        }.message shouldBe "Kan ikke krympe, ny periode Periode(fraOgMed=2024-06-01 tilOgMed=2025-01-01) må ligge innenfor Periode(fraOgMed=2024-01-01 tilOgMed=2024-12-31)"
+        }.message shouldBe "Kan ikke krympe, ny periode 1. juni 2024 – 1. januar 2025 må ligge innenfor 1. januar – 31. desember 2024"
     }
 
     @Test
@@ -63,7 +63,7 @@ class PeriodiseringKrympTest {
         val periodisering = Periodisering(verdi, originalPeriode)
         shouldThrow<IllegalArgumentException> {
             periodisering.krymp(nyPeriode)
-        }.message shouldBe "Kan ikke krympe, ny periode Periode(fraOgMed=2024-06-02 tilOgMed=2024-12-31) må ligge innenfor Periode(fraOgMed=2024-01-01 tilOgMed=2024-06-01)"
+        }.message shouldBe "Kan ikke krympe, ny periode 2. juni – 31. desember 2024 må ligge innenfor 1. januar – 1. juni 2024"
     }
 
     @Test

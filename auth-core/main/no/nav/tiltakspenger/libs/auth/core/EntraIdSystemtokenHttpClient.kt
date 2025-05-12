@@ -12,7 +12,7 @@ import kotlinx.coroutines.future.future
 import kotlinx.coroutines.withContext
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.json.lesTre
-import no.nav.tiltakspenger.libs.logging.sikkerlogg
+import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpClient
@@ -64,8 +64,7 @@ class EntraIdSystemtokenHttpClient(
                 log.debug { "Henter systemtoken for $otherAppId" }
                 future {
                     generateSystemtoken(otherAppId).also {
-                        sikkerlogg.debug { "Systemtoken hentet for $otherAppId. expiresAt: ${it.expiresAt}, token: ${it.token}" }
-                        log.debug { "Systemtoken hentet for $otherAppId. Se sikkerlogg for mer kontekst." }
+                        log.debug { "Systemtoken hentet for $otherAppId. expiresAt: ${it.expiresAt}." }
                     }
                 }
             }.await()
@@ -86,7 +85,7 @@ class EntraIdSystemtokenHttpClient(
             val jsonResponse = httpResponse.body()
             val status = httpResponse.statusCode()
             if (status != 200) {
-                sikkerlogg.error { "Feil ved henting av systemtoken mot $otherAppId. Status: $status. jsonResponse: $jsonResponse. uri: $uri." }
+                Sikkerlogg.error { "Feil ved henting av systemtoken mot $otherAppId. Status: $status. jsonResponse: $jsonResponse. uri: $uri." }
                 throw RuntimeException("Feil ved henting av systemtoken mot $otherAppId. Status: $status. uri: $uri. Se sikkerlogg for detaljer.")
             }
             Either.catch {
@@ -97,13 +96,13 @@ class EntraIdSystemtokenHttpClient(
                     invaliderCache = { invalidateToken(otherAppId) },
                 )
             }.getOrElse {
-                sikkerlogg.error(it) { "Feil ved parsing av respons fra Entra id client_credentials. status: $status, otherAppId:$otherAppId. jsonResponse: $jsonResponse. uri: $uri" }
+                Sikkerlogg.error(it) { "Feil ved parsing av respons fra Entra id client_credentials. status: $status, otherAppId:$otherAppId. jsonResponse: $jsonResponse. uri: $uri" }
                 throw RuntimeException("Feil ved parsing av respons fra Entra id client_credentials. status: $status, otherAppId:$otherAppId. Se sikkerlogg for detaljer.")
             }
         }.getOrElse {
             // Either.catch slipper igjennom CancellationException som er ønskelig.
-            sikkerlogg.error(it) { "Ukjent feil ved kall mot Azure client_credentials. otherAppId: $otherAppId" }
-            throw RuntimeException("Feil ved henting av systemtoken mot $otherAppId.nummer. Se sikkerlogg for detaljer.")
+            log.error(it) { "Ukjent feil ved kall mot Azure client_credentials. otherAppId: $otherAppId" }
+            throw RuntimeException("Feil ved henting av systemtoken mot $otherAppId.")
         }
     }
 

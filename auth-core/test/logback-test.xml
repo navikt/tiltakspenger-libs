@@ -14,10 +14,11 @@
     <logger name="org.flywaydb" level="WARN"/>
     <logger name="org.eclipse" level="WARN"/>
 
-    <logger name="tjenestekall" level="DEBUG" additivity="false">
-        <appender-ref ref="STDOUT"/>
+    <logger name="team-logs-logger" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT" />
     </logger>
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
+        <appender-ref ref="team-logs" />
     </root>
 </configuration>

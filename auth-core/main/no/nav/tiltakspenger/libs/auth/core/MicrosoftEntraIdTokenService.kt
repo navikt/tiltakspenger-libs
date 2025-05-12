@@ -24,6 +24,7 @@ import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
 import no.nav.tiltakspenger.libs.common.GenerellSystembrukerroller
 import no.nav.tiltakspenger.libs.common.Saksbehandler
 import no.nav.tiltakspenger.libs.common.Saksbehandlerroller
+import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import java.net.URI
 import java.security.interfaces.RSAPublicKey
 import java.util.concurrent.TimeUnit
@@ -56,7 +57,6 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
         .cached(10, 24, TimeUnit.HOURS)
         .rateLimited(10, 1, TimeUnit.MINUTES)
         .build(),
-    private val sikkerlogg: KLogger? = no.nav.tiltakspenger.libs.logging.sikkerlogg,
     private val logger: KLogger? = KotlinLogging.logger { },
 ) : TokenService {
 
@@ -70,7 +70,7 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
                 JWT.decode(token)!!
             }.getOrElse {
                 logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: kunne ikke dekode JWT-token. Se sikkerlogg for mer kontekst." }
-                sikkerlogg?.debug(it) { "token-validering: kunne ikke dekode JWT-token. Token: $token" }
+                Sikkerlogg.debug(it) { "token-validering: kunne ikke dekode JWT-token. Token: $token" }
                 return Valideringsfeil.UgyldigToken.KunneIkkeDekodeToken.left()
             }
 
@@ -94,13 +94,13 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
                     .verify(decoded)
             }.getOrElse {
                 logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Feil under verifisering av JWT. Se sikkerlogg for mer kontekst." }
-                sikkerlogg?.debug(it) { "token-validering: Feil under verifisering av JWT. Token: $token" }
+                Sikkerlogg.debug(it) { "token-validering: Feil under verifisering av JWT. Token: $token" }
                 return KunneIkkeVerifisereToken.left()
             }
             val exp = decoded.getClaim("exp").asLong()!!
             if (((exp * 1000) - System.currentTimeMillis()) < 1000) {
                 logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Tokenet er snart utgått. Dette er en sikkerhetsmekanisme for å unngå at tokenet utgår mens vi bruker det. exp: $exp. Se sikkerlogg for mer kontekst." }
-                sikkerlogg?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Tokenet er snart utgått. Dette er en sikkerhetsmekanisme for å unngå at tokenet utgår mens vi bruker det. exp: $exp. Token: $token" }
+                Sikkerlogg.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Tokenet er snart utgått. Dette er en sikkerhetsmekanisme for å unngå at tokenet utgår mens vi bruker det. exp: $exp. Token: $token" }
                 return KunneIkkeVerifisereToken.left()
             }
 
@@ -113,7 +113,7 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
         }.getOrElse {
             // Dette er bare en safe-guard. Dersom det dukker opp feil vi kan håndtere annerledes her, bør vi fange de opp i egne catch-blokker.
             logger?.error(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Ukjent feil ved validering av token. Se sikkerlogg for mer kontekst." }
-            sikkerlogg?.error(it) { "token-validering: Ukjent feil ved validering av token. Raw token: $token" }
+            Sikkerlogg.error(it) { "token-validering: Ukjent feil ved validering av token. Raw token: $token" }
             Valideringsfeil.UkjentFeil.left()
         }
     }
@@ -132,7 +132,7 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
             ?.let { systembrukerMapper(azp, azpName, it.toSet()) }
             ?: run {
                 logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'roles' i token." }
-                sikkerlogg?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'roles' i token. Dekodet token: ${this.token}. Raw token: $token" }
+                Sikkerlogg.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'roles' i token. Dekodet token: ${this.token}. Raw token: $token" }
                 return ManglerClaim("roles").left()
             }
 
@@ -153,7 +153,7 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
             }?.let { Saksbehandlerroller(it) }
             ?: run {
                 logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'groups' i token." }
-                sikkerlogg?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'groups' i token. Dekodet token: ${this.token}. Raw token: $token" }
+                Sikkerlogg.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'groups' i token. Dekodet token: ${this.token}. Raw token: $token" }
                 return ManglerClaim("groups").left()
             }
 
@@ -168,7 +168,7 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
                 ?.let { systembrukerMapper(azp, azpName, it.toSet()) }
                 ?: run {
                     logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'scp' i token." }
-                    sikkerlogg?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'scp' i token. Dekodet token: ${this.token}. Raw token: $token" }
+                    Sikkerlogg.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim 'scp' i token. Dekodet token: ${this.token}. Raw token: $token" }
                     return ManglerClaim("scp").left()
                 }
         } else {
@@ -198,7 +198,7 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
         return when (throwable) {
             is NetworkException -> {
                 logger?.error(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Nettverksfeil ved henting av JWK. Se sikkerlogg for mer kontekst." }
-                sikkerlogg?.error(throwable) { "token-validering: Nettverksfeil ved henting av JWK. Dekodet token: ${decoded.token}. Raw token: $token" }
+                Sikkerlogg.error(throwable) { "token-validering: Nettverksfeil ved henting av JWK. Dekodet token: ${decoded.token}. Raw token: $token" }
                 Valideringsfeil.KunneIkkeHenteJwk.left()
             }
 
@@ -208,13 +208,13 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
                 return when {
                     message?.contains("No keys found") == true || message?.contains("Failed to parse jwk") == true -> {
                         logger?.error(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Feil ved henting/parsing av JWK. Se sikkerlogg for mer kontekst." }
-                        sikkerlogg?.error(throwable) { "token-validering: Feil ved henting/parsing av JWK. Dekodet token: ${decoded.token}. Raw token: $token" }
+                        Sikkerlogg.error(throwable) { "token-validering: Feil ved henting/parsing av JWK. Dekodet token: ${decoded.token}. Raw token: $token" }
                         Valideringsfeil.KunneIkkeHenteJwk.left()
                     }
 
                     message?.contains("No key found") == true -> {
                         logger?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Kunne ikke knytte JWK sin kid til JWT sin kid. Se sikkerlogg for mer kontekst." }
-                        sikkerlogg?.debug(throwable) { "token-validering: Kunne ikke knytte JWK sin kid til JWT sin kid. Dekodet token: ${decoded.token}. Raw token: $token" }
+                        Sikkerlogg.debug(throwable) { "token-validering: Kunne ikke knytte JWK sin kid til JWT sin kid. Dekodet token: ${decoded.token}. Raw token: $token" }
                         UlikKid.left()
                     }
                     // Fanges opp lengre ned som ukjent feil.
@@ -231,7 +231,7 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
         val sub = this.getClaimAsString("sub").getOrElse { return it.left() }
         if (oid != sub) {
             logger?.debug { "token-validering: oid ($oid) er ulik sub ($sub). Se sikkerlogg for mer kontekst." }
-            sikkerlogg?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: oid ($oid) er ulik sub ($sub). Dekodet token: ${this.token}" }
+            Sikkerlogg.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: oid ($oid) er ulik sub ($sub). Dekodet token: ${this.token}" }
             return Valideringsfeil.UgyldigToken.OidOgSubjectErUlike(oid, sub).left()
         }
         return Unit.right()
@@ -240,7 +240,7 @@ class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembruke
     private fun DecodedJWT.getClaimAsString(name: String): Either<Valideringsfeil.UgyldigToken, String> {
         return this.getClaim(name).asString()?.nullIfBlank()?.right() ?: run {
             logger?.debug { "token-validering: Fant ikke claim '$name' i token." }
-            sikkerlogg?.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim '$name' i token. Dekodet token: ${this.token}" }
+            Sikkerlogg.debug(RuntimeException("Trigger stacktrace for enklere debug.")) { "token-validering: Fant ikke claim '$name' i token. Dekodet token: ${this.token}" }
             ManglerClaim(name).left()
         }
     }

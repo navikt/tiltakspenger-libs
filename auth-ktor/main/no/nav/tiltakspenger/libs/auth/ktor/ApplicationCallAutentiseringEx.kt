@@ -13,7 +13,7 @@ import no.nav.tiltakspenger.libs.common.Saksbehandler
 import no.nav.tiltakspenger.libs.ktor.common.respond401Unauthorized
 import no.nav.tiltakspenger.libs.ktor.common.respond403Forbidden
 import no.nav.tiltakspenger.libs.ktor.common.respond500InternalServerError
-import no.nav.tiltakspenger.libs.logging.sikkerlogg
+import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import kotlin.text.startsWith
 import kotlin.text.substring
 
@@ -81,7 +81,7 @@ suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
         this.response.headers.append("WWW-Authenticate", "Bearer realm=\"tiltakspenger-saksbehandling-api\"")
         this.respond(HttpStatusCode.Unauthorized)
         logger.warn { "Authorization header mangler eller er ikke av typen Bearer. Svarer 401 Unauthorized. Se sikkerlogg mer kontekst." }
-        sikkerlogg.warn { "Authorization header mangler eller er ikke av typen Bearer. Svarer 401 Unauthorized. Authorization header: $authHeader" }
+        Sikkerlogg.warn { "Authorization header mangler eller er ikke av typen Bearer. Svarer 401 Unauthorized. Authorization header: $authHeader" }
         return
     }
     val token = authHeader.substring(7)

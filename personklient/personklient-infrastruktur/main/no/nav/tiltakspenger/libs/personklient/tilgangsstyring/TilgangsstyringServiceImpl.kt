@@ -14,6 +14,7 @@ import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.common.Saksbehandlerroller
+import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering
 import no.nav.tiltakspenger.libs.personklient.pdl.KunneIkkeGjøreTilgangskontroll
 import no.nav.tiltakspenger.libs.personklient.pdl.TilgangsstyringService
@@ -29,7 +30,6 @@ class TilgangsstyringServiceImpl(
     private val fellesPersonTilgangsstyringsklient: FellesAdressebeskyttelseKlient,
     private val skjermingClient: FellesSkjermingsklient,
     private val logger: KLogger? = KotlinLogging.logger {},
-    private val sikkerlogg: KLogger? = no.nav.tiltakspenger.libs.logging.sikkerlogg,
 ) : TilgangsstyringService {
 
     private val harLoggetManglerISkjermingPip = mutableSetOf<Fnr>()
@@ -60,14 +60,14 @@ class TilgangsstyringServiceImpl(
                     if (fnr !in harLoggetManglerIPdlPip) {
                         harLoggetManglerIPdlPip.add(fnr)
                         logger?.error(RuntimeException("Trigger stacktrace for enklere debug. ")) { "Fant ikke fnr i pdl-pip. Antar at saksbehandler ikke har tilgang. Hvis dette er produksjon bør det følges opp. Se sikkerlogg for mer kontekst." }
-                        sikkerlogg?.error { "Fant ikke fnr ${fnr.verdi} i pdl-pip. Antar at saksbehandler ikke har tilgang. Hvis dette er produksjon bør det følges opp." }
+                        Sikkerlogg.error { "Fant ikke fnr ${fnr.verdi} i pdl-pip. Antar at saksbehandler ikke har tilgang. Hvis dette er produksjon bør det følges opp." }
                     }
                 }
                 val erPersonSkjermet = erSkjermetPerson[fnr] ?: return@map (fnr to false).also {
                     if (fnr !in harLoggetManglerISkjermingPip) {
                         harLoggetManglerISkjermingPip.add(fnr)
                         logger?.error(RuntimeException("Trigger stacktrace for enklere debug. ")) { "Fant ikke fnr i skjerming-pip. Antar at saksbehandler ikke har tilgang. Hvis dette er produksjon bør det følges opp. Se sikkerlogg for mer kontekst." }
-                        sikkerlogg?.error { "Fant ikke fnr ${fnr.verdi} i skjerming-pip. Antar at saksbehandler ikke har tilgang. Hvis dette er produksjon bør det følges opp." }
+                        Sikkerlogg.error { "Fant ikke fnr ${fnr.verdi} i skjerming-pip. Antar at saksbehandler ikke har tilgang. Hvis dette er produksjon bør det følges opp." }
                     }
                 }
                 if (erPersonSkjermet && !roller.harSkjerming()) {

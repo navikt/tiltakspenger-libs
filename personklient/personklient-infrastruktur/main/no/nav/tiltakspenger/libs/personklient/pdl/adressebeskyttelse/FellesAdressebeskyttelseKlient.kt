@@ -1,7 +1,6 @@
 package no.nav.tiltakspenger.libs.personklient.pdl.adressebeskyttelse
 
 import arrow.core.Either
-import io.github.oshai.kotlinlogging.KLogger
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering
@@ -31,13 +30,11 @@ interface FellesAdressebeskyttelseKlient {
             getToken: suspend () -> AccessToken,
             connectTimeout: Duration = 1.seconds,
             timeout: Duration = 1.seconds,
-            sikkerlogg: KLogger?,
         ): FellesAdressebeskyttelseKlient = FellesHttpAdressebeskyttelseKlient(
             baseUrl = baseUrl,
             getToken = getToken,
             connectTimeout = connectTimeout,
             timeout = timeout,
-            sikkerlogg = sikkerlogg,
         )
     }
 }

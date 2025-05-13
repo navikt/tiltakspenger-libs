@@ -9,6 +9,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.json.objectMapper
+import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.Ikke2xx
 import java.net.URI
 import java.net.http.HttpClient
@@ -28,7 +29,6 @@ internal class FellesHttpPersonklient(
     connectTimeout: Duration = 1.seconds,
     private val timeout: Duration = 1.seconds,
     private val logg: KLogger? = KotlinLogging.logger {},
-    private val sikkerlogg: KLogger?,
 ) : FellesPersonklient {
     private val client = HttpClient.newBuilder()
         .connectTimeout(connectTimeout.toJavaDuration())
@@ -66,14 +66,14 @@ internal class FellesHttpPersonklient(
                         logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                             "Feil ved deserialisering av PDL-respons. status=$status. Se sikkerlogg for mer kontekst."
                         }
-                        sikkerlogg?.error(it) { "Feil ved deserialisering av PDL-respons. status=$status. response=$responseBody. request=$jsonRequestBody" }
+                        Sikkerlogg.error(it) { "Feil ved deserialisering av PDL-respons. status=$status. response=$responseBody. request=$jsonRequestBody" }
                         FellesPersonklientError.DeserializationException(it)
                     }.map { it.extractData() }.flatten()
                 } else {
                     logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                         "Feil status ved henting av person fra PDL. status=$status. Se sikkerlogg for mer kontekst."
                     }
-                    sikkerlogg?.error(RuntimeException("Trigger stacktrace for debug.")) {
+                    Sikkerlogg.error(RuntimeException("Trigger stacktrace for debug.")) {
                         "Feil status ved henting av person fra PDL. status=$status. response=$responseBody. request=$jsonRequestBody"
                     }
                     if (status == 401 || status == 403) {
@@ -87,7 +87,7 @@ internal class FellesHttpPersonklient(
             logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                 "Ukjent feil ved henting av person fra PDL. Se sikkerlogg for mer kontekst."
             }
-            sikkerlogg?.error(it) { "Ukjent feil ved henting av person fra PDL. request: $jsonRequestBody" }
+            Sikkerlogg.error(it) { "Ukjent feil ved henting av person fra PDL. request: $jsonRequestBody" }
             FellesPersonklientError.NetworkError(it)
         }.flatten()
     }

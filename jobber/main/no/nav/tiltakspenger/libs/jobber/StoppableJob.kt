@@ -32,7 +32,6 @@ fun startStoppableJob(
     initialDelay: Duration,
     intervall: Duration,
     logger: KLogger,
-    sikkerLogg: KLogger,
     mdcCallIdKey: String,
     runJobCheck: List<RunJobCheck>,
     enableDebuggingLogging: Boolean = true,
@@ -42,7 +41,6 @@ fun startStoppableJob(
     return startStoppableJob(
         jobName = jobName,
         log = logger,
-        sikkerLogg = sikkerLogg,
         mdcCallIdKey = mdcCallIdKey,
         runJobCheck = runJobCheck,
         enableDebuggingLogging = enableDebuggingLogging,
@@ -71,7 +69,6 @@ fun startStoppableJob(
     startAt: Date,
     intervall: Duration,
     logger: KLogger,
-    sikkerLogg: KLogger,
     mdcCallIdKey: String,
     runJobCheck: List<RunJobCheck>,
     enableDebuggingLogging: Boolean = true,
@@ -81,7 +78,6 @@ fun startStoppableJob(
     return startStoppableJob(
         jobName = jobName,
         log = logger,
-        sikkerLogg = sikkerLogg,
         mdcCallIdKey = mdcCallIdKey,
         runJobCheck = runJobCheck,
         job = job,
@@ -100,7 +96,6 @@ fun startStoppableJob(
 private fun startStoppableJob(
     jobName: String,
     log: KLogger,
-    sikkerLogg: KLogger,
     mdcCallIdKey: String,
     runJobCheck: List<RunJobCheck>,
     job: (CorrelationId) -> Unit,
@@ -123,9 +118,7 @@ private fun startStoppableJob(
                 }
             }
         }.onLeft {
-            log.error(RuntimeException("Trigger stacktrace for enklere debug.")) { "Skeduleringsjobb '$jobName' feilet. Se sikkerlog for mer kontekst." }
-
-            sikkerLogg.error(it) { "Skeduleringsjobb '$jobName' feilet med stacktrace:" }
+            log.error(it) { "Skeduleringsjobb '$jobName' feilet med stacktrace:" }
         }
     }.let { timer ->
         object : StoppableJob {

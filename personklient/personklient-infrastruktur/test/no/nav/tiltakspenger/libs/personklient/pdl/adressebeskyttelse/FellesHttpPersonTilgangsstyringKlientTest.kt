@@ -10,7 +10,6 @@ import com.marcinziolo.kotlin.wiremock.equalTo
 import com.marcinziolo.kotlin.wiremock.fixedMs
 import com.marcinziolo.kotlin.wiremock.post
 import com.marcinziolo.kotlin.wiremock.returns
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.assertions.fail
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.shouldBe
@@ -62,7 +61,6 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
-                    sikkerlogg = KotlinLogging.logger {},
                 )
             runTest {
                 pdlClient.bolk(listOf(ident)) shouldBe (
@@ -96,7 +94,6 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
-                    sikkerlogg = KotlinLogging.logger {},
                 )
             runTest {
                 pdlClient.bolk(listOf(ident1, ident2)) shouldBe (
@@ -123,7 +120,6 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
-                    sikkerlogg = KotlinLogging.logger {},
                 )
 
             runTest {
@@ -146,7 +142,6 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
-                    sikkerlogg = KotlinLogging.logger {},
                 )
 
             runTest {
@@ -171,7 +166,6 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
-                    sikkerlogg = KotlinLogging.logger {},
                 )
             runTest {
                 pdlClient.bolk(listOf(Fnr.fromString("12345678901"))).leftOrNull()!!.shouldBe(
@@ -199,7 +193,6 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
-                    sikkerlogg = KotlinLogging.logger {},
                 )
             runTest {
                 pdlClient.bolk(listOf(Fnr.fromString("12345678901"))).leftOrNull()!!.also {
@@ -228,7 +221,6 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
-                    sikkerlogg = KotlinLogging.logger {},
                 )
             runBlocking {
                 val job = async {
@@ -264,7 +256,6 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     baseUrl = wiremock.baseUrl(),
                     connectTimeout = 1.milliseconds,
                     getToken = getToken,
-                    sikkerlogg = KotlinLogging.logger {},
                 )
             runTest {
                 pdlClient.bolk(listOf(Fnr.fromString("12345678901"))).leftOrNull()!!
@@ -302,7 +293,6 @@ internal class FellesHttpPersonTilgangsstyringKlientTest {
                     baseUrl = wiremock.baseUrl(),
                     connectTimeout = 100.milliseconds,
                     getToken = getToken,
-                    sikkerlogg = KotlinLogging.logger {},
                 )
             runTest {
                 pdlClient.enkel(ident) shouldBe listOf(

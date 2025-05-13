@@ -4,7 +4,6 @@ import arrow.core.left
 import com.marcinziolo.kotlin.wiremock.equalTo
 import com.marcinziolo.kotlin.wiremock.post
 import com.marcinziolo.kotlin.wiremock.returns
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeTypeOf
@@ -37,7 +36,6 @@ internal class FellesHttpPersonklientTest {
             val pdlClient = FellesHttpPersonklient(
                 endepunkt = wiremock.baseUrl(),
                 connectTimeout = 100.milliseconds,
-                sikkerlogg = KotlinLogging.logger {},
             )
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "{}").getOrNull()!!
@@ -58,7 +56,6 @@ internal class FellesHttpPersonklientTest {
             val pdlClient = FellesHttpPersonklient(
                 endepunkt = wiremock.baseUrl(),
                 connectTimeout = 100.milliseconds,
-                sikkerlogg = KotlinLogging.logger {},
             )
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body").swap().getOrNull()!! shouldBe UkjentFeil(
@@ -90,7 +87,6 @@ internal class FellesHttpPersonklientTest {
             val pdlClient = FellesHttpPersonklient(
                 endepunkt = wiremock.baseUrl(),
                 connectTimeout = 100.milliseconds,
-                sikkerlogg = KotlinLogging.logger {},
             )
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body") shouldBe FellesPersonklientError.ResponsManglerData.left()
@@ -113,7 +109,6 @@ internal class FellesHttpPersonklientTest {
             val pdlClient = FellesHttpPersonklient(
                 endepunkt = wiremock.baseUrl(),
                 connectTimeout = 100.milliseconds,
-                sikkerlogg = KotlinLogging.logger {},
             )
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body").swap().getOrNull()!!.also {
@@ -138,7 +133,6 @@ internal class FellesHttpPersonklientTest {
             val pdlClient = FellesHttpPersonklient(
                 endepunkt = wiremock.baseUrl(),
                 connectTimeout = 100.milliseconds,
-                sikkerlogg = KotlinLogging.logger {},
             )
             runTest {
                 pdlClient.hentPerson(Fnr.random(), token, "body").getOrNull()!!

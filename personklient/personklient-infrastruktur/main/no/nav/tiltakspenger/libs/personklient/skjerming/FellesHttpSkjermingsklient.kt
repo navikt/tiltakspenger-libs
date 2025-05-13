@@ -14,6 +14,7 @@ import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.json.objectMapper
+import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesSkjermingError
 import no.nav.tiltakspenger.libs.personklient.pdl.isSuccess
 import java.net.URI
@@ -33,7 +34,6 @@ class FellesHttpSkjermingsklient(
     connectTimeout: Duration = 1.seconds,
     private val timeout: Duration = 1.seconds,
     private val logg: KLogger? = KotlinLogging.logger {},
-    private val sikkerlogg: KLogger?,
 ) : FellesSkjermingsklient {
 
     private val client = HttpClient.newBuilder()
@@ -67,21 +67,21 @@ class FellesHttpSkjermingsklient(
                         logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                             "Kunne ikke parse skjermingssvar. status=$status. Se sikkerlogg for mer kontekst."
                         }
-                        sikkerlogg?.error(it) {
+                        Sikkerlogg.error(it) {
                             "Kunne ikke parse skjermingssvar. status=$status. response=$responseJson. request=$jsonPayload"
                         }
                         FellesSkjermingError.DeserializationException(it, responseJson, status)
                     }
                 } else {
                     logg?.error(RuntimeException("Trigger stacktrace for debug.")) { "Uforventet http-status ved henting av skjerming. status=$status. Se sikkerlogg for mer kontekst." }
-                    sikkerlogg?.error { "Uforventet http-status ved henting av skjerming. status=$status. response=$responseJson. request=$jsonPayload" }
+                    Sikkerlogg.error { "Uforventet http-status ved henting av skjerming. status=$status. response=$responseJson. request=$jsonPayload" }
                     FellesSkjermingError.Ikke2xx(status = status, body = responseJson).left()
                 }
             }.mapLeft {
                 logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                     "Ukjent feil ved henting av skjerming. Se sikkerlogg for mer kontekst."
                 }
-                sikkerlogg?.error(it) { "Ukjent feil ved henting av skjerming for fnr: ${fnr.verdi}" }
+                Sikkerlogg.error(it) { "Ukjent feil ved henting av skjerming for fnr: ${fnr.verdi}" }
                 // Either.catch slipper igjennom CancellationException som er ønskelig.
                 FellesSkjermingError.NetworkError(it)
             }.flatten()
@@ -108,21 +108,21 @@ class FellesHttpSkjermingsklient(
                         logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                             "Kunne ikke parse skjermingssvar. status=$status. Se sikkerlogg for mer kontekst."
                         }
-                        sikkerlogg?.error(it) {
+                        Sikkerlogg.error(it) {
                             "Kunne ikke parse skjermingssvar. status=$status. response=$responseJson. request=$jsonPayload"
                         }
                         FellesSkjermingError.DeserializationException(it, responseJson, status)
                     }
                 } else {
                     logg?.error(RuntimeException("Trigger stacktrace for debug.")) { "Uforventet http-status ved henting av skjerming. status=$status. Se sikkerlogg for mer kontekst." }
-                    sikkerlogg?.error { "Uforventet http-status ved henting av skjerming. status=$status. response=$responseJson. request=$jsonPayload" }
+                    Sikkerlogg.error { "Uforventet http-status ved henting av skjerming. status=$status. response=$responseJson. request=$jsonPayload" }
                     FellesSkjermingError.Ikke2xx(status = status, body = responseJson).left()
                 }
             }.mapLeft {
                 logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                     "Ukjent feil ved henting av skjerming. Se sikkerlogg for mer kontekst."
                 }
-                sikkerlogg?.error(it) { "Ukjent feil ved henting av skjerming." }
+                Sikkerlogg.error(it) { "Ukjent feil ved henting av skjerming." }
                 // Either.catch slipper igjennom CancellationException som er ønskelig.
                 FellesSkjermingError.NetworkError(it)
             }.flatten()

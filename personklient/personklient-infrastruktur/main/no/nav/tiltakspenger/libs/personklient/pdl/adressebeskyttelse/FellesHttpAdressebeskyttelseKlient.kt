@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.json.objectMapper
+import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesAdressebeskyttelseError
 import no.nav.tiltakspenger.libs.personklient.pdl.isSuccess
@@ -35,7 +36,6 @@ internal class FellesHttpAdressebeskyttelseKlient(
     connectTimeout: Duration = 1.seconds,
     private val timeout: Duration = 1.seconds,
     private val logg: KLogger? = KotlinLogging.logger {},
-    private val sikkerlogg: KLogger?,
 ) : FellesAdressebeskyttelseKlient {
     private val cache: Cache<String, List<AdressebeskyttelseGradering>> = Caffeine.newBuilder()
         .expireAfterWrite(java.time.Duration.ofMinutes(60))
@@ -81,7 +81,7 @@ internal class FellesHttpAdressebeskyttelseKlient(
                         logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                             "Kunne ikke parse adressebeskyttelsesvar. status=$status. Se sikkerlogg for mer kontekst."
                         }
-                        sikkerlogg?.error(it) {
+                        Sikkerlogg.error(it) {
                             "Kunne ikke parse adressebeskyttelsesvar. status=$status. response=$responseBody. request=$jsonPayload"
                         }
                         FellesAdressebeskyttelseError.DeserializationException(responseBody, status, it)
@@ -90,7 +90,7 @@ internal class FellesHttpAdressebeskyttelseKlient(
                     logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                         "Kunne ikke hente adressebeskyttelse fra pdl-pip. status=$status. Se sikkerlogg for mer kontekst."
                     }
-                    sikkerlogg?.error(RuntimeException("Trigger stacktrace for debug.")) {
+                    Sikkerlogg.error(RuntimeException("Trigger stacktrace for debug.")) {
                         "Kunne ikke hente adressebeskyttelse fra pdl-pip. status=$status. response=$responseBody. request=$jsonPayload"
                     }
                     FellesAdressebeskyttelseError.Ikke2xx(status = status, body = responseBody).left()
@@ -99,7 +99,7 @@ internal class FellesHttpAdressebeskyttelseKlient(
                 logg?.error(RuntimeException("Trigger stacktrace for debug.")) {
                     "Ukjent feil ved henting av adressebeskyttelse fra pdl-pip."
                 }
-                sikkerlogg?.error(it) { "Ukjent feil ved henting av adressebeskyttelse fra pdl-pip. fnrListe: $fnrListe" }
+                Sikkerlogg.error(it) { "Ukjent feil ved henting av adressebeskyttelse fra pdl-pip. fnrListe: $fnrListe" }
                 // Either.catch slipper igjennom CancellationException som er ønskelig.
                 FellesAdressebeskyttelseError.NetworkError(it)
             }.flatten()

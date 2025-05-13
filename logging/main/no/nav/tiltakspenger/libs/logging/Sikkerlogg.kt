@@ -10,18 +10,18 @@ object Sikkerlogg {
     private val sikkerMarker = KMarkerFactory.getMarker("TEAM_LOGS")
 
     fun debug(throwable: Throwable? = null, loggstatement: () -> Any?) {
-        sikkerLogger.debug(throwable = throwable, marker = sikkerMarker) { loggstatement }
+        sikkerLogger.debug(throwable = throwable, marker = sikkerMarker, message = loggstatement)
     }
 
     fun info(throwable: Throwable? = null, loggstatement: () -> Any?) {
-        sikkerLogger.info(throwable = throwable, marker = sikkerMarker) { loggstatement }
+        sikkerLogger.info(throwable = throwable, marker = sikkerMarker, message = loggstatement)
     }
 
     fun warn(throwable: Throwable? = null, loggstatement: () -> Any?) {
-        sikkerLogger.warn(throwable = throwable, marker = sikkerMarker) { loggstatement }
+        sikkerLogger.warn(throwable = throwable, marker = sikkerMarker, message = loggstatement)
     }
 
     fun error(throwable: Throwable? = null, loggstatement: () -> Any?) {
-        sikkerLogger.error(throwable = throwable, marker = sikkerMarker) { loggstatement }
+        sikkerLogger.error(throwable = throwable, marker = sikkerMarker, message = loggstatement)
     }
 }

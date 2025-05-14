@@ -87,7 +87,7 @@ class ManagedKafkaConsumer<K, V>(
             seekToEarliestOffsets(records, consumer)
 
             if (!records.isEmpty) {
-                log.info { "Consumer for $topic polled ${records.count()} records." }
+                log.debug { "Consumer for $topic polled ${records.count()} records." }
             }
 
             records.forEach { record ->
@@ -112,7 +112,7 @@ class ManagedKafkaConsumer<K, V>(
             offsetsToCommit.forEach { (partition, offset) -> consumer.seek(partition, offset) }
             consumer.commitSync(offsetsToCommit)
 
-            log.info { "Committed offsets $offsetsToCommit" }
+            log.debug { "Committed offsets $offsetsToCommit" }
             offsetsToCommit.clear()
         }
     }
@@ -143,7 +143,7 @@ class ManagedKafkaConsumer<K, V>(
         }
         try {
             consume(record.key(), record.value())
-            log.info {
+            log.debug {
                 "Consumed record for " +
                     "topic=${record.topic()} " +
                     keyLogStatement +

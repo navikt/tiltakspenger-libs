@@ -1,3 +1,5 @@
+val ktorVersion = "3.1.3"
+
 dependencies {
     implementation(project(":common"))
     implementation(project(":logging"))
@@ -5,6 +7,8 @@ dependencies {
 
     implementation("io.arrow-kt:arrow-core:2.1.1")
     implementation("org.jetbrains.kotlinx:atomicfu:0.27.0")
+
+    implementation("io.ktor:ktor-utils:$ktorVersion")
 
     testImplementation(project(":test-common"))
 }

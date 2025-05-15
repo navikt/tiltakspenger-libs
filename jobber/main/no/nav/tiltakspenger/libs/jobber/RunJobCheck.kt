@@ -1,17 +1,20 @@
 package no.nav.tiltakspenger.libs.jobber
 
+import io.ktor.util.AttributeKey
+import io.ktor.util.Attributes
 import java.net.InetAddress
 
 data class RunCheckFactory(
     private val leaderPodLookup: LeaderPodLookup,
-    private val applicationIsReady: () -> Boolean,
+    private val attributes: Attributes,
+    private val isReadyKey: AttributeKey<Boolean>,
 ) {
     fun leaderPod(): LeaderPod {
         return LeaderPod(leaderPodLookup = leaderPodLookup)
     }
 
     fun isReady(): IsReady {
-        return IsReady { applicationIsReady() }
+        return IsReady(attributes = attributes, isReadyKey = isReadyKey)
     }
 }
 
@@ -32,9 +35,10 @@ data class LeaderPod(
 }
 
 data class IsReady(
-    private val applicationIsReady: () -> Boolean,
+    private val attributes: Attributes,
+    private val isReadyKey: AttributeKey<Boolean>,
 ) : RunJobCheck {
     override fun shouldRun(): Boolean {
-        return applicationIsReady()
+        return attributes.getOrNull(isReadyKey) == true
     }
 }

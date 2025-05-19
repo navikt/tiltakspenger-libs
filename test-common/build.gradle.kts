@@ -4,7 +4,7 @@ dependencies {
     api(project(":common"))
     api(project(":persistering:persistering-domene"))
 
-    api("io.arrow-kt:arrow-core:2.1.1")
+    api("io.arrow-kt:arrow-core:2.1.2")
 
     api("io.kotest:kotest-assertions-core:$kotestVersion")
     api("io.kotest:kotest-assertions-json:$kotestVersion")

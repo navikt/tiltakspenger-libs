@@ -19,6 +19,7 @@ data class Periodisering<T>(
     ) : this(PeriodeMedVerdi(initiellVerdi, totalePeriode))
 
     val perioder: List<Periode> by lazy { perioderMedVerdi.map { it.periode } }
+    val verdier: List<T> by lazy { perioderMedVerdi.map { it.verdi } }
 
     init {
         require(

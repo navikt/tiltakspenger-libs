@@ -15,8 +15,8 @@ data class Periodisering<T>(
 
     constructor(
         initiellVerdi: T,
-        totalePeriode: Periode,
-    ) : this(PeriodeMedVerdi(initiellVerdi, totalePeriode))
+        totalPeriode: Periode,
+    ) : this(PeriodeMedVerdi(initiellVerdi, totalPeriode))
 
     val perioder: List<Periode> by lazy { perioderMedVerdi.map { it.periode } }
     val verdier: List<T> by lazy { perioderMedVerdi.map { it.verdi } }
@@ -28,7 +28,7 @@ data class Periodisering<T>(
         ) { "Ugyldig periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter. Perioder: ${this.perioder}" }
     }
 
-    val totalePeriode by lazy {
+    val totalPeriode by lazy {
         Periode(
             minOf { it.periode.fraOgMed },
             maxOf { it.periode.tilOgMed },
@@ -73,7 +73,7 @@ data class Periodisering<T>(
         other: Periodisering<U>,
         sammensattVerdi: (T, U) -> V,
     ): Periodisering<V> {
-        if (totalePeriode != other.totalePeriode) {
+        if (totalPeriode != other.totalPeriode) {
             throw IllegalArgumentException("Perioder som skal kombineres må være like")
         }
 
@@ -88,9 +88,9 @@ data class Periodisering<T>(
         }
     }
 
-    fun <U> map(kombinertVerdi: (T) -> U): Periodisering<U> {
+    fun <U> map(kombinertVerdi: (T, Periode) -> U): Periodisering<U> {
         return this.perioderMedVerdi
-            .map { PeriodeMedVerdi(kombinertVerdi(it.verdi), it.periode) }
+            .map { PeriodeMedVerdi(kombinertVerdi(it.verdi, it.periode), it.periode) }
             .slåSammenTilstøtendePerioder()
             .let { Periodisering(it) }
     }
@@ -134,8 +134,8 @@ data class Periodisering<T>(
     // Private hjelpemetoder:
 
     private fun setPeriodeMedVerdi(delPeriodeMedVerdi: PeriodeMedVerdi<T>): Periodisering<T> {
-        if (!totalePeriode.inneholderHele(delPeriodeMedVerdi.periode)) {
-            throw IllegalArgumentException("Angitt periode ${delPeriodeMedVerdi.periode} er ikke innenfor $totalePeriode")
+        if (!totalPeriode.inneholderHele(delPeriodeMedVerdi.periode)) {
+            throw IllegalArgumentException("Angitt periode ${delPeriodeMedVerdi.periode} er ikke innenfor $totalPeriode")
         }
         val nyePerioderMedSammeVerdi =
             perioderMedVerdi
@@ -209,9 +209,9 @@ data class Periodisering<T>(
      */
     fun utvid(
         verdi: T,
-        nyeTotalePeriode: Periode,
+        nyTotalPeriode: Periode,
     ): Periodisering<T> {
-        val nyePerioder = nyeTotalePeriode.trekkFra(listOf(totalePeriode))
+        val nyePerioder = nyTotalPeriode.trekkFra(listOf(totalPeriode))
         return this.copy(
             perioderMedVerdi =
             (this.perioderMedVerdi + nyePerioder.map { PeriodeMedVerdi(verdi, it) })
@@ -220,17 +220,17 @@ data class Periodisering<T>(
     }
 
     fun krymp(
-        nyeTotalePeriode: Periode,
+        nyTotalPeriode: Periode,
     ): Periodisering<T> {
-        if (nyeTotalePeriode == totalePeriode) {
+        if (nyTotalPeriode == totalPeriode) {
             // Optimalisering
             return this
         }
-        require(nyeTotalePeriode.fraOgMed >= totalePeriode.fraOgMed && nyeTotalePeriode.tilOgMed <= totalePeriode.tilOgMed) {
-            "Kan ikke krympe, ny periode $nyeTotalePeriode må ligge innenfor $totalePeriode"
+        require(nyTotalPeriode.fraOgMed >= totalPeriode.fraOgMed && nyTotalPeriode.tilOgMed <= totalPeriode.tilOgMed) {
+            "Kan ikke krympe, ny periode $nyTotalPeriode må ligge innenfor $totalPeriode"
         }
         val beholdte = perioderMedVerdi.mapNotNull { periodeMedVerdi ->
-            periodeMedVerdi.periode.overlappendePeriode(nyeTotalePeriode)?.let { overlappendePeriode ->
+            periodeMedVerdi.periode.overlappendePeriode(nyTotalPeriode)?.let { overlappendePeriode ->
                 periodeMedVerdi.copy(periode = overlappendePeriode)
             }
         }
@@ -246,10 +246,10 @@ data class Periodisering<T>(
 
     // som krymp, men uten validering av at den nye perioden er innenfor opprinnelig total periode
     fun overlappendePeriode(
-        nyeTotalePeriode: Periode,
+        nyTotalPeriode: Periode,
     ): Periodisering<T> {
         val beholdte = perioderMedVerdi.mapNotNull { periodeMedVerdi ->
-            periodeMedVerdi.periode.overlappendePeriode(nyeTotalePeriode)?.let { overlappendePeriode ->
+            periodeMedVerdi.periode.overlappendePeriode(nyTotalPeriode)?.let { overlappendePeriode ->
                 periodeMedVerdi.copy(periode = overlappendePeriode)
             }
         }
@@ -264,7 +264,7 @@ data class Periodisering<T>(
     fun hentVerdiForDag(dag: LocalDate): T? = perioderMedVerdi.firstOrNull { it.periode.inneholder(dag) }?.verdi
 
     override fun toString(): String =
-        "Periodisering(totalePeriode=$totalePeriode, perioderMedVerdi=${
+        "Periodisering(totalPeriode=$totalPeriode, perioderMedVerdi=${
             perioderMedVerdi.map { "\n" + it.toString() }
         })"
 }

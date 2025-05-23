@@ -12,8 +12,8 @@ class PeriodeMedVerdierAvUlikTypeTest {
             fun kombinerDagsatsOgAntallBarn(dagsats: Long, antallBarn: Int): DagsatsOgAntallBarn =
                 DagsatsOgAntallBarn(dagsats, antallBarn)
 
-            fun trekkUtDagsats(dagsatsOgAntallBarn: DagsatsOgAntallBarn): Long = dagsatsOgAntallBarn.dagsats
-            fun trekkUtAntallBarn(dagsatsOgAntallBarn: DagsatsOgAntallBarn): Int = dagsatsOgAntallBarn.antallBarn
+            fun trekkUtDagsats(dagsatsOgAntallBarn: DagsatsOgAntallBarn, periode: Periode): Long = dagsatsOgAntallBarn.dagsats
+            fun trekkUtAntallBarn(dagsatsOgAntallBarn: DagsatsOgAntallBarn, periode: Periode): Int = dagsatsOgAntallBarn.antallBarn
         }
     }
 

@@ -8,9 +8,7 @@ import java.time.LocalDate
  * Perioden kan ikke ha "hull" som ikke har en verdi og periodene kan ikke overlappe.
  * Periodene må være sortert.
  */
-@Suppress("unused")
 data class Periodisering<T>(
-
     val perioderMedVerdi: List<PeriodeMedVerdi<T>>,
 ) : List<PeriodeMedVerdi<T>> by perioderMedVerdi {
     constructor(vararg periodeMedVerdi: PeriodeMedVerdi<T>) : this(periodeMedVerdi.toList())
@@ -96,6 +94,28 @@ data class Periodisering<T>(
             .let { Periodisering(it) }
     }
 
+    /** Oppdaterer kun verdien for hver [PeriodeMedVerdi] */
+    fun <U> mapVerdi(kombinertVerdi: (T, Periode) -> U): Periodisering<U> {
+        return this.perioderMedVerdi
+            .map { PeriodeMedVerdi(kombinertVerdi(it.verdi, it.periode), it.periode) }
+            .slåSammenTilstøtendePerioder()
+            .let { Periodisering(it) }
+    }
+
+    /**
+     * Merk at en Periodisering må være sammenhengende. Så for at det skal gi mening å bruke denne metoden må [T] være nullable.
+     */
+    fun filter(kombinertVerdi: (T, Periode) -> Boolean): Periodisering<T> {
+        return this.perioderMedVerdi.map {
+            if (kombinertVerdi(it.verdi, it.periode)) {
+                it
+            } else {
+                PeriodeMedVerdi(null as T, it.periode)
+            }
+        }.slåSammenTilstøtendePerioder()
+            .let { Periodisering(it) }
+    }
+
     fun <U> flatMap(transform: (PeriodeMedVerdi<T>) -> List<PeriodeMedVerdi<U>>): Periodisering<U> {
         return this.perioderMedVerdi
             .flatMap { transform(it) }
@@ -175,7 +195,8 @@ data class Periodisering<T>(
     ): Periodisering<T> {
         return Periodisering(
             periode.tilDager().map { dag ->
-                val verdi = perioderMedVerdi.singleOrNullOrThrow { it.periode.inneholder(dag) }?.verdi ?: defaultVerdiDersomDenMangler
+                val verdi = perioderMedVerdi.singleOrNullOrThrow { it.periode.inneholder(dag) }?.verdi
+                    ?: defaultVerdiDersomDenMangler
                 PeriodeMedVerdi(verdi, Periode(dag, dag))
             }.slåSammenTilstøtendePerioder(),
         )

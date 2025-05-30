@@ -1,4 +1,4 @@
-val testContainersVersion = "1.21.0"
+val testContainersVersion = "1.21.1"
 
 dependencies {
     implementation(project(":logging"))

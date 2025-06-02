@@ -10,7 +10,7 @@ dependencies {
     api("io.kotest:kotest-assertions-json:$kotestVersion")
     api("io.kotest:kotest-extensions:$kotestVersion")
 
-    api(platform("org.junit:junit-bom:5.12.2"))
+    api(platform("org.junit:junit-bom:5.13.0"))
     api("org.junit.jupiter:junit-jupiter")
     api("org.junit.jupiter:junit-jupiter-params")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

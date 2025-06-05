@@ -8,7 +8,7 @@ import java.time.Duration
 import java.util.Date
 import java.util.Timer
 import java.util.TimerTask
-import kotlin.concurrent.fixedRateTimer
+import kotlin.concurrent.timer
 
 interface StoppableJob {
     val jobName: String
@@ -20,8 +20,8 @@ interface StoppableJob {
 }
 
 /**
- * Starter en jobb som venter [initialDelay] før den kjører jobben i et fast [intervall].
- *Vil starte en daemon thread som betyr at VMen ikke vil vente på denne tråden for å avslutte.
+ * Starter en jobb som venter [initialDelay] etter det vil den vente [intervall] etter jobben har kjørt ferdig før den starter på nytt.
+ * @param runAsDaemon true - vil default starte en daemon thread som betyr at VMen ikke vil vente på denne tråden for å avslutte.
  *
  * @param job Wrappes i en correlationId og en try-catch for å logge eventuelle feil.
  * @param runJobCheck Liste av RunJobCheck som må returnere true for at jobben skal kjøre. Ved tom liste, kjøres jobben alltid.
@@ -35,6 +35,7 @@ fun startStoppableJob(
     mdcCallIdKey: String,
     runJobCheck: List<RunJobCheck>,
     enableDebuggingLogging: Boolean = true,
+    runAsDaemon: Boolean = true,
     job: (CorrelationId) -> Unit,
 ): StoppableJob {
     logger.info { "Starter skeduleringsjobb '$jobName'. Intervall: hvert ${intervall.toMinutes()}. minutt. Initial delay: ${initialDelay.toMinutes()} minutt(er)" }
@@ -45,20 +46,19 @@ fun startStoppableJob(
         runJobCheck = runJobCheck,
         enableDebuggingLogging = enableDebuggingLogging,
         job = job,
-
-    ) {
-        fixedRateTimer(
+    ) { timerTask ->
+        timer(
             name = jobName,
-            daemon = true,
+            daemon = runAsDaemon,
             initialDelay = initialDelay.toMillis(),
             period = intervall.toMillis(),
-            action = it,
+            action = timerTask,
         )
     }
 }
 
 /**
- * Starter en jobb som venter til et gitt tidspunkt ([startAt]) før den kjører jobben i et fast [intervall].
+ * Starter en jobb som venter til et gitt tidspunkt ([startAt]) etter det vil den vente [intervall] etter jobben har kjørt ferdig før den starter på nytt.
  * Vil starte en daemon thread som betyr at VMen ikke vil vente på denne tråden for å avslutte.
  *
  * @param job Wrappes i en correlationId og en try-catch for å logge eventuelle feil.
@@ -83,7 +83,7 @@ fun startStoppableJob(
         job = job,
         enableDebuggingLogging = enableDebuggingLogging,
     ) {
-        fixedRateTimer(
+        timer(
             name = jobName,
             daemon = true,
             startAt = startAt,

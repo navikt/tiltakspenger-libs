@@ -1,4 +1,4 @@
-val ktorVersion = "3.1.3"
+val ktorVersion = "3.2.0"
 dependencies {
     implementation(project(":common"))
     implementation(project(":logging"))

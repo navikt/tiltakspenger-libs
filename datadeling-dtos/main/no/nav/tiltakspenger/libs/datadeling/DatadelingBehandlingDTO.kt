@@ -18,6 +18,7 @@ data class DatadelingBehandlingDTO(
     val opprettetTidspunktSaksbehandlingApi: LocalDateTime,
 ) {
     enum class Behandlingsstatus {
+        UNDER_AUTOMATISK_BEHANDLING,
         KLAR_TIL_BEHANDLING,
         UNDER_BEHANDLING,
         KLAR_TIL_BESLUTNING,

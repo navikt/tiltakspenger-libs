@@ -9,5 +9,5 @@ dependencies {
 
     // Auth
     api("com.auth0:java-jwt:4.5.0")
-    api("com.auth0:jwks-rsa:0.22.1")
+    api("com.auth0:jwks-rsa:0.22.2")
 }

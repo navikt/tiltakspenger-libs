@@ -220,7 +220,7 @@ fun List<Periode>.inneholderOverlapp(): Boolean {
 }
 
 /**
- * Sjekker at for hver til og med er dagen før neste fra og med. Brukes gjerne i sammenhenger der man periodiserer en vedtaksperiode. Dette skal tilsvare logikken i [Periodisering]
+ * Sjekker at for hver til og med er dagen før neste fra og med. Brukes gjerne i sammenhenger der man periodiserer en vedtaksperiode. Dette skal tilsvare logikken i [no.nav.tiltakspenger.libs.periodisering.ikkesammenhengende.IkkesammenhengendePeriodisering]
  *
  * Vil returnere false dersom listen ikke er sortert, har hull eller overlapp.
  * @return true dersom listen har mindre enn to elementer, eller alle periodene tilstøter hverandre.
@@ -294,3 +294,6 @@ fun List<Periode>.overlapperIkke(periode: Periode): Boolean = !this.any { it.ove
 
 infix fun LocalDate.til(other: LocalDate): Periode = Periode(this, other)
 infix fun Int.til(other: LocalDate): Periode = Periode(other.withDayOfMonth(this), other)
+
+/** Periode med denne dagen som fraOgMed og tilOgMed */
+fun LocalDate.somPeriode() = Periode(this, this)

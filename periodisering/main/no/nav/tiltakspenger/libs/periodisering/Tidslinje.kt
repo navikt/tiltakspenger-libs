@@ -6,26 +6,7 @@ package no.nav.tiltakspenger.libs.periodisering
  */
 fun <T : Periodiserbar> List<T>.toTidslinje(): Periodisering<T> {
     if (this.isEmpty()) return Periodisering.empty()
-    if (this.size == 1) return Periodisering(this.first(), this.first().periode)
-    this.map { it.opprettet }.distinct().let {
-        require(it.size == this.size) { "Støtter ikke lage tidslinje når 2 elementer er opprettet samtidig." }
-    }
-    val sortedByDescending = this.sortedDescending()
-    return sortedByDescending
-        .drop(1)
-        .fold(
-            Periodisering(sortedByDescending.first(), sortedByDescending.first().periode),
-        ) { akkumulerteVedtak, vedtak ->
-            akkumulerteVedtak.utvid(vedtak, vedtak.periode)
-        }
-}
-
-/**
- * Null i de periodene vi mangler i verdi :partyparrot:
- */
-fun <T : Periodiserbar> List<T>.toTidslinjeMedHull(): Periodisering<T?> {
-    if (this.isEmpty()) return Periodisering.empty()
-    if (this.size == 1) return Periodisering(this.first(), this.first().periode)
+    if (this.size == 1) return SammenhengendePeriodisering(this.first(), this.first().periode)
 
     this.map { it.opprettet }.distinct().let {
         require(it.size == this.size) { "Støtter ikke lage tidslinje når 2 elementer er opprettet samtidig." }
@@ -34,13 +15,8 @@ fun <T : Periodiserbar> List<T>.toTidslinjeMedHull(): Periodisering<T?> {
     val sortedByDescending = this.sorted()
     return sortedByDescending
         .fold(
-            Periodisering(
-                null,
-                this.map { it.periode }.let {
-                    Periode(it.minOf { it.fraOgMed }, it.maxOf { it.tilOgMed })
-                },
-            ),
+            Periodisering.empty<T>() as Periodisering<T>,
         ) { akkumulerteVedtak, vedtak ->
-            akkumulerteVedtak.setVerdiForDelPeriode(vedtak, vedtak.periode)
+            akkumulerteVedtak.setVerdiForDelperiode(vedtak, vedtak.periode)
         }
 }

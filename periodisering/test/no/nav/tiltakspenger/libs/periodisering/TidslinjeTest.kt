@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.periodisering
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import no.nav.tiltakspenger.libs.dato.januar
 import no.nav.tiltakspenger.libs.periodisering.TestVedtak.Resultat.INNVILGET
 import no.nav.tiltakspenger.libs.periodisering.TestVedtak.Resultat.OPPHØRT
 import org.junit.jupiter.api.Test
@@ -19,10 +20,8 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.000"),
             resultat = INNVILGET,
         )
-        listOf(v1).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v1, v1.periode),
-            ),
+        listOf(v1).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v1, v1.periode),
         )
     }
 
@@ -40,10 +39,8 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = INNVILGET,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v2, v2.periode),
-            ),
+        listOf(v1, v2).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v2, v2.periode),
         )
     }
 
@@ -74,11 +71,9 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v1, v1.periode),
-                PeriodeMedVerdi(v2, v2.periode),
-            ),
+        listOf(v1, v2).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v1, v1.periode),
+            PeriodeMedVerdi(v2, v2.periode),
         )
     }
 
@@ -96,10 +91,8 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v2, v2.periode),
-            ),
+        listOf(v1, v2).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v2, v2.periode),
         )
     }
 
@@ -117,12 +110,10 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v1, 1.januar(2024)..1.januar(2024)),
-                PeriodeMedVerdi(v2, 2.januar(2024)..30.januar(2024)),
-                PeriodeMedVerdi(v1, 31.januar(2024)..31.januar(2024)),
-            ),
+        listOf(v1, v2).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v1, 1.januar(2024)..1.januar(2024)),
+            PeriodeMedVerdi(v2, 2.januar(2024)..30.januar(2024)),
+            PeriodeMedVerdi(v1, 31.januar(2024)..31.januar(2024)),
         )
     }
 
@@ -140,11 +131,9 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v2, 1.januar(2024)..1.januar(2024)),
-                PeriodeMedVerdi(v1, 2.januar(2024)..31.januar(2024)),
-            ),
+        listOf(v1, v2).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v2, 1.januar(2024)..1.januar(2024)),
+            PeriodeMedVerdi(v1, 2.januar(2024)..31.januar(2024)),
         )
     }
 
@@ -162,11 +151,9 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v1, 1.januar(2024)..30.januar(2024)),
-                PeriodeMedVerdi(v2, 31.januar(2024)..31.januar(2024)),
-            ),
+        listOf(v1, v2).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v1, 1.januar(2024)..30.januar(2024)),
+            PeriodeMedVerdi(v2, 31.januar(2024)..31.januar(2024)),
         )
     }
 
@@ -184,11 +171,9 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v2, 1.januar(2024)..3.januar(2024)),
-                PeriodeMedVerdi(v1, 4.januar(2024)..31.januar(2024)),
-            ),
+        listOf(v1, v2).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v2, 1.januar(2024)..3.januar(2024)),
+            PeriodeMedVerdi(v1, 4.januar(2024)..31.januar(2024)),
         )
     }
 
@@ -206,11 +191,9 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v1, 1.januar(2024)..28.januar(2024)),
-                PeriodeMedVerdi(v2, 29.januar(2024)..31.januar(2024)),
-            ),
+        listOf(v1, v2).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v1, 1.januar(2024)..28.januar(2024)),
+            PeriodeMedVerdi(v2, 29.januar(2024)..31.januar(2024)),
         )
     }
 
@@ -228,10 +211,9 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.001"),
             resultat = OPPHØRT,
         )
-        listOf(v1, v2).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v2, 1.januar(2024)..31.januar(2024)),
-            ),
+        listOf(v1, v2).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v2, 1.januar(2024)..31.januar(2024)),
+
         )
     }
 
@@ -255,10 +237,9 @@ class TidslinjeTest {
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.002"),
             resultat = INNVILGET,
         )
-        listOf(v1, v2, v3).toTidslinje() shouldBe Periodisering(
-            listOf(
-                PeriodeMedVerdi(v3, 1.januar(2024)..31.januar(2024)),
-            ),
+        listOf(v1, v2, v3).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v3, 1.januar(2024)..31.januar(2024)),
+
         )
     }
 
@@ -277,13 +258,11 @@ class TidslinjeTest {
             resultat = OPPHØRT,
         )
         shouldThrow<IllegalArgumentException> {
-            Periodisering(
-                listOf(
-                    PeriodeMedVerdi(v1, v1.periode),
-                    PeriodeMedVerdi(v2, v2.periode),
-                ),
+            SammenhengendePeriodisering(
+                PeriodeMedVerdi(v1, v1.periode),
+                PeriodeMedVerdi(v2, v2.periode),
             )
-        }.message.shouldContain("Ugyldig periodisering")
+        }.message.shouldContain("Ugyldig sammenhengende periodisering")
     }
 }
 

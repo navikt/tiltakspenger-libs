@@ -14,8 +14,8 @@ class PeriodiseringKrympTest {
     fun `ny periode lik original periode`() {
         val originalPeriode = Periode(start, slutt)
         val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
-        periodisering.krymp(originalPeriode) shouldBe Periodisering(verdi, originalPeriode)
+        val periodisering = SammenhengendePeriodisering(verdi, originalPeriode)
+        periodisering.krymp(originalPeriode) shouldBe SammenhengendePeriodisering(verdi, originalPeriode)
     }
 
     @Test
@@ -23,8 +23,8 @@ class PeriodiseringKrympTest {
         val originalPeriode = Periode(start, slutt)
         val nyPeriode = Periode(midt, slutt)
         val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
-        periodisering.krymp(nyPeriode) shouldBe Periodisering(verdi, nyPeriode)
+        val periodisering = SammenhengendePeriodisering(verdi, originalPeriode)
+        periodisering.krymp(nyPeriode) shouldBe SammenhengendePeriodisering(verdi, nyPeriode)
     }
 
     @Test
@@ -32,7 +32,10 @@ class PeriodiseringKrympTest {
         val originalPeriode = Periode(start, slutt)
         val nyPeriode = Periode(start, midt)
         val verdi = "test"
-        Periodisering(verdi, originalPeriode).krymp(nyPeriode) shouldBe Periodisering(verdi, nyPeriode)
+        SammenhengendePeriodisering(
+            verdi,
+            originalPeriode,
+        ).krymp(nyPeriode) shouldBe SammenhengendePeriodisering(verdi, nyPeriode)
     }
 
     @Test
@@ -41,7 +44,7 @@ class PeriodiseringKrympTest {
         val nyPeriode = Periode(start.minusDays(1), midt)
         val verdi = "test"
         shouldThrow<IllegalArgumentException> {
-            Periodisering(verdi, originalPeriode).krymp(nyPeriode)
+            SammenhengendePeriodisering(verdi, originalPeriode).krymp(nyPeriode)
         }.message shouldBe "Kan ikke krympe, ny periode 31. desember 2023 – 1. juni 2024 må ligge innenfor 1. januar – 31. desember 2024"
     }
 
@@ -51,7 +54,7 @@ class PeriodiseringKrympTest {
         val nyPeriode = Periode(midt, slutt.plusDays(1))
         val verdi = "test"
         shouldThrow<IllegalArgumentException> {
-            Periodisering(verdi, originalPeriode).krymp(nyPeriode)
+            SammenhengendePeriodisering(verdi, originalPeriode).krymp(nyPeriode)
         }.message shouldBe "Kan ikke krympe, ny periode 1. juni 2024 – 1. januar 2025 må ligge innenfor 1. januar – 31. desember 2024"
     }
 
@@ -60,7 +63,7 @@ class PeriodiseringKrympTest {
         val originalPeriode = Periode(start, midt)
         val nyPeriode = Periode(midt.plusDays(1), slutt)
         val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
+        val periodisering = SammenhengendePeriodisering(verdi, originalPeriode)
         shouldThrow<IllegalArgumentException> {
             periodisering.krymp(nyPeriode)
         }.message shouldBe "Kan ikke krympe, ny periode 2. juni – 31. desember 2024 må ligge innenfor 1. januar – 1. juni 2024"
@@ -73,11 +76,11 @@ class PeriodiseringKrympTest {
         val nyPeriode = Periode(midt, slutt)
         val verdi1 = "v1"
         val verdi2 = "v2"
-        val periodisering = Periodisering(
+        val periodisering = SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, periode1),
             PeriodeMedVerdi(verdi2, periode2),
         )
-        periodisering.krymp(nyPeriode) shouldBe Periodisering(
+        periodisering.krymp(nyPeriode) shouldBe SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, Periode(midt, midt)),
             PeriodeMedVerdi(verdi2, periode2),
         )
@@ -90,31 +93,28 @@ class PeriodiseringKrympTest {
         val nyPeriode = Periode(start.plusDays(1), midt.minusDays(1))
         val verdi1 = "v1"
         val verdi2 = "v2"
-        val periodisering = Periodisering(
+        val periodisering = SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, periode1),
             PeriodeMedVerdi(verdi2, periode2),
         )
-        periodisering.krymp(nyPeriode) shouldBe Periodisering(
+        periodisering.krymp(nyPeriode) shouldBe SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, nyPeriode),
         )
     }
 
     @Test
-    fun `støtter nullable`() {
+    fun `støtter hull`() {
         val periode1 = Periode(start, midt.minusDays(1))
-        val hull = Periode(midt, midt)
         val periode2 = Periode(midt.plusDays(1), slutt)
         val nyPeriode = Periode(start.plusDays(1), slutt.minusDays(1))
         val verdi1 = "v1"
         val verdi2 = "v2"
-        val periodisering = Periodisering(
+        val periodisering = IkkesammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, periode1),
-            PeriodeMedVerdi(null, hull),
             PeriodeMedVerdi(verdi2, periode2),
         )
-        periodisering.krymp(nyPeriode) shouldBe Periodisering(
+        periodisering.krymp(nyPeriode) shouldBe IkkesammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, Periode(start.plusDays(1), midt.minusDays(1))),
-            PeriodeMedVerdi(null, hull),
             PeriodeMedVerdi(verdi2, Periode(midt.plusDays(1), slutt.minusDays(1))),
         )
     }

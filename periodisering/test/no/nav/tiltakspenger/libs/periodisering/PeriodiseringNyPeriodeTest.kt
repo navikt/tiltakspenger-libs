@@ -15,26 +15,29 @@ class PeriodiseringNyPeriodeTest {
     @Test
     fun `ny periode lik original periode`() {
         val originalPeriode = Periode(mandagUke1, søndagUke2)
-        val verdi: String? = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
-        periodisering.nyPeriode(originalPeriode, null) shouldBe periodisering
+        val verdi = "test"
+        val periodisering = SammenhengendePeriodisering(verdi, originalPeriode)
+        periodisering.nyPeriode(originalPeriode, "default-verdi") shouldBe periodisering
     }
 
     @Test
     fun `krymping av av siste del av periode`() {
         val originalPeriode = Periode(mandagUke1, søndagUke2)
         val nyPeriode = Periode(mandagUke2, søndagUke2)
-        val verdi: String? = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
-        periodisering.nyPeriode(nyPeriode, null) shouldBe Periodisering(verdi, nyPeriode)
+        val verdi = "test"
+        val periodisering = SammenhengendePeriodisering(verdi, originalPeriode)
+        periodisering.nyPeriode(nyPeriode, "default-verdi") shouldBe SammenhengendePeriodisering(verdi, nyPeriode)
     }
 
     @Test
     fun `krymping av av første del av periode`() {
         val originalPeriode = Periode(mandagUke1, søndagUke2)
         val nyPeriode = Periode(mandagUke1, mandagUke2)
-        val verdi: String? = "test"
-        Periodisering(verdi, originalPeriode).nyPeriode(nyPeriode, null) shouldBe Periodisering(verdi, nyPeriode)
+        val verdi = "test"
+        SammenhengendePeriodisering(
+            verdi,
+            originalPeriode,
+        ).nyPeriode(nyPeriode, "default-verdi") shouldBe SammenhengendePeriodisering(verdi, nyPeriode)
     }
 
     @Test
@@ -42,13 +45,13 @@ class PeriodiseringNyPeriodeTest {
         val periode1 = Periode(mandagUke1, mandagUke2)
         val periode2 = Periode(mandagUke2.plusDays(1), søndagUke2)
         val nyPeriode = Periode(mandagUke2, søndagUke2)
-        val verdi1: String? = "v1"
-        val verdi2: String? = "v2"
-        val periodisering = Periodisering(
+        val verdi1 = "v1"
+        val verdi2 = "v2"
+        val periodisering = SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, periode1),
             PeriodeMedVerdi(verdi2, periode2),
         )
-        periodisering.nyPeriode(nyPeriode, null) shouldBe Periodisering(
+        periodisering.nyPeriode(nyPeriode, "default-verdi") shouldBe SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, Periode(mandagUke2, mandagUke2)),
             PeriodeMedVerdi(verdi2, periode2),
         )
@@ -59,13 +62,13 @@ class PeriodiseringNyPeriodeTest {
         val periode1 = Periode(mandagUke1, mandagUke2)
         val periode2 = Periode(mandagUke2.plusDays(1), søndagUke2)
         val nyPeriode = Periode(mandagUke1.plusDays(1), mandagUke2.minusDays(1))
-        val verdi1: String? = "v1"
-        val verdi2: String? = "v2"
-        val periodisering = Periodisering(
+        val verdi1 = "v1"
+        val verdi2 = "v2"
+        val periodisering = SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, periode1),
             PeriodeMedVerdi(verdi2, periode2),
         )
-        periodisering.nyPeriode(nyPeriode, null) shouldBe Periodisering(
+        periodisering.nyPeriode(nyPeriode, "default-verdi") shouldBe SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, nyPeriode),
         )
     }
@@ -76,16 +79,16 @@ class PeriodiseringNyPeriodeTest {
         val hull = Periode(mandagUke2, mandagUke2)
         val periode2 = Periode(mandagUke2.plusDays(1), søndagUke2)
         val nyPeriode = Periode(mandagUke1.plusDays(1), søndagUke2.minusDays(1))
-        val verdi1: String? = "v1"
-        val verdi2: String? = "v2"
-        val periodisering = Periodisering(
+        val verdi1: String = "v1"
+        val verdi2: String = "v2"
+        val periodisering = SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, periode1),
-            PeriodeMedVerdi(null, hull),
+            PeriodeMedVerdi("default-verdi", hull),
             PeriodeMedVerdi(verdi2, periode2),
         )
-        periodisering.nyPeriode(nyPeriode, null) shouldBe Periodisering(
+        periodisering.nyPeriode(nyPeriode, "default-verdi") shouldBe SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi1, Periode(mandagUke1.plusDays(1), mandagUke2.minusDays(1))),
-            PeriodeMedVerdi(null, hull),
+            PeriodeMedVerdi("default-verdi", hull),
             PeriodeMedVerdi(verdi2, Periode(mandagUke2.plusDays(1), søndagUke2.minusDays(1))),
         )
     }
@@ -93,19 +96,25 @@ class PeriodiseringNyPeriodeTest {
     @Test
     fun `ingen overlapp`() {
         val originalPeriode = Periode(mandagUke1, søndagUke2)
-        val verdi: String? = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
-        periodisering.nyPeriode(originalPeriode.plus14Dager(), null) shouldBe Periodisering(null, originalPeriode.plus14Dager())
+        val verdi = "test"
+        val periodisering = SammenhengendePeriodisering(verdi, originalPeriode)
+        periodisering.nyPeriode(
+            periode = originalPeriode.plus14Dager(),
+            defaultVerdiDersomDenMangler = "default-verdi",
+        ) shouldBe SammenhengendePeriodisering(
+            "default-verdi",
+            originalPeriode.plus14Dager(),
+        )
     }
 
     @Test
     fun `1 dag overlapp`() {
         val originalPeriode = Periode(mandagUke1, mandagUke1)
-        val verdi: String? = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
-        periodisering.nyPeriode(Periode(mandagUke1, søndagUke2), null) shouldBe Periodisering(
+        val verdi = "test"
+        val periodisering = SammenhengendePeriodisering(verdi, originalPeriode)
+        periodisering.nyPeriode(Periode(mandagUke1, søndagUke2), "default-verdi") shouldBe SammenhengendePeriodisering(
             PeriodeMedVerdi(verdi, Periode(mandagUke1, mandagUke1)),
-            PeriodeMedVerdi(null, Periode(mandagUke1.plusDays(1), søndagUke2)),
+            PeriodeMedVerdi("default-verdi", Periode(mandagUke1.plusDays(1), søndagUke2)),
         )
     }
 }

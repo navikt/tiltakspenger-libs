@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.periodisering
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.dato.januar
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 
@@ -8,7 +9,7 @@ internal class PeriodiseringFilterTest {
     @Test
     fun `filtrer bort miderste element`() {
         val opprettet = LocalDateTime.now()
-        val elementA: PeriodeMedVerdi<Element?> = PeriodeMedVerdi(
+        val elementA: PeriodeMedVerdi<Element> = PeriodeMedVerdi(
             Element(
                 "a",
                 1 til 2.januar(2025),
@@ -16,7 +17,7 @@ internal class PeriodiseringFilterTest {
             ),
             1 til 2.januar(2025),
         )
-        val elementB: PeriodeMedVerdi<Element?> = PeriodeMedVerdi(
+        val elementB: PeriodeMedVerdi<Element> = PeriodeMedVerdi(
             Element(
                 "b",
                 3 til 4.januar(2025),
@@ -24,7 +25,7 @@ internal class PeriodiseringFilterTest {
             ),
             3 til 4.januar(2025),
         )
-        val elementC: PeriodeMedVerdi<Element?> = PeriodeMedVerdi(
+        val elementC: PeriodeMedVerdi<Element> = PeriodeMedVerdi(
             Element(
                 "c",
                 5 til 6.januar(2025),
@@ -32,14 +33,11 @@ internal class PeriodiseringFilterTest {
             ),
             5 til 6.januar(2025),
         )
-        val periodisering = Periodisering(elementA, elementB, elementC)
-        periodisering.filter { verdi, periode -> verdi?.verdi != "b" } shouldBe
-            Periodisering(
-                listOf(
-                    elementA,
-                    elementB.copy(verdi = null),
-                    elementC,
-                ),
+        val periodisering = SammenhengendePeriodisering(elementA, elementB, elementC)
+        periodisering.filter { verdi, periode -> verdi.verdi != "b" } shouldBe
+            IkkesammenhengendePeriodisering(
+                elementA,
+                elementC,
             )
     }
 

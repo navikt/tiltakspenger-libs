@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.periodisering.periode
+package no.nav.tiltakspenger.libs.periode
 
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue

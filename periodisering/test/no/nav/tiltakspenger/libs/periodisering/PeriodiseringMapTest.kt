@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.periodisering
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.dato.januar
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 
@@ -32,14 +33,12 @@ internal class PeriodiseringMapTest {
             ),
             5 til 6.januar(2025),
         )
-        val periodisering = Periodisering(elementA, elementB, elementC)
+        val periodisering = SammenhengendePeriodisering(elementA, elementB, elementC)
         periodisering.mapVerdi { verdi, periode -> verdi.copy(verdi = verdi.verdi + verdi.verdi) } shouldBe
-            Periodisering(
-                listOf(
-                    elementA.copy(verdi = elementA.verdi.copy(verdi = "aa")),
-                    elementB.copy(verdi = elementB.verdi.copy(verdi = "bb")),
-                    elementC.copy(verdi = elementC.verdi.copy(verdi = "cc")),
-                ),
+            SammenhengendePeriodisering(
+                elementA.copy(verdi = elementA.verdi.copy(verdi = "aa")),
+                elementB.copy(verdi = elementB.verdi.copy(verdi = "bb")),
+                elementC.copy(verdi = elementC.verdi.copy(verdi = "cc")),
             )
     }
 

@@ -1,20 +1,20 @@
-package no.nav.tiltakspenger.libs.periodisering.periode
+package no.nav.tiltakspenger.libs.periode
 
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.dato.august
+import no.nav.tiltakspenger.libs.dato.desember
+import no.nav.tiltakspenger.libs.dato.januar
+import no.nav.tiltakspenger.libs.dato.juli
+import no.nav.tiltakspenger.libs.dato.juni
+import no.nav.tiltakspenger.libs.dato.mai
+import no.nav.tiltakspenger.libs.dato.september
 import no.nav.tiltakspenger.libs.periodisering.Periode
-import no.nav.tiltakspenger.libs.periodisering.august
-import no.nav.tiltakspenger.libs.periodisering.desember
 import no.nav.tiltakspenger.libs.periodisering.inneholderOverlapp
-import no.nav.tiltakspenger.libs.periodisering.januar
-import no.nav.tiltakspenger.libs.periodisering.juli
-import no.nav.tiltakspenger.libs.periodisering.juni
 import no.nav.tiltakspenger.libs.periodisering.leggSammen
 import no.nav.tiltakspenger.libs.periodisering.leggSammenMed
-import no.nav.tiltakspenger.libs.periodisering.mai
 import no.nav.tiltakspenger.libs.periodisering.overlappendePerioder
-import no.nav.tiltakspenger.libs.periodisering.september
 import no.nav.tiltakspenger.libs.periodisering.til
 import no.nav.tiltakspenger.libs.periodisering.trekkFra
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -159,12 +159,9 @@ class PeriodeTest {
 
     @Test
     fun `man kan trekke en periode fra en annen ikke-overlappende periode`() {
-        val periodeEn = Periode(fraOgMed = 3.mai(2022), tilOgMed = 15.mai(2022))
-        val periodeTo = Periode(fraOgMed = 6.mai(2022), tilOgMed = 18.mai(2022))
-        val perioder = periodeEn.trekkFra(listOf(periodeTo))
-        assertEquals(1, perioder.size)
-        assertEquals(3.mai(2022), perioder[0].fraOgMed)
-        assertEquals(5.mai(2022), perioder[0].tilOgMed)
+        val periodeEn = 3 til 15.mai(2022)
+        val periodeTo = 6 til 18.mai(2022)
+        periodeEn.trekkFra(listOf(periodeTo)) shouldBe listOf(3 til 5.mai(2022))
     }
 
     @Test
@@ -205,6 +202,18 @@ class PeriodeTest {
                 Periode(fraOgMed = 3.mai(2022), tilOgMed = 5.mai(2022)),
                 Periode(fraOgMed = 13.mai(2022), tilOgMed = 15.mai(2022)),
             )
+    }
+
+    @Test
+    fun `Dersom man trekker fra en periode som er lik eller større får man en tom liste`() {
+        val periodeEn = 3 til 15.mai(2022)
+        val periodeTo = 2 til 15.mai(2022)
+        val periodeTre = 3 til 16.mai(2022)
+        val periodeFire = 2 til 16.mai(2022)
+        periodeEn.trekkFra(periodeEn) shouldBe emptyList()
+        periodeEn.trekkFra(periodeTo) shouldBe emptyList()
+        periodeEn.trekkFra(periodeTre) shouldBe emptyList()
+        periodeEn.trekkFra(periodeFire) shouldBe emptyList()
     }
 
     @Test

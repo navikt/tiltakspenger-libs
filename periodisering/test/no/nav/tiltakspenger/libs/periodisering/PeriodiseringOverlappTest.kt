@@ -1,116 +1,128 @@
-package no.nav.tiltakspenger.libs.periodisering
+package no.nav.tiltakspenger.libs.standardperiodisering
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.dato.desember
+import no.nav.tiltakspenger.libs.dato.februar
+import no.nav.tiltakspenger.libs.dato.januar
+import no.nav.tiltakspenger.libs.dato.mars
+import no.nav.tiltakspenger.libs.periodisering.IkkesammenhengendePeriodisering
+import no.nav.tiltakspenger.libs.periodisering.Periode
+import no.nav.tiltakspenger.libs.periodisering.PeriodeMedVerdi
+import no.nav.tiltakspenger.libs.periodisering.Periodisering
+import no.nav.tiltakspenger.libs.periodisering.SammenhengendePeriodisering
+import no.nav.tiltakspenger.libs.periodisering.somPeriode
+import no.nav.tiltakspenger.libs.periodisering.til
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
 
 class PeriodiseringOverlappTest {
-    private val start = LocalDate.of(2024, 1, 1)
-    private val slutt = LocalDate.of(2024, 12, 31)
+    private val start = 1.januar(2024)
+    private val slutt = 31.desember(2024)
+    private val år2024 = Periode(start, slutt)
+    val standardverdi = "test"
+    val standardperiodisering = SammenhengendePeriodisering(standardverdi, år2024)
 
     @Test
-    fun `overlapperMed - innsendt periode lik total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
-        periodisering.overlapperMed(originalPeriode) shouldBe Periodisering(verdi, originalPeriode)
+    fun `overlapper - periode - innsendt periode lik total periode`() {
+        standardperiodisering.overlapper(år2024) shouldBe true
     }
 
     @Test
-    fun `overlapperMed - innsendt periode overlapper ikke med total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
+    fun `overlapper - periode - innsendt periode overlapper ikke med total periode`() {
         val periodeUtenOverlapp = Periode(slutt.plusDays(3), slutt.plusMonths(3))
-        periodisering.overlapperMed(periodeUtenOverlapp) shouldBe Periodisering(emptyList())
+        standardperiodisering.overlapper(periodeUtenOverlapp) shouldBe false
     }
 
     @Test
-    fun `overlapperMed - innsendt periode overlapper med starten av total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
+    fun `overlapper - periode - innsendt periode overlapper med starten av total periode`() {
         val periodeMedOverlapp = Periode(start.minusDays(3), start.plusDays(3))
-        periodisering.overlapperMed(periodeMedOverlapp) shouldBe Periodisering(verdi, originalPeriode)
+        standardperiodisering.overlapper(periodeMedOverlapp) shouldBe true
     }
 
     @Test
-    fun `overlapperMed - innsendt periode overlapper med slutten av total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
+    fun `overlapper - periode - innsendt periode overlapper med slutten av total periode`() {
         val periodeMedOverlapp = Periode(slutt.minusDays(3), slutt.plusDays(3))
-        periodisering.overlapperMed(periodeMedOverlapp) shouldBe Periodisering(verdi, originalPeriode)
+        standardperiodisering.overlapper(periodeMedOverlapp) shouldBe true
     }
 
     @Test
-    fun `overlapperMed - innsendt periode overlapper med hele total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
+    fun `overlapper - periode - innsendt periode overlapper med hele total periode`() {
         val periodeMedOverlapp = Periode(start.minusDays(3), slutt.plusDays(3))
-        periodisering.overlapperMed(periodeMedOverlapp) shouldBe Periodisering(verdi, originalPeriode)
+        standardperiodisering.overlapper(periodeMedOverlapp) shouldBe true
     }
 
     @Test
-    fun `overlapperMed - innsendt periode overlapper med del av total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
+    fun `overlapper - periode - innsendt periode overlapper med del av total periode`() {
         val periodeMedOverlapp = Periode(start.plusDays(3), slutt.minusDays(3))
-        periodisering.overlapperMed(periodeMedOverlapp) shouldBe Periodisering(verdi, originalPeriode)
+        standardperiodisering.overlapper(periodeMedOverlapp) shouldBe true
+    }
+
+    @Test
+    fun `overlapper - periode - ikke-sammenhengende overlapper ikke i hullet`() {
+        val periodisering = IkkesammenhengendePeriodisering(
+            PeriodeMedVerdi(standardverdi, 1 til 31.januar(2025)),
+            PeriodeMedVerdi(standardverdi, 1 til 31.mars(2025)),
+        )
+        standardperiodisering.overlapper(1 til 28.februar(2025)) shouldBe false
+    }
+
+    @Test
+    fun `overlapper - periodisering - like periodiseringer`() {
+        standardperiodisering.overlapper(standardperiodisering) shouldBe true
+    }
+
+    @Test
+    fun `overlapper - periodisering - utenfor`() {
+        standardperiodisering.overlapper(Periodisering(standardverdi, 31.desember(2023).somPeriode())) shouldBe false
+        standardperiodisering.overlapper(Periodisering(standardverdi, 1.januar(2025).somPeriode())) shouldBe false
     }
 
     @Test
     fun `overlappendePeriode - innsendt periode lik total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
-        periodisering.overlappendePeriode(originalPeriode) shouldBe Periodisering(verdi, originalPeriode)
+        standardperiodisering.overlappendePeriode(år2024) shouldBe SammenhengendePeriodisering(
+            standardverdi,
+            år2024,
+        )
     }
 
     @Test
     fun `overlappendePeriode - innsendt periode overlapper ikke med total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
         val periodeUtenOverlapp = Periode(slutt.plusDays(3), slutt.plusMonths(3))
-        periodisering.overlappendePeriode(periodeUtenOverlapp) shouldBe Periodisering(emptyList())
+        standardperiodisering.overlappendePeriode(periodeUtenOverlapp) shouldBe Periodisering.empty()
     }
 
     @Test
     fun `overlappendePeriode - innsendt periode overlapper med starten av total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
         val periodeMedOverlapp = Periode(start.minusDays(3), start.plusDays(3))
-        periodisering.overlappendePeriode(periodeMedOverlapp) shouldBe Periodisering(verdi, Periode(originalPeriode.fraOgMed, periodeMedOverlapp.tilOgMed))
+        standardperiodisering.overlappendePeriode(periodeMedOverlapp) shouldBe SammenhengendePeriodisering(
+            standardverdi,
+            Periode(år2024.fraOgMed, periodeMedOverlapp.tilOgMed),
+        )
     }
 
     @Test
     fun `overlappendePeriode - innsendt periode overlapper med slutten av total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
         val periodeMedOverlapp = Periode(slutt.minusDays(3), slutt.plusDays(3))
-        periodisering.overlappendePeriode(periodeMedOverlapp) shouldBe Periodisering(verdi, Periode(periodeMedOverlapp.fraOgMed, originalPeriode.tilOgMed))
+        standardperiodisering.overlappendePeriode(periodeMedOverlapp) shouldBe SammenhengendePeriodisering(
+            standardverdi,
+            Periode(periodeMedOverlapp.fraOgMed, år2024.tilOgMed),
+        )
     }
 
     @Test
     fun `overlappendePeriode - innsendt periode overlapper med hele total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
         val periodeMedOverlapp = Periode(start.minusDays(3), slutt.plusDays(3))
-        periodisering.overlappendePeriode(periodeMedOverlapp) shouldBe Periodisering(verdi, originalPeriode)
+        standardperiodisering.overlappendePeriode(periodeMedOverlapp) shouldBe SammenhengendePeriodisering(
+            standardverdi,
+            år2024,
+        )
     }
 
     @Test
     fun `overlappendePeriode - innsendt periode overlapper med del av total periode`() {
-        val originalPeriode = Periode(start, slutt)
-        val verdi = "test"
-        val periodisering = Periodisering(verdi, originalPeriode)
         val periodeMedOverlapp = Periode(start.plusDays(3), slutt.minusDays(3))
-        periodisering.overlappendePeriode(periodeMedOverlapp) shouldBe Periodisering(verdi, periodeMedOverlapp)
+        standardperiodisering.overlappendePeriode(periodeMedOverlapp) shouldBe SammenhengendePeriodisering(
+            standardverdi,
+            periodeMedOverlapp,
+        )
     }
 }

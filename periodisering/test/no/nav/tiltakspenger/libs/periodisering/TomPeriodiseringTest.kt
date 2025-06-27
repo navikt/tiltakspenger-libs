@@ -25,6 +25,8 @@ internal class TomPeriodiseringTest {
         TomPeriodisering.instance<String>().also { og ->
             og.overlapper(1 til 1.januar(2021)) shouldBeEqual false
             og.overlapper(LocalDate.MIN til LocalDate.MAX) shouldBeEqual false
+            og.overlapper(TomPeriodisering.instance<String>()) shouldBeEqual false
+            og.overlappendePeriode(LocalDate.MIN til LocalDate.MAX) shouldBeEqual og
         }
     }
 

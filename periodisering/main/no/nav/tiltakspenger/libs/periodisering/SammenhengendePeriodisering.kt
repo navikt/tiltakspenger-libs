@@ -11,7 +11,7 @@ import arrow.core.toNonEmptyListOrThrow
 data class SammenhengendePeriodisering<T : Any>(
     override val perioderMedVerdi: Nel<PeriodeMedVerdi<T>>,
 ) : List<PeriodeMedVerdi<T>> by perioderMedVerdi,
-    Periodisering<T> {
+    IkkeTomPeriodisering<T> {
     constructor(vararg periodeMedVerdi: PeriodeMedVerdi<T>) : this(periodeMedVerdi.toList().toNonEmptyListOrThrow())
 
     constructor(

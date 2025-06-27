@@ -38,6 +38,10 @@ sealed interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
             vararg periodeMedVerdi: PeriodeMedVerdi<T>,
         ) = periodeMedVerdi.toList().tilPeriodisering()
 
+        operator fun <T : Any> invoke(
+            perioderMedVerdi: List<PeriodeMedVerdi<T>>,
+        ) = perioderMedVerdi.toList().tilPeriodisering()
+
         operator fun <T : Periodiserbar> invoke(
             vararg periode: T,
         ) = periode.map { PeriodeMedVerdi(it, it.periode) }.tilPeriodisering()

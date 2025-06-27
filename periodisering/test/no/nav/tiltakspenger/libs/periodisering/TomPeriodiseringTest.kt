@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.periodisering
 
 import io.kotest.matchers.equals.shouldBeEqual
+import io.kotest.matchers.nulls.shouldBeNull
 import no.nav.tiltakspenger.libs.dato.januar
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -114,6 +115,21 @@ internal class TomPeriodiseringTest {
                 "default",
                 1 til 1.januar(2021),
             )
+        }
+    }
+
+    @Test
+    fun inneholderKun() {
+        TomPeriodisering.instance<String>().also { og ->
+            og.inneholderKun("default") shouldBeEqual true
+            og.inneholderKun("kek") shouldBeEqual true
+        }
+    }
+
+    @Test
+    fun hentVerdiForDag() {
+        TomPeriodisering.instance<String>().also { og ->
+            og.hentVerdiForDag(1.januar(2021)).shouldBeNull()
         }
     }
 }

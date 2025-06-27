@@ -1,5 +1,7 @@
 package no.nav.tiltakspenger.libs.periodisering
 
+import java.time.LocalDate
+
 class TomPeriodisering<T : Any> private constructor() :
     List<PeriodeMedVerdi<T>> by emptyList(),
     Periodisering<T> {
@@ -18,6 +20,10 @@ class TomPeriodisering<T : Any> private constructor() :
         throw IllegalArgumentException("Støtter ikke kombinere en tom periodisering")
 
     override fun krymp(nyPeriode: Periode) = this
+
+    /** Generell set teori */
+    override fun inneholderKun(verdi: T) = true
+    override fun hentVerdiForDag(dag: LocalDate) = null
     override fun equals(other: Any?) = other is TomPeriodisering<*>
     override fun hashCode(): Int = 0
 }

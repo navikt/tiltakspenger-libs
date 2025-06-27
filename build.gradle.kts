@@ -78,6 +78,12 @@ subprojects {
         withJavadocJar()
     }
 
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            freeCompilerArgs.add("-Xwarning-level=IDENTITY_SENSITIVE_OPERATIONS_WITH_VALUE_TYPE:disabled")
+        }
+    }
+
     publishing {
         publications {
             create<MavenPublication>("mavenJava") {
@@ -103,12 +109,15 @@ subprojects {
     kotlin.sourceSets["test"].kotlin.srcDirs("test")
     sourceSets["main"].resources.srcDirs("main")
     sourceSets["test"].resources.srcDirs("test")
+
+
 }
 
 configurations.all {
     // exclude JUnit 4
     exclude(group = "junit", module = "junit")
 }
+
 
 tasks {
     register<Copy>("addPreCommitGitHookOnBuild") {

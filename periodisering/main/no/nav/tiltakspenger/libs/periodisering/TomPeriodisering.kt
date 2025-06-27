@@ -17,6 +17,7 @@ class TomPeriodisering<T : Any> private constructor() :
     override fun <U : Any, V : Any> kombiner(other: Periodisering<U>, transform: (T, U) -> V) =
         throw IllegalArgumentException("Støtter ikke kombinere en tom periodisering")
 
+    override fun krymp(nyPeriode: Periode) = this
     override fun equals(other: Any?) = other is TomPeriodisering<*>
     override fun hashCode(): Int = 0
 }

@@ -53,6 +53,7 @@ internal class TomPeriodiseringTest {
         TomPeriodisering.instance<String>().also {
             it.map { a, b -> false } shouldBeEqual it
             it.map { false } shouldBeEqual it
+            it.mapVerdi { a, b -> false } shouldBeEqual it
         }
     }
 
@@ -67,6 +68,50 @@ internal class TomPeriodiseringTest {
     fun flatMapPeriodisering() {
         TomPeriodisering.instance<String>().also { og ->
             og.flatMapPeriodisering { Periodisering(PeriodeMedVerdi("ignore-me", 1 til 1.januar(2021))) } shouldBeEqual og
+        }
+    }
+
+    @Test
+    fun krymp() {
+        TomPeriodisering.instance<String>().also { og ->
+            og.krymp(1 til 1.januar(2021)) shouldBeEqual og
+        }
+    }
+
+    @Test
+    fun slåSammenTilstøtendePerioder() {
+        TomPeriodisering.instance<String>().also { og ->
+            og.slåSammenTilstøtendePerioder() shouldBeEqual og
+        }
+    }
+
+    @Test
+    fun utvid() {
+        TomPeriodisering.instance<String>().also { og ->
+            og.utvid("verdi", 1 til 1.januar(2021)) shouldBeEqual SammenhengendePeriodisering(
+                "verdi",
+                1 til 1.januar(2021),
+            )
+        }
+    }
+
+    @Test
+    fun nyPeriode() {
+        TomPeriodisering.instance<String>().also { og ->
+            og.nyPeriode(1 til 1.januar(2021), "default") shouldBeEqual SammenhengendePeriodisering(
+                "default",
+                1 til 1.januar(2021),
+            )
+        }
+    }
+
+    @Test
+    fun setVerdiForDelperiode() {
+        TomPeriodisering.instance<String>().also { og ->
+            og.setVerdiForDelperiode("default", 1 til 1.januar(2021)) shouldBeEqual SammenhengendePeriodisering(
+                "default",
+                1 til 1.januar(2021),
+            )
         }
     }
 }

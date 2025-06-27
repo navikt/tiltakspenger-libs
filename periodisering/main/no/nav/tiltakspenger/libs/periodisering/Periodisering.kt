@@ -34,18 +34,22 @@ sealed interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
             totalPeriode: Periode,
         ) = listOf(PeriodeMedVerdi(initiellVerdi, totalPeriode)).tilPeriodisering()
 
+        @JvmName("invokeFromPeriodeMedVerdiVararg")
         operator fun <T : Any> invoke(
             vararg periodeMedVerdi: PeriodeMedVerdi<T>,
         ) = periodeMedVerdi.toList().tilPeriodisering()
 
+        @JvmName("invokeFromPeriodeMedVerdiList")
         operator fun <T : Any> invoke(
             perioderMedVerdi: List<PeriodeMedVerdi<T>>,
         ) = perioderMedVerdi.toList().tilPeriodisering()
 
+        @JvmName("invokeFromPeriodiserbar")
         operator fun <T : Periodiserbar> invoke(
             vararg periode: T,
         ) = periode.map { PeriodeMedVerdi(it, it.periode) }.tilPeriodisering()
 
+        @JvmName("invokeFromPeriodiserbarList")
         operator fun <T : Periodiserbar> invoke(
             perioder: List<T>,
         ) = perioder.map { PeriodeMedVerdi(it, it.periode) }.tilPeriodisering()
@@ -158,6 +162,10 @@ sealed interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
     ): Periodisering<V> {
         return this.perioderMedVerdi.kombiner(other.perioderMedVerdi, transform).tilPeriodisering()
     }
+
+    fun tilPair(): List<Pair<Periode, T>> {
+        return this.perioderMedVerdi.map { Pair(it.periode, it.verdi) }
+    }
 }
 
 fun <T : Any> List<PeriodeMedVerdi<T>>.tilSammenhengendePeriodisering(): SammenhengendePeriodisering<T> {
@@ -177,6 +185,7 @@ fun <T : Any> List<PeriodeMedVerdi<T>>.tilTomPeriodisering(): TomPeriodisering<T
  * Støtter ikke overlapp.
  * Støtter hull.
  */
+@JvmName("tilPeriodiseringFraPeriodeMedVerdiList")
 fun <T : Any> List<PeriodeMedVerdi<T>>.tilPeriodisering(): Periodisering<T> {
     if (isEmpty()) return TomPeriodisering.instance()
     return if (erSammenhengende()) {
@@ -184,4 +193,13 @@ fun <T : Any> List<PeriodeMedVerdi<T>>.tilPeriodisering(): Periodisering<T> {
     } else {
         IkkesammenhengendePeriodisering(this.slåSammenTilstøtendePerioder().toNonEmptyListOrThrow())
     }
+}
+
+@JvmName("tilPeriodiseringFraPair")
+fun <T : Any> List<Pair<Periode, T>>.tilPeriodisering(): Periodisering<T> {
+    return this.map { PeriodeMedVerdi(it.second, it.first) }.tilPeriodisering()
+}
+
+fun <T : Any> List<Pair<T, Periode>>.tilPeriodisering(): Periodisering<T> {
+    return this.map { PeriodeMedVerdi(it.first, it.second) }.tilPeriodisering()
 }

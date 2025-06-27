@@ -65,12 +65,11 @@ sealed interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
     fun overlappendePeriode(periode: Periode): Periodisering<T> =
         perioderMedVerdi.overlappendePeriode(periode).tilPeriodisering()
 
-    /** [nyPeriode] må ligge innenfor den gamle perioden sin totalperiode */
+    /**
+     * Støtter at den nye perioden er helt eller delvis utenfor. Da vil man få en [TomPeriodisering] eller [IkkesammenhengendePeriodisering]
+     */
     fun krymp(nyPeriode: Periode): Periodisering<T> {
         if (nyPeriode == totalPeriode) return this
-        require(nyPeriode.fraOgMed >= totalPeriode.fraOgMed && nyPeriode.tilOgMed <= totalPeriode.tilOgMed) {
-            "Kan ikke krympe, ny periode $nyPeriode må ligge innenfor $totalPeriode"
-        }
         val beholdte = perioderMedVerdi.mapNotNull { periodeMedVerdi ->
             periodeMedVerdi.periode.overlappendePeriode(nyPeriode)?.let { overlappendePeriode ->
                 periodeMedVerdi.copy(periode = overlappendePeriode)

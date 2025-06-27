@@ -54,12 +54,6 @@ data class SammenhengendePeriodisering<T : Any>(
         return super.flatMapPeriodisering(transform) as SammenhengendePeriodisering
     }
 
-    override fun krymp(
-        nyPeriode: Periode,
-    ): SammenhengendePeriodisering<T> {
-        return super.krymp(nyPeriode) as SammenhengendePeriodisering
-    }
-
     override fun toString(): String {
         return "SammenhengendePeriodisering(totalPeriode=$totalPeriode, perioderMedVerdi=${
             perioderMedVerdi.map { "\n" + it.toString() }

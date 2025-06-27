@@ -1,6 +1,5 @@
 package no.nav.tiltakspenger.libs.periodisering
 
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -39,23 +38,25 @@ class PeriodiseringKrympTest {
     }
 
     @Test
-    fun `kan ikke utvide start`() {
+    fun `fjerner perioden mellom midt og slutt`() {
         val originalPeriode = Periode(start, slutt)
         val nyPeriode = Periode(start.minusDays(1), midt)
         val verdi = "test"
-        shouldThrow<IllegalArgumentException> {
-            SammenhengendePeriodisering(verdi, originalPeriode).krymp(nyPeriode)
-        }.message shouldBe "Kan ikke krympe, ny periode 31. desember 2023 – 1. juni 2024 må ligge innenfor 1. januar – 31. desember 2024"
+        SammenhengendePeriodisering(verdi, originalPeriode).krymp(nyPeriode) shouldBe SammenhengendePeriodisering(
+            verdi,
+            Periode(start, midt),
+        )
     }
 
     @Test
-    fun `kan ikke utvide slutt`() {
+    fun `fjerner perioden mellom start og midt`() {
         val originalPeriode = Periode(start, slutt)
         val nyPeriode = Periode(midt, slutt.plusDays(1))
         val verdi = "test"
-        shouldThrow<IllegalArgumentException> {
-            SammenhengendePeriodisering(verdi, originalPeriode).krymp(nyPeriode)
-        }.message shouldBe "Kan ikke krympe, ny periode 1. juni 2024 – 1. januar 2025 må ligge innenfor 1. januar – 31. desember 2024"
+        SammenhengendePeriodisering(verdi, originalPeriode).krymp(nyPeriode) shouldBe SammenhengendePeriodisering(
+            verdi,
+            Periode(midt, slutt),
+        )
     }
 
     @Test
@@ -64,9 +65,7 @@ class PeriodiseringKrympTest {
         val nyPeriode = Periode(midt.plusDays(1), slutt)
         val verdi = "test"
         val periodisering = SammenhengendePeriodisering(verdi, originalPeriode)
-        shouldThrow<IllegalArgumentException> {
-            periodisering.krymp(nyPeriode)
-        }.message shouldBe "Kan ikke krympe, ny periode 2. juni – 31. desember 2024 må ligge innenfor 1. januar – 1. juni 2024"
+        periodisering.krymp(nyPeriode) shouldBe TomPeriodisering.instance()
     }
 
     @Test

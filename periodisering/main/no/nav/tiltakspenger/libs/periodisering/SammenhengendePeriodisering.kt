@@ -50,7 +50,7 @@ data class SammenhengendePeriodisering<T : Any>(
         return super.flatMap(transform) as SammenhengendePeriodisering
     }
 
-    override fun <U : Any> flatMapPeriodisering(transform: (PeriodeMedVerdi<T>) -> Periodisering<U>): Periodisering<U> {
+    override fun <U : Any> flatMapPeriodisering(transform: (PeriodeMedVerdi<T>) -> Periodisering<U>): SammenhengendePeriodisering<U> {
         return super.flatMapPeriodisering(transform) as SammenhengendePeriodisering
     }
 

@@ -83,10 +83,10 @@ sealed interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
      * Merk at vi ignorer ny verdi for overlappende perioder.
      * @return [SammenhengendePeriodisering] eller [IkkesammenhengendePeriodisering]
      */
-    fun utvid(verdi: T, nyTotalPeriode: Periode): Periodisering<T> {
+    fun utvid(verdi: T, nyTotalPeriode: Periode): IkkeTomPeriodisering<T> {
         val nyePerioder = nyTotalPeriode.trekkFra(listOf(totalPeriode))
         return (this.perioderMedVerdi + nyePerioder.map { PeriodeMedVerdi(verdi, it) })
-            .sortedBy { it.periode.fraOgMed }.tilPeriodisering()
+            .sortedBy { it.periode.fraOgMed }.tilIkkeTomPeriodisering()
     }
 
     /**
@@ -151,8 +151,8 @@ sealed interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
      * Dersom den nye perioden ikke overlapper med eksisterende periode, returneres en [IkkesammenhengendePeriodisering]
      * Returnerer aldri en [TomPeriodisering]
      */
-    fun setVerdiForDelperiode(verdi: T, delPeriode: Periode): Periodisering<T> {
-        return this.perioderMedVerdi.setVerdiForDelperiode(verdi, delPeriode).tilPeriodisering()
+    fun setVerdiForDelperiode(verdi: T, delPeriode: Periode): IkkeTomPeriodisering<T> {
+        return this.perioderMedVerdi.setVerdiForDelperiode(verdi, delPeriode).tilIkkeTomPeriodisering()
     }
 
     fun <U : Any, V : Any> kombiner(
@@ -177,6 +177,10 @@ fun <T : Any> List<PeriodeMedVerdi<T>>.tilIkkesammenhengendePeriodisering(): Ikk
 
 fun <T : Any> List<PeriodeMedVerdi<T>>.tilTomPeriodisering(): TomPeriodisering<T> {
     return tilPeriodisering() as TomPeriodisering
+}
+
+fun <T : Any> List<PeriodeMedVerdi<T>>.tilIkkeTomPeriodisering(): IkkeTomPeriodisering<T> {
+    return tilPeriodisering() as IkkeTomPeriodisering
 }
 
 /**

@@ -28,8 +28,8 @@ class TidslinjeTest {
     @Test
     fun `to like tar siste`() {
         val v1 = TestVedtak(
-            fom = LocalDate.of(2024, 1, 1),
-            tom = LocalDate.of(2024, 1, 31),
+            fom = LocalDate.of(2024, 1, 2),
+            tom = LocalDate.of(2024, 1, 30),
             opprettet = LocalDateTime.parse("2021-01-01T00:00:00.000"),
             resultat = INNVILGET,
         )
@@ -40,6 +40,9 @@ class TidslinjeTest {
             resultat = INNVILGET,
         )
         listOf(v1, v2).toTidslinje() shouldBe SammenhengendePeriodisering(
+            PeriodeMedVerdi(v2, v2.periode),
+        )
+        listOf(v2, v1).toTidslinje() shouldBe SammenhengendePeriodisering(
             PeriodeMedVerdi(v2, v2.periode),
         )
     }

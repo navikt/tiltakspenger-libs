@@ -12,8 +12,7 @@ fun <T : Periodiserbar> List<T>.toTidslinje(): Periodisering<T> {
         require(it.size == this.size) { "Støtter ikke lage tidslinje når 2 elementer er opprettet samtidig." }
     }
 
-    val sortedByDescending = this.sorted()
-    return sortedByDescending
+    return this.sorted()
         .fold(
             Periodisering.empty<T>() as Periodisering<T>,
         ) { akkumulerteVedtak, vedtak ->

@@ -43,5 +43,12 @@ class TikkendeKlokke(
         }
     }
 
+    fun spol1timeFrem(): Instant {
+        return nextInstant
+            .plus(1, ChronoUnit.HOURS)
+            .plus(nextInstant.nano.toLong(), ChronoUnit.NANOS)
+            .also { nextInstant = it }
+    }
+
     fun copy(): TikkendeKlokke = TikkendeKlokke(initialClock)
 }

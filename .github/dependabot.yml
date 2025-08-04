@@ -7,13 +7,6 @@ updates:
     open-pull-requests-limit: 10
     assignees:
       - "@navikt/tpts"
-    # arrow 2.0 brekker integrasjon med jackson i saksbehandling-api (og kanskje andre?)
-    # TODO: fjern ignore når dette er fikset:
-    # https://github.com/arrow-kt/arrow-integrations/issues/126
-    # https://youtrack.jetbrains.com/issue/KT-72084/Reflection-ISE-This-is-should-be-simple-type-for-inline-class-with-delegated-Java-interface
-    ignore:
-      - dependency-name: "io.arrow-kt:arrow-core"
-        versions: ["2.x"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:

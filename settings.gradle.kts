@@ -25,5 +25,6 @@ include(
     "meldekort-dtos",
     "meldekort",
     "kafka",
-    "kafka-test"
+    "kafka-test",
+    "texas"
 )

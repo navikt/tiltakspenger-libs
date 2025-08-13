@@ -20,14 +20,14 @@ val log = KotlinLogging.logger("TexasAuth")
 class TexasAuthenticationProvider(
     config: Config,
 ) : AuthenticationProvider(config) {
-    class Config internal constructor(
+    class Config(
         name: String?,
         val identityProvider: IdentityProvider,
-        val tokenClient: TexasClient,
+        val texasClient: TexasClient,
         val requireIdportenLevelHigh: Boolean = true,
     ) : AuthenticationProvider.Config(name)
 
-    private val texasClient = config.tokenClient
+    private val texasClient = config.texasClient
     private val identityProvider = config.identityProvider
     private val requireIdportenLevelHigh = config.requireIdportenLevelHigh
 

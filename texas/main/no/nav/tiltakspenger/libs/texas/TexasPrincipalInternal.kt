@@ -18,10 +18,6 @@ data class TexasPrincipalInternal(
 ) {
     fun toSaksbehandler(
         autoriserteBrukerroller: List<AdRolle>,
-        systembrukerMapper: (klientId: String, klientnavn: String, roller: Set<String>) -> GenerellSystembruker<
-            GenerellSystembrukerrolle,
-            GenerellSystembrukerroller<GenerellSystembrukerrolle>,
-            >,
     ): Either<InternalPrincipalMappingfeil, Saksbehandler> {
         val klientnavn =
             claims["azp_name"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("azp_name").left()
@@ -44,15 +40,13 @@ data class TexasPrincipalInternal(
             autoriserteBrukerroller.find { autorisertRolle -> it == autorisertRolle.objectId }?.name
         }.let { Saksbehandlerroller(it) }
 
-        val scopes = systembrukerMapper(klientId, klientnavn, emptySet()).roller
-
         log.debug { "Mapping OK for saksbehandler $navIdent med roller $roller" }
         return Saksbehandler(
             navIdent = navIdent,
             brukernavn = epostToBrukernavn(epost),
             epost = epost,
             roller = roller,
-            scopes = scopes,
+            scopes = IngenSystembrukerroller(roller = emptySet()),
             klientId = klientId,
             klientnavn = klientnavn,
         ).right()
@@ -93,4 +87,16 @@ sealed interface InternalPrincipalMappingfeil {
     data object IkkeSaksbehandler : InternalPrincipalMappingfeil
     data object IkkeSystembruker : InternalPrincipalMappingfeil
     data object IngenRoller : InternalPrincipalMappingfeil
+}
+
+// Brukes for mapping av saksbehandler for å slippe å sende inn systembrukermapper for saksbehandler
+// siden saksbehandler uansett ikke har noen systembruker-roller
+private data class IngenSystembrukerroller(
+    override val value: Set<GenerellSystembrukerrolle>,
+) : GenerellSystembrukerroller<GenerellSystembrukerrolle>,
+    Set<GenerellSystembrukerrolle> by value {
+
+    constructor(roller: Collection<GenerellSystembrukerrolle>) : this(roller.toSet())
+
+    override fun harRolle(rolle: GenerellSystembrukerrolle): Boolean = contains(rolle)
 }

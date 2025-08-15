@@ -18,14 +18,10 @@ fun ApplicationCall.fnr(): Fnr {
 
 suspend fun ApplicationCall.saksbehandler(
     autoriserteBrukerroller: List<AdRolle>,
-    systembrukerMapper: (klientId: String, klientnavn: String, roller: Set<String>) -> GenerellSystembruker<
-        GenerellSystembrukerrolle,
-        GenerellSystembrukerroller<GenerellSystembrukerrolle>,
-        >,
 ): Saksbehandler? {
     val principal = principal<TexasPrincipalInternal>() ?: throw IllegalStateException("Mangler principal")
 
-    principal.toSaksbehandler(autoriserteBrukerroller, systembrukerMapper).fold(
+    principal.toSaksbehandler(autoriserteBrukerroller).fold(
         ifLeft = {
             when (it) {
                 is InternalPrincipalMappingfeil.IkkeSaksbehandler -> this.respond403Forbidden(

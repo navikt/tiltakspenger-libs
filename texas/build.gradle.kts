@@ -8,7 +8,10 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("io.ktor:ktor-server-auth:$ktorVersion")
+    implementation("io.arrow-kt:arrow-core:2.1.2")
     implementation(project(":logging"))
     implementation(project(":common"))
     implementation(project(":json"))
+    implementation(project(":ktor-common"))
+    implementation(project(":auth-core"))
 }

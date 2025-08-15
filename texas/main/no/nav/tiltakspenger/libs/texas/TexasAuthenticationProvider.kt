@@ -4,12 +4,10 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.auth.AuthScheme
 import io.ktor.http.auth.HttpAuthHeader
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.AuthenticationContext
 import io.ktor.server.auth.AuthenticationFailedCause
 import io.ktor.server.auth.AuthenticationProvider
 import io.ktor.server.auth.parseAuthorizationHeader
-import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.texas.client.TexasClient
@@ -75,7 +73,7 @@ class TexasAuthenticationProvider(
     private suspend fun AuthenticationContext.getPrincipalForUser(
         tokenClaims: Map<String, Any?>,
         token: String,
-    ): TexasPrincipalUser? {
+    ): TexasPrincipalExternalUser? {
         val level = tokenClaims["acr"]?.toString()
         if (requireIdportenLevelHigh && (level == null || level !in tillatteInnloggingsnivaer)) {
             log.warn { "unauthenticated: må ha innloggingsnivå 4" }
@@ -89,7 +87,7 @@ class TexasAuthenticationProvider(
             return null
         }
         val fnr = Fnr.fromString(fnrString)
-        return TexasPrincipalUser(
+        return TexasPrincipalExternalUser(
             claims = tokenClaims,
             token = token,
             fnr = fnr,
@@ -99,8 +97,8 @@ class TexasAuthenticationProvider(
     private fun getPrincipalForSystem(
         tokenClaims: Map<String, Any?>,
         token: String,
-    ): TexasPrincipalSystem {
-        return TexasPrincipalSystem(
+    ): TexasPrincipalInternal {
+        return TexasPrincipalInternal(
             claims = tokenClaims,
             token = token,
         )
@@ -113,19 +111,3 @@ class TexasAuthenticationProvider(
         }
     }
 }
-
-fun ApplicationCall.fnr(): Fnr {
-    val principal = principal<TexasPrincipalUser>() ?: throw IllegalStateException("Mangler principal")
-    return principal.fnr
-}
-
-data class TexasPrincipalUser(
-    val claims: Map<String, Any?>,
-    val token: String,
-    val fnr: Fnr,
-)
-
-data class TexasPrincipalSystem(
-    val claims: Map<String, Any?>,
-    val token: String,
-)

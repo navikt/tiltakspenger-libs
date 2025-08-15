@@ -1,0 +1,96 @@
+package no.nav.tiltakspenger.libs.texas
+
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
+import com.fasterxml.jackson.module.kotlin.readValue
+import no.nav.tiltakspenger.libs.auth.core.AdRolle
+import no.nav.tiltakspenger.libs.common.GenerellSystembruker
+import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
+import no.nav.tiltakspenger.libs.common.GenerellSystembrukerroller
+import no.nav.tiltakspenger.libs.common.Saksbehandler
+import no.nav.tiltakspenger.libs.common.Saksbehandlerroller
+import no.nav.tiltakspenger.libs.json.objectMapper
+
+data class TexasPrincipalInternal(
+    val claims: Map<String, Any?>,
+    val token: String,
+) {
+    fun toSaksbehandler(
+        autoriserteBrukerroller: List<AdRolle>,
+        systembrukerMapper: (klientId: String, klientnavn: String, roller: Set<String>) -> GenerellSystembruker<
+            GenerellSystembrukerrolle,
+            GenerellSystembrukerroller<GenerellSystembrukerrolle>,
+            >,
+    ): Either<InternalPrincipalMappingfeil, Saksbehandler> {
+        val klientnavn =
+            claims["azp_name"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("azp_name").left()
+        val klientId = claims["azp"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("azp").left()
+        if (claims["idtyp"]?.toString() == "app") {
+            log.warn { "Brukeren er ikke en saksbehandler. Klientnavn: $klientnavn. KlientId: $klientId" }
+            return InternalPrincipalMappingfeil.IkkeSaksbehandler.left()
+        }
+        val navIdent =
+            claims["NAVident"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("NAVident").left()
+        val epost = claims["preferred_username"]?.toString()
+            ?: return InternalPrincipalMappingfeil.ManglerClaim("preferred_username").left()
+        val rollerFraClaim =
+            claims["groups"]?.toString()?.let { objectMapper.readValue<List<String>>(it) } ?: emptyList()
+        if (rollerFraClaim.isEmpty()) {
+            log.warn { "Saksbehandler har ingen forhåndsgodkjente roller. NavIdent: $navIdent. Klientnavn: $klientnavn. KlientId: $klientId" }
+            return InternalPrincipalMappingfeil.IngenRoller.left()
+        }
+        val roller = rollerFraClaim.mapNotNull {
+            autoriserteBrukerroller.find { autorisertRolle -> it == autorisertRolle.objectId }?.name
+        }.let { Saksbehandlerroller(it) }
+
+        val scopes = systembrukerMapper(klientId, klientnavn, emptySet()).roller
+
+        log.debug { "Mapping OK for saksbehandler $navIdent med roller $roller" }
+        return Saksbehandler(
+            navIdent = navIdent,
+            brukernavn = epostToBrukernavn(epost),
+            epost = epost,
+            roller = roller,
+            scopes = scopes,
+            klientId = klientId,
+            klientnavn = klientnavn,
+        ).right()
+    }
+
+    fun toSystembruker(
+        systembrukerMapper: (klientId: String, klientnavn: String, roller: Set<String>) -> GenerellSystembruker<
+            GenerellSystembrukerrolle,
+            GenerellSystembrukerroller<GenerellSystembrukerrolle>,
+            >,
+    ): Either<InternalPrincipalMappingfeil, GenerellSystembruker<*, *>> {
+        val klientnavn =
+            claims["azp_name"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("azp_name").left()
+        val klientId = claims["azp"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("azp").left()
+        if (claims["idtyp"]?.toString() != "app") {
+            log.warn { "Brukeren er ikke en systembruker. Klientnavn: $klientnavn. KlientId: $klientId" }
+            return InternalPrincipalMappingfeil.IkkeSystembruker.left()
+        }
+        val rollerFraClaim =
+            claims["roles"]?.toString()?.let { objectMapper.readValue<List<String>>(it) } ?: emptyList()
+        if (rollerFraClaim.isEmpty()) {
+            log.warn { "Systembruker har ingen forhåndsgodkjente roller. Klientnavn: $klientnavn. KlientId: $klientId" }
+            return InternalPrincipalMappingfeil.IngenRoller.left()
+        }
+        val systembruker = rollerFraClaim.map {
+            it.trim().lowercase()
+        }.let { systembrukerMapper(klientId, klientnavn, it.toSet()) }
+
+        log.debug { "Mapping OK for systembruker. KlientNavn: $klientnavn. KlientId: $klientId. Roller ${systembruker.roller}." }
+        return systembruker.right()
+    }
+}
+
+private fun epostToBrukernavn(epost: String): String = epost.split("@").first().replace(".", " ")
+
+sealed interface InternalPrincipalMappingfeil {
+    data class ManglerClaim(val claim: String) : InternalPrincipalMappingfeil
+    data object IkkeSaksbehandler : InternalPrincipalMappingfeil
+    data object IkkeSystembruker : InternalPrincipalMappingfeil
+    data object IngenRoller : InternalPrincipalMappingfeil
+}

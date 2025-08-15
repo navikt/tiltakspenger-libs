@@ -24,25 +24,37 @@ suspend fun ApplicationCall.saksbehandler(
     principal.toSaksbehandler(autoriserteBrukerroller).fold(
         ifLeft = {
             when (it) {
-                is InternalPrincipalMappingfeil.IkkeSaksbehandler -> this.respond403Forbidden(
-                    melding = "Brukeren er ikke en saksbehandler",
-                    kode = "ikke_saksbehandler",
-                )
+                is InternalPrincipalMappingfeil.IkkeSaksbehandler -> {
+                    log.warn { "Mapping til saksbehandler feilet: Brukeren er ikke en saksbehandler" }
+                    this.respond403Forbidden(
+                        melding = "Brukeren er ikke en saksbehandler",
+                        kode = "ikke_saksbehandler",
+                    )
+                }
 
-                is InternalPrincipalMappingfeil.IngenRoller -> this.respond403Forbidden(
-                    melding = "Saksbehandler må ha minst en autorisert rolle for å aksessere denne ressursen",
-                    kode = "mangler_rolle",
-                )
+                is InternalPrincipalMappingfeil.IngenRoller -> {
+                    log.warn { "Saksbehandler må ha minst en autorisert rolle for å aksessere denne ressursen" }
+                    this.respond403Forbidden(
+                        melding = "Saksbehandler må ha minst en autorisert rolle for å aksessere denne ressursen",
+                        kode = "mangler_rolle",
+                    )
+                }
 
-                is InternalPrincipalMappingfeil.ManglerClaim -> this.respond403Forbidden(
-                    melding = "Tokenet mangler claim: ${it.claim}",
-                    kode = "ugyldig_token",
-                )
+                is InternalPrincipalMappingfeil.ManglerClaim -> {
+                    log.warn { "Tokenet mangler claim: ${it.claim}" }
+                    this.respond403Forbidden(
+                        melding = "Tokenet mangler claim: ${it.claim}",
+                        kode = "ugyldig_token",
+                    )
+                }
 
-                else -> this.respond500InternalServerError(
-                    melding = "Noe gikk galt ved mapping til saksbehandler",
-                    kode = "ukjent_feil",
-                )
+                else -> {
+                    log.warn { "Noe gikk galt ved mapping til saksbehandler" }
+                    this.respond500InternalServerError(
+                        melding = "Noe gikk galt ved mapping til saksbehandler",
+                        kode = "ukjent_feil",
+                    )
+                }
             }
             return null
         },
@@ -63,25 +75,37 @@ suspend fun ApplicationCall.systembruker(
     principal.toSystembruker(systembrukerMapper).fold(
         ifLeft = {
             when (it) {
-                is InternalPrincipalMappingfeil.IkkeSystembruker -> this.respond403Forbidden(
-                    melding = "Brukeren er ikke en systembruker",
-                    kode = "ikke_systembruker",
-                )
+                is InternalPrincipalMappingfeil.IkkeSystembruker -> {
+                    log.warn { "Mapping til systembruker feilet: Brukeren er ikke en systembruker" }
+                    this.respond403Forbidden(
+                        melding = "Brukeren er ikke en systembruker",
+                        kode = "ikke_systembruker",
+                    )
+                }
 
-                is InternalPrincipalMappingfeil.IngenRoller -> this.respond403Forbidden(
-                    melding = "Systembrukeren må ha minst en autorisert rolle for å aksessere denne ressursen",
-                    kode = "mangler_rolle",
-                )
+                is InternalPrincipalMappingfeil.IngenRoller -> {
+                    log.warn { "Systembrukeren må ha minst en autorisert rolle for å aksessere denne ressursen" }
+                    this.respond403Forbidden(
+                        melding = "Systembrukeren må ha minst en autorisert rolle for å aksessere denne ressursen",
+                        kode = "mangler_rolle",
+                    )
+                }
 
-                is InternalPrincipalMappingfeil.ManglerClaim -> this.respond403Forbidden(
-                    melding = "Tokenet mangler claim: ${it.claim}",
-                    kode = "ugyldig_token",
-                )
+                is InternalPrincipalMappingfeil.ManglerClaim -> {
+                    log.warn { "Tokenet mangler claim: ${it.claim}" }
+                    this.respond403Forbidden(
+                        melding = "Tokenet mangler claim: ${it.claim}",
+                        kode = "ugyldig_token",
+                    )
+                }
 
-                else -> this.respond500InternalServerError(
-                    melding = "Noe gikk galt ved mapping til saksbehandler",
-                    kode = "ukjent_feil",
-                )
+                else -> {
+                    log.warn { "Noe gikk galt ved mapping til systembruker" }
+                    this.respond500InternalServerError(
+                        melding = "Noe gikk galt ved mapping til systembruker",
+                        kode = "ukjent_feil",
+                    )
+                }
             }
             return null
         },

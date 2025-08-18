@@ -13,6 +13,7 @@ interface TexasClient {
     suspend fun getSystemToken(
         audienceTarget: String,
         identityProvider: IdentityProvider,
+        rewriteAudienceTarget: Boolean = true,
     ): AccessToken
 
     suspend fun exchangeToken(

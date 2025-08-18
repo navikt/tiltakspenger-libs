@@ -52,9 +52,9 @@ data class TexasPrincipalInternal(
 
     fun toSystembruker(
         systembrukerMapper: (klientId: String, klientnavn: String, roller: Set<String>) -> GenerellSystembruker<
-                GenerellSystembrukerrolle,
-                GenerellSystembrukerroller<GenerellSystembrukerrolle>,
-                >,
+            GenerellSystembrukerrolle,
+            GenerellSystembrukerroller<GenerellSystembrukerrolle>,
+            >,
     ): Either<InternalPrincipalMappingfeil, GenerellSystembruker<*, *>> {
         val klientnavn =
             claims["azp_name"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("azp_name").left()

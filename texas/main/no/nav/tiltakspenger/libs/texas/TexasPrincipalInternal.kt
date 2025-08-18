@@ -64,7 +64,7 @@ data class TexasPrincipalInternal(
             return InternalPrincipalMappingfeil.IkkeSystembruker.left()
         }
         val rollerFraClaim =
-            claims["roles"]?.let { groups -> (groups as List<*>).map { it.toString() } } ?: emptyList()
+            claims["roles"]?.let { roles -> (roles as List<*>).map { it.toString() } } ?: emptyList()
         if (rollerFraClaim.isEmpty()) {
             log.warn { "Systembruker har ingen forhåndsgodkjente roller. Klientnavn: $klientnavn. KlientId: $klientId" }
             return InternalPrincipalMappingfeil.IngenRoller.left()

@@ -74,11 +74,19 @@ class TexasHttpClient(
         }
     }
 
-    override suspend fun getSystemToken(audienceTarget: String, identityProvider: IdentityProvider): AccessToken {
-        val target = audienceTarget.replace(':', '.')
+    override suspend fun getSystemToken(
+        audienceTarget: String,
+        identityProvider: IdentityProvider,
+        rewriteAudienceTarget: Boolean,
+    ): AccessToken {
         val texasTokenRequest = TexasTokenRequest(
             identityProvider = identityProvider.value,
-            target = "api://$target/.default",
+            target = if (rewriteAudienceTarget) {
+                val target = audienceTarget.replace(':', '.')
+                "api://$target/.default"
+            } else {
+                audienceTarget
+            },
         )
         try {
             val response =

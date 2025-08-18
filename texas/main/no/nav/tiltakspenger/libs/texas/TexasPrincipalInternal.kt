@@ -3,14 +3,12 @@ package no.nav.tiltakspenger.libs.texas
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
-import com.fasterxml.jackson.module.kotlin.readValue
 import no.nav.tiltakspenger.libs.auth.core.AdRolle
 import no.nav.tiltakspenger.libs.common.GenerellSystembruker
 import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
 import no.nav.tiltakspenger.libs.common.GenerellSystembrukerroller
 import no.nav.tiltakspenger.libs.common.Saksbehandler
 import no.nav.tiltakspenger.libs.common.Saksbehandlerroller
-import no.nav.tiltakspenger.libs.json.objectMapper
 
 data class TexasPrincipalInternal(
     val claims: Map<String, Any?>,
@@ -31,7 +29,7 @@ data class TexasPrincipalInternal(
         val epost = claims["preferred_username"]?.toString()
             ?: return InternalPrincipalMappingfeil.ManglerClaim("preferred_username").left()
         val rollerFraClaim =
-            claims["groups"]?.toString()?.let { objectMapper.readValue<List<String>>(it) } ?: emptyList()
+            claims["groups"]?.let { groups -> (groups as List<*>).map { it.toString() } } ?: emptyList()
         if (rollerFraClaim.isEmpty()) {
             log.warn { "Saksbehandler har ingen forhåndsgodkjente roller. NavIdent: $navIdent. Klientnavn: $klientnavn. KlientId: $klientId" }
             return InternalPrincipalMappingfeil.IngenRoller.left()
@@ -66,7 +64,7 @@ data class TexasPrincipalInternal(
             return InternalPrincipalMappingfeil.IkkeSystembruker.left()
         }
         val rollerFraClaim =
-            claims["roles"]?.toString()?.let { objectMapper.readValue<List<String>>(it) } ?: emptyList()
+            claims["roles"]?.let { roles -> (roles as List<*>).map { it.toString() } } ?: emptyList()
         if (rollerFraClaim.isEmpty()) {
             log.warn { "Systembruker har ingen forhåndsgodkjente roller. Klientnavn: $klientnavn. KlientId: $klientId" }
             return InternalPrincipalMappingfeil.IngenRoller.left()

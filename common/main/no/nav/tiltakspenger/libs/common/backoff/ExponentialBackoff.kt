@@ -23,9 +23,12 @@ fun LocalDateTime.shouldRetry(
         10L to 24.hours,
     ),
     maxDelay: Duration = 24.hours,
-): Boolean {
-    if (count == 0L) return true
+): Pair<Boolean, LocalDateTime> {
+    if (count == 0L) return Pair(true, LocalDateTime.now(clock))
     val delayDuration = delayTable[count]?.coerceAtMost(maxDelay) ?: maxDelay
     val nextRetryTime = this.plus(delayDuration.toJavaDuration())
-    return LocalDateTime.now(clock) >= nextRetryTime
+    return Pair<Boolean, LocalDateTime>(
+        LocalDateTime.now(clock) >= nextRetryTime,
+        nextRetryTime,
+    )
 }

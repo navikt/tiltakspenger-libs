@@ -28,8 +28,9 @@ data class TexasPrincipalInternal(
             claims["NAVident"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("NAVident").left()
         val epost = claims["preferred_username"]?.toString()
             ?: return InternalPrincipalMappingfeil.ManglerClaim("preferred_username").left()
-        val rollerFraClaim =
-            claims["groups"]?.let { groups -> (groups as List<*>).map { it.toString() } } ?: emptyList()
+        val rollerFraClaim: List<String> = (claims["groups"] as? List<*>)
+            ?.mapNotNull { it as? String }
+            ?: emptyList()
         if (rollerFraClaim.isEmpty()) {
             log.warn { "Saksbehandler har ingen forhåndsgodkjente roller. NavIdent: $navIdent. Klientnavn: $klientnavn. KlientId: $klientId" }
             return InternalPrincipalMappingfeil.IngenRoller.left()
@@ -63,8 +64,9 @@ data class TexasPrincipalInternal(
             log.warn { "Brukeren er ikke en systembruker. Klientnavn: $klientnavn. KlientId: $klientId" }
             return InternalPrincipalMappingfeil.IkkeSystembruker.left()
         }
-        val rollerFraClaim =
-            claims["roles"]?.let { roles -> (roles as List<*>).map { it.toString() } } ?: emptyList()
+        val rollerFraClaim: List<String> = (claims["roles"] as? List<*>)
+            ?.mapNotNull { it as? String }
+            ?: emptyList()
         if (rollerFraClaim.isEmpty()) {
             log.warn { "Systembruker har ingen forhåndsgodkjente roller. Klientnavn: $klientnavn. KlientId: $klientId" }
             return InternalPrincipalMappingfeil.IngenRoller.left()

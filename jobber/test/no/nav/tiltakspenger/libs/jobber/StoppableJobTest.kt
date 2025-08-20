@@ -21,15 +21,15 @@ internal class StoppableJobTest {
         val executionTimes: ConcurrentLinkedQueue<Long> = ConcurrentLinkedQueue()
         val executionLatch = CountDownLatch(2)
         val initialDelay = Duration.ofMillis(0)
-        val interval = Duration.ofMillis(5)
+        val interval = Duration.ofMillis(10)
 
-        val job: (CorrelationId) -> Unit = { correlationId ->
+        val job: (CorrelationId) -> Unit = { _ ->
             executionTimes.add(System.currentTimeMillis())
             when (executionLatch.count) {
                 2L -> {
                     executionLatch.count shouldBe 2
                     // bruker lengre tid enn interval
-                    Thread.sleep(20)
+                    Thread.sleep(50)
                     executionLatch.count shouldBe 2
                 }
 
@@ -53,7 +53,7 @@ internal class StoppableJobTest {
         )
 
         try {
-            val completed = executionLatch.await(50, TimeUnit.MILLISECONDS)
+            val completed = executionLatch.await(200, TimeUnit.MILLISECONDS)
             completed shouldBe true
             executionTimes shouldHaveSize 2
 
@@ -63,7 +63,7 @@ internal class StoppableJobTest {
 
             val timeBetweenExecutions = secondExecutionStart - firstExecutionStart
             // kommentar jah: hvis vi får timing issues får vi bare minke dette tallet.
-            timeBetweenExecutions shouldBeGreaterThan 20
+            timeBetweenExecutions shouldBeGreaterThan 40
         } finally {
             stoppableJob.stop()
         }

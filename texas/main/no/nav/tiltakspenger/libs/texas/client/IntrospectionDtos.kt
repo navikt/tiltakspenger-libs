@@ -13,5 +13,7 @@ data class TexasIntrospectionRequest(
 data class TexasIntrospectionResponse(
     val active: Boolean,
     @JsonInclude(JsonInclude.Include.NON_NULL) val error: String?,
+    val groups: List<String>?,
+    val roles: List<String>?,
     @JsonAnySetter @get:JsonAnyGetter val other: Map<String, Any?> = mutableMapOf(),
 )

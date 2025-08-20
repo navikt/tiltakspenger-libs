@@ -13,6 +13,7 @@ import no.nav.tiltakspenger.libs.common.Saksbehandlerroller
 data class TexasPrincipalInternal(
     val claims: Map<String, Any?>,
     val token: String,
+    val tilganger: List<String>,
 ) {
     fun toSaksbehandler(
         autoriserteBrukerroller: List<AdRolle>,
@@ -20,7 +21,7 @@ data class TexasPrincipalInternal(
         val klientnavn =
             claims["azp_name"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("azp_name").left()
         val klientId = claims["azp"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("azp").left()
-        if (claims["idtyp"]?.toString() == "app") {
+        if (isSystembruker(claims)) {
             log.warn { "Brukeren er ikke en saksbehandler. Klientnavn: $klientnavn. KlientId: $klientId" }
             return InternalPrincipalMappingfeil.IkkeSaksbehandler.left()
         }
@@ -28,14 +29,11 @@ data class TexasPrincipalInternal(
             claims["NAVident"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("NAVident").left()
         val epost = claims["preferred_username"]?.toString()
             ?: return InternalPrincipalMappingfeil.ManglerClaim("preferred_username").left()
-        val rollerFraClaim: List<String> = (claims["groups"] as? List<*>)
-            ?.mapNotNull { it as? String }
-            ?: emptyList()
-        if (rollerFraClaim.isEmpty()) {
+        if (tilganger.isEmpty()) {
             log.warn { "Saksbehandler har ingen forhåndsgodkjente roller. NavIdent: $navIdent. Klientnavn: $klientnavn. KlientId: $klientId" }
             return InternalPrincipalMappingfeil.IngenRoller.left()
         }
-        val roller = rollerFraClaim.mapNotNull {
+        val roller = tilganger.mapNotNull {
             autoriserteBrukerroller.find { autorisertRolle -> it == autorisertRolle.objectId }?.name
         }.let { Saksbehandlerroller(it) }
 
@@ -60,18 +58,15 @@ data class TexasPrincipalInternal(
         val klientnavn =
             claims["azp_name"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("azp_name").left()
         val klientId = claims["azp"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("azp").left()
-        if (claims["idtyp"]?.toString() != "app") {
+        if (!isSystembruker(claims)) {
             log.warn { "Brukeren er ikke en systembruker. Klientnavn: $klientnavn. KlientId: $klientId" }
             return InternalPrincipalMappingfeil.IkkeSystembruker.left()
         }
-        val rollerFraClaim: List<String> = (claims["roles"] as? List<*>)
-            ?.mapNotNull { it as? String }
-            ?: emptyList()
-        if (rollerFraClaim.isEmpty()) {
+        if (tilganger.isEmpty()) {
             log.warn { "Systembruker har ingen forhåndsgodkjente roller. Klientnavn: $klientnavn. KlientId: $klientId" }
             return InternalPrincipalMappingfeil.IngenRoller.left()
         }
-        val systembruker = rollerFraClaim.map {
+        val systembruker = tilganger.map {
             it.trim().lowercase()
         }.let { systembrukerMapper(klientId, klientnavn, it.toSet()) }
 

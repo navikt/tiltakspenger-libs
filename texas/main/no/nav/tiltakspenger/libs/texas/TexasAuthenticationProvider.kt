@@ -58,10 +58,15 @@ class TexasAuthenticationProvider(
         }
 
         val tokenClaims = introspectResponse.other
+        val tilganger = if (isSystembruker(tokenClaims)) {
+            introspectResponse.roles
+        } else {
+            introspectResponse.groups
+        } ?: emptyList()
 
         val principal = when (identityProvider) {
             IdentityProvider.TOKENX -> context.getPrincipalForUser(tokenClaims, token) ?: return
-            IdentityProvider.AZUREAD -> getPrincipalForSystem(tokenClaims, token)
+            IdentityProvider.AZUREAD -> getPrincipalForInternalUser(tokenClaims, token, tilganger)
             IdentityProvider.MASKINPORTEN -> context.loginChallenge(AuthenticationFailedCause.Error("Not implemented"))
             IdentityProvider.IDPORTEN -> context.loginChallenge(AuthenticationFailedCause.Error("Not implemented"))
         }
@@ -94,13 +99,15 @@ class TexasAuthenticationProvider(
         )
     }
 
-    private fun getPrincipalForSystem(
+    private fun getPrincipalForInternalUser(
         tokenClaims: Map<String, Any?>,
         token: String,
+        tilganger: List<String>,
     ): TexasPrincipalInternal {
         return TexasPrincipalInternal(
             claims = tokenClaims,
             token = token,
+            tilganger = tilganger,
         )
     }
 
@@ -111,3 +118,5 @@ class TexasAuthenticationProvider(
         }
     }
 }
+
+fun isSystembruker(claims: Map<String, Any?>) = claims["idtyp"]?.toString() == "app"

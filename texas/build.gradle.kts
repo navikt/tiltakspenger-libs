@@ -14,4 +14,12 @@ dependencies {
     implementation(project(":json"))
     implementation(project(":ktor-common"))
     implementation(project(":auth-core"))
+
+    testImplementation(project(":test-common"))
+    testImplementation(project(":ktor-test-common"))
+    testImplementation(project(":auth-test-core"))
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
+    testImplementation("io.arrow-kt:arrow-core-jackson:2.1.2")
 }

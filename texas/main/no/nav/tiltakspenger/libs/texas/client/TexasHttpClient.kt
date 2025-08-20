@@ -1,7 +1,5 @@
 package no.nav.tiltakspenger.libs.texas.client
 
-import com.fasterxml.jackson.core.util.DefaultIndenter
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -27,20 +25,12 @@ class TexasHttpClient(
     private val introspectionUrl: String,
     private val tokenUrl: String,
     private val tokenExchangeUrl: String,
-) : TexasClient {
-    private val timeoutSeconds = 5L
-
+    private val timeoutSeconds: Long = 5L,
     private val httpClient: HttpClient = HttpClient(Apache).config {
         install(ContentNegotiation) {
             jackson {
                 registerModule(KotlinModule.Builder().build())
                 registerModule(JavaTimeModule())
-                setDefaultPrettyPrinter(
-                    DefaultPrettyPrinter().apply {
-                        indentArraysWith(DefaultPrettyPrinter.FixedSpaceIndenter.instance)
-                        indentObjectsWith(DefaultIndenter("  ", "\n"))
-                    },
-                )
                 configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             }
         }
@@ -50,9 +40,12 @@ class TexasHttpClient(
             socketTimeoutMillis = Duration.ofSeconds(timeoutSeconds).toMillis()
         }
         expectSuccess = false
-    }
-
-    override suspend fun introspectToken(token: String, identityProvider: IdentityProvider): TexasIntrospectionResponse {
+    },
+) : TexasClient {
+    override suspend fun introspectToken(
+        token: String,
+        identityProvider: IdentityProvider,
+    ): TexasIntrospectionResponse {
         val texasIntrospectionRequest = TexasIntrospectionRequest(
             identityProvider = identityProvider.value,
             token = token,
@@ -106,7 +99,11 @@ class TexasHttpClient(
         }
     }
 
-    override suspend fun exchangeToken(userToken: String, audienceTarget: String, identityProvider: IdentityProvider): AccessToken {
+    override suspend fun exchangeToken(
+        userToken: String,
+        audienceTarget: String,
+        identityProvider: IdentityProvider,
+    ): AccessToken {
         val texasExchangeTokenRequest = TexasExchangeTokenRequest(
             identityProvider = identityProvider.value,
             target = audienceTarget,

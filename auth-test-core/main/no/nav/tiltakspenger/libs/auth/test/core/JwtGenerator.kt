@@ -105,6 +105,36 @@ data class JwtGenerator(
             .withClaim("ver", "2.0")
             .sign(algorithm)
     }
+
+    fun createJwtForUser(
+        jwtKeyId: String = jwkKeyId,
+        issuer: String = "https://login.microsoftonline.com/966ac572-f5b7-4bbe-aa88-c76419c0f851/v2.0",
+        subject: String = "test-subject",
+        azpName: String? = "dev-gcp:tpts:tiltakspenger-meldekort",
+        azp: String? = "744e4092-4215-4e02-87df-a61aaf1b95b5",
+        fnr: String? = "12345678910",
+        audience: String = "c7adbfbb-1b1e-41f6-9b7a-af9627c04998",
+        expiresAt: Instant = Instant.now().plusSeconds(1800),
+        issuedAt: Instant = Instant.now().minusSeconds(5),
+        notBefore: Instant = Instant.now().minusSeconds(5),
+        acr: String = "idporten-loa-high",
+    ): String {
+        val algorithm = Algorithm.RSA256(null, privateKey)
+        return JWT.create()
+            .withKeyId(jwtKeyId)
+            .withIssuer(issuer)
+            .withSubject(subject)
+            .withAudience(audience)
+            .withExpiresAt(expiresAt)
+            .withIssuedAt(issuedAt)
+            .withNotBefore(notBefore)
+            .withClaim("pid", fnr)
+            .withClaim("azp_name", azpName)
+            .withClaim("azp", azp)
+            .withClaim("ver", "2.0")
+            .withClaim("acr", acr)
+            .sign(algorithm)
+    }
 }
 
 private fun generateRsaKeyPair(): KeyPair {

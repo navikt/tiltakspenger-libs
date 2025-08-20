@@ -29,7 +29,7 @@ internal class ExponentialBackoffTest {
 
     @Test
     fun `Skal prøve på nytt ved 0 forsøk`() {
-        val (shouldRetry, nextRetryTime) = LocalDateTime.now().shouldRetry(0, fixedClock)
+        val (shouldRetry, nextRetryTime) = LocalDateTime.now(fixedClock).shouldRetry(0, fixedClock)
         shouldRetry shouldBe true
         nextRetryTime shouldBe LocalDateTime.now(fixedClock)
     }

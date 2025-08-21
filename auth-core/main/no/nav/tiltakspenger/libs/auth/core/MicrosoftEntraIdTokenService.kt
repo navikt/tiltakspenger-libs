@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit
  * @param systembrukerMapper 1. param: Brukernavn, 2. param: Roller som er knyttet til ad-brukeren. Se [GenerellSystembruker]. Vil være unik per applikasjon. Strengene vil være trimmet og gjort om til lowercase.
  */
 
+@Deprecated("Erstattet av Texas")
 class MicrosoftEntraIdTokenService<SB : GenerellSystembruker<GenerellSystembrukerrolle, GenerellSystembrukerroller<GenerellSystembrukerrolle>>>(
     url: String,
     private val issuer: String,

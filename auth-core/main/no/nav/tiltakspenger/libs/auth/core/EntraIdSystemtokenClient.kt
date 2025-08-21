@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.auth.core
 
 import no.nav.tiltakspenger.libs.common.AccessToken
 
+@Deprecated("Erstattet av Texas")
 interface EntraIdSystemtokenClient {
 
     /**

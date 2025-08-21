@@ -2,7 +2,7 @@ package no.nav.tiltakspenger.libs.common
 
 import arrow.core.Either
 import arrow.core.getOrElse
-import io.kotest.assertions.fail
+import io.kotest.assertions.AssertionErrorBuilder.Companion.fail
 
 fun <A, B> Either<A, B>.getOrFail(msg: String): B {
     return getOrElse { fail("Message: $msg, Error: $it") }

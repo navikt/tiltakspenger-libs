@@ -1,6 +1,6 @@
 package no.nav.tiltakspenger.libs.auth.ktor
 
-import io.kotest.assertions.fail
+import io.kotest.assertions.AssertionErrorBuilder.Companion.fail
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.ktor.client.statement.bodyAsText

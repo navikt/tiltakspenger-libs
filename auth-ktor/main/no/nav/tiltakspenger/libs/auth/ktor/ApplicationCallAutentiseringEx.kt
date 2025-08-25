@@ -17,6 +17,7 @@ import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import kotlin.text.startsWith
 import kotlin.text.substring
 
+@Deprecated("Bruk texas med tilhørende hjelpemetoder")
 suspend inline fun ApplicationCall.withSaksbehandler(
     tokenService: TokenService,
     logger: KLogger = KotlinLogging.logger {},
@@ -42,6 +43,7 @@ suspend inline fun ApplicationCall.withSaksbehandler(
     }
 }
 
+@Deprecated("Bruk texas med tilhørende hjelpemetoder")
 suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.withSystembruker(
     tokenService: TokenService,
     logger: KLogger = KotlinLogging.logger {},
@@ -67,6 +69,7 @@ suspend inline fun <reified B : GenerellSystembruker<*, *>> ApplicationCall.with
     }
 }
 
+@Deprecated("Bruk texas med tilhørende hjelpemetoder")
 suspend inline fun <reified B : Bruker<*, *>> ApplicationCall.withBruker(
     tokenService: TokenService,
     logger: KLogger = KotlinLogging.logger {},

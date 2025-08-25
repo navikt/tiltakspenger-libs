@@ -23,6 +23,7 @@ import java.time.Instant
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
+@Deprecated("Erstattet av Texas")
 class EntraIdSystemtokenHttpClient(
     baseUrl: String,
     private val clientId: String,

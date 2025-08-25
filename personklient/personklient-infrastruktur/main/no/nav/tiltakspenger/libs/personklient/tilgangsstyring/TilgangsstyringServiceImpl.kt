@@ -26,6 +26,7 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Optimalisering jah: Kan legge på cache her for å unngå å kalle PDL/Skjerming flere ganger for samme person.
  */
+@Deprecated("Bruk Tilgangsmaskinen for sjekk av tilgang")
 class TilgangsstyringServiceImpl(
     private val fellesPersonTilgangsstyringsklient: FellesAdressebeskyttelseKlient,
     private val skjermingClient: FellesSkjermingsklient,

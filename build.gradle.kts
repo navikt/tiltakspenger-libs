@@ -78,12 +78,6 @@ subprojects {
         withJavadocJar()
     }
 
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        compilerOptions {
-            freeCompilerArgs.add("-Xwarning-level=IDENTITY_SENSITIVE_OPERATIONS_WITH_VALUE_TYPE:disabled")
-        }
-    }
-
     publishing {
         publications {
             create<MavenPublication>("mavenJava") {

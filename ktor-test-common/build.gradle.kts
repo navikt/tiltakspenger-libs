@@ -4,7 +4,6 @@ dependencies {
     implementation(project(":logging"))
     implementation(project(":json"))
     implementation(project(":auth-core"))
-    implementation(project(":auth-ktor"))
     implementation(project(":auth-test-core"))
 
     implementation("io.arrow-kt:arrow-core:2.1.2")

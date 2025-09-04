@@ -1,4 +1,4 @@
-val kotestVersion = "6.0.1"
+val kotestVersion = "6.0.2"
 val mockkVersion = "1.14.5"
 dependencies {
     api(project(":common"))

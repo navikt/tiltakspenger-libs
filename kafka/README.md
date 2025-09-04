@@ -55,7 +55,7 @@ private val consumer = ManagedKafkaConsumer(
 
 ## 3. Implementere konsumering av meldinger
 
-- Implementer metoden `consume` for å håndtere meldinger som leses fra Kafka.
+- Implementer metoden `consume` for å håndtere meldinger som leses fra Kafka. 
 
 Eksempel:
 
@@ -97,6 +97,10 @@ if (Configuration.isNais()) {
 
 Når du setter opp en ny Kafka-consumer, er det noen viktige regler og praksiser du alltid bør følge:
 
+**Tilgang til lesing av meldingene**
+- Ofte krever de ulike produsentene av meldinger at du har tilgang til å lese fra topicet. Som oftest må du lage en PR i det respektive
+  teamets repo for å få dette til.
+
 **Legge til topics i miljøvariabler**
 
 - Sørg for at Kafka-topic som consumeren skal lese er definert i konfigurasjonen for miljøet.
@@ -109,7 +113,7 @@ Når du setter opp en ny Kafka-consumer, er det noen viktige regler og praksiser
 
 **Plassering av Avro-filer**
 
-- Legg `.avsc/avdl`-filene i prosjektets `src/main/avro`-mappe.
+- Legg `.avsc/.avdl`-filene i prosjektets `src/main/avro`-mappe.
 
 eksempel struktur:
 
@@ -123,3 +127,4 @@ eksempel struktur:
 
 - `autoOffsetReset` i `KafkaConfig` bør settes til `"latest"`når man kjører konsumenten for første gang. Dette er fordi
 den må 'initalisere' en offsett for første gang. Vi har i visse tilfeller endret til `none` etterpå.
+- `AvroSchemaSupport`-pluginen som finnes for Intellij gir deg kule snacks når du jobber med Avro-filer.

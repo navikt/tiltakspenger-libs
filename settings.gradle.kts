@@ -25,5 +25,6 @@ include(
     "meldekort",
     "kafka",
     "kafka-test",
-    "texas"
+    "texas",
+    "satser"
 )

@@ -5,6 +5,7 @@ import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.dato.desember
 import no.nav.tiltakspenger.libs.dato.januar
 import no.nav.tiltakspenger.libs.periodisering.Periode
+import no.nav.tiltakspenger.libs.periodisering.inneholderOverlapp
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
@@ -96,5 +97,12 @@ internal class SatserTest {
                 satsBarnetilleggRedusert = -1,
             )
         }
+    }
+
+    @Test
+    fun `skal ikke kunne ha overlappende perioder for satser`() {
+        val satsperioder = Satser.satser.map { it.periode }
+
+        satsperioder.inneholderOverlapp() shouldBe false
     }
 }

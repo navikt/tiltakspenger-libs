@@ -17,6 +17,10 @@ class Satser {
                 Sats(Periode(1.januar(2025), 31.desember(9999)), 298, 224, 55, 41),
             )
 
+        /**
+         * Finner satsen som er gjeldende på en gitt dato.
+         * @param dato må være tidligst 1. januar 2023.
+         */
         fun sats(dato: LocalDate): Satsdag =
             satser.find { it.fraOgMed <= dato && it.tilOgMed >= dato }?.let { Satsdag(sats = it.sats, satsBarnetillegg = it.satsBarnetillegg, satsRedusert = it.satsRedusert, satsBarnetilleggRedusert = it.satsBarnetilleggRedusert, dato = dato) }
                 ?: throw IllegalArgumentException("Fant ingen sats for dato $dato")

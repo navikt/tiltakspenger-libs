@@ -5,4 +5,5 @@ data class PdlPerson(
     val foedselsdato: List<Fødsel> = emptyList(),
     val adressebeskyttelse: List<Adressebeskyttelse> = emptyList(),
     val forelderBarnRelasjon: List<ForelderBarnRelasjon> = emptyList(),
+    val doedsfall: List<Dødsfall> = emptyList(),
 )

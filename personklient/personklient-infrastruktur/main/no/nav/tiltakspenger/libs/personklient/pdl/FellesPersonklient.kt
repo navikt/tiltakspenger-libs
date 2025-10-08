@@ -8,8 +8,14 @@ import kotlin.time.Duration.Companion.seconds
 
 interface FellesPersonklient {
 
+    @Deprecated("Bruk graphqlRequest() istedenfor. Hvorvidt requesten er en hentPerson eller annen query bestemmes av jsonRequestBody. Dermed er det unødvendig at ident/fnr er en egen parameter her.")
     suspend fun hentPerson(
         fnr: Fnr,
+        token: AccessToken,
+        jsonRequestBody: String,
+    ): Either<FellesPersonklientError, String>
+
+    suspend fun graphqlRequest(
         token: AccessToken,
         jsonRequestBody: String,
     ): Either<FellesPersonklientError, String>

@@ -9,8 +9,6 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeTypeOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.AccessToken
-import no.nav.tiltakspenger.libs.common.Fnr
-import no.nav.tiltakspenger.libs.common.random
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.DeserializationException
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.UkjentFeil
 import no.nav.tiltakspenger.libs.personklient.pdl.common.withWireMockServer
@@ -38,7 +36,7 @@ internal class FellesHttpPersonklientTest {
                 connectTimeout = 100.milliseconds,
             )
             runTest {
-                pdlClient.hentPerson(Fnr.random(), token, "{}").getOrNull()!!
+                pdlClient.doGraphQLRequest(token, "{}").getOrNull()!!
             }
         }
     }
@@ -58,7 +56,7 @@ internal class FellesHttpPersonklientTest {
                 connectTimeout = 100.milliseconds,
             )
             runTest {
-                pdlClient.hentPerson(Fnr.random(), token, "body").swap().getOrNull()!! shouldBe UkjentFeil(
+                pdlClient.graphqlRequest(token, "body").swap().getOrNull()!! shouldBe UkjentFeil(
                     errors = listOf(
                         PdlError(
                             message = "Validation error of type FieldUndefined: Field 'rettIdentitetErUkjentadsa' in type 'FalskIdentitet' is undefined @ 'hentPerson/falskIdentitet/rettIdentitetErUkjentadsa'",
@@ -89,7 +87,7 @@ internal class FellesHttpPersonklientTest {
                 connectTimeout = 100.milliseconds,
             )
             runTest {
-                pdlClient.hentPerson(Fnr.random(), token, "body") shouldBe FellesPersonklientError.ResponsManglerData.left()
+                pdlClient.graphqlRequest(token, "body") shouldBe FellesPersonklientError.ResponsManglerData.left()
             }
         }
     }
@@ -111,7 +109,7 @@ internal class FellesHttpPersonklientTest {
                 connectTimeout = 100.milliseconds,
             )
             runTest {
-                pdlClient.hentPerson(Fnr.random(), token, "body").swap().getOrNull()!!.also {
+                pdlClient.graphqlRequest(token, "body").swap().getOrNull()!!.also {
                     it.shouldBeTypeOf<DeserializationException>()
                     it.exception.shouldBeTypeOf<com.fasterxml.jackson.core.JsonParseException>()
                     it.exception.message shouldContain "Unrecognized token 'asd'"
@@ -135,7 +133,7 @@ internal class FellesHttpPersonklientTest {
                 connectTimeout = 100.milliseconds,
             )
             runTest {
-                pdlClient.hentPerson(Fnr.random(), token, "body").getOrNull()!!
+                pdlClient.graphqlRequest(token, "body").getOrNull()!!
             }
         }
     }

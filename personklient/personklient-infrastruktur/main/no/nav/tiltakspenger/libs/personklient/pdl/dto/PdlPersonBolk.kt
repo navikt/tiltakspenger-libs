@@ -6,7 +6,7 @@ package no.nav.tiltakspenger.libs.personklient.pdl.dto
  */
 data class PdlPersonBolk(
     val ident: String,
-    val person: PdlPerson,
+    val person: PdlPerson?,
     val code: PdlPersonBolkCode,
 )
 

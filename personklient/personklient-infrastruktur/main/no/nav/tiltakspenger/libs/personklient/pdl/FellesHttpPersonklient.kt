@@ -37,8 +37,7 @@ internal class FellesHttpPersonklient(
 
     private val uri = URI.create(endepunkt)
 
-    override suspend fun hentPerson(
-        fnr: Fnr,
+    fun doGraphQLRequest(
         token: AccessToken,
         jsonRequestBody: String,
     ): Either<FellesPersonklientError, String> {
@@ -90,6 +89,21 @@ internal class FellesHttpPersonklient(
             Sikkerlogg.error(it) { "Ukjent feil ved henting av person fra PDL. request: $jsonRequestBody" }
             FellesPersonklientError.NetworkError(it)
         }.flatten()
+    }
+
+    override suspend fun hentPerson(
+        fnr: Fnr,
+        token: AccessToken,
+        jsonRequestBody: String,
+    ): Either<FellesPersonklientError, String> {
+        return doGraphQLRequest(token, jsonRequestBody)
+    }
+
+    override suspend fun graphqlRequest(
+        token: AccessToken,
+        jsonRequestBody: String,
+    ): Either<FellesPersonklientError, String> {
+        return doGraphQLRequest(token, jsonRequestBody)
     }
 }
 

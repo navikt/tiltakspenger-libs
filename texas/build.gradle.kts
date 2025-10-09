@@ -1,5 +1,5 @@
 val jacksonAnnotationsVersion = "2.20"
-val ktorVersion = "3.3.0"
+val ktorVersion = "3.3.1"
 
 dependencies {
     implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonAnnotationsVersion")

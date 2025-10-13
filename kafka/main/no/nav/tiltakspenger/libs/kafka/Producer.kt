@@ -9,6 +9,7 @@ import java.time.Duration
 class Producer<K, V>(
     kafkaConfig: KafkaConfig,
     gracePeriodMillis: Long = 1000,
+    private val kanLoggeKey: Boolean = true,
 ) {
     private val log = KotlinLogging.logger {}
     private val producer = KafkaProducer<K, V>(kafkaConfig.producerConfig())
@@ -35,10 +36,16 @@ class Producer<K, V>(
         )
 
         val metadata = producer.send(record).get()
+        // noen topics bruker fnr som key, og da skal ikke disse logges til vanlig logg
+        val keyLogStatement = if (kanLoggeKey) {
+            "key=${record.key()} "
+        } else {
+            ""
+        }
 
         log.info {
             "Produserte melding til topic ${metadata.topic()}, " +
-                "key=$key, " +
+                keyLogStatement +
                 "offset=${metadata.offset()}, " +
                 "partition=${metadata.partition()}"
         }
@@ -53,10 +60,15 @@ class Producer<K, V>(
         )
 
         val metadata = producer.send(record).get()
+        val keyLogStatement = if (kanLoggeKey) {
+            "key=${record.key()} "
+        } else {
+            ""
+        }
 
         log.info {
             "Produserte tombstone til topic ${metadata.topic()}, " +
-                "key=$key, " +
+                keyLogStatement +
                 "offset=${metadata.offset()}, " +
                 "partition=${metadata.partition()}"
         }

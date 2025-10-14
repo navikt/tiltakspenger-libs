@@ -44,6 +44,7 @@ class SakTilMeldekortApiDTOTest {
             saksnummer = "SAK123",
             meldeperioder = listOf(meldeperiode),
             harSoknadUnderBehandling = false,
+            kanSendeInnHelgForMeldekort = false,
         )
         // language=JSON
         val expectedJson = """
@@ -76,7 +77,8 @@ class SakTilMeldekortApiDTOTest {
                         "2024-01-14": false
                     }
                 }],
-                "harSoknadUnderBehandling": false
+                "harSoknadUnderBehandling": false,
+                "kanSendeInnHelgForMeldekort": false
             }
         """.trimIndent()
 

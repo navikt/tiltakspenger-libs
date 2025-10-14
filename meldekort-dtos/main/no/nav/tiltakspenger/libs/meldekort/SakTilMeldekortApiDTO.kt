@@ -13,7 +13,7 @@ data class SakTilMeldekortApiDTO(
     val saksnummer: String,
     val meldeperioder: List<Meldeperiode>,
     val harSoknadUnderBehandling: Boolean,
-    val kanSendeInnHelgForMeldekort: Boolean,
+    val kanSendeInnHelgForMeldekort: Boolean = false,
 ) {
     data class Meldeperiode(
         val id: String,

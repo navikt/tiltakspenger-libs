@@ -7,7 +7,7 @@ import java.time.LocalDate
 data class TiltakTilSaksbehandlingDTO(
     val id: String,
     // TODO Nullable frem til de gamle feltene ovenfor er faset ut i alle applikasjoner
-    val gjennomføring: GjennomføringDTO? = null,
+    val gjennomforing: GjennomføringDTO? = null,
     @Deprecated("Bruk gjennomføring.id")
     val gjennomføringId: String?,
     val deltakelseFom: LocalDate?,

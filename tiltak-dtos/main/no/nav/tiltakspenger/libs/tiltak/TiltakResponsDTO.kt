@@ -34,6 +34,7 @@ data class TiltakResponsDTO(
         val arrangørnavn: String,
         val typeNavn: String,
         val arenaKode: TiltakType,
+        val deltidsprosent: Double?,
     )
 
     enum class DeltakerStatusDTO(

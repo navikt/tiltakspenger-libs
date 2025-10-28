@@ -9,7 +9,7 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
-    implementation("com.github.ben-manes.caffeine:caffeine:3.2.2")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.3")
 
     testImplementation(project(":test-common"))
 }

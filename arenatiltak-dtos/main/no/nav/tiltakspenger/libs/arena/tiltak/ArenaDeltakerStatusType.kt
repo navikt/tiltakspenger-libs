@@ -31,7 +31,7 @@ fun ArenaDeltakerStatusType.toDTO(fom: LocalDate?): TiltakResponsDTO.DeltakerSta
         ArenaDeltakerStatusType.GJENN_AVB -> TiltakResponsDTO.DeltakerStatusDTO.AVBRUTT
         ArenaDeltakerStatusType.IKKEM -> TiltakResponsDTO.DeltakerStatusDTO.AVBRUTT
         ArenaDeltakerStatusType.JATAKK -> TiltakResponsDTO.DeltakerStatusDTO.DELTAR
-        ArenaDeltakerStatusType.TILBUD -> if (startdatoErFremITid) TiltakResponsDTO.DeltakerStatusDTO.VENTER_PA_OPPSTART else TiltakResponsDTO.DeltakerStatusDTO.DELTAR
+        ArenaDeltakerStatusType.TILBUD -> TiltakResponsDTO.DeltakerStatusDTO.VENTER_PA_OPPSTART
 
         ArenaDeltakerStatusType.AKTUELL -> TiltakResponsDTO.DeltakerStatusDTO.SOKT_INN
         ArenaDeltakerStatusType.AVSLAG -> TiltakResponsDTO.DeltakerStatusDTO.IKKE_AKTUELL

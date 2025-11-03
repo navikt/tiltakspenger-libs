@@ -4,7 +4,7 @@ dependencies {
     implementation(project(":json"))
     implementation(project(":logging"))
 
-    implementation("io.arrow-kt:arrow-core:2.1.2")
+    implementation("io.arrow-kt:arrow-core:2.2.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinxCoroutinesVersion")
 
     // Caching

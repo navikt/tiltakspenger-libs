@@ -55,7 +55,7 @@ enum class AdressebeskyttelseDTO {
     STRENGT_FORTROLIG_UTLAND,
     STRENGT_FORTROLIG,
     FORTROLIG,
-    UGRADERT;
+    UGRADERT,
 }
 
 data class JaNeiSpmDTO(

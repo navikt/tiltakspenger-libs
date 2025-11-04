@@ -48,7 +48,15 @@ data class BarnetilleggDTO(
     val mellomnavn: String?,
     val etternavn: String?,
     val oppholderSegIEØS: JaNeiSpmDTO,
+    val adressebeskyttelseDTO: AdressebeskyttelseDTO,
 )
+
+enum class AdressebeskyttelseDTO {
+    STRENGT_FORTROLIG_UTLAND,
+    STRENGT_FORTROLIG,
+    FORTROLIG,
+    UGRADERT;
+}
 
 data class JaNeiSpmDTO(
     val svar: SpmSvarDTO,

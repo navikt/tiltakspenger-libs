@@ -27,4 +27,18 @@ internal class SaniterStringForPdfgenTest {
             " \\u0020\\u0021\\u0022\u0020\u0021\u0022!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~æøåÆØÅ\\n\\t "
         SaniterStringForPdfgen.saniter(input) shouldBe input
     }
+
+    @Test
+    fun `fjerner newline`() {
+        val input =
+            "abcdefghijkl\nmnopqrstuvwxyz{|}~æøåÆØÅ"
+        SaniterStringForPdfgen.saniter(input) shouldBe "abcdefghijklmnopqrstuvwxyz{|}~æøåÆØÅ"
+    }
+
+    @Test
+    fun `fjerner ikke newline`() {
+        val input =
+            "abcdefghijkl\nmnopqrstuvwxyz{|}~æøåÆØÅ"
+        SaniterStringForPdfgen.saniterBeholdNewline(input) shouldBe input
+    }
 }

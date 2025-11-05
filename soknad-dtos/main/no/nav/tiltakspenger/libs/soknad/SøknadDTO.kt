@@ -43,7 +43,7 @@ data class SøknadsTiltakDTO(
 )
 
 data class BarnetilleggDTO(
-    //TODO - nullable for å fungere med dagens løsning til vi får merget inn andre repos
+    // TODO - nullable for å fungere med dagens løsning til vi får merget inn andre repos
     val fnr: String?,
     val fødselsdato: LocalDate?,
     val fornavn: String?,

@@ -43,13 +43,13 @@ data class SøknadsTiltakDTO(
 )
 
 data class BarnetilleggDTO(
+    //TODO - nullable for å fungere med dagens løsning til vi får merget inn andre repos
+    val fnr: String?,
     val fødselsdato: LocalDate?,
     val fornavn: String?,
     val mellomnavn: String?,
     val etternavn: String?,
     val oppholderSegIEØS: JaNeiSpmDTO,
-    //TODO - nullable for å fungere med dagens løsning
-    val adressebeskyttelse: AdressebeskyttelseDTO?,
 )
 
 enum class AdressebeskyttelseDTO {

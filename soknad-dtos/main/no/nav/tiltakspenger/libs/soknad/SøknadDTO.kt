@@ -48,7 +48,8 @@ data class BarnetilleggDTO(
     val mellomnavn: String?,
     val etternavn: String?,
     val oppholderSegIEØS: JaNeiSpmDTO,
-    val adressebeskyttelseDTO: AdressebeskyttelseDTO,
+    //TODO - nullable for å fungere med dagens løsning
+    val adressebeskyttelse: AdressebeskyttelseDTO?,
 )
 
 enum class AdressebeskyttelseDTO {

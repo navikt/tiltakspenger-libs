@@ -6,26 +6,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener
 import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.KafkaConsumer
-import org.apache.kafka.clients.consumer.OffsetAndMetadata
-import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.errors.WakeupException
 import java.time.Duration
-import kotlin.RuntimeException
 
 class ManagedKafkaConsumer<K, V>(
     private val kanLoggeKey: Boolean = true,
     private val topic: String,
     private val config: Map<String, *>,
+    private val delayTimeMillis: Long = 10_000,
     private val consume: suspend (key: K, value: V) -> Unit,
 ) {
     private val log = KotlinLogging.logger {}
     private val job = Job()
     private val scope = CoroutineScope(Dispatchers.IO + job)
-    private val offsetsToCommit = mutableMapOf<TopicPartition, OffsetAndMetadata>()
 
     private var running = false
 
@@ -57,81 +52,51 @@ class ManagedKafkaConsumer<K, V>(
     }
 
     private suspend fun subscribe(consumer: KafkaConsumer<K, V>) {
-        try {
-            consumer.subscribe(listOf(topic), rebalanceListener(consumer))
-
-            while (running) {
+        while (running) {
+            try {
+                consumer.subscribe(listOf(topic))
                 poll(consumer)
+            } catch (e: WakeupException) {
+                log.info { "Consumer for $topic is exiting" }
+                stop()
+            } catch (t: Throwable) {
+                log.error(t) { "Something went wrong with consumer for topic $topic" }
+                consumer.unsubscribe()
+                delay(delayTimeMillis)
             }
-        } catch (e: WakeupException) {
-            log.info { "Consumer for $topic is exiting" }
-            stop()
-        } catch (t: Throwable) {
-            log.error(t) { "Something went wrong with consumer for topic $topic" }
-            throw t
         }
     }
 
     private suspend fun poll(consumer: KafkaConsumer<K, V>) {
-        if (status.isFailure) {
-            log.info {
-                "Consumer status for topic $topic is failure, " +
-                    "delaying ${status.backoffDuration}ms before retrying"
-            }
-            delay(status.backoffDuration)
-        }
-
-        try {
-            val records = consumer.poll(Duration.ofMillis(1000))
-
-            seekToEarliestOffsets(records, consumer)
-
-            if (!records.isEmpty) {
-                log.debug { "Consumer for $topic polled ${records.count()} records." }
+        while (running) {
+            if (status.isFailure) {
+                log.info {
+                    "Consumer status for topic $topic is failure, " +
+                        "delaying ${status.backoffDuration}ms before retrying"
+                }
+                delay(status.backoffDuration)
             }
 
-            records.forEach { record ->
-                process(record)
+            try {
+                val records = consumer.poll(Duration.ofMillis(1000))
+                if (!records.isEmpty) {
+                    log.debug { "Consumer for $topic polled ${records.count()} records." }
+                }
 
-                val partition = TopicPartition(record.topic(), record.partition())
-                val offset = OffsetAndMetadata(record.offset() + 1)
-
-                offsetsToCommit[partition] = offset
-                status.success()
-            }
-        } catch (t: Throwable) {
-            log.error(t) { t.message }
-            status.failure()
-        } finally {
-            commitOffsets(consumer)
-        }
-    }
-
-    private fun commitOffsets(consumer: KafkaConsumer<K, V>) {
-        if (offsetsToCommit.isNotEmpty()) {
-            offsetsToCommit.forEach { (partition, offset) -> consumer.seek(partition, offset) }
-            consumer.commitSync(offsetsToCommit)
-
-            log.debug { "Committed offsets $offsetsToCommit" }
-            offsetsToCommit.clear()
-        }
-    }
-
-    private fun seekToEarliestOffsets(records: ConsumerRecords<K, V>, consumer: KafkaConsumer<K, V>) {
-        val offsetMap = mutableMapOf<TopicPartition, OffsetAndMetadata>()
-
-        records.forEach { record ->
-            val topicPartition = TopicPartition(record.topic(), record.partition())
-            val offsetAndMetadata = OffsetAndMetadata(record.offset())
-
-            val storedOffset = offsetMap[topicPartition]
-
-            if (storedOffset == null || offsetAndMetadata.offset() < storedOffset.offset()) {
-                offsetMap[topicPartition] = offsetAndMetadata
+                records.forEach { record ->
+                    process(record)
+                    status.success()
+                }
+                // det er viktig at committing av offset først skjer når alle records er behandlet ok, hvis ikke
+                // risikerer vi at records som har feilet ikke blir forsøkt på nytt hvis vi har lest flere
+                // records i en poll
+                consumer.commitSync()
+            } catch (t: Throwable) {
+                log.error(t) { t.message }
+                status.failure()
+                throw t
             }
         }
-
-        offsetMap.forEach { consumer.seek(it.key, it.value) }
     }
 
     private suspend fun process(record: ConsumerRecord<K, V>) {
@@ -164,15 +129,4 @@ class ManagedKafkaConsumer<K, V>(
         msg: String,
         cause: Throwable?,
     ) : RuntimeException(msg, cause)
-
-    private fun rebalanceListener(consumer: KafkaConsumer<K, V>) = object : ConsumerRebalanceListener {
-        override fun onPartitionsRevoked(partitions: MutableCollection<TopicPartition>) {
-            log.info { "Partitions revoked $partitions, committing offsets" }
-            commitOffsets(consumer)
-        }
-
-        override fun onPartitionsAssigned(partitions: MutableCollection<TopicPartition>) {
-            log.info { "Partitions assigned $partitions" }
-        }
-    }
 }

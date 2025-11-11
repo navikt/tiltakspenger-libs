@@ -47,7 +47,7 @@ class ManagedKafkaConsumerTest {
 
         produceStringString(ProducerRecord(topic, key, value))
 
-        val consumer = ManagedKafkaConsumer(topic = topic, config = stringConsumerConfig) { k: String, v: String ->
+        val consumer = ManagedKafkaConsumer(topic = topic, config = stringConsumerConfig, delayTimeMillis = 1L) { k: String, v: String ->
             cache[k] = v
         }
         consumer.run()
@@ -74,7 +74,7 @@ class ManagedKafkaConsumerTest {
                 groupId = "test-consumer-${UUID.randomUUID()}",
             )
 
-        val consumer = ManagedKafkaConsumer(topic = uuidTopic, config = config) { k: UUID, v: ByteArray ->
+        val consumer = ManagedKafkaConsumer(topic = uuidTopic, config = config, delayTimeMillis = 1L) { k: UUID, v: ByteArray ->
             cache[k] = v
         }
         consumer.run()
@@ -94,7 +94,7 @@ class ManagedKafkaConsumerTest {
 
         produceStringString(ProducerRecord(topic, key, value))
 
-        val consumer = ManagedKafkaConsumer<String, String>(topic = topic, config = stringConsumerConfig) { _, _ ->
+        val consumer = ManagedKafkaConsumer<String, String>(topic = topic, config = stringConsumerConfig, delayTimeMillis = 1L) { _, _ ->
             antallGangerKallt++
             error("skal feile noen ganger")
         }
@@ -119,7 +119,7 @@ class ManagedKafkaConsumerTest {
         val consumed = mutableListOf<Int>()
         val failures = mutableListOf(7, 42, 42, 93)
 
-        val consumer = ManagedKafkaConsumer<Int, Int>(topic = intTopic.name(), config = intConsumerConfig) { k, _ ->
+        val consumer = ManagedKafkaConsumer<Int, Int>(topic = intTopic.name(), config = intConsumerConfig, delayTimeMillis = 1L) { k, _ ->
             if (k in failures) {
                 failures.remove(k)
                 error("Skal feile på $k")
@@ -134,6 +134,8 @@ class ManagedKafkaConsumerTest {
         }
 
         eventually(Duration.ofSeconds(15)) {
+            // hvis vi leser flere meldinger av gangen vil antall konsumerte meldinger være større enn antall
+            // produserte meldinger. Så lenge MAX_POLL_RECORDS=1 i consumerconfig skal disse være like.
             consumed.size shouldBe data.size
             consumed.toSet().size shouldBe data.size
             consumer.stop()
@@ -155,7 +157,7 @@ class ManagedKafkaConsumerTest {
 
         val consumed = mutableMapOf<Int, Int>()
         val failures = mutableListOf(7, 42, 42)
-        val consumer = ManagedKafkaConsumer<Int, Int>(topic = intTopic.name(), config = intConsumerConfig) { k, v ->
+        val consumer = ManagedKafkaConsumer<Int, Int>(topic = intTopic.name(), config = intConsumerConfig, delayTimeMillis = 1L) { k, v ->
             if (k in failures) {
                 failures.remove(k)
                 error("Skal feile på $k")

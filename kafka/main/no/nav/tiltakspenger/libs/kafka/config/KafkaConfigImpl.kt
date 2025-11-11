@@ -9,6 +9,7 @@ import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringSerializer
 
 const val MAX_POLL_INTERVAL_MS = 300_000
+const val MAX_POLL_RECORDS = 1
 
 class KafkaConfigImpl(
     private val autoOffsetReset: String = "earliest",
@@ -53,6 +54,7 @@ class KafkaConfigImpl(
         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to keyDeserializer::class.java,
         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to valueDeserializer::class.java,
         ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG to MAX_POLL_INTERVAL_MS,
+        ConsumerConfig.MAX_POLL_RECORDS_CONFIG to MAX_POLL_RECORDS,
     ) + commonConfig()
 
     /**

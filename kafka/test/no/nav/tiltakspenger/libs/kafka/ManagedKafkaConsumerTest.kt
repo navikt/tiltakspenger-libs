@@ -1,6 +1,5 @@
 package no.nav.tiltakspenger.libs.kafka
 
-import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.kafka.config.LocalKafkaConfig
 import no.nav.tiltakspenger.libs.kafka.test.SingletonKafkaProvider
@@ -135,9 +134,9 @@ class ManagedKafkaConsumerTest {
         }
 
         eventually(Duration.ofSeconds(15)) {
-            // siden vi leser flere meldinger av gangen er antall konsumerte meldinger større enn antall produserte
-            // meldinger. Hvis man setter MAX_POLL_RECORDS=1 i consumerconfig skal disse være like.
-            consumed.size shouldBeGreaterThan data.size
+            // hvis vi leser flere meldinger av gangen vil antall konsumerte meldinger være større enn antall
+            // produserte meldinger. Så lenge MAX_POLL_RECORDS=1 i consumerconfig skal disse være like.
+            consumed.size shouldBe data.size
             consumed.toSet().size shouldBe data.size
             consumer.stop()
         }

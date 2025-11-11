@@ -87,6 +87,9 @@ class ManagedKafkaConsumer<K, V>(
                     process(record)
                     status.success()
                 }
+                // det er viktig at committing av offset først skjer når alle records er behandlet ok, hvis ikke
+                // risikerer vi at records som har feilet ikke blir forsøkt på nytt hvis vi har lest flere
+                // records i en poll
                 consumer.commitSync()
             } catch (t: Throwable) {
                 log.error(t) { t.message }

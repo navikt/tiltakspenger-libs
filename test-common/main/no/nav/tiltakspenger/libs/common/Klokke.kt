@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.common
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
@@ -15,6 +16,9 @@ val fixedClock: Clock = Clock.fixed(startPoint.atTime(1, 2, 3, 456789000).toInst
 
 fun fixedClockAt(date: LocalDate = startPoint): Clock =
     Clock.fixed(date.atTime(1, 2, 3, 456789000).toInstant(ZoneOffset.UTC), ZoneOffset.UTC)
+
+fun fixedClockAt(dateTime: LocalDateTime): Clock =
+    Clock.fixed(dateTime.toInstant(ZoneOffset.UTC), ZoneOffset.UTC)
 
 /** Fixed UTC clock at 2025-02-08T01:02:03.456789000Z */
 val enUkeEtterFixedClock: Clock = fixedClock.plus(7, ChronoUnit.DAYS)

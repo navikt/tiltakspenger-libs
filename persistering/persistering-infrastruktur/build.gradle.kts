@@ -1,4 +1,4 @@
-val testContainersVersion = "1.21.3"
+val testContainersVersion = "2.0.2"
 
 dependencies {
     implementation(project(":logging"))
@@ -11,8 +11,8 @@ dependencies {
     testImplementation(project(":test-common"))
 
     testImplementation("org.testcontainers:testcontainers:$testContainersVersion")
-    testImplementation("org.testcontainers:junit-jupiter:$testContainersVersion")
-    testImplementation("org.testcontainers:postgresql:$testContainersVersion")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:$testContainersVersion")
+    testImplementation("org.testcontainers:testcontainers-postgresql:$testContainersVersion")
 
     testImplementation("org.postgresql:postgresql:42.7.8")
 }

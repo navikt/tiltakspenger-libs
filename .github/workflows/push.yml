@@ -13,7 +13,7 @@ jobs:
       checks: write
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # include git tags
       - uses: paulhatch/semantic-version@v5.4.0
@@ -47,7 +47,7 @@ jobs:
 #      contents: write
 #      packages: write
 #    steps:
-#      - uses: actions/checkout@v5
+#      - uses: actions/checkout@v6
 #        with:
 #          fetch-depth: 0 # include git tags
 #

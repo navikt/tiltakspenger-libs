@@ -25,8 +25,8 @@ interface FellesPersonklient {
             endepunkt: String,
             // Individstønad (det gamle navnet på tiltakspenger)
             tema: String = "IND",
-            connectTimeout: Duration = 1.seconds,
-            timeout: Duration = 1.seconds,
+            connectTimeout: Duration = 10.seconds,
+            timeout: Duration = 10.seconds,
         ): FellesPersonklient = FellesHttpPersonklient(
             endepunkt = endepunkt,
             tema = tema,

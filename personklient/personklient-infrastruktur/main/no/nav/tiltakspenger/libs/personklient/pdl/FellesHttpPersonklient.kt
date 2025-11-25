@@ -26,8 +26,8 @@ import kotlin.time.toJavaDuration
 internal class FellesHttpPersonklient(
     private val endepunkt: String,
     private val tema: String = "IND",
-    connectTimeout: Duration = 1.seconds,
-    private val timeout: Duration = 1.seconds,
+    connectTimeout: Duration = 10.seconds,
+    private val timeout: Duration = 10.seconds,
     private val logg: KLogger? = KotlinLogging.logger {},
 ) : FellesPersonklient {
     private val client = HttpClient.newBuilder()

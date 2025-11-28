@@ -334,14 +334,12 @@ fun TiltakResponsDTO.TiltakType.toTiltakstypeSomGirRett(): Either<TiltakstypeGir
         TiltakResponsDTO.TiltakType.NYTEST,
         TiltakResponsDTO.TiltakType.INDOPPRF,
         TiltakResponsDTO.TiltakType.SUPPEMP,
-        -> TiltakstypeGirIkkeRett.left()
-
-        // Vi skal ikke gjøre utbetalinger på forsøk i vår løsning
-        // https://nav-it.slack.com/archives/C02CPSB47JL/p1723626621267979?thread_ts=1723617446.548409&cid=C02CPSB47JL
+        // Disse har gitt rett tidligere, men er ikke aktuelle mer.
+        // Behandler dem som om de ikke gir rett fordi det ikke finnes utbetalingskoder for dem.
         TiltakResponsDTO.TiltakType.FORSAMOGRU,
         TiltakResponsDTO.TiltakType.FORSAMOENK,
         TiltakResponsDTO.TiltakType.FORSFAGGRU,
         TiltakResponsDTO.TiltakType.FORSFAGENK,
         TiltakResponsDTO.TiltakType.FORSHOYUTD,
-        -> throw RuntimeException("Kan ikke gjøre utbetalinger på forsøk i vår løsning (tiltaktype: $this)")
+        -> TiltakstypeGirIkkeRett.left()
     }

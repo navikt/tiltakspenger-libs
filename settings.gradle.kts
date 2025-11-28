@@ -20,7 +20,6 @@ include(
     "ktor-common",
     "ktor-test-common",
     "logging",
-    "datadeling-dtos",
     "meldekort-dtos",
     "meldekort",
     "kafka",

@@ -10,8 +10,24 @@ class NonBlankStringTest {
     @Test
     fun `exception dersom strengen er blank`() {
         assertThrows<IllegalArgumentException> {
+            NonBlankString.create("")
+            "".toNonBlankString()
+        }
+    }
+
+    @Test
+    fun `exception dersom strengen er bare en space`() {
+        assertThrows<IllegalArgumentException> {
             NonBlankString.create(" ")
             " ".toNonBlankString()
+        }
+    }
+
+    @Test
+    fun `exception dersom strengen er newline`() {
+        assertThrows<IllegalArgumentException> {
+            NonBlankString.create("\n")
+            "\n".toNonBlankString()
         }
     }
 
@@ -22,4 +38,6 @@ class NonBlankStringTest {
             "a".toNonBlankString()
         }
     }
+
+
 }

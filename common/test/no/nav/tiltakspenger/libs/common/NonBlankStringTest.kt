@@ -38,6 +38,4 @@ class NonBlankStringTest {
             "a".toNonBlankString()
         }
     }
-
-
 }

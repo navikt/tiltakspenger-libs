@@ -90,6 +90,19 @@ data class Periode(
         return other.fraOgMed in this || other.tilOgMed in this || this.fraOgMed in other || this.tilOgMed in other
     }
 
+    fun overlapperIkkeMed(other: Periode): Boolean {
+        return !overlapperMed(other)
+    }
+
+    /** @return true dersom minst en dag overlapper [other] */
+    fun overlapperMed(other: List<Periode>): Boolean {
+        return other.any { this.overlapperMed(it) }
+    }
+
+    fun overlapperIkkeMed(other: List<Periode>): Boolean {
+        return !overlapperMed(other)
+    }
+
     /** @return den overlappende perioden eller null dersom de ikke overlapper */
     fun overlappendePeriode(periode: Periode): Periode? {
         if (this.overlapperMed(periode)) {
@@ -289,8 +302,18 @@ fun List<Periode>.trekkFra(perioder: List<Periode>, godtaOverlapp: Boolean = tru
     }
 }
 
-fun List<Periode>.overlapper(periode: Periode): Boolean = this.any { it.overlapperMed(periode) }
-fun List<Periode>.overlapperIkke(periode: Periode): Boolean = !this.any { it.overlapperMed(periode) }
+fun List<Periode>.overlapper(other: Periode): Boolean = this.any { it.overlapperMed(other) }
+
+/** To tomme lister overlapper ikke hverandre. */
+fun List<Periode>.overlapper(other: List<Periode>): Boolean {
+    if (this.isEmpty() || other.isEmpty()) return false
+    return this.any { periode1 -> other.any { periode2 -> periode1.overlapperMed(periode2) } }
+}
+
+fun List<Periode>.overlapperIkke(other: Periode): Boolean = !this.overlapper(other)
+
+/** To tomme lister overlapper ikke hverandre (vil gi true dersom begge listene er tomme) */
+fun List<Periode>.overlapperIkke(other: List<Periode>): Boolean = !this.overlapper(other)
 
 infix fun LocalDate.til(other: LocalDate): Periode = Periode(this, other)
 infix fun Int.til(other: LocalDate): Periode = Periode(other.withDayOfMonth(this), other)

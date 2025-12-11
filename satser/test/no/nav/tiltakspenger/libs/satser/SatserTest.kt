@@ -12,29 +12,53 @@ import java.time.LocalDate
 internal class SatserTest {
     @Test
     fun `skal returnere korrekt sats for 2023`() {
-        val satsdag = Satser.sats(1.januar(2023))
-        satsdag.sats shouldBe 268
-        satsdag.satsRedusert shouldBe 201
-        satsdag.satsBarnetillegg shouldBe 52
-        satsdag.satsBarnetilleggRedusert shouldBe 39
+        listOf(1.januar(2023), 31.desember(2023)).forEach { dato ->
+            val satsdag = Satser.sats(dato)
+            satsdag.sats shouldBe 268
+            satsdag.satsRedusert shouldBe 201
+            satsdag.satsBarnetillegg shouldBe 52
+            satsdag.satsBarnetilleggRedusert shouldBe 39
+        }
     }
 
     @Test
     fun `skal returnere korrekt sats for 2024`() {
-        val satsdag = Satser.sats(1.januar(2024))
-        satsdag.sats shouldBe 285
-        satsdag.satsRedusert shouldBe 214
-        satsdag.satsBarnetillegg shouldBe 53
-        satsdag.satsBarnetilleggRedusert shouldBe 40
+        listOf(1.januar(2024), 31.desember(2024)).forEach { dato ->
+            val satsdag = Satser.sats(dato)
+            satsdag.sats shouldBe 285
+            satsdag.satsRedusert shouldBe 214
+            satsdag.satsBarnetillegg shouldBe 53
+            satsdag.satsBarnetilleggRedusert shouldBe 40
+        }
     }
 
     @Test
     fun `skal returnere korrekt sats for 2025`() {
-        val satsdag = Satser.sats(1.januar(2025))
-        satsdag.sats shouldBe 298
-        satsdag.satsRedusert shouldBe 224
-        satsdag.satsBarnetillegg shouldBe 55
-        satsdag.satsBarnetilleggRedusert shouldBe 41
+        listOf(1.januar(2025), 31.desember(2025)).forEach { dato ->
+            val satsdag = Satser.sats(dato)
+            satsdag.sats shouldBe 298
+            satsdag.satsRedusert shouldBe 224
+            satsdag.satsBarnetillegg shouldBe 55
+            satsdag.satsBarnetilleggRedusert shouldBe 41
+        }
+    }
+
+    @Test
+    fun `skal returnere korrekt sats for 2026`() {
+        listOf(
+            1.januar(2026),
+            31.desember(2026),
+            1.januar(2027),
+            31.desember(2027),
+            1.januar(9999),
+            31.desember(9999),
+        ).forEach { dato ->
+            val satsdag = Satser.sats(dato)
+            satsdag.sats shouldBe 312
+            satsdag.satsRedusert shouldBe 234
+            satsdag.satsBarnetillegg shouldBe 56
+            satsdag.satsBarnetilleggRedusert shouldBe 42
+        }
     }
 
     @Test

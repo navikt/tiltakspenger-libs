@@ -14,7 +14,8 @@ class Satser {
             listOf(
                 Sats(Periode(1.januar(2023), 31.desember(2023)), 268, 201, 52, 39),
                 Sats(Periode(1.januar(2024), 31.desember(2024)), 285, 214, 53, 40),
-                Sats(Periode(1.januar(2025), 31.desember(9999)), 298, 224, 55, 41),
+                Sats(Periode(1.januar(2025), 31.desember(2025)), 298, 224, 55, 41),
+                Sats(Periode(1.januar(2026), 31.desember(9999)), 312, 234, 56, 42),
             )
 
         /**
@@ -22,7 +23,15 @@ class Satser {
          * @param dato må være tidligst 1. januar 2023.
          */
         fun sats(dato: LocalDate): Satsdag =
-            satser.find { it.fraOgMed <= dato && it.tilOgMed >= dato }?.let { Satsdag(sats = it.sats, satsBarnetillegg = it.satsBarnetillegg, satsRedusert = it.satsRedusert, satsBarnetilleggRedusert = it.satsBarnetilleggRedusert, dato = dato) }
+            satser.find { it.fraOgMed <= dato && it.tilOgMed >= dato }?.let {
+                Satsdag(
+                    sats = it.sats,
+                    satsBarnetillegg = it.satsBarnetillegg,
+                    satsRedusert = it.satsRedusert,
+                    satsBarnetilleggRedusert = it.satsBarnetilleggRedusert,
+                    dato = dato,
+                )
+            }
                 ?: throw IllegalArgumentException("Fant ingen sats for dato $dato")
     }
 }

@@ -1,5 +1,5 @@
 val kotestVersion = "6.0.7"
-val mockkVersion = "1.14.6"
+val mockkVersion = "1.14.7"
 dependencies {
     api(project(":common"))
     api(project(":persistering:persistering-domene"))

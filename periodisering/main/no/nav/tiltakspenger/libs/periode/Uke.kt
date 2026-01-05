@@ -6,7 +6,7 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 
 fun Int.uke(år: Int): Periode {
-    val weekFields = WeekFields.of(Locale.getDefault())
+    val weekFields = WeekFields.of(Locale.of("no", "NO"))
 
     // Finn første dag i uken (mandag)
     val førsteDagIUken = LocalDate.of(år, 1, 1)

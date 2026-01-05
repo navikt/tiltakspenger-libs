@@ -1,8 +1,9 @@
 package no.nav.tiltakspenger.libs.periode
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.dato.desember
+import no.nav.tiltakspenger.libs.dato.januar
 import org.junit.jupiter.api.Test
-import java.time.LocalDate
 
 class UkeTest {
 
@@ -10,24 +11,24 @@ class UkeTest {
     fun `uke 1 i 2026 starter 29 desember 2025`() {
         val periode = 1.uke(2026)
 
-        periode.fraOgMed shouldBe LocalDate.of(2025, 12, 29)
-        periode.tilOgMed shouldBe LocalDate.of(2026, 1, 4)
+        periode.fraOgMed shouldBe 29.desember(2025)
+        periode.tilOgMed shouldBe 4.januar(2026)
     }
 
     @Test
     fun `uke 2 i 2026 starter 5 januar`() {
         val periode = 2.uke(2026)
 
-        periode.fraOgMed shouldBe LocalDate.of(2026, 1, 5)
-        periode.tilOgMed shouldBe LocalDate.of(2026, 1, 11)
+        periode.fraOgMed shouldBe 5.januar(2026)
+        periode.tilOgMed shouldBe 11.januar(2026)
     }
 
     @Test
     fun `uke 53 i 2026 slutter søndag 3 januar 2027`() {
         val periode = 53.uke(2026)
 
-        periode.fraOgMed shouldBe LocalDate.of(2026, 12, 28)
-        periode.tilOgMed shouldBe LocalDate.of(2027, 1, 3)
+        periode.fraOgMed shouldBe 28.desember(2026)
+        periode.tilOgMed shouldBe 3.januar(2027)
     }
 
     @Test

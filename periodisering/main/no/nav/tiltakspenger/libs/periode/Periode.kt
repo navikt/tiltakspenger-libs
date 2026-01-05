@@ -38,6 +38,8 @@ data class Periode(
         ChronoUnit.DAYS.between(fraOgMed, tilOgMed) + 1
     }
 
+    operator fun rangeTo(other: Periode): Periode = Periode(fraOgMed = this.fraOgMed, tilOgMed = other.tilOgMed)
+
     /** Sjekker om denne perioden starter etter [dato] */
     infix fun starterEtter(dato: LocalDate): Boolean = fraOgMed.isAfter(dato)
 

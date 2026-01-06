@@ -5,6 +5,7 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.dato.august
 import no.nav.tiltakspenger.libs.dato.desember
+import no.nav.tiltakspenger.libs.dato.januar
 import no.nav.tiltakspenger.libs.dato.juli
 import no.nav.tiltakspenger.libs.dato.juni
 import no.nav.tiltakspenger.libs.dato.mai
@@ -17,6 +18,7 @@ import no.nav.tiltakspenger.libs.periodisering.trekkFra
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
@@ -189,5 +191,49 @@ class PeriodeTest {
         (LocalDate.MIN til (1.mai(2021))).toString() shouldBe "LocalDate.MIN – 1. mai 2021"
         (1.mai(2021) til LocalDate.MAX).toString() shouldBe "1. mai 2021 – LocalDate.MAX"
         (LocalDate.MIN til LocalDate.MAX).toString() shouldBe "LocalDate.MIN – LocalDate.MAX"
+    }
+
+    @Nested
+    inner class FraOgMedTil {
+        @Test
+        fun `fraOgMedTil returnerer periode når fraOgMed er etter dato`() {
+            val periode = 2.uke(2026)
+            val resultat = periode.fraOgMedTil(15.januar(2026))
+            resultat shouldBe Periode(5.januar(2026), 15.januar(2026))
+        }
+
+        @Test
+        fun `fraOgMedTil returnerer null når fraOgMed er samme dag som dato`() {
+            val periode = 2.uke(2026)
+            periode.fraOgMedTil(5.januar(2026)) shouldBe null
+        }
+
+        @Test
+        fun `fraOgMedTil returnerer null når fraOgMed er før dato`() {
+            val periode = 2.uke(2026)
+            periode.fraOgMedTil(4.januar(2026)) shouldBe null
+        }
+    }
+
+    @Nested
+    inner class TilOgMedTil {
+        @Test
+        fun `tilOgMedTil returnerer periode når tilOgMed er etter dato`() {
+            val periode = 2.uke(2026)
+            val resultat = periode.tilOgMedTil(15.januar(2026))
+            resultat shouldBe Periode(11.januar(2026), 15.januar(2026))
+        }
+
+        @Test
+        fun `tilOgMedTil returnerer null når tilOgMed er samme dag som dato`() {
+            val periode = 2.uke(2026)
+            periode.tilOgMedTil(11.januar(2026)) shouldBe null
+        }
+
+        @Test
+        fun `tilOgMedTil returnerer null når tilOgMed er før dato`() {
+            val periode = 2.uke(2026)
+            periode.tilOgMedTil(10.januar(2026)) shouldBe null
+        }
     }
 }

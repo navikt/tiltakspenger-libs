@@ -184,6 +184,26 @@ data class Periode(
         return ikkeOverlappendePerioder(andrePerioder, godtaOverlapp)
     }
 
+    /**
+     * @return null hvis perioden ikke starter etter [dato], ellers en periode fra og med denne.perioden.fraOgMed til og med [dato]
+     */
+    fun fraOgMedTil(dato: LocalDate): Periode? {
+        if (!fraOgMed.isBefore(dato)) {
+            return null
+        }
+        return Periode(fraOgMed, dato)
+    }
+
+    /**
+     * @return null hvis perioden ikke starter etter [dato], ellers en periode fra og med denne.perioden.fraOgMed til og med [dato]
+     */
+    fun tilOgMedTil(dato: LocalDate): Periode? {
+        if (!tilOgMed.isBefore(dato)) {
+            return null
+        }
+        return Periode(tilOgMed, dato)
+    }
+
     override fun toString(): String {
         if (fraOgMed == tilOgMed) {
             return fraOgMed.format(norskDatoFormatter)

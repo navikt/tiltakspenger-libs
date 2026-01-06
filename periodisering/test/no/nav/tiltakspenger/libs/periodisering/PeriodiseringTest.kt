@@ -206,4 +206,82 @@ class PeriodiseringTest {
             utvidet[3].verdi shouldBe "C"
         }
     }
+
+    @Nested
+    inner class UtvidOgFyllInnAlleTommePerioder {
+        @Test
+        fun `utvid og fyll inn sammenhengende periodisering - ingen hull å fylle`() {
+            val periodisering = SammenhengendePeriodisering(
+                PeriodeMedVerdi("A", 2.uke(2026)),
+                PeriodeMedVerdi("B", 3.uke(2026)),
+            )
+
+            val resultat = periodisering.utvidOgFyllInnAlleTommePerioder(
+                verdi = "C",
+                nyTotalPeriode = 1.uke(2026)..4.uke(2026),
+            )
+
+            resultat.shouldBeInstanceOf<SammenhengendePeriodisering<String>>()
+            resultat.size shouldBe 4
+            resultat[0].verdi shouldBe "C"
+            resultat[0].periode shouldBe 1.uke(2026)
+            resultat[1].verdi shouldBe "A"
+            resultat[1].periode shouldBe 2.uke(2026)
+            resultat[2].verdi shouldBe "B"
+            resultat[2].periode shouldBe 3.uke(2026)
+            resultat[3].verdi shouldBe "C"
+            resultat[3].periode shouldBe 4.uke(2026)
+        }
+
+        @Test
+        fun `utvid og fyll inn med flere hull`() {
+            val periodisering = IkkesammenhengendePeriodisering(
+                PeriodeMedVerdi("A", 2.uke(2026)),
+                PeriodeMedVerdi("B", 4.uke(2026)),
+                PeriodeMedVerdi("C", 6.uke(2026)),
+            )
+
+            val resultat = periodisering.utvidOgFyllInnAlleTommePerioder(
+                verdi = "D",
+                nyTotalPeriode = 1.uke(2026)..7.uke(2026),
+            )
+
+            resultat.shouldBeInstanceOf<SammenhengendePeriodisering<String>>()
+            resultat.size shouldBe 7
+            resultat[0].verdi shouldBe "D"
+            resultat[0].periode shouldBe 1.uke(2026)
+            resultat[1].verdi shouldBe "A"
+            resultat[1].periode shouldBe 2.uke(2026)
+            resultat[2].verdi shouldBe "D"
+            resultat[2].periode shouldBe 3.uke(2026)
+            resultat[3].verdi shouldBe "B"
+            resultat[3].periode shouldBe 4.uke(2026)
+            resultat[4].verdi shouldBe "D"
+            resultat[4].periode shouldBe 5.uke(2026)
+            resultat[5].verdi shouldBe "C"
+            resultat[5].periode shouldBe 6.uke(2026)
+            resultat[6].verdi shouldBe "D"
+            resultat[6].periode shouldBe 7.uke(2026)
+        }
+
+        @Test
+        fun `utvid med identisk periode - ingen endring`() {
+            val periodisering = SammenhengendePeriodisering(
+                PeriodeMedVerdi("A", 2.uke(2026)),
+                PeriodeMedVerdi("B", 3.uke(2026)),
+            )
+
+            val resultat = periodisering.utvidOgFyllInnAlleTommePerioder(
+                verdi = "C",
+                nyTotalPeriode = 2.uke(2026)..3.uke(2026),
+            )
+
+            resultat.shouldBeInstanceOf<SammenhengendePeriodisering<String>>()
+            resultat.size shouldBe 2
+            resultat[0].verdi shouldBe "A"
+            resultat[0].periode shouldBe 2.uke(2026)
+            resultat[1].verdi shouldBe "B"
+            resultat[1].periode shouldBe 3.uke(2026)
+        }
+    }
 }

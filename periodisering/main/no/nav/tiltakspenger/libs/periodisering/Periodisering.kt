@@ -3,8 +3,6 @@ package no.nav.tiltakspenger.libs.periodisering
 import arrow.core.toNonEmptyListOrThrow
 import no.nav.tiltakspenger.libs.common.singleOrNullOrThrow
 import java.time.LocalDate
-import kotlin.collections.maxOf
-import kotlin.collections.minOf
 
 /**
  * Kan være tom, ikke-sammenhengende eller sammenhengende.
@@ -87,6 +85,48 @@ sealed interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
         val nyePerioder = nyTotalPeriode.trekkFra(listOf(totalPeriode))
         return (this.perioderMedVerdi + nyePerioder.map { PeriodeMedVerdi(verdi, it) })
             .sortedBy { it.periode.fraOgMed }.tilIkkeTomPeriodisering()
+    }
+
+    /**
+     * Utvider en periodisering. Dersom periodiseringen har hull, vil disse fylles inn.
+     * Merk at hvis Periodiseringen er en [IkkesammenhengendePeriodisering], så blir det en [SammenhengendePeriodisering] etter denne operasjonen - bruk [utvid] hvis du ønsker å beholde hullene i den originale periodiseringen
+     */
+    fun utvidOgFyllInnAlleTommePerioder(verdi: T, nyTotalPeriode: Periode): SammenhengendePeriodisering<T> {
+        val nyFørstePeriode = nyTotalPeriode.fraOgMedTil(this.perioder.first().fraOgMed.minusDays(1))
+            ?.let { PeriodeMedVerdi(verdi, it) }
+
+        val perioderMedFylltInnHull = this.perioderMedVerdi.fold(mutableListOf<PeriodeMedVerdi<T>>()) { acc, current ->
+            val previous = acc.lastOrNull()
+            if (previous == null) {
+                acc.add(current)
+            } else {
+                if (!previous.periode.tilstøter(current.periode)) {
+                    acc.add(
+                        PeriodeMedVerdi(
+                            verdi,
+                            Periode(
+                                previous.periode.tilOgMed.plusDays(1),
+                                current.periode.fraOgMed.minusDays(1),
+                            ),
+                        ),
+                    )
+                }
+                acc.add(current)
+            }
+
+            acc
+        }
+
+        val nySistePeriode = Periode(
+            this.perioder.last().fraOgMed,
+            this.perioder.last().tilOgMed.plusDays(1),
+        ).tilOgMedTil(nyTotalPeriode.tilOgMed)?.let {
+            PeriodeMedVerdi(verdi, it)
+        }
+
+        return (listOf(nyFørstePeriode) + perioderMedFylltInnHull + listOf(nySistePeriode))
+            .mapNotNull { it }
+            .tilSammenhengendePeriodisering()
     }
 
     /**

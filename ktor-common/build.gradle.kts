@@ -11,5 +11,6 @@ dependencies {
     compileOnly("io.ktor:ktor-server-core-jvm:$ktorVersion")
 
     testImplementation(project(":test-common"))
+    testImplementation("io.ktor:ktor-server-test-host:${ktorVersion}")
 
 }

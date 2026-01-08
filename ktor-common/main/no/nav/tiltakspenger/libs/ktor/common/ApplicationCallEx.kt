@@ -12,6 +12,7 @@ suspend inline fun <reified T> ApplicationCall.withBody(
     logger: KLogger? = KotlinLogging.logger {},
     crossinline ifRight: suspend (T) -> Unit,
 ) {
+    // TODO jah: Fjern Arrow.Either som en dependency fra denne modulen. Kan bruk innebygd try catch fra kotlin istedet.
     Either.catch {
         deserialize<T>(this.receiveText())
     }.onLeft {

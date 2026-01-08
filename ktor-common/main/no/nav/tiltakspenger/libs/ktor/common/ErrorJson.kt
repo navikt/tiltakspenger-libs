@@ -2,9 +2,12 @@
 
 package no.nav.tiltakspenger.libs.ktor.common
 
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.withCharset
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
+import no.nav.tiltakspenger.libs.json.serialize
 
 data class ErrorJson(
     val melding: String,
@@ -42,6 +45,7 @@ suspend inline fun ApplicationCall.respond500InternalServerError(melding: String
         kode = kode,
     )
 }
+
 suspend inline fun ApplicationCall.respond500InternalServerError(errorJson: ErrorJson) {
     this.respondError(HttpStatusCode.InternalServerError, errorJson)
 }
@@ -53,6 +57,7 @@ suspend inline fun ApplicationCall.respond400BadRequest(melding: String, kode: S
         kode = kode,
     )
 }
+
 suspend inline fun ApplicationCall.respond400BadRequest(errorJson: ErrorJson) {
     this.respondError(HttpStatusCode.BadRequest, errorJson)
 }
@@ -64,6 +69,7 @@ suspend inline fun ApplicationCall.respond404NotFound(melding: String, kode: Str
         kode = kode,
     )
 }
+
 suspend inline fun ApplicationCall.respond404NotFound(errorJson: ErrorJson) {
     this.respondError(HttpStatusCode.NotFound, errorJson)
 }
@@ -99,8 +105,9 @@ suspend inline fun ApplicationCall.respondError(status: HttpStatusCode, melding:
 }
 
 suspend inline fun ApplicationCall.respondError(status: HttpStatusCode, errorJson: ErrorJson) {
-    this.respond(
-        message = errorJson,
+    this.respondText(
+        text = serialize(errorJson),
+        contentType = ContentType.Application.Json.withCharset(Charsets.UTF_8),
         status = status,
     )
 }

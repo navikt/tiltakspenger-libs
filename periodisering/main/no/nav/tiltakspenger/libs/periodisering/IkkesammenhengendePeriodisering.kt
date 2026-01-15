@@ -36,7 +36,7 @@ data class IkkesammenhengendePeriodisering<T : Any>(
         ) = IkkesammenhengendePeriodisering(perioder.map { PeriodeMedVerdi(it, it.periode) }.toNonEmptyListOrThrow())
     }
 
-    override val erSammenhengende: Boolean = true
+    override val erSammenhengende: Boolean = false
 
     override fun slåSammenTilstøtendePerioder(): IkkesammenhengendePeriodisering<T> {
         return IkkesammenhengendePeriodisering(perioderMedVerdi = perioderMedVerdi.slåSammenTilstøtendePerioder())

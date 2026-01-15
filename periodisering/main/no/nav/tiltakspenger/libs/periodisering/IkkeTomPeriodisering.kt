@@ -7,6 +7,7 @@ import arrow.core.Nel
  */
 sealed interface IkkeTomPeriodisering<T : Any> : Periodisering<T> {
     override val perioderMedVerdi: Nel<PeriodeMedVerdi<T>>
+    override val perioder: Nel<Periode>
 
     override fun <U : Any> flatMap(transform: (PeriodeMedVerdi<T>) -> List<PeriodeMedVerdi<U>>): IkkeTomPeriodisering<U> {
         return super.flatMap(transform) as IkkeTomPeriodisering

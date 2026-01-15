@@ -19,6 +19,8 @@ data class SammenhengendePeriodisering<T : Any>(
         totalPeriode: Periode,
     ) : this(PeriodeMedVerdi(initiellVerdi, totalPeriode))
 
+    override val perioder: Nel<Periode> = perioderMedVerdi.perioder()
+
     init {
         require(perioderMedVerdi.erSammenhengende()) {
             "Ugyldig sammenhengende periodisering, for alle perioderMedVerdi gjelder at periode n+1 må starte dagen etter periode n slutter. Perioder: ${this.perioder}"

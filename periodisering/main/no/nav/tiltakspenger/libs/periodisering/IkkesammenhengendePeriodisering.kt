@@ -16,6 +16,8 @@ data class IkkesammenhengendePeriodisering<T : Any>(
     IkkeTomPeriodisering<T> {
     constructor(vararg periodeMedVerdi: PeriodeMedVerdi<T>) : this(periodeMedVerdi.toList().toNonEmptyListOrThrow())
 
+    override val perioder: Nel<Periode> = perioderMedVerdi.perioder()
+
     init {
         require(
             zipWithNext()

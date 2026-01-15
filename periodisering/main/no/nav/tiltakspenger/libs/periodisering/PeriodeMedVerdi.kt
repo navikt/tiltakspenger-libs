@@ -2,8 +2,6 @@ package no.nav.tiltakspenger.libs.periodisering
 
 import arrow.core.Nel
 import arrow.core.toNonEmptyListOrThrow
-import no.nav.tiltakspenger.libs.periodisering.erSammenhengende
-import no.nav.tiltakspenger.libs.periodisering.perioder
 
 /**
  * Denne klassen representerer en sammenhengende periode som har samme verdi for hele perioden.
@@ -40,6 +38,7 @@ fun List<PeriodeMedVerdi<*>>.erSammenhengende(): Boolean {
 }
 
 fun List<PeriodeMedVerdi<*>>.perioder(): List<Periode> = map { it.periode }
+fun Nel<PeriodeMedVerdi<*>>.perioder(): Nel<Periode> = map { it.periode }
 
 /** Krever IKKE at alle elementer i lista har samme verdi for å fungere */
 fun <T : Any> List<PeriodeMedVerdi<T>>.trekkFra(periodeMedVerdi: PeriodeMedVerdi<T>): List<PeriodeMedVerdi<T>> {

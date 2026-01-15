@@ -19,7 +19,7 @@ data class SammenhengendePeriodisering<T : Any>(
         totalPeriode: Periode,
     ) : this(PeriodeMedVerdi(initiellVerdi, totalPeriode))
 
-    override val perioder: Nel<Periode> = perioderMedVerdi.perioder()
+    override val perioder: Nel<Periode> by lazy { perioderMedVerdi.perioder() }
 
     init {
         require(perioderMedVerdi.erSammenhengende()) {

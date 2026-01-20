@@ -10,7 +10,7 @@ data class TiltakshistorikkDTO(
     val deltakelseFom: LocalDate?,
     val deltakelseTom: LocalDate?,
     val deltakelseStatus: DeltakerStatusDTO,
-    val deltakelsePerUke: Float?,
+    val antallDagerPerUke: Float?,
     val deltakelseProsent: Float?,
     val kilde: Kilde,
 ) {

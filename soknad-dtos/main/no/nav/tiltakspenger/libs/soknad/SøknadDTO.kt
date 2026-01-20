@@ -38,6 +38,7 @@ data class SøknadsTiltakDTO(
     val deltakelseFom: LocalDate,
     val deltakelseTom: LocalDate,
     val arrangør: String,
+    val visningsnavn: String?,
     val typeKode: String,
     val typeNavn: String,
 )

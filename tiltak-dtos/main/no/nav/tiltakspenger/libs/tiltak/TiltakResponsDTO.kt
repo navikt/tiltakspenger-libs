@@ -109,6 +109,13 @@ data class TiltakResponsDTO(
         UTVOPPFOPL("Utvidet oppfølging i opplæring", Tiltaksgruppe.OPPFOLG, true),
         IPSUNG("Individuell karrierestøtte (IPS Ung)", Tiltaksgruppe.OPPFOLG, true),
 
+        // nye tiltakskoder som ikke finnes i Arena, gir rett
+        ARBEIDSMARKEDSOPPLAERING("Arbeidsmarkedsopplæring (AMO)", Tiltaksgruppe.OPPL, true),
+        NORSKOPPLAERING_GRUNNLEGGENDE_FERDIGHETER_FOV("Norskopplæring, grunnleggende ferdigheter og FOV", Tiltaksgruppe.OPPL, true),
+        STUDIESPESIALISERING("Studiespesialisering", Tiltaksgruppe.OPPL, true),
+        FAG_OG_YRKESOPPLAERING("Fag- og yrkesopplæring", Tiltaksgruppe.OPPL, true),
+        HOYERE_YRKESFAGLIG_UTDANNING("Høyere yrkesfaglig utdanning", Tiltaksgruppe.OPPL, true),
+
         // gir ikke rett
         REFINO("Resultatbasert finansiering av oppfølging", Tiltaksgruppe.FORSOK, false),
         MIDLONTIL("Midlertidig lønnstilskudd", Tiltaksgruppe.LONNTILS, false),
@@ -231,6 +238,7 @@ object TiltakstypeGirIkkeRett
 
 fun TiltakResponsDTO.TiltakType.toTiltakstypeSomGirRett(): Either<TiltakstypeGirIkkeRett, TiltakstypeSomGirRett> =
     when (this) {
+        TiltakResponsDTO.TiltakType.ARBEIDSMARKEDSOPPLAERING -> TiltakstypeSomGirRett.ARBEIDSMARKEDSOPPLAERING.right()
         TiltakResponsDTO.TiltakType.ARBFORB -> TiltakstypeSomGirRett.ARBEIDSFORBEREDENDE_TRENING.right()
         TiltakResponsDTO.TiltakType.ARBRRHDAG -> TiltakstypeSomGirRett.ARBEIDSRETTET_REHABILITERING.right()
         TiltakResponsDTO.TiltakType.ARBTREN -> TiltakstypeSomGirRett.ARBEIDSTRENING.right()
@@ -238,14 +246,18 @@ fun TiltakResponsDTO.TiltakType.toTiltakstypeSomGirRett(): Either<TiltakstypeGir
         TiltakResponsDTO.TiltakType.DIGIOPPARB -> TiltakstypeSomGirRett.DIGITAL_JOBBKLUBB.right()
         TiltakResponsDTO.TiltakType.ENKELAMO -> TiltakstypeSomGirRett.ENKELTPLASS_AMO.right()
         TiltakResponsDTO.TiltakType.ENKFAGYRKE -> TiltakstypeSomGirRett.ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG.right()
+        TiltakResponsDTO.TiltakType.FAG_OG_YRKESOPPLAERING -> TiltakstypeSomGirRett.FAG_OG_YRKESOPPLAERING.right()
         TiltakResponsDTO.TiltakType.FORSOPPLEV -> TiltakstypeSomGirRett.FORSØK_OPPLÆRING_LENGRE_VARIGHET.right()
         TiltakResponsDTO.TiltakType.GRUPPEAMO -> TiltakstypeSomGirRett.GRUPPE_AMO.right()
         TiltakResponsDTO.TiltakType.GRUFAGYRKE -> TiltakstypeSomGirRett.GRUPPE_VGS_OG_HØYERE_YRKESFAG.right()
         TiltakResponsDTO.TiltakType.HOYEREUTD -> TiltakstypeSomGirRett.HØYERE_UTDANNING.right()
+        TiltakResponsDTO.TiltakType.HOYERE_YRKESFAGLIG_UTDANNING -> TiltakstypeSomGirRett.HOYERE_YRKESFAGLIG_UTDANNING.right()
         TiltakResponsDTO.TiltakType.INDJOBSTOT -> TiltakstypeSomGirRett.INDIVIDUELL_JOBBSTØTTE.right()
         TiltakResponsDTO.TiltakType.IPSUNG -> TiltakstypeSomGirRett.INDIVIDUELL_KARRIERESTØTTE_UNG.right()
         TiltakResponsDTO.TiltakType.JOBBK -> TiltakstypeSomGirRett.JOBBKLUBB.right()
         TiltakResponsDTO.TiltakType.INDOPPFAG -> TiltakstypeSomGirRett.OPPFØLGING.right()
+        TiltakResponsDTO.TiltakType.NORSKOPPLAERING_GRUNNLEGGENDE_FERDIGHETER_FOV -> TiltakstypeSomGirRett.NORSKOPPLAERING_GRUNNLEGGENDE_FERDIGHETER_FOV.right()
+        TiltakResponsDTO.TiltakType.STUDIESPESIALISERING -> TiltakstypeSomGirRett.STUDIESPESIALISERING.right()
         TiltakResponsDTO.TiltakType.UTVAOONAV -> TiltakstypeSomGirRett.UTVIDET_OPPFØLGING_I_NAV.right()
         TiltakResponsDTO.TiltakType.UTVOPPFOPL -> TiltakstypeSomGirRett.UTVIDET_OPPFØLGING_I_OPPLÆRING.right()
 

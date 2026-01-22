@@ -21,6 +21,9 @@ class PostgresTransactionContext(
     private val sessionCounter: SessionCounter,
 ) : TransactionContext {
 
+    private val onSuccessCallbacks = listOf<() -> Unit>()
+    private val onErrorCallbacks = listOf<(Throwable) -> Unit>()
+
     private val log = KotlinLogging.logger {}
 
     // Det er viktig at sesjoner ikke opprettes utenfor en try-with-resource, som kan føre til connection-lekkasjer.
@@ -59,15 +62,22 @@ class PostgresTransactionContext(
                         strict = true,
                     ),
                 ) { session ->
-                    session.transaction { transactionalSession ->
-                        this.transactionalSession = transactionalSession
-                        if (disableSessionCounter) {
-                            action(transactionalSession)
-                        } else {
-                            sessionCounter.withCountSessions {
+                    try {
+                        val result = session.transaction { transactionalSession ->
+                            this.transactionalSession = transactionalSession
+                            if (disableSessionCounter) {
                                 action(transactionalSession)
+                            } else {
+                                sessionCounter.withCountSessions {
+                                    action(transactionalSession)
+                                }
                             }
                         }
+                        executeOnSuccess()
+                        result
+                    } catch (ex: Throwable) {
+                        executeOnError(ex)
+                        throw ex
                     }
                 }
             } else {
@@ -103,6 +113,50 @@ class PostgresTransactionContext(
         return Either.catch { transactionalSession!!.connection.underlying.isClosed }.getOrElse {
             log.error(it) { "En feil skjedde når vi prøvde å sjekke om den den transaksjonelle sesjonen var lukket" }
             true
+        }
+    }
+
+    override fun onSuccess(action: () -> Unit) {
+        onSuccessCallbacks.plus(action)
+    }
+
+    override fun onError(action: (Throwable) -> Unit) {
+        onErrorCallbacks.plus(action)
+    }
+
+    private fun executeOnSuccess() {
+        try {
+            onSuccessCallbacks.forEach {
+                try {
+                    it()
+                } catch (ex: Throwable) {
+                    safeLog(ex) { "Forkaster feil som skjedde i et av elementene i onSuccess callback" }
+                }
+            }
+        } catch (ex: Throwable) {
+            safeLog(ex) { "Forkaster feil som skjedde ved iterering av callback" }
+        }
+    }
+
+    private fun executeOnError(throwable: Throwable) {
+        try {
+            onErrorCallbacks.forEach { callback ->
+                try {
+                    callback(throwable)
+                } catch (ex: Throwable) {
+                    safeLog(ex) { "Forkaster feil som skjedde i onErrorCallback" }
+                }
+            }
+        } catch (ex: Throwable) {
+            safeLog(ex) { "Forkaster feil som skjedde ved iterering av onErrorCallbacks" }
+        }
+    }
+
+    private fun safeLog(ex: Throwable, message: () -> String) {
+        try {
+            log.error(ex, message)
+        } catch (_: Throwable) {
+            // På dette tidspunktet er det ikke mye vi kan gjøre dersom loggingen feiler.
         }
     }
 }

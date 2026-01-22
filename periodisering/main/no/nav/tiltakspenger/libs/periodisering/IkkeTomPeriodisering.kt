@@ -5,7 +5,7 @@ import arrow.core.Nel
 /**
  * Samler [SammenhengendePeriodisering] og [IkkesammenhengendePeriodisering] i et felles konsept.
  */
-sealed interface IkkeTomPeriodisering<T : Any> : Periodisering<T> {
+interface IkkeTomPeriodisering<T : Any> : Periodisering<T> {
     override val perioderMedVerdi: Nel<PeriodeMedVerdi<T>>
     override val perioder: Nel<Periode>
 

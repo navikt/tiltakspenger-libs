@@ -16,6 +16,13 @@ class TestSessionFactory : SessionFactory {
         val transactionContext =
             object : TransactionContext {
                 override fun isClosed() = false
+                override fun onSuccess(action: () -> Unit) {
+                    action()
+                }
+
+                override fun onError(action: (Throwable) -> Unit) {
+                    action(RuntimeException("Opprettet for test"))
+                }
             }
     }
 

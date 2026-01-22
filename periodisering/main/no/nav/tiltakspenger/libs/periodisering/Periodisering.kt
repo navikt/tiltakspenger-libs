@@ -7,7 +7,7 @@ import java.time.LocalDate
 /**
  * Kan være tom, ikke-sammenhengende eller sammenhengende.
  */
-sealed interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
+interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
     val perioderMedVerdi: List<PeriodeMedVerdi<T>>
 
     /**

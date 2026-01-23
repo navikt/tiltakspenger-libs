@@ -14,7 +14,7 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-junit-jupiter:$testContainersVersion")
     testImplementation("org.testcontainers:testcontainers-postgresql:$testContainersVersion")
 
-    testImplementation("org.postgresql:postgresql:42.7.8")
+    testImplementation("org.postgresql:postgresql:42.7.9")
 }
 
 tasks.withType<Jar> {

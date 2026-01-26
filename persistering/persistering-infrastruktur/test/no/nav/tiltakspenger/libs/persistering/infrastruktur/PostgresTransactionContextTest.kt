@@ -4,7 +4,6 @@ import arrow.core.Either
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.test.runTest
 import kotliquery.queryOf
 import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresSessionContext.Companion.withSession
 import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresTransactionContext.Companion.withSession
@@ -50,108 +49,98 @@ internal class PostgresTransactionContextTest {
 
     @Test
     fun `kan ikke bruke samme context transaction flere ganger`() {
-        runTest {
-            val context = PostgresTransactionContext(dataSource, sessionCounter)
-            context.withTransaction {}
-            shouldThrow<IllegalStateException> {
-                context.withTransaction { }
-            }.message shouldBe "Den transaksjonelle sesjonen er lukket."
-        }
+        val context = PostgresTransactionContext(dataSource, sessionCounter)
+        context.withTransaction {}
+        shouldThrow<IllegalStateException> {
+            context.withTransaction { }
+        }.message shouldBe "Den transaksjonelle sesjonen er lukket."
     }
 
     @Test
     fun `kan ikke bruke samme context session flere ganger`() {
-        runTest {
-            val context = PostgresSessionContext(dataSource, sessionCounter)
-            context.withSession {}
-            shouldThrow<IllegalStateException> {
-                context.withSession { }
-            }.message shouldBe "Sesjonen er lukket."
-        }
+        val context = PostgresSessionContext(dataSource, sessionCounter)
+        context.withSession {}
+        shouldThrow<IllegalStateException> {
+            context.withSession { }
+        }.message shouldBe "Sesjonen er lukket."
     }
 
     @Test
     fun `PostgresTransactionContext - må kalle withTransaction`() {
-        runTest {
-            val context = PostgresTransactionContext(dataSource, sessionCounter)
-            shouldThrow<IllegalStateException> {
-                context.withSession { }
-            }.message shouldBe "Må først starte en withTransaction(...) før man kan kalle withSession(...) for en TransactionContext."
-        }
+        val context = PostgresTransactionContext(dataSource, sessionCounter)
+        shouldThrow<IllegalStateException> {
+            context.withSession { }
+        }.message shouldBe "Må først starte en withTransaction(...) før man kan kalle withSession(...) for en TransactionContext."
     }
 
     @Test
     fun `flere operasjoner i en transaksjon`() {
-        runTest {
-            val tx = PostgresTransactionContext(dataSource, sessionCounter)
-            tx.withTransaction { session ->
+        val tx = PostgresTransactionContext(dataSource, sessionCounter)
+        tx.withTransaction { session ->
 
-                session.run(
-                    queryOf("create table test (test varchar not null)").asExecute,
-                )
+            session.run(
+                queryOf("create table test (test varchar not null)").asExecute,
+            )
 
-                session.run(
-                    queryOf("insert into test (test) values ('Hello') ").asExecute,
-                )
+            session.run(
+                queryOf("insert into test (test) values ('Hello') ").asExecute,
+            )
 
-                session.run(
-                    queryOf("insert into test (test) values ('World') ").asExecute,
-                )
-            }
-            tx.isClosed() shouldBe true
+            session.run(
+                queryOf("insert into test (test) values ('World') ").asExecute,
+            )
+        }
+        tx.isClosed() shouldBe true
 
-            val sx = PostgresSessionContext(dataSource, sessionCounter)
-            sx.withSession { session ->
-                val resultat = session.run(
-                    queryOf(
-                        "select * from test",
-                    ).map { row ->
-                        row.string("test")
-                    }.asList,
-                )
-                resultat.size shouldBe 2
-                resultat.first() shouldBe "Hello"
-                resultat.last() shouldBe "World"
-            }
+        val sx = PostgresSessionContext(dataSource, sessionCounter)
+        sx.withSession { session ->
+            val resultat = session.run(
+                queryOf(
+                    "select * from test",
+                ).map { row ->
+                    row.string("test")
+                }.asList,
+            )
+            resultat.size shouldBe 2
+            resultat.first() shouldBe "Hello"
+            resultat.last() shouldBe "World"
         }
     }
 
     @Test
     fun rollback() {
-        runTest {
-            PostgresSessionContext(dataSource, sessionCounter).withSession { session ->
+        PostgresSessionContext(dataSource, sessionCounter).withSession { session ->
+            session.run(
+                queryOf("create table rollback (test varchar not null)").asExecute,
+            )
+        }
+
+        val tx = PostgresTransactionContext(dataSource, sessionCounter)
+        Either.catch {
+            tx.withTransaction { session ->
                 session.run(
-                    queryOf("create table rollback (test varchar not null)").asExecute,
+                    queryOf("insert into rollback (test) values ('Hello') ").asExecute,
                 )
-            }
 
-            val tx = PostgresTransactionContext(dataSource, sessionCounter)
-            Either.catch {
-                tx.withTransaction { session ->
-                    session.run(
-                        queryOf("insert into rollback (test) values ('Hello') ").asExecute,
-                    )
-
-                    session.run(
-                        queryOf("insert into rollback (test) values ('World') ").asExecute,
-                    )
-
-                    throw IllegalStateException("Rollback")
-                }
-            }
-            tx.isClosed() shouldBe true
-
-            val sx = PostgresSessionContext(dataSource, sessionCounter)
-            sx.withSession { session ->
-                val resultat = session.run(
-                    queryOf(
-                        "select * from rollback",
-                    ).map { row ->
-                        row.string("test")
-                    }.asList,
+                session.run(
+                    queryOf("insert into rollback (test) values ('World') ").asExecute,
                 )
-                resultat.size shouldBe 0
+
+                throw IllegalStateException("Rollback")
             }
+        }
+        tx.isClosed() shouldBe true
+
+        val sx = PostgresSessionContext(dataSource, sessionCounter)
+        sx.withSession { session ->
+            val resultat = session.run(
+                queryOf(
+                    "select * from rollback",
+                ).map { row ->
+                    row.string("test")
+                }.asList,
+            )
+            resultat.size shouldBe 0
         }
     }
 }

@@ -3,12 +3,10 @@ package no.nav.tiltakspenger.libs.persistering.infrastruktur
 import arrow.core.Either
 import arrow.core.getOrElse
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import kotliquery.Session
 import kotliquery.TransactionalSession
 import kotliquery.sessionOf
+import kotliquery.using
 import no.nav.tiltakspenger.libs.persistering.domene.SessionFactory
 import no.nav.tiltakspenger.libs.persistering.domene.TransactionContext
 import javax.sql.DataSource
@@ -23,8 +21,8 @@ class PostgresTransactionContext(
     private val sessionCounter: SessionCounter,
 ) : TransactionContext {
 
-    private val onSuccessCallbacks = listOf<suspend () -> Unit>()
-    private val onErrorCallbacks = listOf<suspend (Throwable) -> Unit>()
+    private val onSuccessCallbacks = listOf<() -> Unit>()
+    private val onErrorCallbacks = listOf<(Throwable) -> Unit>()
 
     private val log = KotlinLogging.logger {}
 
@@ -33,9 +31,9 @@ class PostgresTransactionContext(
 
     companion object {
 
-        suspend fun <T> TransactionContext?.withTransaction(
+        fun <T> TransactionContext?.withTransaction(
             sessionFactory: SessionFactory,
-            action: suspend (session: TransactionalSession) -> T,
+            action: (session: TransactionalSession) -> T,
         ): T {
             return sessionFactory.withTransactionContext(this) { transactionContext ->
                 transactionContext.withTransaction { transactionalSession -> action(transactionalSession) }
@@ -50,24 +48,23 @@ class PostgresTransactionContext(
          * @throws IllegalStateException dersom den transaksjonelle sesjonen er lukket.
          */
         // Dette er en extension function og ikke en funksjon i interfacet siden vi ikke ønsker en referanse til Session, som er infrastrukturspesifikt, i domenelaget.
-        suspend fun <T> TransactionContext.withTransaction(
+        fun <T> TransactionContext.withTransaction(
             disableSessionCounter: Boolean = false,
-            action: suspend (TransactionalSession) -> T,
-        ): T = withContext(Dispatchers.IO) {
-            this@withTransaction as PostgresTransactionContext
-
-            if (transactionalSession == null) {
-                val session = sessionOf(
-                    dataSource = dataSource,
-                    returnGeneratedKey = true,
-                    strict = true,
-                )
-                val (result: T?, exception: Throwable?) = try {
-                    session.transaction { transactionalSession ->
-                        this@withTransaction.transactionalSession = transactionalSession
-                        // Bruker runBlocking her for å kunne kalle suspend funksjonen action fra en ikke-suspend kontekst.
-                        @Suppress("RunBlockingInSuspendFunction")
-                        runBlocking {
+            action: (TransactionalSession) -> T,
+        ): T {
+            this as PostgresTransactionContext
+            return if (transactionalSession == null) {
+                // Vi ønsker kun at den ytterste blokka lukker sesjonen (using)
+                using(
+                    sessionOf(
+                        dataSource = dataSource,
+                        returnGeneratedKey = true,
+                        strict = true,
+                    ),
+                ) { session ->
+                    try {
+                        val result = session.transaction { transactionalSession ->
+                            this.transactionalSession = transactionalSession
                             if (disableSessionCounter) {
                                 action(transactionalSession)
                             } else {
@@ -76,20 +73,12 @@ class PostgresTransactionContext(
                                 }
                             }
                         }
-                    } to null
-                } catch (ex: Throwable) {
-                    null to ex
-                } finally {
-                    session.close()
-                }
-
-                if (exception != null) {
-                    executeOnError(exception)
-                    throw exception
-                } else {
-                    executeOnSuccess()
-                    @Suppress("UNCHECKED_CAST")
-                    result as T
+                        executeOnSuccess()
+                        result
+                    } catch (ex: Throwable) {
+                        executeOnError(ex)
+                        throw ex
+                    }
                 }
             } else {
                 if (isClosed()) {
@@ -104,7 +93,7 @@ class PostgresTransactionContext(
         /**
          * @throws IllegalStateException dersom man ikke har kalt [withTransaction] først eller den transaksjonelle sesjonen er lukket.
          */
-        suspend fun <T> TransactionContext.withSession(action: suspend (session: Session) -> T): T {
+        fun <T> TransactionContext.withSession(action: (session: Session) -> T): T {
             this as PostgresTransactionContext
             if (transactionalSession == null) {
                 throw IllegalStateException("Må først starte en withTransaction(...) før man kan kalle withSession(...) for en TransactionContext.")
@@ -135,7 +124,7 @@ class PostgresTransactionContext(
         onErrorCallbacks.plus(action)
     }
 
-    private suspend fun executeOnSuccess() {
+    private fun executeOnSuccess() {
         try {
             onSuccessCallbacks.forEach {
                 try {
@@ -149,7 +138,7 @@ class PostgresTransactionContext(
         }
     }
 
-    private suspend fun executeOnError(throwable: Throwable) {
+    private fun executeOnError(throwable: Throwable) {
         try {
             onErrorCallbacks.forEach { callback ->
                 try {

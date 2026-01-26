@@ -23,7 +23,7 @@ class PostgresSessionFactory(
     }
 
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
-    override suspend fun <T> withSessionContext(action: suspend (SessionContext) -> T): T {
+    override fun <T> withSessionContext(action: (SessionContext) -> T): T {
         return newSessionContext().let { context ->
             context.withSession {
                 action(context)
@@ -32,7 +32,7 @@ class PostgresSessionFactory(
     }
 
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
-    override suspend fun <T> withSessionContext(sessionContext: SessionContext?, action: suspend (SessionContext) -> T): T {
+    override fun <T> withSessionContext(sessionContext: SessionContext?, action: (SessionContext) -> T): T {
         return (sessionContext ?: newSessionContext()).let { context ->
             context.withSession {
                 action(context)
@@ -41,9 +41,9 @@ class PostgresSessionFactory(
     }
 
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
-    suspend fun <T> withSession(
+    fun <T> withSession(
         disableSessionCounter: Boolean = false,
-        action: suspend (Session) -> T,
+        action: (Session) -> T,
     ): T {
         return newSessionContext().let { context ->
             context.withSession(disableSessionCounter = disableSessionCounter) {
@@ -53,10 +53,10 @@ class PostgresSessionFactory(
     }
 
     /** Gjenbruker [sessionContext] hvis den ikke er null, ellers lages en ny context og starter sesjonen - lukkes automatisk  */
-    suspend fun <T> withSession(
+    fun <T> withSession(
         sessionContext: SessionContext?,
         disableSessionCounter: Boolean = false,
-        action: suspend (Session) -> T,
+        action: (Session) -> T,
     ): T {
         return withSessionContext(sessionContext) { context ->
             context.withSession(disableSessionCounter = disableSessionCounter) {
@@ -76,8 +76,8 @@ class PostgresSessionFactory(
     }
 
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
-    override suspend fun <T> withTransactionContext(
-        action: suspend (TransactionContext) -> T,
+    override fun <T> withTransactionContext(
+        action: (TransactionContext) -> T,
     ): T {
         return newTransactionContext().let { context ->
             context.withTransaction {
@@ -87,9 +87,9 @@ class PostgresSessionFactory(
     }
 
     /** Lager en ny context dersom den ikke finnes og starter sesjonen - lukkes automatisk  */
-    override suspend fun <T> withTransactionContext(
+    override fun <T> withTransactionContext(
         transactionContext: TransactionContext?,
-        action: suspend (TransactionContext) -> T,
+        action: (TransactionContext) -> T,
     ): T {
         return (transactionContext ?: newTransactionContext()).let { context ->
             context.withTransaction {
@@ -98,14 +98,14 @@ class PostgresSessionFactory(
         }
     }
 
-    override suspend fun <T> use(transactionContext: TransactionContext, action: suspend (TransactionContext) -> T): T {
+    override fun <T> use(transactionContext: TransactionContext, action: (TransactionContext) -> T): T {
         return transactionContext.withTransaction {
             action(transactionContext)
         }
     }
 
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
-    suspend fun <T> withTransaction(action: suspend (TransactionalSession) -> T): T {
+    fun <T> withTransaction(action: (TransactionalSession) -> T): T {
         return newTransactionContext().let { context ->
             context.withTransaction {
                 action(it)
@@ -114,9 +114,9 @@ class PostgresSessionFactory(
     }
 
     /** Lager en ny context dersom den ikke finnes og starter sesjonen - lukkes automatisk  */
-    suspend fun <T> withTransaction(
+    fun <T> withTransaction(
         transactionContext: TransactionContext?,
-        action: suspend (TransactionalSession) -> T,
+        action: (TransactionalSession) -> T,
     ): T {
         return withTransactionContext(transactionContext) {
             it.withTransaction {

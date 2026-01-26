@@ -26,35 +26,35 @@ class TestSessionFactory : SessionFactory {
             }
     }
 
-    override suspend fun <T> withSessionContext(action: suspend (SessionContext) -> T): T =
+    override fun <T> withSessionContext(action: (SessionContext) -> T): T =
         SessionCounter().withCountSessions {
             action(
                 sessionContext,
             )
         }
 
-    override suspend fun <T> withSessionContext(
+    override fun <T> withSessionContext(
         sessionContext: SessionContext?,
-        action: suspend (SessionContext) -> T,
+        action: (SessionContext) -> T,
     ): T =
         SessionCounter().withCountSessions {
             action(sessionContext ?: Companion.sessionContext)
         }
 
-    override suspend fun <T> withTransactionContext(action: suspend (TransactionContext) -> T): T =
+    override fun <T> withTransactionContext(action: (TransactionContext) -> T): T =
         SessionCounter().withCountSessions { action(transactionContext) }
 
-    override suspend fun <T> withTransactionContext(
+    override fun <T> withTransactionContext(
         transactionContext: TransactionContext?,
-        action: suspend (TransactionContext) -> T,
+        action: (TransactionContext) -> T,
     ): T =
         SessionCounter().withCountSessions {
             action(transactionContext ?: Companion.transactionContext)
         }
 
-    override suspend fun <T> use(
+    override fun <T> use(
         transactionContext: TransactionContext,
-        action: suspend (TransactionContext) -> T,
+        action: (TransactionContext) -> T,
     ): T =
         SessionCounter().withCountSessions {
             action(transactionContext)
@@ -68,7 +68,7 @@ class TestSessionFactory : SessionFactory {
     private class SessionCounter {
         private val activeSessionsPerThread: ThreadLocal<Int> = ThreadLocal()
 
-        suspend fun <T> withCountSessions(action: suspend () -> T): T =
+        fun <T> withCountSessions(action: () -> T): T =
             activeSessionsPerThread.getOrSet { 0 }.inc().let {
                 if (it > 1) {
                     fail("Database sessions were over the threshold while running test.")

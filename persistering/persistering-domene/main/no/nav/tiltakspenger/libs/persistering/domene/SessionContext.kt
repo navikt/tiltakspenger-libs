@@ -15,14 +15,14 @@ interface TransactionContext : SessionContext {
      * Kan kalles flere ganger for å legge til flere callbacks.
      * OBS: Gjør kun handlinger som det er akseptabelt at feiler. Vil logge og spise exceptions. Laget for enklere logging og metrics.
      */
-    fun onSuccess(action: () -> Unit)
+    suspend fun onSuccess(action: suspend () -> Unit)
 
     /**
      * Kjører kun dersom transaksjonen fullfører suksessfult og comittes.
      * Kan kalles flere ganger for å legge til flere callbacks.
      * OBS: Gjør kun handlinger som det er akseptabelt at feiler. Vil logge og spise exceptions. Laget for enklere logging og metrics.
      */
-    fun onError(action: (Throwable) -> Unit)
+    suspend fun onError(action: suspend (Throwable) -> Unit)
 }
 
 /** Starter og lukker nye sesjoner og transaksjoner */

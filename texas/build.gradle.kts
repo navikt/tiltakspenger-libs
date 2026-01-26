@@ -1,4 +1,4 @@
-val jacksonAnnotationsVersion = "2.20"
+val jacksonAnnotationsVersion = "2.21"
 val ktorVersion = "3.3.3"
 
 dependencies {

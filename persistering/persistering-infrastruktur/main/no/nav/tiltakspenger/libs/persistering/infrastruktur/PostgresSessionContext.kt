@@ -3,9 +3,10 @@ package no.nav.tiltakspenger.libs.persistering.infrastruktur
 import arrow.core.Either
 import arrow.core.getOrElse
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotliquery.Session
 import kotliquery.sessionOf
-import kotliquery.using
 import no.nav.tiltakspenger.libs.persistering.domene.SessionContext
 import no.nav.tiltakspenger.libs.persistering.domene.SessionFactory
 import no.nav.tiltakspenger.libs.persistering.domene.TransactionContext
@@ -27,9 +28,9 @@ open class PostgresSessionContext(
 
     companion object {
 
-        fun <T> SessionContext?.withSession(
+        suspend fun <T> SessionContext?.withSession(
             sessionFactory: SessionFactory,
-            action: (session: Session) -> T,
+            action: suspend (session: Session) -> T,
         ): T {
             return sessionFactory.withSessionContext(this) { sessionContext ->
                 sessionContext.withSession { session -> action(session) }
@@ -44,30 +45,32 @@ open class PostgresSessionContext(
          * @throws IllegalStateException dersom sesjonen er lukket.
          */
         // Dette er en extension function og ikke en funksjon i interfacet siden vi ikke ønsker en referanse til Session, som er infrastrukturspesifikt, i domenelaget.
-        fun <T> SessionContext.withSession(
+        suspend fun <T> SessionContext.withSession(
             disableSessionCounter: Boolean = false,
-            action: (session: Session) -> T,
-        ): T {
-            if (this is TransactionContext) {
-                return this.transactionContextWithSession(action)
+            action: suspend (session: Session) -> T,
+        ): T = withContext(Dispatchers.IO) {
+            if (this@withSession is TransactionContext) {
+                return@withContext this@withSession.transactionContextWithSession(action)
             }
-            this as PostgresSessionContext
-            return if (session == null) {
-                // Vi ønsker kun at den ytterste blokka lukker sesjonen (using)
-                using(
-                    sessionOf(
-                        dataSource = dataSource,
-                        returnGeneratedKey = true,
-                        strict = true,
-                    ).also { session = it },
-                ) {
+            this@withSession as PostgresSessionContext
+
+            if (session == null) {
+                val newSession = sessionOf(
+                    dataSource = dataSource,
+                    returnGeneratedKey = true,
+                    strict = true,
+                ).also { session = it }
+
+                try {
                     if (disableSessionCounter) {
-                        action(it)
+                        action(newSession)
                     } else {
                         sessionCounter.withCountSessions {
-                            action(it)
+                            action(newSession)
                         }
                     }
+                } finally {
+                    newSession.close()
                 }
             } else {
                 if (isClosed()) {

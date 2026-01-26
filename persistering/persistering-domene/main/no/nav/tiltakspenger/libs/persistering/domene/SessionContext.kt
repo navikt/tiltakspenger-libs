@@ -28,20 +28,20 @@ interface TransactionContext : SessionContext {
 /** Starter og lukker nye sesjoner og transaksjoner */
 interface SessionFactory {
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
-    fun <T> withSessionContext(action: (SessionContext) -> T): T
+    suspend fun <T> withSessionContext(action: suspend (SessionContext) -> T): T
 
     /** Lager en ny context dersom den mangler og starter sesjonen - lukkes automatisk */
-    fun <T> withSessionContext(sessionContext: SessionContext?, action: (SessionContext) -> T): T
+    suspend fun <T> withSessionContext(sessionContext: SessionContext?, action: suspend (SessionContext) -> T): T
 
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
-    fun <T> withTransactionContext(action: (TransactionContext) -> T): T
+    suspend fun <T> withTransactionContext(action: suspend (TransactionContext) -> T): T
 
     /** Lager en ny context dersom den mangler og starter sesjonen - lukkes automatisk */
-    fun <T> withTransactionContext(
+    suspend fun <T> withTransactionContext(
         transactionContext: TransactionContext?,
-        action: (TransactionContext) -> T,
+        action: suspend (TransactionContext) -> T,
     ): T
 
     /** Bruker en eksisterende context og starter sesjonen hvis den ikke er åpen */
-    fun <T> use(transactionContext: TransactionContext, action: (TransactionContext) -> T): T
+    suspend fun <T> use(transactionContext: TransactionContext, action: suspend (TransactionContext) -> T): T
 }

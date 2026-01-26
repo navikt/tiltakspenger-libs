@@ -11,7 +11,7 @@ class SessionCounter(
 ) {
     private val activeSessionsPerThread: ThreadLocal<Int> = ThreadLocal()
 
-    fun <T> withCountSessions(action: () -> T): T {
+    suspend fun <T> withCountSessions(action: suspend () -> T): T {
         return activeSessionsPerThread.getOrSet { 0 }.inc().let {
             if (it > 1) {
                 whenOverThreshold(it)

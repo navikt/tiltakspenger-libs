@@ -1,4 +1,4 @@
-val jacksonVersion = "2.20.1"
+val jacksonVersion = "2.21.0"
 val jacksonAnnotationsVersion = "2.21"
 dependencies {
     // Json

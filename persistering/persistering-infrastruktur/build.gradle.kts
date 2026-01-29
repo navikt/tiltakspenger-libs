@@ -7,12 +7,14 @@ dependencies {
     implementation("io.arrow-kt:arrow-core:2.2.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.github.seratch:kotliquery:1.9.1")
+    implementation("org.postgresql:r2dbc-postgresql:1.1.1.RELEASE")
 
     testImplementation(project(":test-common"))
 
     testImplementation("org.testcontainers:testcontainers:$testContainersVersion")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter:$testContainersVersion")
     testImplementation("org.testcontainers:testcontainers-postgresql:$testContainersVersion")
+    testImplementation("org.testcontainers:testcontainers-r2dbc:$testContainersVersion")
 
     testImplementation("org.postgresql:postgresql:42.7.9")
 }

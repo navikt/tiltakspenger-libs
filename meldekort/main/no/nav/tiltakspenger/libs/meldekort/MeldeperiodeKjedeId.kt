@@ -1,6 +1,6 @@
 package no.nav.tiltakspenger.libs.meldekort
 
-import no.nav.tiltakspenger.libs.periodisering.Periode
+import no.nav.tiltakspenger.libs.periode.Periode
 import java.time.DayOfWeek
 import java.time.LocalDate
 

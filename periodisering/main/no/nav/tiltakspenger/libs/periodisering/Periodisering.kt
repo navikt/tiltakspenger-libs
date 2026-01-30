@@ -2,6 +2,8 @@ package no.nav.tiltakspenger.libs.periodisering
 
 import arrow.core.toNonEmptyListOrThrow
 import no.nav.tiltakspenger.libs.common.singleOrNullOrThrow
+import no.nav.tiltakspenger.libs.periode.Periode
+import no.nav.tiltakspenger.libs.periode.somPeriode
 import java.time.LocalDate
 
 /**

@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.periodisering
+package no.nav.tiltakspenger.libs.periode
 
 import java.time.LocalDate
 

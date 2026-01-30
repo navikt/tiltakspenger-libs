@@ -4,6 +4,8 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import no.nav.tiltakspenger.libs.dato.januar
+import no.nav.tiltakspenger.libs.dato.rangeTo
+import no.nav.tiltakspenger.libs.periode.Periode
 import no.nav.tiltakspenger.libs.periodisering.TestVedtak.Resultat.INNVILGET
 import no.nav.tiltakspenger.libs.periodisering.TestVedtak.Resultat.OPPHØRT
 import org.junit.jupiter.api.Test

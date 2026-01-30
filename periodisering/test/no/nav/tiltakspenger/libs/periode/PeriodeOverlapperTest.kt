@@ -6,12 +6,6 @@ import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.dato.januar
 import no.nav.tiltakspenger.libs.dato.juni
 import no.nav.tiltakspenger.libs.dato.mai
-import no.nav.tiltakspenger.libs.periodisering.Periode
-import no.nav.tiltakspenger.libs.periodisering.inneholderOverlapp
-import no.nav.tiltakspenger.libs.periodisering.overlappendePerioder
-import no.nav.tiltakspenger.libs.periodisering.overlapper
-import no.nav.tiltakspenger.libs.periodisering.overlapperIkke
-import no.nav.tiltakspenger.libs.periodisering.til
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals

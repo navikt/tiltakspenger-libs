@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.periodisering
+package no.nav.tiltakspenger.libs.tid
 
 import java.time.ZoneId
 

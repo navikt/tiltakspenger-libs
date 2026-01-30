@@ -2,8 +2,6 @@ package no.nav.tiltakspenger.libs.periode
 
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
-import no.nav.tiltakspenger.libs.periodisering.Periode
-import no.nav.tiltakspenger.libs.periodisering.tilstøter
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 

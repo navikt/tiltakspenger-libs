@@ -1,6 +1,5 @@
 package no.nav.tiltakspenger.libs.periode
 
-import no.nav.tiltakspenger.libs.periodisering.Periode
 import java.time.LocalDate
 import java.time.temporal.WeekFields
 import java.util.Locale

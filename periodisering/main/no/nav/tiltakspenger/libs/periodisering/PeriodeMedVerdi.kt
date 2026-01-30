@@ -2,6 +2,10 @@ package no.nav.tiltakspenger.libs.periodisering
 
 import arrow.core.Nel
 import arrow.core.toNonEmptyListOrThrow
+import no.nav.tiltakspenger.libs.periode.Periode
+import no.nav.tiltakspenger.libs.periode.inneholderOverlapp
+import no.nav.tiltakspenger.libs.periode.leggSammen
+import no.nav.tiltakspenger.libs.periode.overlappendePerioder
 
 /**
  * Denne klassen representerer en sammenhengende periode som har samme verdi for hele perioden.

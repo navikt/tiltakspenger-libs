@@ -3,7 +3,6 @@ package no.nav.tiltakspenger.libs.periode
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import no.nav.tiltakspenger.libs.dato.januar
-import no.nav.tiltakspenger.libs.periodisering.til
 import org.junit.jupiter.api.Test
 
 internal class PeriodeSlutterEtterTest {

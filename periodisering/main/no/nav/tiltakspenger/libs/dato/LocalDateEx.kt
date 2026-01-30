@@ -1,5 +1,6 @@
-package no.nav.tiltakspenger.libs.periodisering
+package no.nav.tiltakspenger.libs.dato
 
+import no.nav.tiltakspenger.libs.periode.Periode
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import kotlin.math.abs

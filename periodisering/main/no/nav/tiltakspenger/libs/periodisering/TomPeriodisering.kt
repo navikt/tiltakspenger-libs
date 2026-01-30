@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.periodisering
 
+import no.nav.tiltakspenger.libs.periode.Periode
 import java.time.LocalDate
 
 class TomPeriodisering<T : Any> private constructor() :

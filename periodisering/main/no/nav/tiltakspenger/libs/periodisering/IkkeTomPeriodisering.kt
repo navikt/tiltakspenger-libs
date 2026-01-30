@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.periodisering
 
 import arrow.core.Nel
+import no.nav.tiltakspenger.libs.periode.Periode
 
 /**
  * Samler [SammenhengendePeriodisering] og [IkkesammenhengendePeriodisering] i et felles konsept.

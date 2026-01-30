@@ -8,8 +8,8 @@ import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.FRAV�
 import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.FRAVÆR_SYK
 import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.FRAVÆR_SYKT_BARN
 import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.IKKE_BESVART
-import no.nav.tiltakspenger.libs.periodisering.Periode
-import no.nav.tiltakspenger.libs.periodisering.PeriodeDTO
+import no.nav.tiltakspenger.libs.periode.Periode
+import no.nav.tiltakspenger.libs.periode.PeriodeDTO
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime

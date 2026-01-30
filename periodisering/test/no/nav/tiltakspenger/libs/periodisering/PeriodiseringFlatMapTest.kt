@@ -4,6 +4,8 @@ import arrow.core.nonEmptyListOf
 import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.dato.januar
+import no.nav.tiltakspenger.libs.periode.Periode
+import no.nav.tiltakspenger.libs.periode.til
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime

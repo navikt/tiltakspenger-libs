@@ -5,13 +5,13 @@ import no.nav.tiltakspenger.libs.dato.desember
 import no.nav.tiltakspenger.libs.dato.februar
 import no.nav.tiltakspenger.libs.dato.januar
 import no.nav.tiltakspenger.libs.dato.mars
+import no.nav.tiltakspenger.libs.periode.Periode
+import no.nav.tiltakspenger.libs.periode.somPeriode
+import no.nav.tiltakspenger.libs.periode.til
 import no.nav.tiltakspenger.libs.periodisering.IkkesammenhengendePeriodisering
-import no.nav.tiltakspenger.libs.periodisering.Periode
 import no.nav.tiltakspenger.libs.periodisering.PeriodeMedVerdi
 import no.nav.tiltakspenger.libs.periodisering.Periodisering
 import no.nav.tiltakspenger.libs.periodisering.SammenhengendePeriodisering
-import no.nav.tiltakspenger.libs.periodisering.somPeriode
-import no.nav.tiltakspenger.libs.periodisering.til
 import org.junit.jupiter.api.Test
 
 class PeriodiseringOverlappTest {

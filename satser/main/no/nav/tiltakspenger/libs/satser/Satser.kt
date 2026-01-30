@@ -2,7 +2,7 @@ package no.nav.tiltakspenger.libs.satser
 
 import no.nav.tiltakspenger.libs.dato.desember
 import no.nav.tiltakspenger.libs.dato.januar
-import no.nav.tiltakspenger.libs.periodisering.Periode
+import no.nav.tiltakspenger.libs.periode.Periode
 import java.time.LocalDate
 import kotlin.collections.find
 import kotlin.let

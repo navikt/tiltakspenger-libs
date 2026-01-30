@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.periodisering
 import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.nulls.shouldBeNull
 import no.nav.tiltakspenger.libs.dato.januar
+import no.nav.tiltakspenger.libs.periode.til
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 

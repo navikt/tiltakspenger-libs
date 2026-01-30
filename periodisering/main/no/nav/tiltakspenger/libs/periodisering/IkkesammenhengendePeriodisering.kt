@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.periodisering
 
 import arrow.core.Nel
 import arrow.core.toNonEmptyListOrThrow
+import no.nav.tiltakspenger.libs.periode.Periode
 
 /**
  * Denne klassen representerer en ikke-sammenhengende periode som kan ha ulike verdier for ulike deler av perioden.

@@ -6,6 +6,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import no.nav.tiltakspenger.libs.dato.januar
 import no.nav.tiltakspenger.libs.dato.mai
+import no.nav.tiltakspenger.libs.periode.Periode
+import no.nav.tiltakspenger.libs.periode.til
 import no.nav.tiltakspenger.libs.periode.uke
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

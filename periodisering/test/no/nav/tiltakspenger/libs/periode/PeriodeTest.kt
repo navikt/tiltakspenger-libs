@@ -10,11 +10,6 @@ import no.nav.tiltakspenger.libs.dato.juli
 import no.nav.tiltakspenger.libs.dato.juni
 import no.nav.tiltakspenger.libs.dato.mai
 import no.nav.tiltakspenger.libs.dato.september
-import no.nav.tiltakspenger.libs.periodisering.Periode
-import no.nav.tiltakspenger.libs.periodisering.leggSammen
-import no.nav.tiltakspenger.libs.periodisering.leggSammenMed
-import no.nav.tiltakspenger.libs.periodisering.til
-import no.nav.tiltakspenger.libs.periodisering.trekkFra
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue

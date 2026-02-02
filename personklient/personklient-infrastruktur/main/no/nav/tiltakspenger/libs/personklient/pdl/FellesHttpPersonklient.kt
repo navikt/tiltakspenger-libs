@@ -3,7 +3,6 @@ package no.nav.tiltakspenger.libs.personklient.pdl
 import arrow.core.Either
 import arrow.core.flatten
 import arrow.core.left
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
@@ -11,6 +10,7 @@ import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.json.objectMapper
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.Ikke2xx
+import tools.jackson.module.kotlin.readValue
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest

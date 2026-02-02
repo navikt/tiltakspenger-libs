@@ -1,8 +1,5 @@
 package no.nav.tiltakspenger.libs.texas.client
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.apache.Apache
@@ -14,11 +11,13 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.jackson3.jackson
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.texas.IdentityProvider
 import no.nav.tiltakspenger.libs.texas.log
+import tools.jackson.module.kotlin.kotlinModule
+import tools.jackson.databind.DeserializationFeature
 import java.time.Duration
 
 class TexasHttpClient(
@@ -29,9 +28,8 @@ class TexasHttpClient(
     private val httpClient: HttpClient = HttpClient(Apache).config {
         install(ContentNegotiation) {
             jackson {
-                registerModule(KotlinModule.Builder().build())
-                registerModule(JavaTimeModule())
-                configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                addModule(kotlinModule())
+                disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             }
         }
         install(HttpTimeout) {

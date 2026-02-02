@@ -1,14 +1,13 @@
-val jacksonVersion = "2.21.0"
+val jacksonVersion = "3.0.4"
 val jacksonAnnotationsVersion = "2.21"
 dependencies {
     // Json
-    api("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
+    api("tools.jackson.core:jackson-databind:$jacksonVersion")
     api("com.fasterxml.jackson.core:jackson-annotations:$jacksonAnnotationsVersion")
-    api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
-    api("com.fasterxml.jackson.core:jackson-core:$jacksonVersion")
-    api("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
-    implementation("io.arrow-kt:arrow-core:2.2.0")
-    implementation("io.arrow-kt:arrow-core-jackson:2.2.0")
+    api("tools.jackson.core:jackson-core:$jacksonVersion")
+    api("tools.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    implementation("io.arrow-kt:arrow-core:2.2.1.1")
+    implementation("io.arrow-kt:arrow-core-jackson:2.2.1.1")
 
     testImplementation(project(":test-common"))
 }

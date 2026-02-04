@@ -111,7 +111,7 @@ internal class FellesHttpPersonklientTest {
             runTest {
                 pdlClient.graphqlRequest(token, "body").swap().getOrNull()!!.also {
                     it.shouldBeTypeOf<DeserializationException>()
-                    it.exception.shouldBeTypeOf<com.fasterxml.jackson.core.JsonParseException>()
+                    it.exception.shouldBeTypeOf<tools.jackson.core.exc.StreamReadException>()
                     it.exception.message shouldContain "Unrecognized token 'asd'"
                 }
             }

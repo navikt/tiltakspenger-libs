@@ -3,10 +3,10 @@ package no.nav.tiltakspenger.libs.personklient.pdl
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
-import com.fasterxml.jackson.databind.JsonNode
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.FantIkkePerson
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.ResponsManglerData
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.UkjentFeil
+import tools.jackson.databind.JsonNode
 
 internal const val FANT_IKKE_PERSON = "Fant ikke person"
 

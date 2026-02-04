@@ -1,16 +1,12 @@
 package no.nav.tiltakspenger.libs.texas
 
-import arrow.integrations.jackson.module.NonEmptyCollectionsModule
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.kotest.matchers.shouldBe
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.path
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.jackson3.jackson
 import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
@@ -35,6 +31,7 @@ import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequest
 import no.nav.tiltakspenger.libs.texas.client.TexasClient
 import no.nav.tiltakspenger.libs.texas.client.TexasIntrospectionResponse
 import org.junit.jupiter.api.Test
+import tools.jackson.module.kotlin.kotlinModule
 
 class TexasAuthenticationProviderTest {
     val jwtGenerator = JwtGenerator()
@@ -60,10 +57,7 @@ class TexasAuthenticationProviderTest {
                 application {
                     install(ContentNegotiation) {
                         jackson {
-                            configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                            registerModule(JavaTimeModule())
-                            registerModule(NonEmptyCollectionsModule())
-                            registerModule(KotlinModule.Builder().build())
+                            addModule(kotlinModule())
                         }
                     }
                     authentication {
@@ -127,10 +121,7 @@ class TexasAuthenticationProviderTest {
                 application {
                     install(ContentNegotiation) {
                         jackson {
-                            configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                            registerModule(JavaTimeModule())
-                            registerModule(NonEmptyCollectionsModule())
-                            registerModule(KotlinModule.Builder().build())
+                            addModule(kotlinModule())
                         }
                     }
                     authentication {
@@ -187,10 +178,7 @@ class TexasAuthenticationProviderTest {
                 application {
                     install(ContentNegotiation) {
                         jackson {
-                            configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                            registerModule(JavaTimeModule())
-                            registerModule(NonEmptyCollectionsModule())
-                            registerModule(KotlinModule.Builder().build())
+                            addModule(kotlinModule())
                         }
                     }
                     authentication {
@@ -225,7 +213,7 @@ class TexasAuthenticationProviderTest {
                     jwt = jwtGenerator.createJwtForSystembruker(),
                 ).apply {
                     status shouldBe HttpStatusCode.OK
-                    bodyAsText() shouldBe """{"roller":["HENTE_DATA"],"klientId":"saksbehandling-id","klientnavn":"saksbehandling"}"""
+                    bodyAsText() shouldBe """{"roller":["HENTE_DATA"],"klientId":"saksbehandling-id","klientnavn":"saksbehandling","navIdent":null}"""
                 }
             }
         }
@@ -246,10 +234,7 @@ class TexasAuthenticationProviderTest {
                 application {
                     install(ContentNegotiation) {
                         jackson {
-                            configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                            registerModule(JavaTimeModule())
-                            registerModule(NonEmptyCollectionsModule())
-                            registerModule(KotlinModule.Builder().build())
+                            addModule(kotlinModule())
                         }
                     }
                     authentication {

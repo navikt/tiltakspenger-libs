@@ -8,7 +8,7 @@ plugins {
     kotlin("jvm") version "2.3.0"
     `maven-publish`
     `java-library`
-    id("com.diffplug.spotless") version "8.1.0"
+    id("com.diffplug.spotless") version "8.2.1"
 }
 
 allprojects {

@@ -32,7 +32,6 @@ fun ArenaDeltakerStatusType.toDTO(fom: LocalDate?): TiltakResponsDTO.DeltakerSta
         ArenaDeltakerStatusType.IKKEM -> TiltakResponsDTO.DeltakerStatusDTO.AVBRUTT
         ArenaDeltakerStatusType.JATAKK -> TiltakResponsDTO.DeltakerStatusDTO.DELTAR
         ArenaDeltakerStatusType.TILBUD -> TiltakResponsDTO.DeltakerStatusDTO.VENTER_PA_OPPSTART
-
         ArenaDeltakerStatusType.AKTUELL -> TiltakResponsDTO.DeltakerStatusDTO.SOKT_INN
         ArenaDeltakerStatusType.AVSLAG -> TiltakResponsDTO.DeltakerStatusDTO.IKKE_AKTUELL
         ArenaDeltakerStatusType.GJENN_AVL -> TiltakResponsDTO.DeltakerStatusDTO.IKKE_AKTUELL

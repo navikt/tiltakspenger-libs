@@ -1,4 +1,4 @@
-val kotestVersion = "6.1.1"
+val kotestVersion = "6.1.2"
 val mockkVersion = "1.14.9"
 dependencies {
     api(project(":common"))
@@ -23,5 +23,5 @@ dependencies {
     api("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.10.2")
 
-    api("ch.qos.logback:logback-classic:1.5.25")
+    api("ch.qos.logback:logback-classic:1.5.26")
 }

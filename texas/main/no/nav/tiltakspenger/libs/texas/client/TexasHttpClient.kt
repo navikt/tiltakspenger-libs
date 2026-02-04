@@ -16,8 +16,8 @@ import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.texas.IdentityProvider
 import no.nav.tiltakspenger.libs.texas.log
-import tools.jackson.module.kotlin.kotlinModule
 import tools.jackson.databind.DeserializationFeature
+import tools.jackson.module.kotlin.kotlinModule
 import java.time.Duration
 
 class TexasHttpClient(

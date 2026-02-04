@@ -21,8 +21,8 @@ val localeEngelsk: Locale = Locale
     .setRegion("UK")
     .build()
 
-val engelskDatoFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d. MMMM yyyy", localeEngelsk)
-val engelskTidspunktFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d. MMMM yyyy HH:mm:ss", localeEngelsk)
+val engelskDatoFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy", localeEngelsk)
+val engelskTidspunktFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy HH:mm:ss", localeEngelsk)
 val engelskDatoOgTidFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm", localeEngelsk)
 val engelskDatoMedPunktumFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", localeEngelsk)
-val engelskUkedagOgDatoUtenÅrFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE d. MMMM", localeEngelsk)
+val engelskUkedagOgDatoUtenÅrFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE d MMMM", localeEngelsk)

@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # include git tags
-      - uses: paulhatch/semantic-version@v5.4.0
+      - uses: paulhatch/semantic-version@v6.0.1
         id: tag
         with:
           bump_each_commit: true
@@ -51,7 +51,7 @@ jobs:
 #        with:
 #          fetch-depth: 0 # include git tags
 #
-#      - uses: paulhatch/semantic-version@v5.4.0
+#      - uses: paulhatch/semantic-version@v6.0.1
 #        id: tag
 #        with:
 #          bump_each_commit: true

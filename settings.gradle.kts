@@ -2,7 +2,6 @@ rootProject.name = "tiltakspenger-libs"
 
 include(
     "person-dtos",
-    "arenatiltak-dtos",
     "arenaytelser-dtos",
     "tiltak-dtos",
     "soknad-dtos",

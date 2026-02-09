@@ -7,11 +7,11 @@ internal class JacksonPropertyNameTest {
     @Test
     fun `serialize - særnorske tegn`() {
         val testDTO = TestDTO(
-            id = "1234",
+            id = "12345",
             kanIverksette = false,
             årsak = "test",
         )
-        serialize(testDTO) shouldBeEqual """{"id":"1234","kanIverksette":false,"årsak":"test"}"""
+        serialize(testDTO) shouldBeEqual """{"id":"12345","kanIverksette":false,"årsak":"test"}"""
     }
 }
 

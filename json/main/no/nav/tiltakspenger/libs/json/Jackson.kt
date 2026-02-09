@@ -7,12 +7,17 @@ import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.cfg.DateTimeFeature
 import tools.jackson.databind.cfg.EnumFeature
 import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.KotlinFeature
 import tools.jackson.module.kotlin.KotlinModule
 import tools.jackson.module.kotlin.readValue
 
 val objectMapper: JsonMapper = JsonMapper.builder()
     .addModule(NonEmptyCollectionsModule())
-    .addModule(KotlinModule.Builder().build())
+    .addModule(
+        KotlinModule.Builder()
+            .enable(KotlinFeature.KotlinPropertyNameAsImplicitName)
+            .build(),
+    )
     .disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
     .disable(DateTimeFeature.ONE_BASED_MONTHS)
     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)

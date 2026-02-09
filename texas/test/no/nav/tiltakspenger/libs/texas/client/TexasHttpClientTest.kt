@@ -1,8 +1,5 @@
 package no.nav.tiltakspenger.libs.texas.client
 
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.ktor.client.HttpClient
@@ -13,11 +10,12 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.jackson3.jackson
 import kotlinx.coroutines.runBlocking
 import no.nav.tiltakspenger.libs.auth.test.core.JwtGenerator
 import no.nav.tiltakspenger.libs.texas.IdentityProvider
 import org.junit.jupiter.api.Test
+import tools.jackson.module.kotlin.kotlinModule
 import java.time.Duration
 
 class TexasHttpClientTest {
@@ -198,9 +196,7 @@ class TexasHttpClientTest {
         return HttpClient(mockEngine).config {
             install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
                 jackson {
-                    registerModule(KotlinModule.Builder().build())
-                    registerModule(JavaTimeModule())
-                    configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    addModule(kotlinModule())
                 }
             }
             install(HttpTimeout) {

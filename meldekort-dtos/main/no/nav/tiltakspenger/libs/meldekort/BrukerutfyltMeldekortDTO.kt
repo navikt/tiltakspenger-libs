@@ -26,6 +26,7 @@ data class BrukerutfyltMeldekortDTO(
         FRAVÆR_SYK,
         FRAVÆR_SYKT_BARN,
         FRAVÆR_GODKJENT_AV_NAV,
+        FRAVÆR_STERKE_VELFERDSGRUNNER_ELLER_JOBBINTERVJU,
         FRAVÆR_ANNET,
         IKKE_BESVART,
         IKKE_TILTAKSDAG,

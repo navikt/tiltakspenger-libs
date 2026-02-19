@@ -16,7 +16,7 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-postgresql:$testContainersVersion")
     testImplementation("org.testcontainers:testcontainers-r2dbc:$testContainersVersion")
 
-    testImplementation("org.postgresql:postgresql:42.7.9")
+    testImplementation("org.postgresql:postgresql:42.7.10")
 }
 
 tasks.withType<Jar> {

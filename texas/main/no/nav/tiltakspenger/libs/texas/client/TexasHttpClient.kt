@@ -2,7 +2,7 @@ package no.nav.tiltakspenger.libs.texas.client
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.apache.Apache
+import io.ktor.client.engine.apache5.Apache5
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -25,7 +25,7 @@ class TexasHttpClient(
     private val tokenUrl: String,
     private val tokenExchangeUrl: String,
     private val timeoutSeconds: Long = 5L,
-    private val httpClient: HttpClient = HttpClient(Apache).config {
+    private val httpClient: HttpClient = HttpClient(Apache5).config {
         install(ContentNegotiation) {
             jackson {
                 addModule(kotlinModule())

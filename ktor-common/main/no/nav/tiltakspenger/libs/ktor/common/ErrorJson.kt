@@ -9,10 +9,21 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respondText
 import no.nav.tiltakspenger.libs.json.serialize
 
+interface ErrorJsonBase {
+    val melding: String
+    val kode: String
+}
+
 data class ErrorJson(
-    val melding: String,
-    val kode: String,
-)
+    override val melding: String,
+    override val kode: String,
+) : ErrorJsonBase
+
+data class ErrorJsonMedData<T>(
+    override val melding: String,
+    override val kode: String,
+    val data: T,
+) : ErrorJsonBase
 
 suspend inline fun ApplicationCall.respond403Forbidden(melding: String, kode: String) {
     this.respondError(
@@ -22,7 +33,7 @@ suspend inline fun ApplicationCall.respond403Forbidden(melding: String, kode: St
     )
 }
 
-suspend inline fun ApplicationCall.respond403Forbidden(errorJson: ErrorJson) {
+suspend inline fun ApplicationCall.respond403Forbidden(errorJson: ErrorJsonBase) {
     this.respondError(HttpStatusCode.Forbidden, errorJson)
 }
 
@@ -34,7 +45,7 @@ suspend inline fun ApplicationCall.respond401Unauthorized(melding: String, kode:
     )
 }
 
-suspend inline fun ApplicationCall.respond401Unauthorized(errorJson: ErrorJson) {
+suspend inline fun ApplicationCall.respond401Unauthorized(errorJson: ErrorJsonBase) {
     this.respondError(HttpStatusCode.Unauthorized, errorJson)
 }
 
@@ -46,7 +57,7 @@ suspend inline fun ApplicationCall.respond500InternalServerError(melding: String
     )
 }
 
-suspend inline fun ApplicationCall.respond500InternalServerError(errorJson: ErrorJson) {
+suspend inline fun ApplicationCall.respond500InternalServerError(errorJson: ErrorJsonBase) {
     this.respondError(HttpStatusCode.InternalServerError, errorJson)
 }
 
@@ -58,7 +69,7 @@ suspend inline fun ApplicationCall.respond400BadRequest(melding: String, kode: S
     )
 }
 
-suspend inline fun ApplicationCall.respond400BadRequest(errorJson: ErrorJson) {
+suspend inline fun ApplicationCall.respond400BadRequest(errorJson: ErrorJsonBase) {
     this.respondError(HttpStatusCode.BadRequest, errorJson)
 }
 
@@ -70,7 +81,7 @@ suspend inline fun ApplicationCall.respond404NotFound(melding: String, kode: Str
     )
 }
 
-suspend inline fun ApplicationCall.respond404NotFound(errorJson: ErrorJson) {
+suspend inline fun ApplicationCall.respond404NotFound(errorJson: ErrorJsonBase) {
     this.respondError(HttpStatusCode.NotFound, errorJson)
 }
 
@@ -82,7 +93,7 @@ suspend inline fun ApplicationCall.respond409Conflict(melding: String, kode: Str
     )
 }
 
-suspend inline fun ApplicationCall.respond409Conflict(errorJson: ErrorJson) {
+suspend inline fun ApplicationCall.respond409Conflict(errorJson: ErrorJsonBase) {
     this.respondError(HttpStatusCode.Conflict, errorJson)
 }
 
@@ -90,7 +101,7 @@ suspend inline fun ApplicationCall.respond501NotImplemented(melding: String, kod
     this.respondError(HttpStatusCode.NotImplemented, ErrorJson(melding, kode))
 }
 
-suspend inline fun ApplicationCall.respond501NotImplemented(errorJson: ErrorJson) {
+suspend inline fun ApplicationCall.respond501NotImplemented(errorJson: ErrorJsonBase) {
     this.respondError(HttpStatusCode.NotImplemented, errorJson)
 }
 
@@ -104,7 +115,7 @@ suspend inline fun ApplicationCall.respondError(status: HttpStatusCode, melding:
     )
 }
 
-suspend inline fun ApplicationCall.respondError(status: HttpStatusCode, errorJson: ErrorJson) {
+suspend inline fun ApplicationCall.respondError(status: HttpStatusCode, errorJson: ErrorJsonBase) {
     this.respondText(
         text = serialize(errorJson),
         contentType = ContentType.Application.Json.withCharset(Charsets.UTF_8),

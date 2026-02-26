@@ -267,4 +267,19 @@ class ErrorJsonTest {
         copy.melding shouldBe "Modified"
         copy.kode shouldBe "ORIGINAL"
     }
+
+    @Test
+    fun `ErrorJson med data`() = testApplication {
+        routing {
+            get("/test") {
+                call.respondError(HttpStatusCode.BadRequest, ErrorJsonMedData("Test", "TEST", listOf("data1", "data2")))
+            }
+        }
+
+        val response = client.get("/test")
+
+        response.status shouldBe HttpStatusCode.BadRequest
+        response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+        response.bodyAsText() shouldEqualJson """{"melding":"Test","kode":"TEST","data":["data1","data2"]}"""
+    }
 }

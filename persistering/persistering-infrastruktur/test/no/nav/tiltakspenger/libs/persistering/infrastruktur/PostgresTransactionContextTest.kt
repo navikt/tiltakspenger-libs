@@ -143,4 +143,50 @@ internal class PostgresTransactionContextTest {
             resultat.size shouldBe 0
         }
     }
+
+    @Test
+    suspend fun `onSuccess callback`() {
+        val tx = PostgresTransactionContext(dataSource, sessionCounter)
+        var onSuccessCalled = false
+
+        tx.onSuccess {
+            onSuccessCalled = true
+        }
+
+        tx.withTransaction { session ->
+            session.run(
+                queryOf("create table testSuccess (test varchar not null)").asExecute,
+            )
+
+            session.run(
+                queryOf("insert into testSuccess (test) values ('Hello world!') ").asExecute,
+            )
+        }
+
+        onSuccessCalled shouldBe true
+    }
+
+    @Test
+    suspend fun `onError callback`() {
+        val tx = PostgresTransactionContext(dataSource, sessionCounter)
+        var onErrorCalled = false
+
+        tx.onError {
+            onErrorCalled = true
+        }
+
+        Either.catch {
+            tx.withTransaction { session ->
+                session.run(
+                    queryOf("create table testError (test varchar not null)").asExecute,
+                )
+
+                session.run(
+                    queryOf("insert into testError (notTest) values ('Goodbye cruel world!') ").asExecute,
+                )
+            }
+        }
+
+        onErrorCalled shouldBe true
+    }
 }

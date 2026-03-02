@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.persistering.infrastruktur
 import arrow.core.Either
 import arrow.core.getOrElse
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.runBlocking
 import kotliquery.Session
 import kotliquery.TransactionalSession
 import kotliquery.sessionOf
@@ -21,8 +22,8 @@ class PostgresTransactionContext(
     private val sessionCounter: SessionCounter,
 ) : TransactionContext {
 
-    private val onSuccessCallbacks = listOf<() -> Unit>()
-    private val onErrorCallbacks = listOf<(Throwable) -> Unit>()
+    private val onSuccessCallbacks = mutableListOf<suspend () -> Unit>()
+    private val onErrorCallbacks = mutableListOf<suspend (Throwable) -> Unit>()
 
     private val log = KotlinLogging.logger {}
 
@@ -117,20 +118,23 @@ class PostgresTransactionContext(
     }
 
     override suspend fun onSuccess(action: suspend () -> Unit) {
-        onSuccessCallbacks.plus(action)
+        onSuccessCallbacks.add(action)
     }
 
     override suspend fun onError(action: suspend (Throwable) -> Unit) {
-        onErrorCallbacks.plus(action)
+        onErrorCallbacks.add(action)
     }
 
     private fun executeOnSuccess() {
         try {
-            onSuccessCallbacks.forEach {
-                try {
-                    it()
-                } catch (ex: Throwable) {
-                    safeLog(ex) { "Forkaster feil som skjedde i et av elementene i onSuccess callback" }
+            // TODO: ikke runblocking når withTransaction blir en suspend function
+            runBlocking {
+                onSuccessCallbacks.forEach {
+                    try {
+                        it()
+                    } catch (ex: Throwable) {
+                        safeLog(ex) { "Forkaster feil som skjedde i et av elementene i onSuccess callback" }
+                    }
                 }
             }
         } catch (ex: Throwable) {
@@ -140,11 +144,14 @@ class PostgresTransactionContext(
 
     private fun executeOnError(throwable: Throwable) {
         try {
-            onErrorCallbacks.forEach { callback ->
-                try {
-                    callback(throwable)
-                } catch (ex: Throwable) {
-                    safeLog(ex) { "Forkaster feil som skjedde i onErrorCallback" }
+            // TODO: ikke runblocking når withTransaction blir en suspend function
+            runBlocking {
+                onErrorCallbacks.forEach { callback ->
+                    try {
+                        callback(throwable)
+                    } catch (ex: Throwable) {
+                        safeLog(ex) { "Forkaster feil som skjedde i onErrorCallback" }
+                    }
                 }
             }
         } catch (ex: Throwable) {

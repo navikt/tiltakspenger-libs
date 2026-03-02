@@ -102,6 +102,9 @@ data class TiltakResponsDTO(
         EKSPEBIST("Ekspertbistand", false),
         MENTOR("Mentor", false),
 
+        // Lagt til 2025-03-02 - Team Tiltak - https://lovdata.no/nav/forskrift/2026-02-04-163
+        FIREARIG_LONNSTILSKUDD("Forskrift om forsøk med fireårig lønnstilskudd for unge", false),
+
         // utfases
         AMBF1("AMB Avklaring (fase 1)", false),
         KURS("Andre kurs", false),
@@ -265,6 +268,7 @@ fun TiltakResponsDTO.TiltakType.toTiltakstypeSomGirRett(): Either<TiltakstypeGir
         TiltakResponsDTO.TiltakType.INKLUTILS,
         TiltakResponsDTO.TiltakType.EKSPEBIST,
         TiltakResponsDTO.TiltakType.MENTOR,
+        TiltakResponsDTO.TiltakType.FIREARIG_LONNSTILSKUDD,
         TiltakResponsDTO.TiltakType.AMBF1,
         TiltakResponsDTO.TiltakType.KURS,
         TiltakResponsDTO.TiltakType.ANNUTDANN,

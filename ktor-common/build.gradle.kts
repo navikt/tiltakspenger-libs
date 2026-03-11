@@ -4,7 +4,7 @@ dependencies {
     implementation(project(":logging"))
     implementation(project(":json"))
 
-    implementation("io.arrow-kt:arrow-core:2.2.1.1")
+    implementation("io.arrow-kt:arrow-core:2.2.2")
 
     // Vi ønsker at konsumentene bruker sine egne versjoner av ktor
     compileOnly("io.ktor:ktor-server-core:$ktorVersion")

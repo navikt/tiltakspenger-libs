@@ -1,5 +1,5 @@
 val kafkaClientsVersion = "4.2.0"
-val testContainersVersion = "2.0.3"
+val testContainersVersion = "2.0.4"
 val kotlinxCoroutinesVersion = "1.10.2"
 dependencies {
     implementation(project(":logging"))

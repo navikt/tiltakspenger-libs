@@ -2,7 +2,6 @@ package no.nav.tiltakspenger.libs.texas
 
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.principal
-import no.nav.tiltakspenger.libs.auth.core.AdRolle
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.common.GenerellSystembruker
 import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle

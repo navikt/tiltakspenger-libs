@@ -13,7 +13,6 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":json"))
     implementation(project(":ktor-common"))
-    implementation(project(":auth-core"))
 
     testImplementation(project(":test-common"))
     testImplementation(project(":ktor-test-common"))

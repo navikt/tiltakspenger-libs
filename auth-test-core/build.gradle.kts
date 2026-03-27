@@ -3,7 +3,6 @@ dependencies {
     api(project(":json"))
     api(project(":logging"))
     api(project(":test-common"))
-    api(project(":auth-core"))
 
     api("io.arrow-kt:arrow-core:2.2.2")
 

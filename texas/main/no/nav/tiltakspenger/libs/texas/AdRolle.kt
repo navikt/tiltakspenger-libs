@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.auth.core
+package no.nav.tiltakspenger.libs.texas
 
 import no.nav.tiltakspenger.libs.common.Saksbehandlerrolle
 

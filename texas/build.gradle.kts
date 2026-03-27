@@ -8,7 +8,7 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-serialization-jackson3:$ktorVersion")
     implementation("io.ktor:ktor-server-auth:$ktorVersion")
-    implementation("io.arrow-kt:arrow-core:2.2.2")
+    implementation("io.arrow-kt:arrow-core:2.2.2.1")
     implementation(project(":logging"))
     implementation(project(":common"))
     implementation(project(":json"))
@@ -20,5 +20,5 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
     testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
-    testImplementation("io.arrow-kt:arrow-core-jackson:2.2.2")
+    testImplementation("io.arrow-kt:arrow-core-jackson:2.2.2.1")
 }

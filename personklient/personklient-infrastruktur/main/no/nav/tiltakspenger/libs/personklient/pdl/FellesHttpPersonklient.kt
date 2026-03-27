@@ -6,7 +6,6 @@ import arrow.core.left
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
-import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.json.objectMapper
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.Ikke2xx
@@ -89,14 +88,6 @@ internal class FellesHttpPersonklient(
             Sikkerlogg.error(it) { "Ukjent feil ved henting av person fra PDL. request: $jsonRequestBody" }
             FellesPersonklientError.NetworkError(it)
         }.flatten()
-    }
-
-    override suspend fun hentPerson(
-        fnr: Fnr,
-        token: AccessToken,
-        jsonRequestBody: String,
-    ): Either<FellesPersonklientError, String> {
-        return doGraphQLRequest(token, jsonRequestBody)
     }
 
     override suspend fun graphqlRequest(

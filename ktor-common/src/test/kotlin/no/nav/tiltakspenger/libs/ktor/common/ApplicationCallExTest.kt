@@ -1,7 +1,6 @@
 package no.nav.tiltakspenger.libs.ktor.common
 
 import io.kotest.assertions.json.shouldEqualJson
-import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -435,19 +434,6 @@ class ApplicationCallExTest {
         response.status shouldBe HttpStatusCode.OK
         response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
         response.bodyAsText() shouldEqualJson """[]"""
-    }
-
-    @Test
-    fun `respondJson with String should throw IllegalArgumentException`() = testApplication {
-        routing {
-            get("/test") {
-                shouldThrow<IllegalArgumentException> {
-                    call.respondJson("a string value")
-                }.message shouldBe "Bruk respondText(json = ...) for ferdigserialiserte strenger"
-            }
-        }
-
-        client.get("/test")
     }
 
     @Test

@@ -94,6 +94,17 @@ suspend inline fun <reified T : Any> ApplicationCall.respondJson(
     respondJsonString(json = serialize(value), status = status)
 }
 
+/** Denne er lagt til for å få compile feil istedenfor runtime feil */
+@Suppress("unused", "RedundantSuspendModifier", "UnusedReceiverParameter")
+@Deprecated(
+    message = "Bruk respondJson(json = ...) for ferdigserialiserte strenger",
+    level = DeprecationLevel.ERROR,
+)
+suspend inline fun ApplicationCall.respondJson(
+    value: String,
+    status: HttpStatusCode = HttpStatusCode.OK,
+): Nothing = error("Bruk respondJson(json = ...) for ferdigserialiserte strenger")
+
 suspend inline fun ApplicationCall.respondStatus(status: HttpStatusCode) {
     this.respondText("", status = status)
 }

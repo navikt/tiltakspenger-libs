@@ -5,7 +5,7 @@ dependencies {
     implementation(project(":json"))
     implementation(project(":auth-test-core"))
 
-    implementation("io.arrow-kt:arrow-core:2.2.2")
+    implementation("io.arrow-kt:arrow-core:2.2.2.1")
 
     // Vi ønsker at konsumentene bruker sine egne versjoner av ktor
     compileOnly("io.ktor:ktor-server-core:$ktorVersion")

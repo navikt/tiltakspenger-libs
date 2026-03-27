@@ -6,8 +6,8 @@ dependencies {
     api("com.fasterxml.jackson.core:jackson-annotations:$jacksonAnnotationsVersion")
     api("tools.jackson.core:jackson-core:$jacksonVersion")
     api("tools.jackson.module:jackson-module-kotlin:$jacksonVersion")
-    implementation("io.arrow-kt:arrow-core:2.2.2")
-    implementation("io.arrow-kt:arrow-core-jackson:2.2.2")
+    implementation("io.arrow-kt:arrow-core:2.2.2.1")
+    implementation("io.arrow-kt:arrow-core-jackson:2.2.2.1")
 
     testImplementation(project(":test-common"))
 }

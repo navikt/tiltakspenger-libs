@@ -100,20 +100,12 @@ subprojects {
             }
         }
     }
-
-    kotlin.sourceSets["main"].kotlin.srcDirs("main")
-    kotlin.sourceSets["test"].kotlin.srcDirs("test")
-    sourceSets["main"].resources.srcDirs("main")
-    sourceSets["test"].resources.srcDirs("test")
-
-
 }
 
 configurations.all {
     // exclude JUnit 4
     exclude(group = "junit", module = "junit")
 }
-
 
 tasks {
     register<Copy>("addPreCommitGitHookOnBuild") {

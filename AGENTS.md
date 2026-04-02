@@ -9,23 +9,23 @@ Kotlin shared library monorepo (`tiltakspenger-libs`) for NAV's "tiltakspenger" 
 ## Architecture
 
 - **Gradle submodules** — see `settings.gradle.kts` for the full list. Each is a focused library (IDs, DTOs, clients, utilities).
-- **Non-standard source layout**: sources live in `main/` and `test/` directly (not `src/main/kotlin/`). Configured via `kotlin.sourceSets` in root `build.gradle.kts`.
+- **Standard Kotlin/Gradle source layout**: sources live in `src/main/kotlin/` and `src/test/kotlin/` following Gradle conventions. Resources live in `src/main/resources/` and `src/test/resources/`. Per [Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html#directory-structure), the common root package `no.nav.tiltakspenger.libs` is omitted from the directory structure (e.g., `common/src/main/kotlin/common/SakId.kt` for package `no.nav.tiltakspenger.libs.common`).
 - **Domene/infrastruktur split**: Modules with external dependencies (HTTP clients, DB) split into `*-domene` (pure domain, no external deps) and `*-infrastruktur` (external deps allowed). See `personklient/` and `persistering/` for examples. The root `build.gradle.kts` skips these parent projects explicitly.
 - **Core dependency chain**: Most modules depend on `common` → `logging`. Tests depend on `test-common` which re-exports `common`, kotest, mockk, wiremock, and JUnit 5.
 
 ## Key Modules
 
-| Module | Purpose |
-|---|---|
-| `common` | Shared domain types: typed IDs (`SakId`, `BehandlingId`, `MeldekortId`, `SøknadId`), `Bruker`/`Saksbehandler`, `CorrelationId`, ULID base |
-| `periodisering` | Date period logic (`Periode`, `Periodisering`, `Tidslinje`), used heavily across the domain |
-| `json` | Shared Jackson `objectMapper` config + serialize/deserialize helpers. Use this, not your own ObjectMapper |
-| `logging` | `Sikkerlogg` object for NAIS secure logging via markers. Use this, not raw loggers for sensitive data |
-| `test-common` | Shared test infra: `fixedClock`, `TikkendeKlokke`, `getOrFail()` for Arrow's Either, wiremock helpers |
-| `texas` | NAIS Texas auth: token introspection, system tokens, Ktor auth provider |
-| `ktor-common` | Ktor server extensions (error responses, request parsing). Uses `compileOnly` for ktor deps |
-| `jobber` | Leader election + stoppable job abstractions for NAIS |
-| `*-dtos` | API contract types shared between services |
+| Module          | Purpose                                                                                                                                   |
+|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `common`        | Shared domain types: typed IDs (`SakId`, `BehandlingId`, `MeldekortId`, `SøknadId`), `Bruker`/`Saksbehandler`, `CorrelationId`, ULID base |
+| `periodisering` | Date period logic (`Periode`, `Periodisering`, `Tidslinje`), used heavily across the domain                                               |
+| `json`          | Shared Jackson `objectMapper` config + serialize/deserialize helpers. Use this, not your own ObjectMapper                                 |
+| `logging`       | `Sikkerlogg` object for NAIS secure logging via markers. Use this, not raw loggers for sensitive data                                     |
+| `test-common`   | Shared test infra: `fixedClock`, `TikkendeKlokke`, `getOrFail()` for Arrow's Either, wiremock helpers                                     |
+| `texas`         | NAIS Texas auth: token introspection, system tokens, Ktor auth provider                                                                   |
+| `ktor-common`   | Ktor server extensions (error responses, request parsing). Uses `compileOnly` for ktor deps                                               |
+| `jobber`        | Leader election + stoppable job abstractions for NAIS                                                                                     |
+| `*-dtos`        | API contract types shared between services                                                                                                |
 
 ## Conventions
 
@@ -33,7 +33,7 @@ Kotlin shared library monorepo (`tiltakspenger-libs`) for NAV's "tiltakspenger" 
 Use Arrow's `Either<ErrorType, SuccessType>` instead of exceptions. Error types are sealed interfaces with descriptive data objects/classes (see `FellesPersonklientError` for the pattern). In tests, use `getOrFail()` from `test-common` to unwrap.
 
 ### Typed IDs
-IDs follow a strict pattern: private constructor, `Ulid` delegation via `UlidBase`, prefixed strings. Factory methods: `random()`, `fromString()`, `fromUUID()`. Use `init`/`require` blocks for invariant enforcement. See existing IDs in `common/main/` for the canonical pattern and prefix conventions.
+IDs follow a strict pattern: private constructor, `Ulid` delegation via `UlidBase`, prefixed strings. Factory methods: `random()`, `fromString()`, `fromUUID()`. Use `init`/`require` blocks for invariant enforcement. See existing IDs in `common/src/main/kotlin/` for the canonical pattern and prefix conventions.
 
 ### Imports
 Never use star imports. Always use explicit imports.

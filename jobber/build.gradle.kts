@@ -1,4 +1,4 @@
-val ktorVersion = "3.4.1"
+val ktorVersion = "3.4.2"
 val kotlinxCoroutinesVersion = "1.10.2"
 dependencies {
     implementation(project(":common"))

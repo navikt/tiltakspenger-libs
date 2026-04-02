@@ -66,8 +66,7 @@ tasks {
         }
     }
     withType<Jar> {
-        // TODO: Investigate why duplicates occur and consider using DuplicatesStrategy.FAIL
-        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        duplicatesStrategy = DuplicatesStrategy.FAIL
     }
 }
 java {

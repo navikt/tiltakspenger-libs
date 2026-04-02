@@ -12,6 +12,7 @@
 !.idea/inspectionProfiles/Project_Default.xml
 !.idea/codeStyles
 !.idea/codeStyles/codeStyleConfig.xml
+!.idea/codeStyles/Project.xml
 
 # Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-249601023
 
@@ -71,6 +72,7 @@ hs_err_pid*
 
 ### Gradle ###
 .gradle
+.kotlin
 build/
 
 # Ignore Gradle GUI config
@@ -101,5 +103,4 @@ build
 /.env
 
 .DS_Store
-!.idea/codeStyles/codeStyleConfig.xml
-!.idea/codeStyles/Project.xml
+

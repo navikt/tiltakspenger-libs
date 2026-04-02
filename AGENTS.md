@@ -9,8 +9,9 @@ Kotlin shared library monorepo (`tiltakspenger-libs`) for NAV's "tiltakspenger" 
 ## Architecture
 
 - **Gradle submodules** — see `settings.gradle.kts` for the full list. Each is a focused library (IDs, DTOs, clients, utilities).
+- **Convention plugin**: Shared build logic lives in `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts`. All submodules apply it via `plugins { id("tiltakspenger-lib-conventions") }`. It configures Kotlin/JVM target, spotless/ktlint, JUnit 5, publishing, and JUnit 4 exclusion. Plugin and library versions are centralized in `gradle/libs.versions.toml`.
 - **Standard Kotlin/Gradle source layout**: sources live in `src/main/kotlin/` and `src/test/kotlin/` following Gradle conventions. Resources live in `src/main/resources/` and `src/test/resources/`. Per [Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html#directory-structure), the common root package `no.nav.tiltakspenger.libs` is omitted from the directory structure (e.g., `common/src/main/kotlin/common/SakId.kt` for package `no.nav.tiltakspenger.libs.common`).
-- **Domene/infrastruktur split**: Modules with external dependencies (HTTP clients, DB) split into `*-domene` (pure domain, no external deps) and `*-infrastruktur` (external deps allowed). See `personklient/` and `persistering/` for examples. The root `build.gradle.kts` skips these parent projects explicitly.
+- **Domene/infrastruktur split**: Modules with external dependencies (HTTP clients, DB) split into `*-domene` (pure domain, no external deps) and `*-infrastruktur` (external deps allowed). See `personklient/` and `persistering/` for examples. Parent aggregator projects (`persistering/build.gradle.kts`, `personklient/build.gradle.kts`) only disable jar tasks.
 - **Core dependency chain**: Most modules depend on `common` → `logging`. Tests depend on `test-common` which re-exports `common`, kotest, mockk, wiremock, and JUnit 5.
 
 ## Key Modules
@@ -61,9 +62,10 @@ Use `Sikkerlogg` from the `logging` module for sensitive data. Standard logging 
 ./gradlew :<module>:test             # test single module
 ```
 
-- Check `build.gradle.kts` for Kotlin/JVM versions, spotless config, and compiler flags.
-- JUnit 4 is excluded globally. Test lifecycle is `per_class`.
-- Kotest is used for assertions (`shouldBe`, `shouldThrowWithMessage`), not as test runner.
+- Shared build config lives in `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts`. Check it for Kotlin/JVM versions, spotless config, and compiler flags.
+- JUnit 4 is excluded globally (in the convention plugin). Test lifecycle is `per_class`.
+- Kotest is used for assertions (`shouldBe`, `shouldThrowWithMessage`), not as test runner. Do not use JUnit assertions (`assertEquals`, `assertTrue`, etc.).
+- Configuration cache is enabled. Avoid `System.getenv()` in build scripts; use `providers.environmentVariable()` instead.
 
 ## Dependencies
 

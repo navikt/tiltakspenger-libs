@@ -1,3 +1,7 @@
+plugins {
+    id("tiltakspenger-lib-conventions")
+}
+
 dependencies {
     implementation(libs.jackson.annotations)
     implementation(libs.ktor.client.core)

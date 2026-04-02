@@ -1,3 +1,7 @@
+plugins {
+    id("tiltakspenger-lib-conventions")
+}
+
 dependencies {
     api(project(":common"))
     api(project(":persistering:persistering-domene"))
@@ -9,9 +13,9 @@ dependencies {
     api(libs.kotest.extensions)
 
     api(platform(libs.junit.bom))
-    api("org.junit.jupiter:junit-jupiter")
-    api("org.junit.jupiter:junit-jupiter-params")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    api(libs.junit.jupiter)
+    api(libs.junit.jupiter.params)
+    testRuntimeOnly(libs.junit.platform.launcher)
 
     api(libs.mockk)
     api(libs.mockk.dsl.jvm)

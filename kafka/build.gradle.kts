@@ -1,3 +1,7 @@
+plugins {
+    id("tiltakspenger-lib-conventions")
+}
+
 dependencies {
     implementation(project(":logging"))
 

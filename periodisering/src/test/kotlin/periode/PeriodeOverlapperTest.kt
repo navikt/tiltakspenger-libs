@@ -2,14 +2,12 @@ package no.nav.tiltakspenger.libs.periode
 
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import no.nav.tiltakspenger.libs.dato.januar
 import no.nav.tiltakspenger.libs.dato.juni
 import no.nav.tiltakspenger.libs.dato.mai
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -30,9 +28,9 @@ class PeriodeOverlapperTest {
             (2 til 2.mai(2022)).overlapperMed((1 til 3.mai(2022))).shouldBeTrue()
             (1 til 3.mai(2022)).overlapperMed((3 til 4.mai(2022))).shouldBeTrue()
             (3 til 4.mai(2022)).overlapperMed((1 til 3.mai(2022))).shouldBeTrue()
-            assertTrue(periode1.overlapperMed(periode1))
-            assertTrue(periode1.overlapperMed(periode2))
-            assertFalse(periode1.overlapperMed(periode3))
+            periode1.overlapperMed(periode1).shouldBeTrue()
+            periode1.overlapperMed(periode2).shouldBeTrue()
+            periode1.overlapperMed(periode3).shouldBeFalse()
 
             (LocalDate.MIN til LocalDate.MAX).overlapperMed(1 til 2.mai(2022)).shouldBeTrue()
             (LocalDate.MIN til LocalDate.MAX).overlapperMed((LocalDate.MIN til LocalDate.MAX)).shouldBeTrue()
@@ -46,13 +44,13 @@ class PeriodeOverlapperTest {
         @Test
         fun overlapperIkkeMed() {
             val periodeSomIkkeOverlapper = 13 til 16.mai(2022)
-            assertEquals(periodeSomIkkeOverlapper, periode1.ikkeOverlappendePeriode(periode2).first())
+            periode1.ikkeOverlappendePeriode(periode2).first() shouldBe periodeSomIkkeOverlapper
             (LocalDate.MIN til LocalDate.MAX).ikkeOverlappendePeriode((LocalDate.MIN til LocalDate.MAX)) shouldBe emptyList()
         }
 
         @Test
         fun `to komplett overlappende perioder skal gi tomt svar`() {
-            assertEquals(emptyList<Periode>(), periode1.ikkeOverlappendePeriode(periode1))
+            periode1.ikkeOverlappendePeriode(periode1) shouldBe emptyList()
         }
 
         @Test
@@ -60,8 +58,8 @@ class PeriodeOverlapperTest {
             val periodeEn = 13 til 16.mai(2022)
             val periodeTo = 13 til 15.mai(2022)
             val fasit = 16 til 16.mai(2022)
-            assertEquals(fasit, periodeEn.ikkeOverlappendePeriode(periodeTo).first())
-            assertEquals(1, periodeEn.ikkeOverlappendePeriode(periodeTo).size)
+            periodeEn.ikkeOverlappendePeriode(periodeTo).first() shouldBe fasit
+            periodeEn.ikkeOverlappendePeriode(periodeTo) shouldHaveSize 1
         }
 
         @Test
@@ -77,14 +75,11 @@ class PeriodeOverlapperTest {
                         kvpPeriode,
                     ),
                 )
-            assertEquals(3, result.size)
-            assertEquals(
-                listOf(
-                    1 til 4.mai(2022),
-                    7 til 10.mai(2022),
-                    13 til 15.mai(2022),
-                ),
-                result,
+            result shouldHaveSize 3
+            result shouldBe listOf(
+                1 til 4.mai(2022),
+                7 til 10.mai(2022),
+                13 til 15.mai(2022),
             )
         }
 
@@ -101,13 +96,10 @@ class PeriodeOverlapperTest {
                         kvpPeriode,
                     ),
                 )
-            assertEquals(2, result.size)
-            assertEquals(
-                listOf(
-                    Periode(fraOgMed = 1.mai(2022), tilOgMed = 4.mai(2022)),
-                    Periode(fraOgMed = 13.mai(2022), tilOgMed = 15.mai(2022)),
-                ),
-                result,
+            result shouldHaveSize 2
+            result shouldBe listOf(
+                Periode(fraOgMed = 1.mai(2022), tilOgMed = 4.mai(2022)),
+                Periode(fraOgMed = 13.mai(2022), tilOgMed = 15.mai(2022)),
             )
         }
     }
@@ -119,14 +111,14 @@ class PeriodeOverlapperTest {
         fun `to overlappende perioder gir overlapp`() {
             val periodeEn = Periode(fraOgMed = 6.mai(2022), tilOgMed = 15.mai(2022))
             val periodeTo = Periode(fraOgMed = 1.mai(2022), tilOgMed = 7.mai(2022))
-            assertEquals(true, listOf(periodeEn, periodeTo).inneholderOverlapp())
+            listOf(periodeEn, periodeTo).inneholderOverlapp().shouldBeTrue()
         }
 
         @Test
         fun `to ikke-overlappende perioder gir ikke overlapp`() {
             val periodeEn = Periode(fraOgMed = 8.mai(2022), tilOgMed = 15.mai(2022))
             val periodeTo = Periode(fraOgMed = 1.mai(2022), tilOgMed = 7.mai(2022))
-            assertEquals(false, listOf(periodeEn, periodeTo).inneholderOverlapp())
+            listOf(periodeEn, periodeTo).inneholderOverlapp().shouldBeFalse()
         }
 
         @Test
@@ -134,7 +126,7 @@ class PeriodeOverlapperTest {
             val periodeEn = Periode(fraOgMed = 1.mai(2022), tilOgMed = 10.mai(2022))
             val periodeTo = Periode(fraOgMed = 20.mai(2022), tilOgMed = 25.mai(2022))
             val periodeTre = Periode(fraOgMed = 11.mai(2022), tilOgMed = 19.mai(2022))
-            assertEquals(false, listOf(periodeEn, periodeTo, periodeTre).inneholderOverlapp())
+            listOf(periodeEn, periodeTo, periodeTre).inneholderOverlapp().shouldBeFalse()
         }
 
         @Test
@@ -142,7 +134,7 @@ class PeriodeOverlapperTest {
             val periodeEn = Periode(fraOgMed = 1.mai(2022), tilOgMed = 10.mai(2022))
             val periodeTo = Periode(fraOgMed = 20.mai(2022), tilOgMed = 25.mai(2022))
             val periodeTre = Periode(fraOgMed = 11.mai(2022), tilOgMed = 20.mai(2022))
-            assertEquals(true, listOf(periodeEn, periodeTo, periodeTre).inneholderOverlapp())
+            listOf(periodeEn, periodeTo, periodeTre).inneholderOverlapp().shouldBeTrue()
         }
     }
 
@@ -151,10 +143,10 @@ class PeriodeOverlapperTest {
         @Test
         fun overlappendePeriode() {
             val fellesperiode = 17 til 18.mai(2022)
-            assertEquals(periode1, periode1.overlappendePeriode(periode1))
-            assertEquals(fellesperiode, periode1.overlappendePeriode(periode2))
-            assertEquals(fellesperiode, periode2.overlappendePeriode(periode1))
-            assertNotEquals(fellesperiode, periode2.overlappendePeriode(periode2))
+            periode1.overlappendePeriode(periode1) shouldBe periode1
+            periode1.overlappendePeriode(periode2) shouldBe fellesperiode
+            periode2.overlappendePeriode(periode1) shouldBe fellesperiode
+            periode2.overlappendePeriode(periode2) shouldNotBe fellesperiode
             (LocalDate.MIN til LocalDate.MAX).overlappendePeriode((LocalDate.MIN til LocalDate.MAX)) shouldBe
                 (LocalDate.MIN til LocalDate.MAX)
         }

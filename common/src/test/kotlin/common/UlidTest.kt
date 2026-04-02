@@ -3,9 +3,6 @@ package no.nav.tiltakspenger.libs.common
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
-import no.nav.tiltakspenger.libs.common.BehandlingId
-import no.nav.tiltakspenger.libs.common.SakId
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.lang.Thread.sleep
 
@@ -15,14 +12,14 @@ internal class UlidTest {
     fun `test roundtrip`() {
         val ulid = BehandlingId.random()
         val ulid2 = BehandlingId.fromString(ulid.toString())
-        assertEquals(ulid, ulid2)
+        ulid2 shouldBe ulid
     }
 
     @Test
     fun `test prefixPart and ulidPart`() {
         val ulid = BehandlingId.random()
         val ulid2 = BehandlingId.fromString("${ulid.prefixPart()}_${ulid.ulidPart()}")
-        assertEquals(ulid, ulid2)
+        ulid2 shouldBe ulid
     }
 
     @Test

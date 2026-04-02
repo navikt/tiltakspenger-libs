@@ -1,8 +1,5 @@
 package no.nav.tiltakspenger.libs.common
 
-import kotlin.collections.filter
-import kotlin.collections.single
-
 /**
  * @return null, if the iterable is empty. If the iterable has more than one element, throws an [IllegalArgumentException]
  */

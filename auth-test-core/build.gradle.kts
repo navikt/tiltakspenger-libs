@@ -1,3 +1,7 @@
+plugins {
+    id("tiltakspenger-lib-conventions")
+}
+
 dependencies {
     api(project(":common"))
     api(project(":json"))

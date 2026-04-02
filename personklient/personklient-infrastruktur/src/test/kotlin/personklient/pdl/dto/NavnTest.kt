@@ -2,9 +2,8 @@ package no.nav.tiltakspenger.libs.personklient.pdl.dto
 
 import arrow.core.left
 import arrow.core.right
+import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 
@@ -39,8 +38,8 @@ internal class NavnTest {
                 ),
             ),
         )
-        assertTrue(avklartNavn.isLeft())
-        assertEquals(FellesPersonklientError.NavnKunneIkkeAvklares.left(), avklartNavn)
+        avklartNavn.isLeft() shouldBe true
+        avklartNavn shouldBe FellesPersonklientError.NavnKunneIkkeAvklares.left()
     }
 
     @Test
@@ -72,6 +71,6 @@ internal class NavnTest {
         val avklartNavn = avklarNavn(
             listOf(navn),
         )
-        assertEquals(navn.right(), avklartNavn)
+        avklartNavn shouldBe navn.right()
     }
 }

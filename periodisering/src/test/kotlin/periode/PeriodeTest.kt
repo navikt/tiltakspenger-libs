@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.periode
 
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.dato.august
 import no.nav.tiltakspenger.libs.dato.desember
@@ -10,9 +11,6 @@ import no.nav.tiltakspenger.libs.dato.juli
 import no.nav.tiltakspenger.libs.dato.juni
 import no.nav.tiltakspenger.libs.dato.mai
 import no.nav.tiltakspenger.libs.dato.september
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -30,9 +28,9 @@ class PeriodeTest {
         (1 til 2.mai(2022)).inneholderHele((1 til 1.mai(2022))).shouldBeTrue()
         (1 til 3.mai(2022)).inneholderHele((2 til 2.mai(2022))).shouldBeTrue()
         (1 til 2.mai(2022)).inneholderHele((1 til 3.mai(2022))).shouldBeFalse()
-        assertTrue(periode1.inneholderHele(periode1))
-        assertTrue(periode2.inneholderHele(periode3))
-        assertFalse(periode1.inneholderHele(periode2))
+        periode1.inneholderHele(periode1).shouldBeTrue()
+        periode2.inneholderHele(periode3).shouldBeTrue()
+        periode1.inneholderHele(periode2).shouldBeFalse()
 
         (LocalDate.MIN til LocalDate.MAX).inneholderHele(1 til 2.mai(2022)).shouldBeTrue()
         (LocalDate.MIN til LocalDate.MAX).inneholderHele((LocalDate.MIN til LocalDate.MAX)).shouldBeTrue()
@@ -45,11 +43,11 @@ class PeriodeTest {
         val periodeEn = Periode(fraOgMed = 3.mai(2022), tilOgMed = 15.mai(2022))
         val periodeTo = Periode(fraOgMed = 6.mai(2022), tilOgMed = 12.mai(2022))
         val perioder = periodeEn.trekkFra(listOf(periodeTo))
-        assertEquals(2, perioder.size)
-        assertEquals(3.mai(2022), perioder[0].fraOgMed)
-        assertEquals(5.mai(2022), perioder[0].tilOgMed)
-        assertEquals(13.mai(2022), perioder[1].fraOgMed)
-        assertEquals(15.mai(2022), perioder[1].tilOgMed)
+        perioder shouldHaveSize 2
+        perioder[0].fraOgMed shouldBe 3.mai(2022)
+        perioder[0].tilOgMed shouldBe 5.mai(2022)
+        perioder[1].fraOgMed shouldBe 13.mai(2022)
+        perioder[1].tilOgMed shouldBe 15.mai(2022)
     }
 
     @Test
@@ -65,13 +63,13 @@ class PeriodeTest {
         val periodeTo = Periode(fraOgMed = 6.mai(2022), tilOgMed = 8.mai(2022))
         val periodeTre = Periode(fraOgMed = 10.mai(2022), tilOgMed = 12.mai(2022))
         val perioder = periodeEn.trekkFra(listOf(periodeTo, periodeTre))
-        assertEquals(3, perioder.size)
-        assertEquals(3.mai(2022), perioder[0].fraOgMed)
-        assertEquals(5.mai(2022), perioder[0].tilOgMed)
-        assertEquals(9.mai(2022), perioder[1].fraOgMed)
-        assertEquals(9.mai(2022), perioder[1].tilOgMed)
-        assertEquals(13.mai(2022), perioder[2].fraOgMed)
-        assertEquals(15.mai(2022), perioder[2].tilOgMed)
+        perioder shouldHaveSize 3
+        perioder[0].fraOgMed shouldBe 3.mai(2022)
+        perioder[0].tilOgMed shouldBe 5.mai(2022)
+        perioder[1].fraOgMed shouldBe 9.mai(2022)
+        perioder[1].tilOgMed shouldBe 9.mai(2022)
+        perioder[2].fraOgMed shouldBe 13.mai(2022)
+        perioder[2].tilOgMed shouldBe 15.mai(2022)
     }
 
     @Test
@@ -80,11 +78,11 @@ class PeriodeTest {
         val periodeTo = Periode(fraOgMed = 6.mai(2022), tilOgMed = 9.mai(2022))
         val periodeTre = Periode(fraOgMed = 10.mai(2022), tilOgMed = 12.mai(2022))
         val perioder = periodeEn.trekkFra(listOf(periodeTo, periodeTre))
-        assertEquals(2, perioder.size)
-        assertEquals(3.mai(2022), perioder[0].fraOgMed)
-        assertEquals(5.mai(2022), perioder[0].tilOgMed)
-        assertEquals(13.mai(2022), perioder[1].fraOgMed)
-        assertEquals(15.mai(2022), perioder[1].tilOgMed)
+        perioder shouldHaveSize 2
+        perioder[0].fraOgMed shouldBe 3.mai(2022)
+        perioder[0].tilOgMed shouldBe 5.mai(2022)
+        perioder[1].fraOgMed shouldBe 13.mai(2022)
+        perioder[1].tilOgMed shouldBe 15.mai(2022)
     }
 
     @Test
@@ -116,7 +114,7 @@ class PeriodeTest {
         val periodeEn = Periode(fraOgMed = 3.mai(2022), tilOgMed = 15.mai(2022))
         val periodeTo = Periode(fraOgMed = 10.mai(2022), tilOgMed = 20.mai(2022))
         val periodeTre = Periode(fraOgMed = 3.mai(2022), tilOgMed = 20.mai(2022))
-        assertEquals(periodeTre, listOf(periodeEn, periodeTo).leggSammen().first())
+        listOf(periodeEn, periodeTo).leggSammen().first() shouldBe periodeTre
     }
 
     @Test
@@ -124,8 +122,8 @@ class PeriodeTest {
         val periodeEn = Periode(fraOgMed = 6.mai(2022), tilOgMed = 15.mai(2022))
         val periodeTo = Periode(fraOgMed = 1.mai(2022), tilOgMed = 5.mai(2022))
         val periodeTre = Periode(fraOgMed = 1.mai(2022), tilOgMed = 15.mai(2022))
-        assertEquals(1, listOf(periodeEn, periodeTo).leggSammen().size)
-        assertEquals(periodeTre, listOf(periodeEn, periodeTo).leggSammen().first())
+        listOf(periodeEn, periodeTo).leggSammen() shouldHaveSize 1
+        listOf(periodeEn, periodeTo).leggSammen().first() shouldBe periodeTre
     }
 
     @Test
@@ -135,8 +133,8 @@ class PeriodeTest {
         val periodeFasitEn = Periode(fraOgMed = 1.mai(2022), tilOgMed = 15.mai(2022))
         val periodeTre = Periode(fraOgMed = 18.mai(2022), tilOgMed = 20.mai(2022))
         val periodeFasitTo = Periode(fraOgMed = 18.mai(2022), tilOgMed = 20.mai(2022))
-        assertEquals(periodeFasitEn, listOf(periodeEn, periodeTo, periodeTre).leggSammen().first())
-        assertEquals(periodeFasitTo, listOf(periodeEn, periodeTo, periodeTre).leggSammen().last())
+        listOf(periodeEn, periodeTo, periodeTre).leggSammen().first() shouldBe periodeFasitEn
+        listOf(periodeEn, periodeTo, periodeTre).leggSammen().last() shouldBe periodeFasitTo
     }
 
     @Test

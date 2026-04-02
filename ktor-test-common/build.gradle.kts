@@ -1,3 +1,7 @@
+plugins {
+    id("tiltakspenger-lib-conventions")
+}
+
 dependencies {
     implementation(project(":common"))
     implementation(project(":logging"))
@@ -13,5 +17,4 @@ dependencies {
     compileOnly(libs.ktor.server.test.host.jvm)
 
     testImplementation(project(":test-common"))
-
 }

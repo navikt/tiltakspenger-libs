@@ -4,8 +4,6 @@ import no.nav.tiltakspenger.libs.dato.desember
 import no.nav.tiltakspenger.libs.dato.januar
 import no.nav.tiltakspenger.libs.periode.Periode
 import java.time.LocalDate
-import kotlin.collections.find
-import kotlin.let
 
 class Satser {
     companion object {

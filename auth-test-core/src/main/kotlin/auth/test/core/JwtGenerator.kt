@@ -27,9 +27,9 @@ data class JwtGenerator(
                     "alg" to "RS256",
                     "kty" to "RSA",
                     "use" to "sig",
-                    "kid" to it.get("kid").asText(),
-                    "n" to it.get("n").asText(),
-                    "e" to it.get("e").asText(),
+                    "kid" to it.get("kid").asString(),
+                    "n" to it.get("n").asString(),
+                    "e" to it.get("e").asString(),
                 ),
             )
         }

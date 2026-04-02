@@ -4,9 +4,9 @@ dependencies {
     api(project(":logging"))
     api(project(":test-common"))
 
-    api("io.arrow-kt:arrow-core:2.2.2.1")
+    api(libs.arrow.core)
 
     // Auth
-    api("com.auth0:java-jwt:4.5.1")
-    api("com.auth0:jwks-rsa:0.23.0")
+    api(libs.auth0.java.jwt)
+    api(libs.auth0.jwks.rsa)
 }

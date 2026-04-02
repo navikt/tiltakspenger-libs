@@ -5,11 +5,11 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":personklient:personklient-domene"))
 
-    implementation("io.arrow-kt:arrow-core:2.2.2.1")
+    implementation(libs.arrow.core)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation(libs.kotlinx.coroutines.core)
 
-    implementation("com.github.ben-manes.caffeine:caffeine:3.2.3")
+    implementation(libs.caffeine)
 
     testImplementation(project(":test-common"))
 }

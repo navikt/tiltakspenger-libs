@@ -1,27 +1,25 @@
-val kotestVersion = "6.1.10"
-val mockkVersion = "1.14.9"
 dependencies {
     api(project(":common"))
     api(project(":persistering:persistering-domene"))
 
-    api("io.arrow-kt:arrow-core:2.2.2.1")
+    api(libs.arrow.core)
 
-    api("io.kotest:kotest-assertions-core:$kotestVersion")
-    api("io.kotest:kotest-assertions-json:$kotestVersion")
-    api("io.kotest:kotest-extensions:$kotestVersion")
+    api(libs.kotest.assertions.core)
+    api(libs.kotest.assertions.json)
+    api(libs.kotest.extensions)
 
-    api(platform("org.junit:junit-bom:6.0.3"))
+    api(platform(libs.junit.bom))
     api("org.junit.jupiter:junit-jupiter")
     api("org.junit.jupiter:junit-jupiter-params")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    api("io.mockk:mockk:$mockkVersion")
-    api("io.mockk:mockk-dsl-jvm:$mockkVersion")
+    api(libs.mockk)
+    api(libs.mockk.dsl.jvm)
 
-    api("org.wiremock:wiremock:3.13.2")
-    api("com.marcinziolo:kotlin-wiremock:2.1.1")
-    api("io.kotest.extensions:kotest-extensions-wiremock:3.1.0")
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.10.2")
+    api(libs.wiremock)
+    api(libs.kotlin.wiremock)
+    api(libs.kotest.extensions.wiremock)
+    api(libs.kotlinx.coroutines.test.jvm)
 
-    api("ch.qos.logback:logback-classic:1.5.32")
+    api(libs.logback.classic)
 }

@@ -1,14 +1,11 @@
-val jacksonAnnotationsVersion = "2.21"
-val ktorVersion = "3.4.2"
-
 dependencies {
-    implementation("com.fasterxml.jackson.core:jackson-annotations:$jacksonAnnotationsVersion")
-    implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-apache5:$ktorVersion")
-    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-jackson3:$ktorVersion")
-    implementation("io.ktor:ktor-server-auth:$ktorVersion")
-    implementation("io.arrow-kt:arrow-core:2.2.2.1")
+    implementation(libs.jackson.annotations)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.apache5)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.jackson3)
+    implementation(libs.ktor.server.auth)
+    implementation(libs.arrow.core)
     implementation(project(":logging"))
     implementation(project(":common"))
     implementation(project(":json"))
@@ -17,8 +14,8 @@ dependencies {
     testImplementation(project(":test-common"))
     testImplementation(project(":ktor-test-common"))
     testImplementation(project(":auth-test-core"))
-    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    testImplementation("io.ktor:ktor-client-mock:$ktorVersion")
-    testImplementation("io.arrow-kt:arrow-core-jackson:2.2.2.1")
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.ktor.server.content.negotiation)
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.arrow.core.jackson)
 }

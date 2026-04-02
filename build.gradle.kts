@@ -28,8 +28,10 @@ subprojects {
     apply(plugin = "java-library")
     apply(plugin = "com.diffplug.spotless")
 
+    val libs = rootProject.the<org.gradle.accessors.dm.LibrariesForLibs>()
+
     dependencies {
-        testImplementation(platform("org.junit:junit-bom:6.0.3"))
+        testImplementation(platform(libs.junit.bom))
         testImplementation("org.junit.jupiter:junit-jupiter")
         testImplementation("org.junit.jupiter:junit-jupiter-params")
         testRuntimeOnly("org.junit.platform:junit-platform-launcher")

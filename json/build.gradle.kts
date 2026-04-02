@@ -1,13 +1,11 @@
-val jacksonVersion = "3.1.1"
-val jacksonAnnotationsVersion = "2.21"
 dependencies {
     // Json
-    api("tools.jackson.core:jackson-databind:$jacksonVersion")
-    api("com.fasterxml.jackson.core:jackson-annotations:$jacksonAnnotationsVersion")
-    api("tools.jackson.core:jackson-core:$jacksonVersion")
-    api("tools.jackson.module:jackson-module-kotlin:$jacksonVersion")
-    implementation("io.arrow-kt:arrow-core:2.2.2.1")
-    implementation("io.arrow-kt:arrow-core-jackson:2.2.2.1")
+    api(libs.jackson.databind)
+    api(libs.jackson.annotations)
+    api(libs.jackson.core)
+    api(libs.jackson.module.kotlin)
+    implementation(libs.arrow.core)
+    implementation(libs.arrow.core.jackson)
 
     testImplementation(project(":test-common"))
 }

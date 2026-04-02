@@ -1,11 +1,8 @@
-val kafkaClientsVersion = "4.2.0"
-val testContainersVersion = "2.0.4"
-val kotlinxCoroutinesVersion = "1.10.2"
 dependencies {
     implementation(project(":logging"))
 
-    implementation("org.apache.kafka:kafka-clients:$kafkaClientsVersion")
-    implementation("org.testcontainers:testcontainers:$testContainersVersion")
-    implementation("org.testcontainers:testcontainers-kafka:$testContainersVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
+    implementation(libs.kafka.clients)
+    implementation(libs.testcontainers)
+    implementation(libs.testcontainers.kafka)
+    implementation(libs.kotlinx.coroutines.core)
 }

@@ -1,22 +1,20 @@
-val testContainersVersion = "2.0.4"
-
 dependencies {
     implementation(project(":logging"))
     implementation(project(":json"))
     implementation(project(":persistering:persistering-domene"))
-    implementation("io.arrow-kt:arrow-core:2.2.2.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-    implementation("com.github.seratch:kotliquery:1.9.1")
-    implementation("org.postgresql:r2dbc-postgresql:1.1.1.RELEASE")
+    implementation(libs.arrow.core)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotliquery)
+    implementation(libs.r2dbc.postgresql)
 
     testImplementation(project(":test-common"))
 
-    testImplementation("org.testcontainers:testcontainers:$testContainersVersion")
-    testImplementation("org.testcontainers:testcontainers-junit-jupiter:$testContainersVersion")
-    testImplementation("org.testcontainers:testcontainers-postgresql:$testContainersVersion")
-    testImplementation("org.testcontainers:testcontainers-r2dbc:$testContainersVersion")
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.testcontainers.junit.jupiter)
+    testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.testcontainers.r2dbc)
 
-    testImplementation("org.postgresql:postgresql:42.7.10")
+    testImplementation(libs.postgresql)
 }
 
 tasks.withType<Jar> {

@@ -1,7 +1,7 @@
 dependencies {
     implementation(project(":logging"))
-    implementation("io.arrow-kt:arrow-core:2.2.2.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation(libs.arrow.core)
+    implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(project(":test-common"))
 }

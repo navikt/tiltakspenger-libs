@@ -1,5 +1,5 @@
 dependencies {
-    api("io.github.oshai:kotlin-logging-jvm:8.0.01")
+    api(libs.kotlin.logging.jvm)
 
     testImplementation(project(":test-common"))
 }

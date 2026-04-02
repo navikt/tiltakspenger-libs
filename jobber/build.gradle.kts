@@ -1,15 +1,13 @@
-val ktorVersion = "3.4.2"
-val kotlinxCoroutinesVersion = "1.10.2"
 dependencies {
     implementation(project(":common"))
     implementation(project(":logging"))
     implementation(project(":json"))
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:${kotlinxCoroutinesVersion}")
-    implementation("io.arrow-kt:arrow-core:2.2.2.1")
-    implementation("org.jetbrains.kotlinx:atomicfu:0.32.1")
+    implementation(libs.kotlinx.coroutines.core.jvm)
+    implementation(libs.arrow.core)
+    implementation(libs.atomicfu)
 
-    implementation("io.ktor:ktor-utils:$ktorVersion")
+    implementation(libs.ktor.utils)
 
     testImplementation(project(":test-common"))
 }

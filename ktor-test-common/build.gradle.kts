@@ -1,17 +1,16 @@
-val ktorVersion = "3.4.2"
 dependencies {
     implementation(project(":common"))
     implementation(project(":logging"))
     implementation(project(":json"))
     implementation(project(":auth-test-core"))
 
-    implementation("io.arrow-kt:arrow-core:2.2.2.1")
+    implementation(libs.arrow.core)
 
     // Vi ønsker at konsumentene bruker sine egne versjoner av ktor
-    compileOnly("io.ktor:ktor-server-core:$ktorVersion")
-    compileOnly("io.ktor:ktor-server-core-jvm:$ktorVersion")
-    compileOnly("io.ktor:ktor-server-test-host:$ktorVersion")
-    compileOnly("io.ktor:ktor-server-test-host-jvm:$ktorVersion")
+    compileOnly(libs.ktor.server.core)
+    compileOnly(libs.ktor.server.core.jvm)
+    compileOnly(libs.ktor.server.test.host)
+    compileOnly(libs.ktor.server.test.host.jvm)
 
     testImplementation(project(":test-common"))
 

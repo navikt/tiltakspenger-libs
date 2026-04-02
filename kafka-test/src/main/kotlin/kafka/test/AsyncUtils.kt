@@ -2,27 +2,21 @@ package no.nav.tiltakspenger.libs.kafka.test
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.time.delay
+import java.time.Clock
 import java.time.Duration
-import java.time.LocalDateTime
-
-object AsyncUtils {
-    fun eventually(
-        until: Duration = Duration.ofSeconds(3),
-        interval: Duration = Duration.ofMillis(100),
-        func: () -> Unit,
-    ) = no.nav.tiltakspenger.libs.kafka.test.eventually(until, interval, func)
-}
+import java.time.Instant
 
 fun eventually(
     until: Duration = Duration.ofSeconds(3),
     interval: Duration = Duration.ofMillis(100),
+    clock: Clock,
     func: () -> Unit,
 ) = runBlocking {
-    val untilTime = LocalDateTime.now().plusNanos(until.toNanos())
+    val deadline = Instant.now(clock).plusNanos(until.toNanos())
 
     var throwable: Throwable = IllegalStateException()
 
-    while (LocalDateTime.now().isBefore(untilTime)) {
+    while (Instant.now(clock).isBefore(deadline)) {
         try {
             func()
             return@runBlocking

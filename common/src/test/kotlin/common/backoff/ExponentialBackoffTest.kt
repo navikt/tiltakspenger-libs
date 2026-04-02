@@ -2,10 +2,10 @@ package no.nav.tiltakspenger.libs.common.backoff
 
 import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.common.fixedClock
+import no.nav.tiltakspenger.libs.common.nå
 import no.nav.tiltakspenger.libs.common.plus
 import org.junit.jupiter.api.Test
 import java.time.Duration
-import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -29,49 +29,49 @@ internal class ExponentialBackoffTest {
 
     @Test
     fun `Skal prøve på nytt ved 0 forsøk`() {
-        val (shouldRetry, nextRetryTime) = LocalDateTime.now(fixedClock).shouldRetry(0, fixedClock)
+        val (shouldRetry, nextRetryTime) = nå(fixedClock).shouldRetry(0, fixedClock)
         shouldRetry shouldBe true
-        nextRetryTime shouldBe LocalDateTime.now(fixedClock)
+        nextRetryTime shouldBe nå(fixedClock)
     }
 
     @Test
     fun `Skal ikke forsøke på nytt ved 1 forsøk og mindre enn 1 minutt har passert`() {
         val clockAfter = fixedClock.plus(59, ChronoUnit.SECONDS)
-        val (shouldRetry, nextRetryTime) = LocalDateTime.now(fixedClock).shouldRetry(1, clockAfter)
+        val (shouldRetry, nextRetryTime) = nå(fixedClock).shouldRetry(1, clockAfter)
         shouldRetry shouldBe false
-        nextRetryTime shouldBe LocalDateTime.now(fixedClock).plus(delayTable[1L])
+        nextRetryTime shouldBe nå(fixedClock).plus(delayTable[1L])
     }
 
     @Test
     fun `Skal forsøke på nytt ved 1 forsøk og nøyaktig 1 minutt har passert`() {
         val clockAfter = fixedClock.plus(1, ChronoUnit.MINUTES)
-        val (shouldRetry, nextRetryTime) = LocalDateTime.now(fixedClock).shouldRetry(1, clockAfter)
+        val (shouldRetry, nextRetryTime) = nå(fixedClock).shouldRetry(1, clockAfter)
         shouldRetry shouldBe true
-        nextRetryTime shouldBe LocalDateTime.now(fixedClock).plus(delayTable[1L])
+        nextRetryTime shouldBe nå(fixedClock).plus(delayTable[1L])
     }
 
     @Test
     fun `Skal forsøke på nytt ved 1 forsøk og mer enn 1 minutt har passert`() {
         val clockAfter = fixedClock.plus(1, ChronoUnit.DAYS)
-        val (shouldRetry, nextRetryTime) = LocalDateTime.now(fixedClock).shouldRetry(1, clockAfter)
+        val (shouldRetry, nextRetryTime) = nå(fixedClock).shouldRetry(1, clockAfter)
         shouldRetry shouldBe true
-        nextRetryTime shouldBe LocalDateTime.now(fixedClock).plus(delayTable[1L])
+        nextRetryTime shouldBe nå(fixedClock).plus(delayTable[1L])
     }
 
     @Test
     fun `Skal ikke forsøke på nytt ved 2 forsøk og det mindre enn 5 minutt har passert`() {
         val clockAfter = fixedClock.plus(299, ChronoUnit.SECONDS)
-        val (shouldRetry, nextRetryTime) = LocalDateTime.now(fixedClock).shouldRetry(2, clockAfter)
+        val (shouldRetry, nextRetryTime) = nå(fixedClock).shouldRetry(2, clockAfter)
         shouldRetry shouldBe false
-        nextRetryTime shouldBe LocalDateTime.now(fixedClock).plus(delayTable[2L])
+        nextRetryTime shouldBe nå(fixedClock).plus(delayTable[2L])
     }
 
     @Test
     fun `Skal forsøke på nytt ved 2 forsøk og nøyaktig 5 minutt har passert`() {
         val clockAfter = fixedClock.plus(5, ChronoUnit.MINUTES)
-        val (shouldRetry, nextRetryTime) = LocalDateTime.now(fixedClock).shouldRetry(2, clockAfter)
+        val (shouldRetry, nextRetryTime) = nå(fixedClock).shouldRetry(2, clockAfter)
         shouldRetry shouldBe true
-        nextRetryTime shouldBe LocalDateTime.now(fixedClock).plus(delayTable[2L])
+        nextRetryTime shouldBe nå(fixedClock).plus(delayTable[2L])
     }
 
     @Test
@@ -79,16 +79,16 @@ internal class ExponentialBackoffTest {
         val clockAfter = fixedClock
             .plus(23, ChronoUnit.HOURS)
             .plus(59, ChronoUnit.MINUTES)
-        val (shouldRetry, nextRetryTime) = LocalDateTime.now(fixedClock).shouldRetry(11, clockAfter)
+        val (shouldRetry, nextRetryTime) = nå(fixedClock).shouldRetry(11, clockAfter)
         shouldRetry shouldBe false
-        nextRetryTime shouldBe LocalDateTime.now(fixedClock).plus(maxDelay)
+        nextRetryTime shouldBe nå(fixedClock).plus(maxDelay)
     }
 
     @Test
     fun `Skal forsøke på nytt om maks ventetid har passert`() {
         val clockAfter = fixedClock.plus(24, ChronoUnit.HOURS)
-        val (shouldRetry, nextRetryTime) = LocalDateTime.now(fixedClock).shouldRetry(11, clockAfter)
+        val (shouldRetry, nextRetryTime) = nå(fixedClock).shouldRetry(11, clockAfter)
         shouldRetry shouldBe true
-        nextRetryTime shouldBe LocalDateTime.now(fixedClock).plus(maxDelay)
+        nextRetryTime shouldBe nå(fixedClock).plus(maxDelay)
     }
 }

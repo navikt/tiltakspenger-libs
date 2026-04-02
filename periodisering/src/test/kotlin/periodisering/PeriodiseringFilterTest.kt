@@ -1,6 +1,8 @@
 package no.nav.tiltakspenger.libs.periodisering
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.fixedClock
+import no.nav.tiltakspenger.libs.common.nå
 import no.nav.tiltakspenger.libs.dato.januar
 import no.nav.tiltakspenger.libs.periode.Periode
 import no.nav.tiltakspenger.libs.periode.til
@@ -10,7 +12,7 @@ import java.time.LocalDateTime
 internal class PeriodiseringFilterTest {
     @Test
     fun `filtrer bort miderste element`() {
-        val opprettet = LocalDateTime.now()
+        val opprettet = nå(fixedClock)
         val elementA: PeriodeMedVerdi<Element> = PeriodeMedVerdi(
             Element(
                 "a",

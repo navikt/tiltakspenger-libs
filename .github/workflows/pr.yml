@@ -20,4 +20,4 @@ jobs:
         with:
           gradle-version: wrapper
       - shell: bash
-        run: ./gradlew build
+        run: ./gradlew spotlessCheck build

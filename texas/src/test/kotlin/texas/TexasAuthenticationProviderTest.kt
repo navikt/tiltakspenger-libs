@@ -25,6 +25,7 @@ import no.nav.tiltakspenger.libs.common.GenerellSystembruker
 import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
 import no.nav.tiltakspenger.libs.common.GenerellSystembrukerroller
 import no.nav.tiltakspenger.libs.common.Saksbehandlerrolle
+import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.json.objectMapper
 import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequest
 import no.nav.tiltakspenger.libs.texas.client.TexasClient
@@ -33,7 +34,8 @@ import org.junit.jupiter.api.Test
 import tools.jackson.module.kotlin.kotlinModule
 
 class TexasAuthenticationProviderTest {
-    val jwtGenerator = JwtGenerator()
+    val clock = fixedClock
+    val jwtGenerator = JwtGenerator(clock = clock)
     val texasClient = mockk<TexasClient>()
 
     @Test

@@ -25,7 +25,7 @@ internal class UlidTest {
     @Test
     fun `test fromString negativ test`() {
         val utenGyldigSkilletegn = "beh"
-        shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($utenGyldigSkilletegn), skal bestå av to deler skilt med _") {
+        shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($utenGyldigSkilletegn), skal bestå av prefiks + ulid") {
             BehandlingId.fromString(utenGyldigSkilletegn)
         }
 

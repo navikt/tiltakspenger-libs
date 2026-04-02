@@ -18,6 +18,7 @@ import no.nav.tiltakspenger.libs.texas.IdentityProvider
 import no.nav.tiltakspenger.libs.texas.log
 import tools.jackson.databind.DeserializationFeature
 import tools.jackson.module.kotlin.kotlinModule
+import java.time.Clock
 import java.time.Duration
 
 class TexasHttpClient(
@@ -39,6 +40,7 @@ class TexasHttpClient(
         }
         expectSuccess = false
     },
+    private val clock: Clock,
 ) : TexasClient {
     override suspend fun introspectToken(
         token: String,
@@ -86,7 +88,7 @@ class TexasHttpClient(
                     setBody(texasTokenRequest)
                 }
             val texasTokenResponse = response.body<TexasTokenResponse>()
-            return texasTokenResponse.toAccessToken()
+            return texasTokenResponse.toAccessToken(clock = clock)
         } catch (e: Exception) {
             if (e is ResponseException) {
                 log.error { "Kall for å hente token mot Texas feilet, responskode ${e.response.status}" }
@@ -114,7 +116,7 @@ class TexasHttpClient(
                     setBody(texasExchangeTokenRequest)
                 }
             val texasTokenResponse = response.body<TexasTokenResponse>()
-            return texasTokenResponse.toAccessToken()
+            return texasTokenResponse.toAccessToken(clock = clock)
         } catch (e: Exception) {
             if (e is ResponseException) {
                 log.error { "Kall for å veksle token mot Texas feilet, responskode ${e.response.status}" }

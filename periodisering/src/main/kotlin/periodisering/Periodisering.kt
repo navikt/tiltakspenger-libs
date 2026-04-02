@@ -97,13 +97,12 @@ interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
         val nyFørstePeriode = nyTotalPeriode.fraOgMedTil(this.perioder.first().fraOgMed.minusDays(1))
             ?.let { PeriodeMedVerdi(verdi, it) }
 
-        val perioderMedFylltInnHull = this.perioderMedVerdi.fold(mutableListOf<PeriodeMedVerdi<T>>()) { acc, current ->
-            val previous = acc.lastOrNull()
-            if (previous == null) {
-                acc.add(current)
-            } else {
-                if (!previous.periode.tilstøter(current.periode)) {
-                    acc.add(
+        val eksisterendePerioderMedVerdi = this.perioderMedVerdi
+        val perioderMedFylltInnHull = buildList<PeriodeMedVerdi<T>> {
+            for (current in eksisterendePerioderMedVerdi) {
+                val previous = lastOrNull()
+                if (previous != null && !previous.periode.tilstøter(current.periode)) {
+                    add(
                         PeriodeMedVerdi(
                             verdi,
                             Periode(
@@ -113,10 +112,8 @@ interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
                         ),
                     )
                 }
-                acc.add(current)
+                add(current)
             }
-
-            acc
         }
 
         val nySistePeriode = Periode(

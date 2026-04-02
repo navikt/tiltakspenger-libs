@@ -17,6 +17,6 @@ data class MeldekortId private constructor(private val ulid: UlidBase) : Ulid by
             return MeldekortId(ulid = UlidBase(stringValue))
         }
 
-        fun fromString(uuid: UUID) = MeldekortId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
+        fun fromUUID(uuid: UUID) = MeldekortId(ulid = UlidBase("${PREFIX}_${uuidToUlid(uuid)}"))
     }
 }

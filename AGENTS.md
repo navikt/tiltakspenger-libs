@@ -40,7 +40,7 @@ IDs follow a strict pattern: private constructor, `Ulid` delegation via `UlidBas
 Never use star imports. Always use explicit imports.
 
 ### Clocks
-Use `java.time.Clock` (not Kotlin's). In tests, use `fixedClock` or `TikkendeKlokke` from `test-common`.
+Use `java.time.Clock` (not Kotlin's). Never call `Instant.now()` or `nå()` without a `Clock` parameter — use `Instant.now(clock)` / `nå(clock)`. In tests, use `fixedClock` or `TikkendeKlokke` from `test-common`. Production code should accept `Clock` as a constructor/function parameter.
 
 ### JSON
 Use the shared `objectMapper` from the `json` module and its `serialize()`/`deserialize()` helpers. Do not create custom ObjectMapper instances.

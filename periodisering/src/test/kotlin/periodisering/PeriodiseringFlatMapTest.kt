@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.periodisering
 import arrow.core.nonEmptyListOf
 import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.common.fixedClock
+import no.nav.tiltakspenger.libs.common.nå
 import no.nav.tiltakspenger.libs.dato.januar
 import no.nav.tiltakspenger.libs.periode.Periode
 import no.nav.tiltakspenger.libs.periode.til
@@ -49,7 +50,7 @@ internal class PeriodiseringFlatMapTest {
         val periode3Del1 = 8 til 14.januar(2024)
         val periode3Del2 = 15 til 21.januar(2024)
 
-        val opprettet = LocalDateTime.now(fixedClock)
+        val opprettet = nå(fixedClock)
         val periodisering: Periodisering<Subperiode> = listOf(
             Subperiode(
                 "a",
@@ -105,7 +106,7 @@ internal class PeriodiseringFlatMapTest {
         val periode3Del1 = Periode(LocalDate.of(2024, 1, 7), LocalDate.of(2024, 1, 14))
         val periode3Del2 = Periode(LocalDate.of(2024, 1, 15), LocalDate.of(2024, 1, 22))
 
-        val opprettet = LocalDateTime.now()
+        val opprettet = nå(fixedClock)
         val periodisering: SammenhengendePeriodisering<Subperiode> = nonEmptyListOf(
             Subperiode(
                 "a",
@@ -135,7 +136,8 @@ internal class PeriodiseringFlatMapTest {
                 ),
             ),
         ).toTidslinje() as SammenhengendePeriodisering
-        val actual: SammenhengendePeriodisering<String> = periodisering.flatMapPeriodisering { it.verdi.subPeriode }.tilSammenhengendePeriodisering()
+        val actual: SammenhengendePeriodisering<String> =
+            periodisering.flatMapPeriodisering { it.verdi.subPeriode }.tilSammenhengendePeriodisering()
         actual.perioderMedVerdi.size shouldBe 4
         actual.perioderMedVerdi shouldBe listOf(
             PeriodeMedVerdi("aa", periode1Del1.minusTilOgMed(1)),

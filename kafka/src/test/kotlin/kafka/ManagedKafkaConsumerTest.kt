@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.kafka
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.kafka.config.LocalKafkaConfig
 import no.nav.tiltakspenger.libs.kafka.test.SingletonKafkaProvider
 import no.nav.tiltakspenger.libs.kafka.test.eventually
@@ -44,15 +45,19 @@ class ManagedKafkaConsumerTest {
         val key = "key"
         val value = "value"
         val cache = mutableMapOf<String, String>()
-
+        val clock = fixedClock
         produceStringString(ProducerRecord(topic, key, value))
 
-        val consumer = ManagedKafkaConsumer(topic = topic, config = stringConsumerConfig, delayTimeMillis = 1L) { k: String, v: String ->
+        val consumer = ManagedKafkaConsumer(
+            topic = topic,
+            config = stringConsumerConfig,
+            delayTimeMillis = 1L,
+        ) { k: String, v: String ->
             cache[k] = v
         }
         consumer.run()
 
-        eventually {
+        eventually(clock = clock) {
             cache[key] shouldBe value
             consumer.stop()
         }
@@ -64,7 +69,7 @@ class ManagedKafkaConsumerTest {
         val value = "value".toByteArray()
         val cache = mutableMapOf<UUID, ByteArray>()
         val uuidTopic = "uuid.topic"
-
+        val clock = fixedClock
         produceUUIDByteArray(ProducerRecord(uuidTopic, key, value))
 
         val config = LocalKafkaConfig(SingletonKafkaProvider.getHost())
@@ -74,12 +79,13 @@ class ManagedKafkaConsumerTest {
                 groupId = "test-consumer-${UUID.randomUUID()}",
             )
 
-        val consumer = ManagedKafkaConsumer(topic = uuidTopic, config = config, delayTimeMillis = 1L) { k: UUID, v: ByteArray ->
-            cache[k] = v
-        }
+        val consumer =
+            ManagedKafkaConsumer(topic = uuidTopic, config = config, delayTimeMillis = 1L) { k: UUID, v: ByteArray ->
+                cache[k] = v
+            }
         consumer.run()
 
-        eventually {
+        eventually(clock = clock) {
             cache[key] shouldBe value
             consumer.stop()
         }
@@ -89,18 +95,22 @@ class ManagedKafkaConsumerTest {
     fun `ManagedKafkaConsumer - prøver å konsumere melding på nytt hvis noe feiler`() {
         val key = "key"
         val value = "value"
-
+        val clock = fixedClock
         var antallGangerKallt = 0
 
         produceStringString(ProducerRecord(topic, key, value))
 
-        val consumer = ManagedKafkaConsumer<String, String>(topic = topic, config = stringConsumerConfig, delayTimeMillis = 1L) { _, _ ->
+        val consumer = ManagedKafkaConsumer<String, String>(
+            topic = topic,
+            config = stringConsumerConfig,
+            delayTimeMillis = 1L,
+        ) { _, _ ->
             antallGangerKallt++
             error("skal feile noen ganger")
         }
         consumer.run()
 
-        eventually {
+        eventually(clock = clock) {
             antallGangerKallt shouldBe 2
             consumer.status.retries shouldBe antallGangerKallt
             consumer.stop()
@@ -118,8 +128,12 @@ class ManagedKafkaConsumerTest {
         val data = (1..100).toList()
         val consumed = mutableListOf<Int>()
         val failures = mutableListOf(7, 42, 42, 93)
-
-        val consumer = ManagedKafkaConsumer<Int, Int>(topic = intTopic.name(), config = intConsumerConfig, delayTimeMillis = 1L) { k, _ ->
+        val clock = fixedClock
+        val consumer = ManagedKafkaConsumer<Int, Int>(
+            topic = intTopic.name(),
+            config = intConsumerConfig,
+            delayTimeMillis = 1L,
+        ) { k, _ ->
             if (k in failures) {
                 failures.remove(k)
                 error("Skal feile på $k")
@@ -133,7 +147,7 @@ class ManagedKafkaConsumerTest {
             produceIntInt(ProducerRecord(intTopic.name(), partition, it, it))
         }
 
-        eventually(Duration.ofSeconds(15)) {
+        eventually(Duration.ofSeconds(15), clock = clock) {
             // hvis vi leser flere meldinger av gangen vil antall konsumerte meldinger være større enn antall
             // produserte meldinger. Så lenge MAX_POLL_RECORDS=1 i consumerconfig skal disse være like.
             consumed.size shouldBe data.size
@@ -154,10 +168,14 @@ class ManagedKafkaConsumerTest {
         val firstValue = 1
         val lastValue = 2
         val data = keys.map { Pair(it, firstValue) } + keys.map { Pair(it, lastValue) }
-
+        val clock = fixedClock
         val consumed = mutableMapOf<Int, Int>()
         val failures = mutableListOf(7, 42, 42)
-        val consumer = ManagedKafkaConsumer<Int, Int>(topic = intTopic.name(), config = intConsumerConfig, delayTimeMillis = 1L) { k, v ->
+        val consumer = ManagedKafkaConsumer<Int, Int>(
+            topic = intTopic.name(),
+            config = intConsumerConfig,
+            delayTimeMillis = 1L,
+        ) { k, v ->
             if (k in failures) {
                 failures.remove(k)
                 error("Skal feile på $k")
@@ -175,7 +193,7 @@ class ManagedKafkaConsumerTest {
             produceIntInt(ProducerRecord(intTopic.name(), partition, it.first, it.second))
         }
 
-        eventually(Duration.ofSeconds(15)) {
+        eventually(Duration.ofSeconds(15), clock = clock) {
             consumed.values.toSet() shouldBe setOf(lastValue)
             consumer.stop()
         }

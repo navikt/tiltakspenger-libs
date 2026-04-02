@@ -1,7 +1,7 @@
 package no.nav.tiltakspenger.libs.person
 
+import io.kotest.matchers.nulls.shouldBeNull
 import org.junit.jupiter.api.Test
-import kotlin.test.assertNull
 
 internal class PersonResponsTest {
 
@@ -12,7 +12,7 @@ internal class PersonResponsTest {
             feil = null,
         )
 
-        assertNull(respons.person)
-        assertNull(respons.feil)
+        respons.person.shouldBeNull()
+        respons.feil.shouldBeNull()
     }
 }

@@ -275,24 +275,19 @@ fun List<Periode>.leggSammen(godtaOverlapp: Boolean = true): List<Periode> {
         throw IllegalArgumentException("Listen inneholder overlappende perioder")
     }
     if (this.size < 2) return this
-    return this
-        .sortedWith(compareBy(Periode::fraOgMed, Periode::tilOgMed))
-        .fold(mutableListOf()) { acc, periode ->
-            if (acc.isEmpty()) {
-                acc.add(periode)
+    return buildList {
+        for (periode in this@leggSammen.sortedWith(compareBy(Periode::fraOgMed, Periode::tilOgMed))) {
+            val last = lastOrNull()
+            if (last != null && (last.overlapperMed(periode) || last.tilstøter(periode))) {
+                this[size - 1] = Periode(
+                    fraOgMed = minOf(last.fraOgMed, periode.fraOgMed),
+                    tilOgMed = maxOf(last.tilOgMed, periode.tilOgMed),
+                )
             } else {
-                val last = acc.last()
-                if (last.overlapperMed(periode) || last.tilstøter(periode)) {
-                    acc[acc.size - 1] = Periode(
-                        fraOgMed = minOf(last.fraOgMed, periode.fraOgMed),
-                        tilOgMed = maxOf(last.tilOgMed, periode.tilOgMed),
-                    )
-                } else {
-                    acc.add(periode)
-                }
+                add(periode)
             }
-            acc
         }
+    }
 }
 
 fun List<Periode>.leggSammenMed(

@@ -17,11 +17,11 @@ data class UlidBase(
     }
 
     init {
-        require(stringValue.contains("_")) { "Ikke gyldig Id ($stringValue), skal bestå av to deler skilt med _" }
-        require(stringValue.split("_").size == 2) { "Ikke gyldig Id ($stringValue), skal bestå av prefiks + ulid" }
-        require(stringValue.split("_").first().isNotEmpty()) { "Ikke gyldig Id ($stringValue), prefiks er tom" }
+        val parts = stringValue.split("_")
+        require(parts.size == 2) { "Ikke gyldig Id ($stringValue), skal bestå av prefiks + ulid" }
+        require(parts[0].isNotEmpty()) { "Ikke gyldig Id ($stringValue), prefiks er tom" }
         try {
-            ULID.parseULID(stringValue.split("_").last())
+            ULID.parseULID(parts[1])
         } catch (e: Exception) {
             throw IllegalArgumentException("Ikke gyldig Id ($stringValue), ulid er ugyldig")
         }

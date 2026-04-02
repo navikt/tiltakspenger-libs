@@ -4,7 +4,7 @@ plugins {
 
 dependencies {
     api(project(":common"))
-    api(project(":persistering:persistering-domene"))
+    api(project(":persistering:persistering-test-common"))
 
     api(libs.arrow.core)
 

@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.common
 
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 
@@ -14,6 +15,6 @@ data class AccessToken(
     val invaliderCache: () -> Unit,
 ) {
     /** Trekker fra 30 sekunders slingringsmonn. */
-    fun remainingNanos(): Long = Duration.between(Instant.now(), expiresAt).minusSeconds(30).toNanos()
+    fun remainingNanos(clock: Clock): Long = Duration.between(Instant.now(clock), expiresAt).minusSeconds(30).toNanos()
     override fun toString() = "Access token: <REDACTED>"
 }

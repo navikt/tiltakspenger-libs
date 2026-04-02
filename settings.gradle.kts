@@ -13,6 +13,7 @@ include(
     "test-common",
     "persistering:persistering-infrastruktur",
     "persistering:persistering-domene",
+    "persistering:persistering-test-common",
     "auth-test-core",
     "json",
     "ktor-common",

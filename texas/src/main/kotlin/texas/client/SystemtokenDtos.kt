@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.texas.client
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import no.nav.tiltakspenger.libs.common.AccessToken
+import java.time.Clock
 import java.time.Instant
 
 data class TexasTokenRequest(
@@ -21,9 +22,9 @@ data class TexasTokenResponse(
     @param:JsonProperty("expires_in")
     val expiresInSeconds: Long,
 ) {
-    fun toAccessToken(): AccessToken =
+    fun toAccessToken(clock: Clock): AccessToken =
         AccessToken(
             token = accessToken,
-            expiresAt = Instant.now().plusSeconds(expiresInSeconds),
+            expiresAt = Instant.now(clock).plusSeconds(expiresInSeconds),
         ) {}
 }

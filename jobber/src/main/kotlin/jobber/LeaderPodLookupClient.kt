@@ -32,6 +32,8 @@ class LeaderPodLookupClient(
         .followRedirects(HttpClient.Redirect.NEVER)
         .build()
 
+    // Once we become leader, we cache it. Per NAIS docs, a leader keeps its role until the pod is deleted
+    // from the kubernetes cluster, so this short-circuit is safe.
     private val amITheLeader = atomic(false)
 
     override fun amITheLeader(localHostName: String): Either<LeaderPodLookupFeil, Boolean> {

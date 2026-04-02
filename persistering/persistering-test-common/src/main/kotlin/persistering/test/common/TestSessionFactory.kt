@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.common
+package no.nav.tiltakspenger.libs.persistering.test.common
 
 import io.kotest.assertions.AssertionErrorBuilder.Companion.fail
 import no.nav.tiltakspenger.libs.persistering.domene.SessionContext
@@ -64,7 +64,6 @@ class TestSessionFactory : SessionFactory {
 
     fun newTransactionContext() = transactionContext
 
-    // TODO jah: Denne er duplikat med den som ligger i database siden test-common ikke har en referanse til database-modulen.
     private class SessionCounter {
         private val activeSessionsPerThread: ThreadLocal<Int> = ThreadLocal()
 

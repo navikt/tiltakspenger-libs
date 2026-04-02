@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
 internal class SatserTest {
+    private val enDato = LocalDate.of(2025, 1, 1)
+
     @Test
     fun `skal returnere korrekt sats for 2023`() {
         listOf(1.januar(2023), 31.desember(2023)).forEach { dato ->
@@ -73,8 +75,8 @@ internal class SatserTest {
         shouldThrow<IllegalArgumentException> {
             Sats(
                 periode = Periode(
-                    fraOgMed = LocalDate.now(),
-                    tilOgMed = LocalDate.now(),
+                    fraOgMed = enDato,
+                    tilOgMed = enDato,
                 ),
                 sats = -1,
                 satsRedusert = 100,
@@ -86,8 +88,8 @@ internal class SatserTest {
         shouldThrow<IllegalArgumentException> {
             Sats(
                 periode = Periode(
-                    fraOgMed = LocalDate.now(),
-                    tilOgMed = LocalDate.now(),
+                    fraOgMed = enDato,
+                    tilOgMed = enDato,
                 ),
                 sats = 100,
                 satsRedusert = -1,
@@ -99,8 +101,8 @@ internal class SatserTest {
         shouldThrow<IllegalArgumentException> {
             Sats(
                 periode = Periode(
-                    fraOgMed = LocalDate.now(),
-                    tilOgMed = LocalDate.now(),
+                    fraOgMed = enDato,
+                    tilOgMed = enDato,
                 ),
                 sats = 100,
                 satsRedusert = 100,
@@ -112,8 +114,8 @@ internal class SatserTest {
         shouldThrow<IllegalArgumentException> {
             Sats(
                 periode = Periode(
-                    fraOgMed = LocalDate.now(),
-                    tilOgMed = LocalDate.now(),
+                    fraOgMed = enDato,
+                    tilOgMed = enDato,
                 ),
                 sats = 100,
                 satsRedusert = 100,

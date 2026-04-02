@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.common.backoff
 
+import no.nav.tiltakspenger.libs.common.nå
 import java.time.Clock
 import java.time.LocalDateTime
 import kotlin.time.Duration
@@ -28,7 +29,7 @@ fun LocalDateTime.shouldRetry(
     val delayDuration = delayTable[count]?.coerceAtMost(maxDelay) ?: maxDelay
     val nextRetryTime = this.plus(delayDuration.toJavaDuration())
     return Pair<Boolean, LocalDateTime>(
-        LocalDateTime.now(clock) >= nextRetryTime,
+        nå(clock) >= nextRetryTime,
         nextRetryTime,
     )
 }

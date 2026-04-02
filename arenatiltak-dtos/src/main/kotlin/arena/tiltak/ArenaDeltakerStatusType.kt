@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.arena.tiltak
 
 import no.nav.tiltakspenger.libs.tiltak.TiltakResponsDTO
+import java.time.Clock
 import java.time.LocalDate
 
 enum class ArenaDeltakerStatusType(val navn: String) {
@@ -21,8 +22,11 @@ enum class ArenaDeltakerStatusType(val navn: String) {
     FEILREG("Feilregistrert"),
 }
 
-fun ArenaDeltakerStatusType.toDTO(fom: LocalDate?): TiltakResponsDTO.DeltakerStatusDTO {
-    val startdatoErFremITid = fom == null || fom.isAfter(LocalDate.now())
+fun ArenaDeltakerStatusType.toDTO(
+    fom: LocalDate?,
+    clock: Clock,
+): TiltakResponsDTO.DeltakerStatusDTO {
+    val startdatoErFremITid = fom == null || fom.isAfter(LocalDate.now(clock))
 
     return when (this) {
         ArenaDeltakerStatusType.DELAVB -> TiltakResponsDTO.DeltakerStatusDTO.AVBRUTT

@@ -9,6 +9,7 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeTypeOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.AccessToken
+import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.DeserializationException
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.UkjentFeil
 import no.nav.tiltakspenger.libs.personklient.pdl.common.withWireMockServer
@@ -18,7 +19,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 internal class FellesHttpPersonklientTest {
 
-    private val token = AccessToken("token", Instant.now().plusSeconds(3600)) {}
+    private val token = AccessToken("token", Instant.now(fixedClock).plusSeconds(3600)) {}
 
     @Test
     fun `should be able to serialize non-errors`() {

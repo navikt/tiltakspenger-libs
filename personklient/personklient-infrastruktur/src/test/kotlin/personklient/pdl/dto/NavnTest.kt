@@ -3,11 +3,14 @@ package no.nav.tiltakspenger.libs.personklient.pdl.dto
 import arrow.core.left
 import arrow.core.right
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.fixedClock
+import no.nav.tiltakspenger.libs.common.nå
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError
 import org.junit.jupiter.api.Test
-import java.time.LocalDateTime
 
 internal class NavnTest {
+    private val nå = nå(fixedClock)
+
     @Test
     fun `skal ikke kunne avklare navn når det kommer fra bruker selv`() {
         val avklartNavn = avklarNavn(
@@ -20,7 +23,7 @@ internal class NavnTest {
                         endringer = listOf(
                             Endring(
                                 kilde = Kilde.BRUKER_SELV,
-                                registrert = LocalDateTime.now(),
+                                registrert = nå,
                                 systemkilde = "lol",
                                 registrertAv = "qwe",
                                 type = "OPPRETT",
@@ -30,8 +33,8 @@ internal class NavnTest {
                     folkeregistermetadata = FolkeregisterMetadata(
                         kilde = Kilde.PDL,
                         sekvens = 1,
-                        gyldighetstidspunkt = LocalDateTime.now(),
-                        ajourholdstidspunkt = LocalDateTime.now(),
+                        gyldighetstidspunkt = nå,
+                        ajourholdstidspunkt = nå,
                         aarsak = null,
                         opphoerstidspunkt = null,
                     ),
@@ -52,7 +55,7 @@ internal class NavnTest {
                 endringer = listOf(
                     Endring(
                         kilde = Kilde.FREG,
-                        registrert = LocalDateTime.now(),
+                        registrert = nå,
                         systemkilde = "lol",
                         registrertAv = "qwe",
                         type = "OPPRETT",
@@ -62,8 +65,8 @@ internal class NavnTest {
             folkeregistermetadata = FolkeregisterMetadata(
                 kilde = Kilde.FREG,
                 sekvens = 1,
-                gyldighetstidspunkt = LocalDateTime.now(),
-                ajourholdstidspunkt = LocalDateTime.now(),
+                gyldighetstidspunkt = nå,
+                ajourholdstidspunkt = nå,
                 aarsak = null,
                 opphoerstidspunkt = null,
             ),

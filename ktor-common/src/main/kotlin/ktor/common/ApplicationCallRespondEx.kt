@@ -46,7 +46,9 @@ suspend inline fun <reified T : Any> ApplicationCall.respondJson(
 suspend inline fun ApplicationCall.respondJson(
     value: String,
     status: HttpStatusCode = HttpStatusCode.OK,
-): Nothing = error("Bruk respondJson(json = ...) for ferdigserialiserte strenger")
+): Nothing {
+    error("Bruk respondJson(json = ...) for ferdigserialiserte strenger")
+}
 
 suspend inline fun ApplicationCall.respondStatus(status: HttpStatusCode) {
     this.respondText("", status = status)

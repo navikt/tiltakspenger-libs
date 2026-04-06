@@ -12,183 +12,207 @@ import org.junit.jupiter.api.Test
 internal class ApplicationCallRespondExTest {
 
     @Test
-    fun `respondStatus returns correct status with empty body`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondStatus(HttpStatusCode.Accepted)
+    fun `respondStatus returns correct status with empty body`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondStatus(HttpStatusCode.Accepted)
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.Accepted
+            response.headers["Content-Type"] shouldBe "text/plain; charset=UTF-8"
+            response.bodyAsText() shouldBe ""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.Accepted
-        response.headers["Content-Type"] shouldBe "text/plain; charset=UTF-8"
-        response.bodyAsText() shouldBe ""
     }
 
     @Test
-    fun `respondOk returns 200 with empty body`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondOk()
+    fun `respondOk returns 200 with empty body`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondOk()
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.OK
+            response.headers["Content-Type"] shouldBe "text/plain; charset=UTF-8"
+            response.bodyAsText() shouldBe ""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.OK
-        response.headers["Content-Type"] shouldBe "text/plain; charset=UTF-8"
-        response.bodyAsText() shouldBe ""
     }
 
     @Test
-    fun `respondNoContent returns 204 with empty body`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondNoContent()
+    fun `respondNoContent returns 204 with empty body`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondNoContent()
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.NoContent
+            response.headers["Content-Type"] shouldBe "text/plain; charset=UTF-8"
+            response.bodyAsText() shouldBe ""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.NoContent
-        response.headers["Content-Type"] shouldBe "text/plain; charset=UTF-8"
-        response.bodyAsText() shouldBe ""
     }
 
     @Test
-    fun `respondJsonString with plain json-string`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondJsonString(json = """"my-string"""")
+    fun `respondJsonString with plain json-string`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondJsonString(json = """"my-string"""")
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.OK
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """"my-string""""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.OK
-        response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
-        response.bodyAsText() shouldEqualJson """"my-string""""
     }
 
     @Test
-    fun `respondJsonString with string returns correct response`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondJsonString(json = """{"key":"value"}""")
+    fun `respondJsonString with string returns correct response`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondJsonString(json = """{"key":"value"}""")
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.OK
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """{"key":"value"}"""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.OK
-        response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
-        response.bodyAsText() shouldEqualJson """{"key":"value"}"""
     }
 
     @Test
-    fun `respondJsonString with string and custom status returns correct response`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondJsonString(json = """{"key":"value"}""", HttpStatusCode.Created)
+    fun `respondJsonString with string and custom status returns correct response`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondJsonString(json = """{"key":"value"}""", HttpStatusCode.Created)
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.Created
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """{"key":"value"}"""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.Created
-        response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
-        response.bodyAsText() shouldEqualJson """{"key":"value"}"""
     }
 
     @Test
-    fun `respondJson with object returns correct response`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondJson(value = TestResponseBody("test", 42))
+    fun `respondJson with object returns correct response`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondJson(value = TestResponseBody("test", 42))
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.OK
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """{"name":"test","value":42}"""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.OK
-        response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
-        response.bodyAsText() shouldEqualJson """{"name":"test","value":42}"""
     }
 
     @Test
-    fun `respondJson with object and custom status returns correct response`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondJson(value = TestResponseBody("test", 42), HttpStatusCode.Created)
+    fun `respondJson with object and custom status returns correct response`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondJson(value = TestResponseBody("test", 42), HttpStatusCode.Created)
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.Created
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """{"name":"test","value":42}"""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.Created
-        response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
-        response.bodyAsText() shouldEqualJson """{"name":"test","value":42}"""
     }
 
     @Test
-    fun `respondJson with Pair returns correct response`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondJson(HttpStatusCode.Accepted to TestResponseBody("test", 42))
+    fun `respondJson with Pair returns correct response`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondJson(HttpStatusCode.Accepted to TestResponseBody("test", 42))
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.Accepted
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """{"name":"test","value":42}"""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.Accepted
-        response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
-        response.bodyAsText() shouldEqualJson """{"name":"test","value":42}"""
     }
 
     @Test
-    fun `respondJson with list returns correct response`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondJson(listOf(TestResponseBody("a", 1), TestResponseBody("b", 2)))
+    fun `respondJson with list returns correct response`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondJson(listOf(TestResponseBody("a", 1), TestResponseBody("b", 2)))
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.OK
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """[{"name":"a","value":1},{"name":"b","value":2}]"""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.OK
-        response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
-        response.bodyAsText() shouldEqualJson """[{"name":"a","value":1},{"name":"b","value":2}]"""
     }
 
     @Test
-    fun `respondJson with list with custom status returns correct response`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondJson(listOf(TestResponseBody("a", 1)), HttpStatusCode.Created)
+    fun `respondJson with list with custom status returns correct response`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondJson(listOf(TestResponseBody("a", 1)), HttpStatusCode.Created)
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.Created
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """[{"name":"a","value":1}]"""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.Created
-        response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
-        response.bodyAsText() shouldEqualJson """[{"name":"a","value":1}]"""
     }
 
     @Test
-    fun `respondJson with empty list returns correct response`() = testApplication {
-        routing {
-            get("/test") {
-                call.respondJson(emptyList<TestResponseBody>())
+    fun `respondJson with empty list returns correct response`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    call.respondJson(emptyList<TestResponseBody>())
+                }
             }
+
+            val response = client.get("/test")
+
+            response.status shouldBe HttpStatusCode.OK
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """[]"""
         }
-
-        val response = client.get("/test")
-
-        response.status shouldBe HttpStatusCode.OK
-        response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
-        response.bodyAsText() shouldEqualJson """[]"""
     }
 
     private data class TestResponseBody(

@@ -13,9 +13,6 @@ import no.nav.tiltakspenger.libs.common.VedtakId
 import no.nav.tiltakspenger.libs.json.deserialize
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 
-// Må være public pga. inline
-val DEFAULT_APPLICATION_CALL_EX_LOGGER: KLogger by lazy { KotlinLogging.logger {} }
-
 /**
  * @param logger Send inn null dersom du ikke ønsker logge.
  * @param loggTilSikkerlogg defaulter til det samme som [logger]
@@ -40,6 +37,8 @@ suspend inline fun <reified T> ApplicationCall.parseBody(
 }
 
 /**
+ * @param errorMessage denne svares ut og logges - ikke send inn noe personsensitivt
+ * @param errorCode denne svares ut og logges - ikke send inn noe personsensitivt
  * @param logger dersom null logges ikke noe
  * @param loggTilSikkerlogg dersom true, logges parameterverdien til Sikkerlogg ved feil
  */
@@ -74,14 +73,16 @@ fun <T> ApplicationCall.parseParam(
 fun ApplicationCall.parseBehandlingId(
     logger: KLogger? = DEFAULT_APPLICATION_CALL_EX_LOGGER,
     loggTilSikkerlogg: Boolean = logger != null,
-): Either<ErrorJson, BehandlingId> = parseParam(
-    paramName = "behandlingId",
-    parse = BehandlingId::fromString,
-    errorMessage = "Ugyldig behandling id",
-    errorCode = "ugyldig_behandling_id",
-    logger = logger,
-    loggTilSikkerlogg = loggTilSikkerlogg,
-)
+): Either<ErrorJson, BehandlingId> {
+    return parseParam(
+        paramName = "behandlingId",
+        parse = BehandlingId::fromString,
+        errorMessage = "Ugyldig behandling id",
+        errorCode = "ugyldig_behandling_id",
+        logger = logger,
+        loggTilSikkerlogg = loggTilSikkerlogg,
+    )
+}
 
 /**
  * @param logger dersom null logges ikke noe
@@ -90,14 +91,16 @@ fun ApplicationCall.parseBehandlingId(
 fun ApplicationCall.parseSakId(
     logger: KLogger? = DEFAULT_APPLICATION_CALL_EX_LOGGER,
     loggTilSikkerlogg: Boolean = logger != null,
-): Either<ErrorJson, SakId> = parseParam(
-    paramName = "sakId",
-    parse = SakId::fromString,
-    errorMessage = "Ugyldig sak id",
-    errorCode = "ugyldig_sak_id",
-    logger = logger,
-    loggTilSikkerlogg = loggTilSikkerlogg,
-)
+): Either<ErrorJson, SakId> {
+    return parseParam(
+        paramName = "sakId",
+        parse = SakId::fromString,
+        errorMessage = "Ugyldig sak id",
+        errorCode = "ugyldig_sak_id",
+        logger = logger,
+        loggTilSikkerlogg = loggTilSikkerlogg,
+    )
+}
 
 /**
  * @param logger dersom null logges ikke noe
@@ -106,14 +109,16 @@ fun ApplicationCall.parseSakId(
 fun ApplicationCall.parseSøknadId(
     logger: KLogger? = DEFAULT_APPLICATION_CALL_EX_LOGGER,
     loggTilSikkerlogg: Boolean = logger != null,
-): Either<ErrorJson, SøknadId> = parseParam(
-    paramName = "søknadId",
-    parse = SøknadId::fromString,
-    errorMessage = "Ugyldig søknad id",
-    errorCode = "ugyldig_søknad_id",
-    logger = logger,
-    loggTilSikkerlogg = loggTilSikkerlogg,
-)
+): Either<ErrorJson, SøknadId> {
+    return parseParam(
+        paramName = "søknadId",
+        parse = SøknadId::fromString,
+        errorMessage = "Ugyldig søknad id",
+        errorCode = "ugyldig_søknad_id",
+        logger = logger,
+        loggTilSikkerlogg = loggTilSikkerlogg,
+    )
+}
 
 /**
  * @param logger dersom null logges ikke noe
@@ -122,14 +127,16 @@ fun ApplicationCall.parseSøknadId(
 fun ApplicationCall.parseMeldekortId(
     logger: KLogger? = DEFAULT_APPLICATION_CALL_EX_LOGGER,
     loggTilSikkerlogg: Boolean = logger != null,
-): Either<ErrorJson, MeldekortId> = parseParam(
-    paramName = "meldekortId",
-    parse = MeldekortId::fromString,
-    errorMessage = "Ugyldig meldekort id",
-    errorCode = "ugyldig_meldekort_id",
-    logger = logger,
-    loggTilSikkerlogg = loggTilSikkerlogg,
-)
+): Either<ErrorJson, MeldekortId> {
+    return parseParam(
+        paramName = "meldekortId",
+        parse = MeldekortId::fromString,
+        errorMessage = "Ugyldig meldekort id",
+        errorCode = "ugyldig_meldekort_id",
+        logger = logger,
+        loggTilSikkerlogg = loggTilSikkerlogg,
+    )
+}
 
 /**
  * @param logger dersom null logges ikke noe
@@ -138,11 +145,13 @@ fun ApplicationCall.parseMeldekortId(
 fun ApplicationCall.parseVedtakId(
     logger: KLogger? = DEFAULT_APPLICATION_CALL_EX_LOGGER,
     loggTilSikkerlogg: Boolean = logger != null,
-): Either<ErrorJson, VedtakId> = parseParam(
-    paramName = "vedtakId",
-    parse = VedtakId::fromString,
-    errorMessage = "Ugyldig vedtak id",
-    errorCode = "ugyldig_vedtak_id",
-    logger = logger,
-    loggTilSikkerlogg = loggTilSikkerlogg,
-)
+): Either<ErrorJson, VedtakId> {
+    return parseParam(
+        paramName = "vedtakId",
+        parse = VedtakId::fromString,
+        errorMessage = "Ugyldig vedtak id",
+        errorCode = "ugyldig_vedtak_id",
+        logger = logger,
+        loggTilSikkerlogg = loggTilSikkerlogg,
+    )
+}

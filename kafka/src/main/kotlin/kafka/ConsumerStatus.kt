@@ -3,7 +3,10 @@ package no.nav.tiltakspenger.libs.kafka
 import no.nav.tiltakspenger.libs.kafka.config.MAX_POLL_INTERVAL_MS
 import kotlin.math.min
 
-class ConsumerStatus {
+class ConsumerStatus(
+    private val baseDelayMillis: Long = 500L,
+    private val initialDelayMillis: Long = 1000L,
+) {
     companion object {
         const val MAX_DELAY = MAX_POLL_INTERVAL_MS - 60_000L
     }
@@ -16,7 +19,7 @@ class ConsumerStatus {
 
     val backoffDuration: Long
         get() {
-            val delay = 500 * retries * retries + 1000L
+            val delay = baseDelayMillis * retries * retries + initialDelayMillis
             return min(delay, MAX_DELAY)
         }
 

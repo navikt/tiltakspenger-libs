@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.kafka
 
+import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -10,33 +11,37 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.errors.WakeupException
 import java.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 class ManagedKafkaConsumer<K, V>(
     private val kanLoggeKey: Boolean = true,
     private val topic: String,
     private val config: Map<String, *>,
     private val delayTimeMillis: Long = 10_000,
+    private val pollDuration: Duration = Duration.ofSeconds(1),
+    baseBackoffDelayMillis: Long = 500L,
+    initialBackoffDelayMillis: Long = 1000L,
+    private val log: KLogger? = KotlinLogging.logger {},
     private val consume: suspend (key: K, value: V) -> Unit,
 ) {
-    private val log = KotlinLogging.logger {}
     private val job = Job()
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
     private var running = false
 
-    val status: ConsumerStatus = ConsumerStatus()
+    val status: ConsumerStatus = ConsumerStatus(
+        baseDelayMillis = baseBackoffDelayMillis,
+        initialDelayMillis = initialBackoffDelayMillis,
+    )
 
     init {
         Runtime.getRuntime().addShutdownHook(
-            Thread {
-                log.info { "Shutting down Kafka consumer" }
-                stop()
-            },
+            Thread { stop() },
         )
     }
 
     fun run() = scope.launch {
-        log.info { "Starting consumer for topic: $topic" }
+        log?.info { "Starting consumer for topic: $topic" }
         running = true
 
         KafkaConsumer<K, V>(config).use { consumer ->
@@ -47,7 +52,7 @@ class ManagedKafkaConsumer<K, V>(
     fun start() = run()
 
     fun stop() {
-        log.info { "Stopping consumer for topic: $topic" }
+        log?.info { "Stopping consumer for topic: $topic" }
         running = false
     }
 
@@ -56,13 +61,13 @@ class ManagedKafkaConsumer<K, V>(
             try {
                 consumer.subscribe(listOf(topic))
                 poll(consumer)
-            } catch (e: WakeupException) {
-                log.info { "Consumer for $topic is exiting" }
+            } catch (_: WakeupException) {
+                log?.info { "Consumer for $topic is exiting" }
                 stop()
             } catch (t: Throwable) {
-                log.error(t) { "Something went wrong with consumer for topic $topic" }
+                log?.error(t) { "Something went wrong with consumer for topic $topic" }
                 consumer.unsubscribe()
-                delay(delayTimeMillis)
+                delay(delayTimeMillis.milliseconds)
             }
         }
     }
@@ -70,17 +75,17 @@ class ManagedKafkaConsumer<K, V>(
     private suspend fun poll(consumer: KafkaConsumer<K, V>) {
         while (running) {
             if (status.isFailure) {
-                log.info {
+                log?.info {
                     "Consumer status for topic $topic is failure, " +
                         "delaying ${status.backoffDuration}ms before retrying"
                 }
-                delay(status.backoffDuration)
+                delay(status.backoffDuration.milliseconds)
             }
 
             try {
-                val records = consumer.poll(Duration.ofMillis(1000))
+                val records = consumer.poll(pollDuration)
                 if (!records.isEmpty) {
-                    log.debug { "Consumer for $topic polled ${records.count()} records." }
+                    log?.debug { "Consumer for $topic polled ${records.count()} records." }
                 }
 
                 records.forEach { record ->
@@ -92,7 +97,7 @@ class ManagedKafkaConsumer<K, V>(
                 // records i en poll
                 consumer.commitSync()
             } catch (t: Throwable) {
-                log.error(t) { t.message }
+                log?.error(t) { t.message }
                 status.failure()
                 throw t
             }
@@ -108,7 +113,7 @@ class ManagedKafkaConsumer<K, V>(
         }
         try {
             consume(record.key(), record.value())
-            log.debug {
+            log?.debug {
                 "Consumed record for " +
                     "topic=${record.topic()} " +
                     keyLogStatement +

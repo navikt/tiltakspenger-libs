@@ -78,7 +78,7 @@ class TestDatabaseManager<T>(
 
     fun withMigratedDb(
         runIsolated: Boolean = false,
-        clock: TikkendeKlokke = TikkendeKlokke(),
+        clock: Clock = TikkendeKlokke(),
         test: (SessionFactory, T, Clock) -> Unit,
     ) {
         if (runIsolated) {

@@ -8,6 +8,18 @@ plugins {
     id("com.diffplug.spotless")
 }
 
+// Shared build service that limits Spotless/ktlint tasks to 1 concurrent execution,
+// preventing the flaky InvocationTargetException caused by parallel ktlint initialization.
+abstract class SpotlessLimiter : BuildService<BuildServiceParameters.None>
+
+val spotlessLimiter = gradle.sharedServices.registerIfAbsent("spotlessLimiter", SpotlessLimiter::class.java) {
+    maxParallelUsages.set(1)
+}
+
+tasks.matching { it.name.startsWith("spotless") }.configureEach {
+    usesService(spotlessLimiter)
+}
+
 val javaVersion = JavaVersion.VERSION_21
 val jvmVersion = JvmTarget.JVM_21
 

@@ -11,7 +11,7 @@ data class BehandlingId private constructor(
     private val ulid: UlidBase,
 ) : Ulid by ulid {
     companion object {
-        private const val PREFIX = "beh"
+        const val PREFIX = "beh"
 
         fun random() = BehandlingId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
 

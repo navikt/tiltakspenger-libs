@@ -9,7 +9,7 @@ import java.util.UUID
  */
 data class MeldekortId private constructor(private val ulid: UlidBase) : Ulid by ulid {
     companion object {
-        private const val PREFIX = "meldekort"
+        const val PREFIX = "meldekort"
         fun random() = MeldekortId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))
 
         fun fromString(stringValue: String): MeldekortId {

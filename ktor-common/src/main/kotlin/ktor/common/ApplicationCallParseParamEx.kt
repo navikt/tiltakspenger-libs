@@ -7,6 +7,7 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveText
 import no.nav.tiltakspenger.libs.common.BehandlingId
 import no.nav.tiltakspenger.libs.common.MeldekortId
+import no.nav.tiltakspenger.libs.common.RammebehandlingId
 import no.nav.tiltakspenger.libs.common.SakId
 import no.nav.tiltakspenger.libs.common.SøknadId
 import no.nav.tiltakspenger.libs.common.VedtakId
@@ -77,6 +78,24 @@ fun ApplicationCall.parseBehandlingId(
     return parseParam(
         paramName = "behandlingId",
         parse = BehandlingId::fromString,
+        errorMessage = "Ugyldig behandling id",
+        errorCode = "ugyldig_behandling_id",
+        logger = logger,
+        loggTilSikkerlogg = loggTilSikkerlogg,
+    )
+}
+
+/**
+ * @param logger dersom null logges ikke noe
+ * @param loggTilSikkerlogg dersom true, logges parameterverdien til Sikkerlogg ved feil
+ */
+fun ApplicationCall.parseRammebehandlingId(
+    logger: KLogger? = DEFAULT_APPLICATION_CALL_EX_LOGGER,
+    loggTilSikkerlogg: Boolean = logger != null,
+): Either<ErrorJson, RammebehandlingId> {
+    return parseParam(
+        paramName = "behandlingId",
+        parse = RammebehandlingId::fromString,
         errorMessage = "Ugyldig behandling id",
         errorCode = "ugyldig_behandling_id",
         logger = logger,

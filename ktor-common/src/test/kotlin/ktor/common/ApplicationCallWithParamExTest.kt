@@ -197,12 +197,51 @@ internal class ApplicationCallWithParamExTest {
     }
 
     @Test
+    fun `withRammebehandlingId returns 400 when behandlingId is invalid`() {
+        testApplication {
+            routing {
+                get("/test/{behandlingId}") {
+                    call.withRammebehandlingId { behandlingId ->
+                        call.respondJsonString(json = """{"behandlingId":"$behandlingId"}""")
+                    }
+                }
+            }
+
+            val response = client.get("/test/invalid-uuid")
+
+            response.status shouldBe HttpStatusCode.BadRequest
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """{"melding":"Ugyldig behandling id","kode":"ugyldig_behandling_id"}"""
+        }
+    }
+
+    @Test
     fun `withBehandlingId calls onRight with valid behandlingId`() {
         testApplication {
             val behandlingId = BehandlingId.random()
             routing {
                 get("/test/{behandlingId}") {
                     call.withBehandlingId { behandlingId ->
+                        call.respondJsonString(json = """{"behandlingId":"$behandlingId"}""")
+                    }
+                }
+            }
+
+            val response = client.get("/test/$behandlingId")
+
+            response.status shouldBe HttpStatusCode.OK
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """{"behandlingId":"$behandlingId"}"""
+        }
+    }
+
+    @Test
+    fun `withRammebehandlingId calls onRight with valid behandlingId`() {
+        testApplication {
+            val behandlingId = BehandlingId.random()
+            routing {
+                get("/test/{behandlingId}") {
+                    call.withRammebehandlingId { behandlingId ->
                         call.respondJsonString(json = """{"behandlingId":"$behandlingId"}""")
                     }
                 }
@@ -455,6 +494,26 @@ internal class ApplicationCallWithParamExTest {
             routing {
                 get("/test/{behandlingId}") {
                     call.withBehandlingId(logger = null) { id ->
+                        call.respondJsonString(json = """{"behandlingId":"$id"}""")
+                    }
+                }
+            }
+
+            val response = client.get("/test/$behandlingId")
+
+            response.status shouldBe HttpStatusCode.OK
+            response.headers["Content-Type"] shouldBe "application/json; charset=UTF-8"
+            response.bodyAsText() shouldEqualJson """{"behandlingId":"$behandlingId"}"""
+        }
+    }
+
+    @Test
+    fun `withRammebehandlingId with null logger works correctly`() {
+        testApplication {
+            val behandlingId = BehandlingId.random()
+            routing {
+                get("/test/{behandlingId}") {
+                    call.withRammebehandlingId(logger = null) { id ->
                         call.respondJsonString(json = """{"behandlingId":"$id"}""")
                     }
                 }

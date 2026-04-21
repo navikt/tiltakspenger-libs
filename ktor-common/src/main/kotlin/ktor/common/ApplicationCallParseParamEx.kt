@@ -2,10 +2,8 @@ package no.nav.tiltakspenger.libs.ktor.common
 
 import arrow.core.Either
 import io.github.oshai.kotlinlogging.KLogger
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveText
-import no.nav.tiltakspenger.libs.common.BehandlingId
 import no.nav.tiltakspenger.libs.common.MeldekortId
 import no.nav.tiltakspenger.libs.common.RammebehandlingId
 import no.nav.tiltakspenger.libs.common.SakId
@@ -65,24 +63,6 @@ fun <T> ApplicationCall.parseParam(
         }
         ErrorJson(melding = errorMessage, kode = errorCode)
     }
-}
-
-/**
- * @param logger dersom null logges ikke noe
- * @param loggTilSikkerlogg dersom true, logges parameterverdien til Sikkerlogg ved feil
- */
-fun ApplicationCall.parseBehandlingId(
-    logger: KLogger? = DEFAULT_APPLICATION_CALL_EX_LOGGER,
-    loggTilSikkerlogg: Boolean = logger != null,
-): Either<ErrorJson, BehandlingId> {
-    return parseParam(
-        paramName = "behandlingId",
-        parse = BehandlingId::fromString,
-        errorMessage = "Ugyldig behandling id",
-        errorCode = "ugyldig_behandling_id",
-        logger = logger,
-        loggTilSikkerlogg = loggTilSikkerlogg,
-    )
 }
 
 /**

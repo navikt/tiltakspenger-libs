@@ -5,7 +5,8 @@ import java.util.UUID
 
 data class RammebehandlingId private constructor(
     private val ulid: UlidBase,
-) : Ulid by ulid {
+) : BehandlingId,
+    Ulid by ulid {
     companion object {
         const val PREFIX = "beh"
 

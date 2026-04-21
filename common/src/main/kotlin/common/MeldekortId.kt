@@ -4,10 +4,12 @@ import ulid.ULID
 import java.util.UUID
 
 /**
- * Brukes for meldekortbehandlinger. For rammebehandling, se [BehandlingId].
+ * Brukes for meldekortbehandlinger. For rammebehandling, se [RammebehandlingId].
  * Brukes på tvers av tiltakspenger sine egne tjenester.
  */
-data class MeldekortId private constructor(private val ulid: UlidBase) : Ulid by ulid {
+data class MeldekortId private constructor(private val ulid: UlidBase) :
+    BehandlingId,
+    Ulid by ulid {
     companion object {
         const val PREFIX = "meldekort"
         fun random() = MeldekortId(ulid = UlidBase("${PREFIX}_${ULID.randomULID()}"))

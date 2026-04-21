@@ -2,7 +2,6 @@ package no.nav.tiltakspenger.libs.ktor.common
 
 import io.github.oshai.kotlinlogging.KLogger
 import io.ktor.server.application.ApplicationCall
-import no.nav.tiltakspenger.libs.common.BehandlingId
 import no.nav.tiltakspenger.libs.common.MeldekortId
 import no.nav.tiltakspenger.libs.common.RammebehandlingId
 import no.nav.tiltakspenger.libs.common.SakId
@@ -47,21 +46,6 @@ suspend inline fun <T> ApplicationCall.withValidParam(
         logger = logger,
         loggTilSikkerlogg = loggTilSikkerlogg,
     ).fold(
-        ifLeft = { this.respond400BadRequest(it) },
-        ifRight = { onSuccess(it) },
-    )
-}
-
-/**
- * @param logger Send inn null dersom du ikke ønsker logge.
- * @param loggTilSikkerlogg defaulter til det samme som [logger]
- */
-suspend inline fun ApplicationCall.withBehandlingId(
-    logger: KLogger? = DEFAULT_APPLICATION_CALL_EX_LOGGER,
-    loggTilSikkerlogg: Boolean = logger != null,
-    crossinline onSuccess: suspend (BehandlingId) -> Unit,
-) {
-    parseBehandlingId(logger = logger, loggTilSikkerlogg = loggTilSikkerlogg).fold(
         ifLeft = { this.respond400BadRequest(it) },
         ifRight = { onSuccess(it) },
     )

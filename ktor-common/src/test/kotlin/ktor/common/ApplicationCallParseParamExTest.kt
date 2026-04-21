@@ -12,8 +12,8 @@ import io.ktor.http.contentType
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.testing.testApplication
-import no.nav.tiltakspenger.libs.common.BehandlingId
 import no.nav.tiltakspenger.libs.common.MeldekortId
+import no.nav.tiltakspenger.libs.common.RammebehandlingId
 import no.nav.tiltakspenger.libs.common.SakId
 import no.nav.tiltakspenger.libs.common.SøknadId
 import no.nav.tiltakspenger.libs.common.VedtakId
@@ -205,12 +205,12 @@ internal class ApplicationCallParseParamExTest {
     }
 
     @Test
-    fun `parseBehandlingId returns Right with valid behandlingId`() {
+    fun `parseRammebehandlingId returns Right with valid behandlingId`() {
         testApplication {
-            val behandlingId = BehandlingId.random()
+            val behandlingId = RammebehandlingId.random()
             routing {
                 get("/test/{behandlingId}") {
-                    call.parseBehandlingId().fold(
+                    call.parseRammebehandlingId().fold(
                         ifLeft = { error -> call.respond400BadRequest(error) },
                         ifRight = { id -> call.respondJsonString(json = """{"behandlingId":"$id"}""") },
                     )

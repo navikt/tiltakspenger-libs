@@ -10,15 +10,15 @@ internal class UlidTest {
 
     @Test
     fun `test roundtrip`() {
-        val ulid = BehandlingId.random()
-        val ulid2 = BehandlingId.fromString(ulid.toString())
+        val ulid = RammebehandlingId.random()
+        val ulid2 = RammebehandlingId.fromString(ulid.toString())
         ulid2 shouldBe ulid
     }
 
     @Test
     fun `test prefixPart and ulidPart`() {
-        val ulid = BehandlingId.random()
-        val ulid2 = BehandlingId.fromString("${ulid.prefixPart()}_${ulid.ulidPart()}")
+        val ulid = RammebehandlingId.random()
+        val ulid2 = RammebehandlingId.fromString("${ulid.prefixPart()}_${ulid.ulidPart()}")
         ulid2 shouldBe ulid
     }
 
@@ -26,36 +26,36 @@ internal class UlidTest {
     fun `test fromString negativ test`() {
         val utenGyldigSkilletegn = "beh"
         shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($utenGyldigSkilletegn), skal bestå av prefiks + ulid") {
-            BehandlingId.fromString(utenGyldigSkilletegn)
+            RammebehandlingId.fromString(utenGyldigSkilletegn)
         }
 
         val utenUlid = "beh_"
         shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($utenUlid), ulid er ugyldig") {
-            BehandlingId.fromString(utenUlid)
+            RammebehandlingId.fromString(utenUlid)
         }
 
         val ugyldigTegniUlid = "beh_1234567890123456789U123456"
         shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($ugyldigTegniUlid), ulid er ugyldig") {
-            BehandlingId.fromString(ugyldigTegniUlid)
+            RammebehandlingId.fromString(ugyldigTegniUlid)
         }
 
         val ugyldigUlid = "beh_UU_JJ"
         shouldThrowWithMessage<IllegalArgumentException>("Ikke gyldig Id ($ugyldigUlid), skal bestå av prefiks + ulid") {
-            BehandlingId.fromString(ugyldigUlid)
+            RammebehandlingId.fromString(ugyldigUlid)
         }
 
         val feilPrefix = "baloo_"
         shouldThrowWithMessage<IllegalArgumentException>("Prefix må starte med beh. Dette er nok ikke en BehandlingId ($feilPrefix)") {
-            BehandlingId.fromString(feilPrefix)
+            RammebehandlingId.fromString(feilPrefix)
         }
     }
 
     @Test
     fun `test konvertering av BehandlingId til UUID og tilbake igjen til ULID`() {
         repeat(100) {
-            val opprinneligBehandlingId = BehandlingId.random()
+            val opprinneligBehandlingId = RammebehandlingId.random()
             val uuid = opprinneligBehandlingId.uuid()
-            val behandlingIdFraUUID = BehandlingId.fromUUID(uuid)
+            val behandlingIdFraUUID = RammebehandlingId.fromUUID(uuid)
 
             opprinneligBehandlingId shouldBe behandlingIdFraUUID
         }

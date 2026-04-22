@@ -26,38 +26,61 @@ class TestSessionFactory : SessionFactory {
             }
     }
 
-    override fun <T> withSessionContext(action: (SessionContext) -> T): T =
-        SessionCounter().withCountSessions {
-            action(
-                sessionContext,
-            )
+    override fun <T> withSessionContext(disableSessionCounter: Boolean, action: (SessionContext) -> T): T =
+        if (disableSessionCounter) {
+            action(sessionContext)
+        } else {
+            SessionCounter().withCountSessions {
+                action(
+                    sessionContext,
+                )
+            }
         }
 
     override fun <T> withSessionContext(
         sessionContext: SessionContext?,
+        disableSessionCounter: Boolean,
         action: (SessionContext) -> T,
     ): T =
-        SessionCounter().withCountSessions {
+        if (disableSessionCounter) {
             action(sessionContext ?: Companion.sessionContext)
+        } else {
+            SessionCounter().withCountSessions {
+                action(sessionContext ?: Companion.sessionContext)
+            }
         }
 
-    override fun <T> withTransactionContext(action: (TransactionContext) -> T): T =
-        SessionCounter().withCountSessions { action(transactionContext) }
+    override fun <T> withTransactionContext(disableSessionCounter: Boolean, action: (TransactionContext) -> T): T =
+        if (disableSessionCounter) {
+            action(transactionContext)
+        } else {
+            SessionCounter().withCountSessions { action(transactionContext) }
+        }
 
     override fun <T> withTransactionContext(
         transactionContext: TransactionContext?,
+        disableSessionCounter: Boolean,
         action: (TransactionContext) -> T,
     ): T =
-        SessionCounter().withCountSessions {
+        if (disableSessionCounter) {
             action(transactionContext ?: Companion.transactionContext)
+        } else {
+            SessionCounter().withCountSessions {
+                action(transactionContext ?: Companion.transactionContext)
+            }
         }
 
     override fun <T> use(
         transactionContext: TransactionContext,
+        disableSessionCounter: Boolean,
         action: (TransactionContext) -> T,
     ): T =
-        SessionCounter().withCountSessions {
+        if (disableSessionCounter) {
             action(transactionContext)
+        } else {
+            SessionCounter().withCountSessions {
+                action(transactionContext)
+            }
         }
 
     fun newSessionContext() = sessionContext

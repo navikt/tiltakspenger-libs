@@ -23,18 +23,18 @@ class PostgresSessionFactory(
     }
 
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
-    override fun <T> withSessionContext(action: (SessionContext) -> T): T {
+    override fun <T> withSessionContext(disableSessionCounter: Boolean, action: (SessionContext) -> T): T {
         return newSessionContext().let { context ->
-            context.withSession {
+            context.withSession(disableSessionCounter = disableSessionCounter) {
                 action(context)
             }
         }
     }
 
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
-    override fun <T> withSessionContext(sessionContext: SessionContext?, action: (SessionContext) -> T): T {
+    override fun <T> withSessionContext(sessionContext: SessionContext?, disableSessionCounter: Boolean, action: (SessionContext) -> T): T {
         return (sessionContext ?: newSessionContext()).let { context ->
-            context.withSession {
+            context.withSession(disableSessionCounter = disableSessionCounter) {
                 action(context)
             }
         }
@@ -58,11 +58,8 @@ class PostgresSessionFactory(
         disableSessionCounter: Boolean = false,
         action: (Session) -> T,
     ): T {
-        return withSessionContext(sessionContext) { context ->
-            context.withSession(disableSessionCounter = disableSessionCounter) {
-                action(it)
-            }
-        }
+        val ctx = sessionContext ?: newSessionContext()
+        return ctx.withSession(disableSessionCounter = disableSessionCounter) { action(it) }
     }
 
     /**
@@ -77,10 +74,11 @@ class PostgresSessionFactory(
 
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
     override fun <T> withTransactionContext(
+        disableSessionCounter: Boolean,
         action: (TransactionContext) -> T,
     ): T {
         return newTransactionContext().let { context ->
-            context.withTransaction {
+            context.withTransaction(disableSessionCounter = disableSessionCounter) {
                 action(context)
             }
         }
@@ -89,25 +87,26 @@ class PostgresSessionFactory(
     /** Lager en ny context dersom den ikke finnes og starter sesjonen - lukkes automatisk  */
     override fun <T> withTransactionContext(
         transactionContext: TransactionContext?,
+        disableSessionCounter: Boolean,
         action: (TransactionContext) -> T,
     ): T {
         return (transactionContext ?: newTransactionContext()).let { context ->
-            context.withTransaction {
+            context.withTransaction(disableSessionCounter = disableSessionCounter) {
                 action(context)
             }
         }
     }
 
-    override fun <T> use(transactionContext: TransactionContext, action: (TransactionContext) -> T): T {
-        return transactionContext.withTransaction {
+    override fun <T> use(transactionContext: TransactionContext, disableSessionCounter: Boolean, action: (TransactionContext) -> T): T {
+        return transactionContext.withTransaction(disableSessionCounter = disableSessionCounter) {
             action(transactionContext)
         }
     }
 
     /** Lager en ny context og starter sesjonen - lukkes automatisk  */
-    fun <T> withTransaction(action: (TransactionalSession) -> T): T {
+    fun <T> withTransaction(disableSessionCounter: Boolean = false, action: (TransactionalSession) -> T): T {
         return newTransactionContext().let { context ->
-            context.withTransaction {
+            context.withTransaction(disableSessionCounter = disableSessionCounter) {
                 action(it)
             }
         }
@@ -116,12 +115,10 @@ class PostgresSessionFactory(
     /** Lager en ny context dersom den ikke finnes og starter sesjonen - lukkes automatisk  */
     fun <T> withTransaction(
         transactionContext: TransactionContext?,
+        disableSessionCounter: Boolean = false,
         action: (TransactionalSession) -> T,
     ): T {
-        return withTransactionContext(transactionContext) {
-            it.withTransaction {
-                action(it)
-            }
-        }
+        val ctx = transactionContext ?: newTransactionContext()
+        return ctx.withTransaction(disableSessionCounter = disableSessionCounter) { action(it) }
     }
 }

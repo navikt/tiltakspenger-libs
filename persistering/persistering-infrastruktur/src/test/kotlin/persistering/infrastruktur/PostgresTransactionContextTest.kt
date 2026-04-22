@@ -189,4 +189,116 @@ internal class PostgresTransactionContextTest {
 
         onErrorCalled shouldBe true
     }
+
+    @Test
+    fun `withSession disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withSession(disableSessionCounter = false) {
+            factory.withSession(disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+
+    @Test
+    fun `withSession disableSessionCounter=false triggers over-threshold callback on nested sessions`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withSession(disableSessionCounter = false) {
+            factory.withSession(disableSessionCounter = false) {
+            }
+        }
+
+        overThresholdCalled shouldBe true
+    }
+
+    @Test
+    fun `withTransaction disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withTransaction(disableSessionCounter = false) {
+            factory.withTransaction(disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+
+    @Test
+    fun `withTransaction disableSessionCounter=false triggers over-threshold callback on nested transactions`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withTransaction(disableSessionCounter = false) {
+            factory.withTransaction(disableSessionCounter = false) {
+            }
+        }
+
+        overThresholdCalled shouldBe true
+    }
+
+    @Test
+    fun `withSessionContext disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withSessionContext(disableSessionCounter = false) {
+            factory.withSessionContext(disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+
+    @Test
+    fun `withTransactionContext disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withTransactionContext(disableSessionCounter = false) {
+            factory.withTransactionContext(disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+
+    @Test
+    fun `PostgresSessionContext withSession(sessionFactory) disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withSession(disableSessionCounter = false) {
+            null.withSession(factory, disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+
+    @Test
+    fun `PostgresTransactionContext withTransaction(sessionFactory) disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withTransaction(disableSessionCounter = false) {
+            null.withTransaction(factory, disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
 }

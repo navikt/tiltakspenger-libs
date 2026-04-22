@@ -34,10 +34,11 @@ class PostgresTransactionContext(
 
         fun <T> TransactionContext?.withTransaction(
             sessionFactory: SessionFactory,
+            disableSessionCounter: Boolean = false,
             action: (session: TransactionalSession) -> T,
         ): T {
-            return sessionFactory.withTransactionContext(this) { transactionContext ->
-                transactionContext.withTransaction { transactionalSession -> action(transactionalSession) }
+            return sessionFactory.withTransactionContext(this, disableSessionCounter) { transactionContext ->
+                transactionContext.withTransaction(disableSessionCounter = disableSessionCounter) { transactionalSession -> action(transactionalSession) }
             }
         }
 

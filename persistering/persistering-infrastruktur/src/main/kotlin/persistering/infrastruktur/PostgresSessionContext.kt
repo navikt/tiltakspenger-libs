@@ -29,10 +29,11 @@ open class PostgresSessionContext(
 
         fun <T> SessionContext?.withSession(
             sessionFactory: SessionFactory,
+            disableSessionCounter: Boolean = false,
             action: (session: Session) -> T,
         ): T {
-            return sessionFactory.withSessionContext(this) { sessionContext ->
-                sessionContext.withSession { session -> action(session) }
+            return sessionFactory.withSessionContext(this, disableSessionCounter) { sessionContext ->
+                sessionContext.withSession(disableSessionCounter = disableSessionCounter) { session -> action(session) }
             }
         }
 

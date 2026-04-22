@@ -1,3 +1,3 @@
 package no.nav.tiltakspenger.libs.common
 
-interface BehandlingId
+interface BehandlingId : Ulid

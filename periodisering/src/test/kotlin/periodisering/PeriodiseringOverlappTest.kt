@@ -62,7 +62,7 @@ class PeriodiseringOverlappTest {
             PeriodeMedVerdi(standardverdi, 1 til 31.januar(2025)),
             PeriodeMedVerdi(standardverdi, 1 til 31.mars(2025)),
         )
-        standardperiodisering.overlapper(1 til 28.februar(2025)) shouldBe false
+        periodisering.overlapper(1 til 28.februar(2025)) shouldBe false
     }
 
     @Test

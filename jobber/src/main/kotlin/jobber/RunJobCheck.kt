@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.jobber
 
+import arrow.core.Either
 import io.ktor.util.AttributeKey
 import io.ktor.util.Attributes
 import java.net.InetAddress
@@ -28,12 +29,25 @@ fun List<RunJobCheck>.shouldRun(): Boolean {
 
 data class LeaderPod(
     private val leaderPodLookup: LeaderPodLookup,
+    private val localHostNameProvider: () -> String = { InetAddress.getLocalHost().hostName },
 ) : RunJobCheck {
     override fun shouldRun(): Boolean {
-        return leaderPodLookup.amITheLeader(InetAddress.getLocalHost().hostName).isRight { it }
+        return Either.catch { localHostNameProvider() }
+            .fold(
+                ifLeft = { false },
+                ifRight = { localHostName ->
+                    Either.catch { leaderPodLookup.amITheLeader(localHostName) }
+                        .map { it.isRight { isLeader -> isLeader } }
+                        .fold(
+                            ifLeft = { false },
+                            ifRight = { it },
+                        )
+                },
+            )
     }
 }
 
+// TODO jah: Vurder om RunJobCheck bør kunne returnere en domenefeil i stedet for bare Boolean for bedre innsikt i hvorfor en jobb ikke kjører.
 data class IsReady(
     private val attributes: Attributes,
     private val isReadyKey: AttributeKey<Boolean>,

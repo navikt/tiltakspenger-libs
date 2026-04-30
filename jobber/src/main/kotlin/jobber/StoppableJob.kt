@@ -38,6 +38,8 @@ fun startStoppableJob(
     runAsDaemon: Boolean = true,
     job: (CorrelationId) -> Unit,
 ): StoppableJob {
+    validateInitialDelay(initialDelay)
+    validateIntervall(intervall)
     logger.info { "Starter skeduleringsjobb '$jobName'. Intervall: hvert ${intervall.toMinutes()}. minutt. Initial delay: ${initialDelay.toMinutes()} minutt(er)" }
     return startStoppableJob(
         jobName = jobName,
@@ -74,6 +76,7 @@ fun startStoppableJob(
     enableDebuggingLogging: Boolean = true,
     job: (CorrelationId) -> Unit,
 ): StoppableJob {
+    validateIntervall(intervall)
     logger.info { "Starter skeduleringsjobb '$jobName'. Intervall: hvert ${intervall.toMinutes()}. minutt. Starter kl. $startAt." }
     return startStoppableJob(
         jobName = jobName,
@@ -102,6 +105,7 @@ private fun startStoppableJob(
     enableDebuggingLogging: Boolean,
     scheduleJob: (TimerTask.() -> Unit) -> Timer,
 ): StoppableJob {
+    // TODO jah: Vurder å erstatte Timer med en mer robust scheduler dersom vi trenger bedre styring/observability.
     return scheduleJob {
         Either.catch {
             if (runJobCheck.shouldRun()) {
@@ -136,4 +140,12 @@ private fun startStoppableJob(
             }
         }
     }
+}
+
+private fun validateInitialDelay(initialDelay: Duration) {
+    require(!initialDelay.isNegative) { "initialDelay kan ikke være negativ." }
+}
+
+private fun validateIntervall(intervall: Duration) {
+    require(!intervall.isZero && !intervall.isNegative) { "intervall må være større enn 0." }
 }

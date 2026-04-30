@@ -5,51 +5,62 @@ import arrow.core.right
 import io.kotest.matchers.shouldBe
 import io.ktor.util.AttributeKey
 import io.ktor.util.Attributes
-import io.mockk.coEvery
-import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Test
 
 internal class RunCheckFactoryTest {
     private val isReadyKey = AttributeKey<Boolean>("isReady")
-    private val attributes = Attributes()
 
     @Test
     fun `leaderpod - false`() {
         val mock = mockk<LeaderPodLookup> {
-            coEvery { amITheLeader(any()) } returns false.right()
+            every { amITheLeader(any()) } returns false.right()
         }
-        RunCheckFactory(leaderPodLookup = mock, attributes = attributes, isReadyKey = isReadyKey).let {
+        RunCheckFactory(leaderPodLookup = mock, attributes = Attributes(), isReadyKey = isReadyKey).let {
             it.leaderPod().shouldRun() shouldBe false
-            coVerify(exactly = 1) { mock.amITheLeader(any()) }
+            verify(exactly = 1) { mock.amITheLeader(any()) }
         }
     }
 
     @Test
     fun `leaderpod - true`() {
         val mock = mockk<LeaderPodLookup> {
-            coEvery { amITheLeader(any()) } returns true.right()
+            every { amITheLeader(any()) } returns true.right()
         }
-        RunCheckFactory(leaderPodLookup = mock, attributes = attributes, isReadyKey = isReadyKey).let {
+        RunCheckFactory(leaderPodLookup = mock, attributes = Attributes(), isReadyKey = isReadyKey).let {
             it.leaderPod().shouldRun() shouldBe true
-            coVerify(exactly = 1) { mock.amITheLeader(any()) }
+            verify(exactly = 1) { mock.amITheLeader(any()) }
         }
     }
 
     @Test
     fun `leaderpod - left`() {
         val mock = mockk<LeaderPodLookup> {
-            coEvery { amITheLeader(any()) } returns LeaderPodLookupFeil.Ikke2xx(500, "").left()
+            every { amITheLeader(any()) } returns LeaderPodLookupFeil.Ikke2xx(500, "").left()
         }
-        RunCheckFactory(leaderPodLookup = mock, attributes = attributes, isReadyKey = isReadyKey).let {
+        RunCheckFactory(leaderPodLookup = mock, attributes = Attributes(), isReadyKey = isReadyKey).let {
             it.leaderPod().shouldRun() shouldBe false
-            coVerify(exactly = 1) { mock.amITheLeader(any()) }
+            verify(exactly = 1) { mock.amITheLeader(any()) }
         }
+    }
+
+    @Test
+    fun `leaderpod - exception when resolving local hostname`() {
+        val mock = mockk<LeaderPodLookup>()
+        LeaderPod(
+            leaderPodLookup = mock,
+            localHostNameProvider = { throw IllegalStateException("boom") },
+        ).shouldRun() shouldBe false
+
+        verify(exactly = 0) { mock.amITheLeader(any()) }
     }
 
     @Test
     fun `isready - false`() {
         val mock = mockk<LeaderPodLookup>()
+        val attributes = Attributes()
         attributes.put(isReadyKey, false)
         RunCheckFactory(leaderPodLookup = mock, attributes = attributes, isReadyKey = isReadyKey)
             .isReady().shouldRun() shouldBe false
@@ -58,8 +69,18 @@ internal class RunCheckFactoryTest {
     @Test
     fun `isready - true`() {
         val mock = mockk<LeaderPodLookup>()
+        val attributes = Attributes()
         attributes.put(isReadyKey, true)
         RunCheckFactory(leaderPodLookup = mock, attributes = attributes, isReadyKey = isReadyKey)
             .isReady().shouldRun() shouldBe true
+    }
+
+    @Test
+    fun `isready - missing key`() {
+        RunCheckFactory(
+            leaderPodLookup = mockk(),
+            attributes = Attributes(),
+            isReadyKey = isReadyKey,
+        ).isReady().shouldRun() shouldBe false
     }
 }

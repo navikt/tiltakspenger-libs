@@ -41,6 +41,12 @@ data class Periode(
         ChronoUnit.DAYS.between(fraOgMed, tilOgMed) + 1
     }
 
+    val datoer: Sequence<LocalDate> by lazy {
+        generateSequence(fraOgMed) { current ->
+            current.plusDays(1).takeIf { !it.isAfter(tilOgMed) }
+        }
+    }
+
     operator fun rangeTo(other: Periode): Periode = Periode(fraOgMed = this.fraOgMed, tilOgMed = other.tilOgMed)
 
     /** Sjekker om denne perioden starter etter [dato] */

@@ -186,6 +186,21 @@ class PeriodeTest {
         (LocalDate.MIN til LocalDate.MAX).toString() shouldBe "LocalDate.MIN – LocalDate.MAX"
     }
 
+    @Test
+    fun `datoer er en sekvens av alle datoer i perioden`() {
+        val periode = Periode(
+            fraOgMed = LocalDate.of(2021, 1, 1),
+            tilOgMed = LocalDate.of(2021, 1, 4),
+        )
+
+        periode.datoer.toList() shouldBe listOf(
+            LocalDate.of(2021, 1, 1),
+            LocalDate.of(2021, 1, 2),
+            LocalDate.of(2021, 1, 3),
+            LocalDate.of(2021, 1, 4),
+        )
+    }
+
     @Nested
     inner class FraOgMedTil {
         @Test

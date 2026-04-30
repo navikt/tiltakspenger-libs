@@ -9,7 +9,7 @@ Kotlin shared library monorepo (`tiltakspenger-libs`) for NAV's "tiltakspenger" 
 ## Architecture
 
 - **Gradle submodules** — see `settings.gradle.kts` for the full list. Each is a focused library (IDs, DTOs, clients, utilities).
-- **Convention plugin**: Shared build logic lives in `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts`. All submodules apply it via `plugins { id("tiltakspenger-lib-conventions") }`. It configures Kotlin/JVM target, spotless/ktlint, JUnit 5, publishing, and JUnit 4 exclusion. Plugin and library versions are centralized in `gradle/libs.versions.toml`.
+- **Convention plugin**: Shared build logic lives in `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts`. All submodules apply it via `plugins { id("tiltakspenger-lib-conventions") }`. It configures Kotlin/JVM target, spotless/ktlint, JUnit 5, publishing, and JUnit 4 exclusion. Plugin and library versions are centralized in `gradle/libs.versions.toml`. Individual modules can opt into JetBrains Kover for coverage reporting (currently `jobber`).
 - **Standard Kotlin/Gradle source layout**: sources live in `src/main/kotlin/` and `src/test/kotlin/` following Gradle conventions. Resources live in `src/main/resources/` and `src/test/resources/`. Per [Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html#directory-structure), the common root package `no.nav.tiltakspenger.libs` is omitted from the directory structure (e.g., `common/src/main/kotlin/common/SakId.kt` for package `no.nav.tiltakspenger.libs.common`).
 - **Domene/infrastruktur split**: Modules with external dependencies (HTTP clients, DB) split into `*-domene` (pure domain, no external deps) and `*-infrastruktur` (external deps allowed). See `personklient/` and `persistering/` for examples. Parent aggregator projects (`persistering/build.gradle.kts`, `personklient/build.gradle.kts`) only disable jar tasks.
 - **Core dependency chain**: Most modules depend on `common` → `logging`. Tests depend on `test-common` which re-exports `common`, kotest, mockk, wiremock, and JUnit 5.
@@ -60,6 +60,7 @@ Use `Sikkerlogg` from the `logging` module for sensitive data. Standard logging 
 ./gradlew spotlessApply build        # lint + build + test (preferred)
 ./gradlew clean spotlessApply build  # clean build
 ./gradlew :<module>:test             # test single module
+./gradlew :jobber:koverXmlReport     # generate coverage report for jobber
 ```
 
 - Shared build config lives in `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts`. Check it for Kotlin/JVM versions, spotless config, and compiler flags.

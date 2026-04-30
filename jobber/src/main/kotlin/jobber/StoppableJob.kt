@@ -96,7 +96,7 @@ fun startStoppableJob(
     }
 }
 
-private fun startStoppableJob(
+internal fun startStoppableJob(
     jobName: String,
     log: KLogger,
     mdcCallIdKey: String,

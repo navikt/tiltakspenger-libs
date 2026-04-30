@@ -47,6 +47,20 @@ internal class RunCheckFactoryTest {
     }
 
     @Test
+    fun `leaderpod - exception when leader lookup fails`() {
+        val mock = mockk<LeaderPodLookup> {
+            every { amITheLeader(any()) } throws IllegalStateException("boom")
+        }
+
+        LeaderPod(
+            leaderPodLookup = mock,
+            localHostNameProvider = { "pod-1" },
+        ).shouldRun() shouldBe false
+
+        verify(exactly = 1) { mock.amITheLeader("pod-1") }
+    }
+
+    @Test
     fun `leaderpod - exception when resolving local hostname`() {
         val mock = mockk<LeaderPodLookup>()
         LeaderPod(

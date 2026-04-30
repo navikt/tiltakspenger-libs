@@ -8,8 +8,11 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.matchers.shouldBe
+import io.mockk.every
+import io.mockk.mockk
 import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
+import java.net.http.HttpResponse
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class LeaderPodLookupClientTest {
@@ -115,6 +118,14 @@ internal class LeaderPodLookupClientTest {
     }
 
     @Test
+    fun `returnerer kunne ikke kontakte leader elector container ved ugyldig endpoint og default timeout`() {
+        LeaderPodLookupClient(
+            electorPath = "http://[",
+            logger = logger,
+        ).amITheLeader("pod-1") shouldBe LeaderPodLookupFeil.KunneIkkeKontakteLeaderElectorContainer.left()
+    }
+
+    @Test
     fun `hurtigbufrer lederstatus etter første vellykkede treff`() {
         withWireMockServer { wiremock ->
             wiremock.stubFor(
@@ -136,5 +147,13 @@ internal class LeaderPodLookupClientTest {
             client.amITheLeader("pod-1") shouldBe true.right()
             wiremock.verify(1, getRequestedFor(urlEqualTo("/")))
         }
+    }
+
+    @Test
+    fun `isSuccess returnerer false for status under 200`() {
+        val response = mockk<HttpResponse<String>>()
+        every { response.statusCode() } returns 199
+
+        response.isSuccess() shouldBe false
     }
 }

@@ -13,6 +13,7 @@ kafka = "4.2.0"
 kotest = "6.1.11"
 kotest-extensions-wiremock = "3.1.0"
 kotlin = "2.3.21"
+kover = "0.9.1"
 kotlin-logging = "8.0.01"
 kotlin-wiremock = "2.1.1"
 kotlinx-coroutines = "1.10.2"
@@ -87,5 +88,6 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 
 [plugins]
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

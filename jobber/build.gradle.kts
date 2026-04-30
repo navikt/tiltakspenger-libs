@@ -1,5 +1,6 @@
 plugins {
     id("tiltakspenger-lib-conventions")
+    alias(libs.plugins.kover)
 }
 
 dependencies {

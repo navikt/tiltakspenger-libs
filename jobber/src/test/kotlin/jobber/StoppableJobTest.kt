@@ -6,23 +6,26 @@ import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.longs.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import org.junit.jupiter.api.Test
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.Date
+import java.util.Timer
+import java.util.TimerTask
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 internal class StoppableJobTest {
     private val logger: KLogger = KotlinLogging.logger { }
 
-    @OptIn(ExperimentalAtomicApi::class)
     @Test
     fun `neste jobb skal ikke starte før første er ferdig`() {
         val executionTimes: ConcurrentLinkedQueue<Long> = ConcurrentLinkedQueue()
@@ -56,8 +59,6 @@ internal class StoppableJobTest {
             logger = logger,
             mdcCallIdKey = "test-call-id",
             runJobCheck = emptyList(),
-            enableDebuggingLogging = false,
-            runAsDaemon = true,
             job = job,
         )
 
@@ -94,7 +95,6 @@ internal class StoppableJobTest {
                 },
             ),
             enableDebuggingLogging = false,
-            runAsDaemon = true,
         ) {
             antallKjoringer.incrementAndGet()
         }
@@ -121,7 +121,6 @@ internal class StoppableJobTest {
             logger = logger,
             mdcCallIdKey = "test-call-id",
             runJobCheck = emptyList(),
-            enableDebuggingLogging = false,
         ) {
             firstExecutionTime.compareAndSet(0, clock.millis())
             executionLatch.countDown()
@@ -137,6 +136,155 @@ internal class StoppableJobTest {
         } finally {
             stoppableJob.stop()
         }
+    }
+
+    @Test
+    fun `skal kjøre startAt-overload med default debugging logging`() {
+        val executionLatch = CountDownLatch(1)
+        val startAt = Date.from(Instant.now().plusMillis(50))
+
+        val stoppableJob = startStoppableJob(
+            jobName = "test-job",
+            startAt = startAt,
+            intervall = Duration.ofDays(1),
+            logger = logger,
+            mdcCallIdKey = "test-call-id",
+            runJobCheck = emptyList(),
+        ) {
+            executionLatch.countDown()
+        }
+
+        try {
+            executionLatch.await(1, TimeUnit.SECONDS) shouldBe true
+        } finally {
+            stoppableJob.stop()
+        }
+    }
+
+    @Test
+    fun `skal logge debug før og etter jobb når debugging logging er aktivert`() {
+        val mockLogger = mockLogger()
+        val scheduler = ManuellScheduler()
+        val antallKjoringer = AtomicInteger(0)
+
+        val stoppableJob = startStoppableJob(
+            jobName = "test-job",
+            log = mockLogger,
+            mdcCallIdKey = "test-call-id",
+            runJobCheck = emptyList(),
+            job = { antallKjoringer.incrementAndGet() },
+            enableDebuggingLogging = true,
+            scheduleJob = scheduler::schedule,
+        )
+
+        try {
+            scheduler.runJob()
+
+            antallKjoringer.get() shouldBe 1
+            verify(exactly = 2) { mockLogger.debug(any<() -> Any?>()) }
+        } finally {
+            stoppableJob.stop()
+        }
+    }
+
+    @Test
+    fun `skal logge debug når runJobCheck stopper jobb`() {
+        val mockLogger = mockLogger()
+        val scheduler = ManuellScheduler()
+
+        val stoppableJob = startStoppableJob(
+            jobName = "test-job",
+            log = mockLogger,
+            mdcCallIdKey = "test-call-id",
+            runJobCheck = listOf(
+                object : RunJobCheck {
+                    override fun shouldRun(): Boolean = false
+                },
+            ),
+            job = { error("Jobben skal ikke kjøres") },
+            enableDebuggingLogging = true,
+            scheduleJob = scheduler::schedule,
+        )
+
+        try {
+            scheduler.runJob()
+
+            verify(exactly = 1) { mockLogger.debug(any<() -> Any?>()) }
+        } finally {
+            stoppableJob.stop()
+        }
+    }
+
+    @Test
+    fun `skal ikke logge debug ved vellykket jobb når debugging logging er deaktivert`() {
+        val mockLogger = mockLogger()
+        val scheduler = ManuellScheduler()
+
+        val stoppableJob = startStoppableJob(
+            jobName = "test-job",
+            log = mockLogger,
+            mdcCallIdKey = "test-call-id",
+            runJobCheck = emptyList(),
+            job = { },
+            enableDebuggingLogging = false,
+            scheduleJob = scheduler::schedule,
+        )
+
+        try {
+            scheduler.runJob()
+
+            verify(exactly = 0) { mockLogger.debug(any<() -> Any?>()) }
+        } finally {
+            stoppableJob.stop()
+        }
+    }
+
+    @Test
+    fun `skal logge feil når jobb kaster exception`() {
+        val mockLogger = mockLogger()
+        val scheduler = ManuellScheduler()
+
+        val stoppableJob = startStoppableJob(
+            jobName = "test-job",
+            log = mockLogger,
+            mdcCallIdKey = "test-call-id",
+            runJobCheck = emptyList(),
+            job = { throw IllegalStateException("boom") },
+            enableDebuggingLogging = false,
+            scheduleJob = scheduler::schedule,
+        )
+
+        try {
+            scheduler.runJob()
+
+            verify(exactly = 1) { mockLogger.error(any<Throwable>(), any<() -> Any?>()) }
+        } finally {
+            stoppableJob.stop()
+        }
+    }
+
+    @Test
+    fun `skal logge feil når stop kaster exception`() {
+        val mockLogger = mockLogger()
+        val scheduler = ManuellScheduler(
+            timer = object : Timer("failing-stop", true) {
+                override fun cancel() {
+                    throw IllegalStateException("boom")
+                }
+            },
+        )
+
+        startStoppableJob(
+            jobName = "test-job",
+            log = mockLogger,
+            mdcCallIdKey = "test-call-id",
+            runJobCheck = emptyList(),
+            job = { },
+            enableDebuggingLogging = false,
+            scheduleJob = scheduler::schedule,
+        ).stop()
+
+        verify(exactly = 1) { mockLogger.error(any<Throwable>(), any<() -> Any?>()) }
     }
 
     @Test
@@ -168,6 +316,39 @@ internal class StoppableJobTest {
                 enableDebuggingLogging = false,
                 runAsDaemon = true,
             ) { }
+        }
+    }
+
+    private fun mockLogger(): KLogger {
+        return mockk(relaxed = true) {
+            every { info(any<() -> Any?>()) } answers {
+                firstArg<() -> Any?>().invoke()
+            }
+            every { debug(any<() -> Any?>()) } answers {
+                firstArg<() -> Any?>().invoke()
+            }
+            every { error(any<Throwable>(), any<() -> Any?>()) } answers {
+                secondArg<() -> Any?>().invoke()
+            }
+        }
+    }
+
+    private class ManuellScheduler(
+        private val timer: Timer = Timer("manual-scheduler", true),
+    ) {
+        private var timerTask: TimerTask? = null
+
+        fun schedule(task: TimerTask.() -> Unit): Timer {
+            timerTask = object : TimerTask() {
+                override fun run() {
+                    task()
+                }
+            }
+            return timer
+        }
+
+        fun runJob() {
+            checkNotNull(timerTask) { "Forventet at en TimerTask var registrert." }.run()
         }
     }
 }

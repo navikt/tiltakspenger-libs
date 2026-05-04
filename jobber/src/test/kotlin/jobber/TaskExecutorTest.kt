@@ -4,9 +4,11 @@ import arrow.core.right
 import io.kotest.matchers.collections.shouldHaveAtLeastSize
 import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.ktor.util.AttributeKey
 import io.ktor.util.Attributes
 import kotlinx.coroutines.delay
+import no.nav.tiltakspenger.libs.common.CorrelationId
 import org.junit.jupiter.api.Test
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
@@ -41,7 +43,7 @@ internal class TaskExecutorTest {
         val running = AtomicInteger(0)
         val maxConcurrent = AtomicInteger(0)
 
-        fun task(tag: String): suspend () -> Unit = {
+        fun task(tag: String): suspend (CorrelationId) -> Unit = { _ ->
             val current = running.incrementAndGet()
             maxConcurrent.updateAndGet { it.coerceAtLeast(current) }
             log.add("$tag-start")
@@ -81,7 +83,7 @@ internal class TaskExecutorTest {
         val cycleStarts = ConcurrentLinkedQueue<Long>()
 
         // Tasken tar lengre enn intervallet — Timer'en skal likevel ikke starte ny syklus før forrige er ferdig.
-        val slowTask: suspend () -> Unit = {
+        val slowTask: suspend (CorrelationId) -> Unit = { _ ->
             cycleStarts.add(System.nanoTime())
             val current = running.incrementAndGet()
             maxConcurrent.updateAndGet { it.coerceAtLeast(current) }
@@ -106,7 +108,7 @@ internal class TaskExecutorTest {
     @Test
     fun `det gar minst intervall millisekunder mellom starten av to sykluser`() {
         val cycleStarts = ConcurrentLinkedQueue<Long>()
-        val task: suspend () -> Unit = {
+        val task: suspend (CorrelationId) -> Unit = { _ ->
             cycleStarts.add(System.nanoTime())
             delay(10.milliseconds) // klart kortere enn intervallet
         }
@@ -134,11 +136,11 @@ internal class TaskExecutorTest {
         val ranA = AtomicInteger(0)
         val ranB = AtomicInteger(0)
 
-        val taskA: suspend () -> Unit = {
+        val taskA: suspend (CorrelationId) -> Unit = { _ ->
             ranA.incrementAndGet()
             error("forventet feil i taskA")
         }
-        val taskB: suspend () -> Unit = {
+        val taskB: suspend (CorrelationId) -> Unit = { _ ->
             ranB.incrementAndGet()
         }
 
@@ -157,5 +159,39 @@ internal class TaskExecutorTest {
         ranB.get() shouldBeGreaterThanOrEqualTo 2
         // Siden tasks kjører seriellt og Timer.cancel ikke avbryter pågående TimerTask, skal A og B ha samme antall.
         ranA.get() shouldBe ranB.get()
+    }
+
+    @Test
+    fun `correlationId sendes til hver task og er lik for tasks i samme syklus`() {
+        val correlationIds = ConcurrentLinkedQueue<Pair<String, CorrelationId>>()
+
+        val taskA: suspend (CorrelationId) -> Unit = { correlationId ->
+            correlationIds.add("A" to correlationId)
+        }
+        val taskB: suspend (CorrelationId) -> Unit = { correlationId ->
+            correlationIds.add("B" to correlationId)
+        }
+
+        val executor = TaskExecutor.startJob(
+            runCheckFactory = runCheckFactoryThatAlwaysAllowsRun(),
+            mdcCallIdKey = "test-call-id",
+            tasks = listOf(taskA, taskB),
+            initialDelay = 10.milliseconds,
+            intervall = 40.milliseconds,
+        )
+        Thread.sleep(200)
+        executor.stop()
+
+        val entries = correlationIds.toList()
+        entries shouldHaveAtLeastSize 4
+        val cycle1A = entries[0]
+        val cycle1B = entries[1]
+        val cycle2A = entries[2]
+        cycle1A.first shouldBe "A"
+        cycle1B.first shouldBe "B"
+        // Tasks i samme syklus deler correlationId.
+        cycle1A.second shouldBe cycle1B.second
+        // Ulike sykluser har ulike correlationIds.
+        cycle2A.second shouldNotBe cycle1A.second
     }
 }

@@ -4,6 +4,7 @@ import arrow.core.Either
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.runBlocking
+import no.nav.tiltakspenger.libs.common.CorrelationId
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -30,7 +31,7 @@ class TaskExecutor(
     companion object {
         fun startJob(
             runCheckFactory: RunCheckFactory,
-            tasks: List<suspend () -> Any?>,
+            tasks: List<suspend (CorrelationId) -> Any?>,
             initialDelay: Duration = 1.minutes,
             intervall: Duration = 10.seconds,
             /** Ref callIdMdc(CALL_ID_MDC_KEY) i KtorSetup.kt */
@@ -57,7 +58,7 @@ class TaskExecutor(
                             //   1. Pass på at vi har nok tilgjengelige databasesesjoner
                             //   2. Nå har du åpnet for at databasekallene kan gå i beina på hverandre, så du må gruppere ting som leser/muterer de samme verdiene så de ikke kjører parallellt, eventuelt passe på å bruke databaselåser.
                             Either.catch {
-                                runBlocking { task() }
+                                runBlocking { task(correlationId) }
                             }.mapLeft { throwable ->
                                 logger.error(throwable) { "Feil ved kjøring av task. correlationId: $correlationId" }
                             }

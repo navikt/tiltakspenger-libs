@@ -24,9 +24,8 @@ import kotlin.time.toJavaDuration
  *  4. En feil i én task stopper ikke senere tasks i samme syklus eller fremtidige sykluser. Hver task
  *     wrappes i [Either.catch] og loggføres som feil.
  */
-internal class TaskExecutor(
+class TaskExecutor(
     private val stoppableJob: StoppableJob,
-
 ) : StoppableJob by stoppableJob {
     companion object {
         fun startJob(

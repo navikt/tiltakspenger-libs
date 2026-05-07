@@ -23,11 +23,31 @@ Monorepo for delte Kotlin-biblioteker. Publiseres til GitHub Packages. **Deploye
 | `periodisering` | Periodelogikk for datoer (`Periode`, `Periodisering`, `Tidslinje`)                                                                        |
 | `json`          | Delt Jackson-`objectMapper` + hjelperne `serialize()`/`deserialize()`                                                                     |
 | `logging`       | `Sikkerlogg` for NAIS secure logging via markers                                                                                          |
-| `test-common`   | Delt test-infra: `fixedClock`, `TikkendeKlokke`, `getOrFail()` for `Either`, wiremock-hjelpere                                            |
+| `httpklient`    | Delt `java.net.http.HttpClient`-innpakning med `HttpKlient`, Arrow `Either`-feil, JSON-hjelpere, valgfri bearer-token-støtte via `AccessToken`, valgfri retry basert på Arrow Resilience `Schedule` (standard predikat for idempotente metoder, per-forsøk-timing i metadata, hook for overdreven retry), og valgfri circuit breaker basert på Arrow Resilience `CircuitBreaker` |
+| `test-common`   | Delt test-infra: `fixedClock`, `TikkendeKlokke`, `getOrFail()` for `Either`, `HttpKlientFake`, wiremock-hjelpere                          |
 | `texas`         | NAIS Texas auth: token-introspeksjon, system-tokens, Ktor auth provider                                                                   |
 | `ktor-common`   | Ktor-server-extensions (bruker `compileOnly` for ktor-deps)                                                                               |
 | `jobber`        | Leader election + stoppable job-abstraksjoner for NAIS                                                                                    |
 | `*-dtos`        | API-kontraktstyper delt mellom tjenester                                                                                                  |
+
+## Konvensjoner
+
+### `httpklient`-struktur
+
+Den offentlige klientkontrakten er `HttpKlient`. Konsumenter oppretter en klient via `HttpKlient(clock = ...) { ... }`-fabrikken, som konfigurerer og returnerer den interne `JavaHttpKlient`-implementasjonen (basert på `java.net.http.HttpClient`). Implementasjonstypen er bevisst `internal` slik at kallere kun avhenger av interfacet. Alle standardverdier — connect/timeout, predikat for vellykkede statuser, logging, retry, circuit breaker, auth-token-leverandør — settes via `HttpKlient.HttpKlientConfig`-DSL-en som sendes til fabrikken; per-request-overstyringer på `RequestBuilder` har prioritet. Tester utenfor `httpklient`-modulen skal generelt bruke `HttpKlientFake` fra `test-common`; tester inne i `httpklient` skal teste den virkelige implementasjonen mot WireMock/rå sockets der det er praktisk.
+
+Retry-relaterte typer beholder pakken `no.nav.tiltakspenger.libs.httpklient` for API-stabilitet, men kildefilene ligger under `httpklient/src/main/kotlin/httpklient/retry/` for å holde retry-logikk nær `RetryConfig` og adskilt fra `JavaHttpKlient`. Circuit breaker-relaterte typer følger samme pakke-stabilitetsregel og ligger under `httpklient/src/main/kotlin/httpklient/circuitbreaker/`. `CircuitBreakerConfig.None` er standard; aktiverte konfigurasjoner er opt-in, fluent, eksplisitt navngitte, støttet av Arrow Resilience `CircuitBreaker`, og tilstand er lokal per `HttpKlient`-instans per circuit breaker-navn. Circuit breaker-beskyttelse omslutter hele retry-kjøringen, slik at kun det endelige resultatet etter retries registreres.
+
+### Ingen standardverdier i domenetyper eller offentlige API-er
+
+Standardverdier hører hjemme i **konfig-/builder-objekter** (f.eks. `HttpKlientLoggingConfig`, `RetryConfig`), **ikke** i databærere, domenemodeller eller konstruktørparametere som beskriver hva som faktisk skjedde eller hvem kalleren er. Konkret:
+
+- **Dataoppføringer som beskriver en hendelse/et resultat** (f.eks. `HttpKlientMetadata` — request/respons, antall forsøk, tidsbruk) må kreve alle felt eksplisitt. Standardverdier som `attempts = 1` eller `attemptDurations = emptyList()` skjuler feil der produsenten glemte å fylle ut feltet.
+- **`Clock`-parametere** må være påkrevd i produksjonskode. Bruk aldri `Clock.systemUTC()` som standard i `main/`. Tester kan som regel bruke `fixedClock` eller `TikkendeKlokke` fra `test-common` som standard — nesten aldri `Clock.systemUTC()`.
+- **Andre «ambient»-tjenester** (loggere, ID-generatorer, tilfeldighetskilder osv.) følger samme regel: påkrevd i produksjon, fornuftig teststandard i `test-common`.
+- **Testhjelpere** som lager domene-verdier (f.eks. `tomMetadata()` i `httpklient`-testene) må fylle alle felt eksplisitt slik at testflaten er søkbar når typen endres.
+
+Hvis du finner deg selv i å legge til en standardverdi for å få ødelagte/manglende kallsteder til å kompilere, **fiks kallstedene i stedet** — standardverdien skjuler problemet.
 
 ## Bygg og test (libs-spesifikt)
 

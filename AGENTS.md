@@ -22,13 +22,33 @@ Kotlin shared library monorepo (`tiltakspenger-libs`) for NAV's "tiltakspenger" 
 | `periodisering` | Date period logic (`Periode`, `Periodisering`, `Tidslinje`), used heavily across the domain                                               |
 | `json`          | Shared Jackson `objectMapper` config + serialize/deserialize helpers. Use this, not your own ObjectMapper                                 |
 | `logging`       | `Sikkerlogg` object for NAIS secure logging via markers. Use this, not raw loggers for sensitive data                                     |
-| `test-common`   | Shared test infra: `fixedClock`, `TikkendeKlokke`, `getOrFail()` for Arrow's Either, wiremock helpers                                     |
+| `httpklient`    | Shared Java `HttpClient` wrapper with `HttpKlient`, Arrow `Either` errors, JSON String/DTO helpers, optional bearer-token support via `AccessToken`, opt-in retry based on Arrow Resilience `Schedule` (idempotent-method default predicate, per-attempt timing in metadata, excessive-retry hook), and opt-in circuit breaker based on Arrow Resilience `CircuitBreaker` |
+| `test-common`   | Shared test infra: `fixedClock`, `TikkendeKlokke`, `getOrFail()` for Arrow's Either, `HttpKlientFake`, wiremock helpers                     |
 | `texas`         | NAIS Texas auth: token introspection, system tokens, Ktor auth provider                                                                   |
 | `ktor-common`   | Ktor server extensions (error responses, request parsing). Uses `compileOnly` for ktor deps                                               |
 | `jobber`        | Leader election + stoppable job abstractions for NAIS                                                                                     |
 | `*-dtos`        | API contract types shared between services                                                                                                |
 
 ## Conventions
+
+### `httpklient` structure
+The public client contract is `HttpKlient`. Consumers create a client via the
+`HttpKlient(clock = ...) { ... }` factory, which configures and returns the internal
+`JavaHttpKlient` (`java.net.http.HttpClient` based) implementation. The implementation type is
+intentionally `internal` so callers depend only on the interface. All defaults — connect/timeout,
+success-status predicate, logging, retry, circuit breaker, auth-token provider — are set via the
+`HttpKlient.HttpKlientConfig` DSL passed to the factory; per-request overrides on `RequestBuilder`
+take precedence. Tests outside the `httpklient` module should generally use `HttpKlientFake` from
+`test-common`; tests inside `httpklient` should exercise the real implementation with WireMock/raw
+sockets where practical.
+Retry-related types keep package `no.nav.tiltakspenger.libs.httpklient` for API stability, but
+source files live under `httpklient/src/main/kotlin/httpklient/retry/` to keep retry execution
+close to `RetryConfig` and away from `JavaHttpKlient`. Circuit breaker-related types follow the
+same package-stability rule and live under `httpklient/src/main/kotlin/httpklient/circuitbreaker/`.
+`CircuitBreakerConfig.None` is the default; enabled configs are opt-in, fluent, named explicitly,
+backed by Arrow Resilience `CircuitBreaker`, and state is local to each `HttpKlient` instance
+per circuit breaker name. Circuit breaker protection wraps the whole retry execution, so only the
+final result after retries is recorded.
 
 ### Error Handling
 Use Arrow's `Either<ErrorType, SuccessType>` instead of exceptions. Error types are sealed interfaces with descriptive data objects/classes (see `FellesPersonklientError` for the pattern). In tests, use `getOrFail()` from `test-common` to unwrap.
@@ -53,6 +73,24 @@ Use `Sikkerlogg` from the `logging` module for sensitive data. Standard logging 
 - Domain-driven design: logic belongs on the domain model closest to the data.
 - `init` blocks enforce domain invariants (see `Periode`, typed IDs).
 - No `Optional` or Arrow's `Option` — use nullable types or `Either`.
+
+### No default parameter values in domain types or public APIs
+Default values belong in **config/builder objects** (e.g. `HttpKlientLoggingConfig`, `RetryConfig`),
+**not** in data carriers, domain models, or constructor parameters whose values describe what
+actually happened or who the caller is. Concretely:
+
+- **Data records that describe an event/result** (e.g. `HttpKlientMetadata` — request/response,
+  attempt count, timings) must require all fields explicitly. Defaults like `attempts = 1` or
+  `attemptDurations = emptyList()` mask bugs where the producer forgot to populate the field.
+- **`Clock` parameters** must be required in production code. Never default to `Clock.systemUTC()`
+  in `main/`. Tests may generally default to `fixedClock` or `TikkendeKlokke` from `test-common` — almost never to `Clock.systemUTC()`.
+- **Other "ambient" services** (loggers, ID generators, random sources, etc.) follow the same rule:
+  required in production, sensible test default in `test-common`.
+- **Test helpers** that fabricate domain values (e.g. `tomMetadata()` in the `httpklient` tests)
+  must fill every field explicitly so the test surface is greppable when the type changes.
+
+If you find yourself adding a default to make broken/missing call sites compile, **fix the call
+sites instead** — the default is hiding the problem.
 
 ## Build & Test
 

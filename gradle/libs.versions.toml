@@ -33,6 +33,7 @@ wiremock = "3.13.2"
 [libraries]
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 arrow-core-jackson = { module = "io.arrow-kt:arrow-core-jackson", version.ref = "arrow" }
+arrow-resilience = { module = "io.arrow-kt:arrow-resilience", version.ref = "arrow" }
 atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
 auth0-java-jwt = { module = "com.auth0:java-jwt", version.ref = "auth0-jwt" }
 auth0-jwks-rsa = { module = "com.auth0:jwks-rsa", version.ref = "auth0-jwks" }

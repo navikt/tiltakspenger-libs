@@ -7,19 +7,6 @@ plugins {
     id("java-library")
     id("com.diffplug.spotless")
 }
-
-// Shared build service that limits Spotless/ktlint tasks to 1 concurrent execution,
-// preventing the flaky InvocationTargetException caused by parallel ktlint initialization.
-abstract class SpotlessLimiter : BuildService<BuildServiceParameters.None>
-
-val spotlessLimiter = gradle.sharedServices.registerIfAbsent("spotlessLimiter", SpotlessLimiter::class.java) {
-    maxParallelUsages.set(1)
-}
-
-tasks.matching { it.name.startsWith("spotless") }.configureEach {
-    usesService(spotlessLimiter)
-}
-
 val javaVersion = JavaVersion.VERSION_21
 val jvmVersion = JvmTarget.JVM_21
 
@@ -41,15 +28,15 @@ configurations.matching { it.name.endsWith("Classpath") }.configureEach {
     exclude(group = "junit", module = "junit")
     exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
 }
-// Add stdlib only to Spotless's classpath, not your module's
-configurations.matching { it.name.startsWith("spotless") }.configureEach {
-    dependencies {
-        add(name, kotlin("stdlib"))
-    }
-}
+// Note: Spotless/ktlint has a flaky InvocationTargetException when its tasks run
+// in parallel across many subprojects. The convention plugin can't reliably
+// serialize them via a Gradle build service, so the project's lint scripts run
+// `spotlessApply` with `--no-parallel --max-workers=1` instead.
+// See `clean_lint_and_build.sh` and `lint_and_build.sh`.
+
 spotless {
     kotlin {
-        ktlint()
+        ktlint(libs.versions.ktlint.get())
             .editorConfigOverride(
                 mapOf(
                     "ktlint_standard_max-line-length" to "off",

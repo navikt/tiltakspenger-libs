@@ -30,19 +30,38 @@ fun ArenaDeltakerStatusType.toDTO(
 
     return when (this) {
         ArenaDeltakerStatusType.DELAVB -> TiltakResponsDTO.DeltakerStatusDTO.AVBRUTT
+
         ArenaDeltakerStatusType.FULLF -> TiltakResponsDTO.DeltakerStatusDTO.FULLFORT
-        ArenaDeltakerStatusType.GJENN -> if (startdatoErFremITid) TiltakResponsDTO.DeltakerStatusDTO.VENTER_PA_OPPSTART else TiltakResponsDTO.DeltakerStatusDTO.DELTAR
+
+        ArenaDeltakerStatusType.GJENN ->
+            if (startdatoErFremITid) {
+                TiltakResponsDTO.DeltakerStatusDTO.VENTER_PA_OPPSTART
+            } else {
+                TiltakResponsDTO.DeltakerStatusDTO.DELTAR
+            }
+
         ArenaDeltakerStatusType.GJENN_AVB -> TiltakResponsDTO.DeltakerStatusDTO.AVBRUTT
+
         ArenaDeltakerStatusType.IKKEM -> TiltakResponsDTO.DeltakerStatusDTO.AVBRUTT
+
         ArenaDeltakerStatusType.JATAKK -> TiltakResponsDTO.DeltakerStatusDTO.DELTAR
+
         ArenaDeltakerStatusType.TILBUD -> TiltakResponsDTO.DeltakerStatusDTO.VENTER_PA_OPPSTART
+
         ArenaDeltakerStatusType.AKTUELL -> TiltakResponsDTO.DeltakerStatusDTO.SOKT_INN
+
         ArenaDeltakerStatusType.AVSLAG -> TiltakResponsDTO.DeltakerStatusDTO.IKKE_AKTUELL
+
         ArenaDeltakerStatusType.GJENN_AVL -> TiltakResponsDTO.DeltakerStatusDTO.IKKE_AKTUELL
+
         ArenaDeltakerStatusType.IKKAKTUELL -> TiltakResponsDTO.DeltakerStatusDTO.IKKE_AKTUELL
+
         ArenaDeltakerStatusType.INFOMOETE -> TiltakResponsDTO.DeltakerStatusDTO.VENTELISTE
+
         ArenaDeltakerStatusType.NEITAKK -> TiltakResponsDTO.DeltakerStatusDTO.IKKE_AKTUELL
+
         ArenaDeltakerStatusType.VENTELISTE -> TiltakResponsDTO.DeltakerStatusDTO.VENTELISTE
+
         ArenaDeltakerStatusType.FEILREG -> TiltakResponsDTO.DeltakerStatusDTO.FEILREGISTRERT
     }
 }

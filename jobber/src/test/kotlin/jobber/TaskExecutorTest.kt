@@ -58,6 +58,7 @@ internal class TaskExecutorTest {
             tasks = listOf(task("A"), task("B"), task("C")),
             initialDelay = 10.milliseconds,
             intervall = 50.milliseconds,
+            runJobCheck = emptyList(),
         )
         Thread.sleep(600)
         executor.stop()
@@ -97,6 +98,7 @@ internal class TaskExecutorTest {
             tasks = listOf(slowTask),
             initialDelay = 10.milliseconds,
             intervall = 30.milliseconds,
+            runJobCheck = emptyList(),
         )
         Thread.sleep(800)
         executor.stop()
@@ -120,6 +122,7 @@ internal class TaskExecutorTest {
             tasks = listOf(task),
             initialDelay = 10.milliseconds,
             intervall = intervalMs.milliseconds,
+            runJobCheck = emptyList(),
         )
         Thread.sleep(700)
         executor.stop()
@@ -150,6 +153,7 @@ internal class TaskExecutorTest {
             tasks = listOf(taskA, taskB),
             initialDelay = 10.milliseconds,
             intervall = 40.milliseconds,
+            runJobCheck = emptyList(),
         )
         Thread.sleep(400)
         executor.stop()
@@ -178,6 +182,7 @@ internal class TaskExecutorTest {
             tasks = listOf(taskA, taskB),
             initialDelay = 10.milliseconds,
             intervall = 40.milliseconds,
+            runJobCheck = emptyList(),
         )
         Thread.sleep(200)
         executor.stop()

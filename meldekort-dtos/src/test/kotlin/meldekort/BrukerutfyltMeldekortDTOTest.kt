@@ -9,7 +9,6 @@ import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.FRAV�
 import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.FRAVÆR_SYKT_BARN
 import no.nav.tiltakspenger.libs.meldekort.BrukerutfyltMeldekortDTO.Status.IKKE_BESVART
 import no.nav.tiltakspenger.libs.periode.Periode
-import no.nav.tiltakspenger.libs.periode.PeriodeDTO
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -45,10 +44,6 @@ class BrukerutfyltMeldekortDTOTest {
             id = "01HMWNSTVP8XB3QR6GYKR2E7AE",
             meldeperiodeId = "01HMWNSTVP8XB3QR6GYKR2E7AF",
             sakId = "01HMWNSTVP8XB3QR6GYKR2E7AG",
-            periode = PeriodeDTO(
-                fraOgMed = startDate.toString(),
-                tilOgMed = endDate.toString(),
-            ),
             mottatt = now,
             dager = dager,
             journalpostId = journalpostId,
@@ -59,10 +54,6 @@ class BrukerutfyltMeldekortDTOTest {
                 "id": "01HMWNSTVP8XB3QR6GYKR2E7AE",
                 "meldeperiodeId": "01HMWNSTVP8XB3QR6GYKR2E7AF",
                 "sakId": "01HMWNSTVP8XB3QR6GYKR2E7AG",
-                "periode": {
-                    "fraOgMed": "2024-01-01",
-                    "tilOgMed": "2024-01-14"
-                },
                 "mottatt": "2024-01-23T12:00:00",
                 "dager": {
                     "2024-01-01": "DELTATT_UTEN_LØNN_I_TILTAKET",

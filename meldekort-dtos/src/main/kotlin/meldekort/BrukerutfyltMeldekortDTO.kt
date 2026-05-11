@@ -1,6 +1,5 @@
 package no.nav.tiltakspenger.libs.meldekort
 
-import no.nav.tiltakspenger.libs.periode.PeriodeDTO
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -15,7 +14,6 @@ data class BrukerutfyltMeldekortDTO(
     val id: String,
     val meldeperiodeId: String,
     val sakId: String,
-    val periode: PeriodeDTO,
     val mottatt: LocalDateTime,
     val dager: Map<LocalDate, Status>,
     val journalpostId: String,

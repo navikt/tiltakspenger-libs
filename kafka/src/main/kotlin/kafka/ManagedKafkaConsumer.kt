@@ -22,6 +22,7 @@ class ManagedKafkaConsumer<K, V>(
     baseBackoffDelayMillis: Long = 500L,
     initialBackoffDelayMillis: Long = 1000L,
     private val log: KLogger? = KotlinLogging.logger {},
+    private val onRecordsPolled: (Int) -> Unit = {},
     private val consume: suspend (key: K, value: V) -> Unit,
 ) {
     private val job = Job()
@@ -87,6 +88,7 @@ class ManagedKafkaConsumer<K, V>(
                 if (!records.isEmpty) {
                     log?.debug { "Consumer for $topic polled ${records.count()} records." }
                 }
+                onRecordsPolled(records.count())
 
                 records.forEach { record ->
                     process(record)

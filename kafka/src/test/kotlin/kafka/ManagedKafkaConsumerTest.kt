@@ -6,6 +6,7 @@ import no.nav.tiltakspenger.libs.kafka.config.LocalKafkaConfig
 import no.nav.tiltakspenger.libs.kafka.test.SingletonKafkaProvider
 import no.nav.tiltakspenger.libs.kafka.test.eventually
 import org.apache.kafka.clients.admin.NewTopic
+import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -223,6 +224,56 @@ class ManagedKafkaConsumerTest {
 
         eventually(Duration.ofSeconds(10), clock = clock) {
             consumed.values.toSet() shouldBe setOf(lastValue)
+            consumer.stop()
+        }
+    }
+
+    @Test
+    fun `ManagedKafkaConsumer - konsumerer flere meldinger per poll når MAX_POLL_RECORDS over 1`() {
+        val intTopic = NewTopic("int.topic-3", 4, 1)
+        SingletonKafkaProvider.adminClient
+            .createTopics(listOf(intTopic))
+            .all()
+            .get()
+
+        val maxPollRecords = 100
+        val antallMeldinger = 500
+        val data = (1..antallMeldinger).toList()
+        val consumed = mutableListOf<Int>()
+        val pollBatchSizes = mutableListOf<Int>()
+        val clock = fixedClock
+
+        val configWithHigherMaxPoll = intConsumerConfig + mapOf(
+            ConsumerConfig.MAX_POLL_RECORDS_CONFIG to maxPollRecords,
+        )
+
+        // produser meldingene før konsumenten starter, slik at de samles opp og en enkelt poll kan returnere flere
+        data.forEach {
+            val partition = (0..3).random()
+            produceIntInt(ProducerRecord(intTopic.name(), partition, it, it))
+        }
+
+        val consumer = ManagedKafkaConsumer<Int, Int>(
+            topic = intTopic.name(),
+            config = configWithHigherMaxPoll,
+            delayTimeMillis = 1L,
+            pollDuration = testPollDuration,
+            baseBackoffDelayMillis = testBaseBackoffDelayMillis,
+            initialBackoffDelayMillis = testInitialBackoffDelayMillis,
+            log = null,
+            onRecordsPolled = { count -> if (count > 0) pollBatchSizes.add(count) },
+        ) { k, _ ->
+            consumed.add(k)
+        }
+
+        consumer.start()
+
+        eventually(Duration.ofSeconds(10), clock = clock) {
+            consumed.size shouldBe data.size
+            consumed.toSet() shouldBe data.toSet()
+            // verifiser at minst én poll faktisk returnerte mer enn 1 record, og at vi aldri overskrider grensen
+            (pollBatchSizes.max() > 1) shouldBe true
+            (pollBatchSizes.max() <= maxPollRecords) shouldBe true
             consumer.stop()
         }
     }

@@ -1,10 +1,10 @@
 package no.nav.tiltakspenger.libs.kafka
 
+import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.shouldBe
-import no.nav.tiltakspenger.libs.common.fixedClock
+import kotlinx.coroutines.runBlocking
 import no.nav.tiltakspenger.libs.kafka.config.LocalKafkaConfig
 import no.nav.tiltakspenger.libs.kafka.test.SingletonKafkaProvider
-import no.nav.tiltakspenger.libs.kafka.test.eventually
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.KafkaProducer
@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.util.Properties
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 class ManagedKafkaConsumerTest {
     private val topic = "test.topic"
@@ -51,7 +52,6 @@ class ManagedKafkaConsumerTest {
         val key = "key"
         val value = "value"
         val cache = mutableMapOf<String, String>()
-        val clock = fixedClock
         produceStringString(ProducerRecord(topic, key, value))
 
         val consumer = ManagedKafkaConsumer(
@@ -67,8 +67,13 @@ class ManagedKafkaConsumerTest {
         }
         consumer.run()
 
-        eventually(clock = clock) {
-            cache[key] shouldBe value
+        try {
+            runBlocking {
+                eventually {
+                    cache[key] shouldBe value
+                }
+            }
+        } finally {
             consumer.stop()
         }
     }
@@ -79,7 +84,6 @@ class ManagedKafkaConsumerTest {
         val value = "value".toByteArray()
         val cache = mutableMapOf<UUID, ByteArray>()
         val uuidTopic = "uuid.topic"
-        val clock = fixedClock
         produceUUIDByteArray(ProducerRecord(uuidTopic, key, value))
 
         val config = LocalKafkaConfig(SingletonKafkaProvider.getHost())
@@ -102,8 +106,13 @@ class ManagedKafkaConsumerTest {
         }
         consumer.run()
 
-        eventually(clock = clock) {
-            cache[key] shouldBe value
+        try {
+            runBlocking {
+                eventually {
+                    cache[key] shouldBe value
+                }
+            }
+        } finally {
             consumer.stop()
         }
     }
@@ -112,7 +121,6 @@ class ManagedKafkaConsumerTest {
     fun `ManagedKafkaConsumer - prøver å konsumere melding på nytt hvis noe feiler`() {
         val key = "key"
         val value = "value"
-        val clock = fixedClock
         var antallGangerKallt = 0
 
         produceStringString(ProducerRecord(topic, key, value))
@@ -131,11 +139,16 @@ class ManagedKafkaConsumerTest {
         }
         consumer.run()
 
-        eventually(clock = clock) {
-            (antallGangerKallt >= 2) shouldBe true
+        try {
+            runBlocking {
+                eventually {
+                    (antallGangerKallt >= 2) shouldBe true
+                }
+            }
+            consumer.status.retries shouldBe antallGangerKallt
+        } finally {
             consumer.stop()
         }
-        consumer.status.retries shouldBe antallGangerKallt
     }
 
     @Test
@@ -149,7 +162,6 @@ class ManagedKafkaConsumerTest {
         val data = (1..30).toList()
         val consumed = mutableListOf<Int>()
         val failures = mutableListOf(7, 22, 22)
-        val clock = fixedClock
         val consumer = ManagedKafkaConsumer<Int, Int>(
             topic = intTopic.name(),
             config = intConsumerConfig,
@@ -172,11 +184,16 @@ class ManagedKafkaConsumerTest {
             produceIntInt(ProducerRecord(intTopic.name(), partition, it, it))
         }
 
-        eventually(Duration.ofSeconds(10), clock = clock) {
-            // hvis vi leser flere meldinger av gangen vil antall konsumerte meldinger være større enn antall
-            // produserte meldinger. Så lenge MAX_POLL_RECORDS=1 i consumerconfig skal disse være like.
-            consumed.size shouldBe data.size
-            consumed.toSet().size shouldBe data.size
+        try {
+            runBlocking {
+                eventually(10.seconds) {
+                    // hvis vi leser flere meldinger av gangen vil antall konsumerte meldinger være større enn antall
+                    // produserte meldinger. Så lenge MAX_POLL_RECORDS=1 i consumerconfig skal disse være like.
+                    consumed.size shouldBe data.size
+                    consumed.toSet().size shouldBe data.size
+                }
+            }
+        } finally {
             consumer.stop()
         }
     }
@@ -193,7 +210,6 @@ class ManagedKafkaConsumerTest {
         val firstValue = 1
         val lastValue = 2
         val data = keys.map { Pair(it, firstValue) } + keys.map { Pair(it, lastValue) }
-        val clock = fixedClock
         val consumed = mutableMapOf<Int, Int>()
         val failures = mutableListOf(7)
         val consumer = ManagedKafkaConsumer<Int, Int>(
@@ -222,8 +238,13 @@ class ManagedKafkaConsumerTest {
             produceIntInt(ProducerRecord(intTopic.name(), partition, it.first, it.second))
         }
 
-        eventually(Duration.ofSeconds(10), clock = clock) {
-            consumed.values.toSet() shouldBe setOf(lastValue)
+        try {
+            runBlocking {
+                eventually(10.seconds) {
+                    consumed.values.toSet() shouldBe setOf(lastValue)
+                }
+            }
+        } finally {
             consumer.stop()
         }
     }
@@ -241,7 +262,6 @@ class ManagedKafkaConsumerTest {
         val data = (1..antallMeldinger).toList()
         val consumed = mutableListOf<Int>()
         val pollBatchSizes = mutableListOf<Int>()
-        val clock = fixedClock
 
         val configWithHigherMaxPoll = intConsumerConfig + mapOf(
             ConsumerConfig.MAX_POLL_RECORDS_CONFIG to maxPollRecords,
@@ -268,12 +288,17 @@ class ManagedKafkaConsumerTest {
 
         consumer.start()
 
-        eventually(Duration.ofSeconds(10), clock = clock) {
-            consumed.size shouldBe data.size
-            consumed.toSet() shouldBe data.toSet()
-            // verifiser at minst én poll faktisk returnerte mer enn 1 record, og at vi aldri overskrider grensen
-            (pollBatchSizes.max() > 1) shouldBe true
-            (pollBatchSizes.max() <= maxPollRecords) shouldBe true
+        try {
+            runBlocking {
+                eventually(10.seconds) {
+                    consumed.size shouldBe data.size
+                    consumed.toSet() shouldBe data.toSet()
+                    // verifiser at minst én poll faktisk returnerte mer enn 1 record, og at vi aldri overskrider grensen
+                    (pollBatchSizes.max() > 1) shouldBe true
+                    (pollBatchSizes.max() <= maxPollRecords) shouldBe true
+                }
+            }
+        } finally {
             consumer.stop()
         }
     }

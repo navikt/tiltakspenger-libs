@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.kafka
 
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import no.nav.tiltakspenger.libs.kafka.config.LocalKafkaConfig
 import no.nav.tiltakspenger.libs.kafka.test.SingletonKafkaProvider
@@ -57,7 +58,6 @@ class ManagedKafkaConsumerTest {
         val consumer = ManagedKafkaConsumer(
             topic = topic,
             config = stringConsumerConfig,
-            delayTimeMillis = 1L,
             pollDuration = testPollDuration,
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
@@ -96,7 +96,6 @@ class ManagedKafkaConsumerTest {
         val consumer = ManagedKafkaConsumer(
             topic = uuidTopic,
             config = config,
-            delayTimeMillis = 1L,
             pollDuration = testPollDuration,
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
@@ -128,7 +127,6 @@ class ManagedKafkaConsumerTest {
         val consumer = ManagedKafkaConsumer<String, String>(
             topic = topic,
             config = stringConsumerConfig,
-            delayTimeMillis = 1L,
             pollDuration = testPollDuration,
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
@@ -143,9 +141,9 @@ class ManagedKafkaConsumerTest {
             runBlocking {
                 eventually {
                     (antallGangerKallt >= 2) shouldBe true
+                    consumer.status.retries shouldBe antallGangerKallt
                 }
             }
-            consumer.status.retries shouldBe antallGangerKallt
         } finally {
             consumer.stop()
         }
@@ -165,7 +163,6 @@ class ManagedKafkaConsumerTest {
         val consumer = ManagedKafkaConsumer<Int, Int>(
             topic = intTopic.name(),
             config = intConsumerConfig,
-            delayTimeMillis = 1L,
             pollDuration = testPollDuration,
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
@@ -215,7 +212,6 @@ class ManagedKafkaConsumerTest {
         val consumer = ManagedKafkaConsumer<Int, Int>(
             topic = intTopic.name(),
             config = intConsumerConfig,
-            delayTimeMillis = 1L,
             pollDuration = testPollDuration,
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
@@ -276,7 +272,6 @@ class ManagedKafkaConsumerTest {
         val consumer = ManagedKafkaConsumer<Int, Int>(
             topic = intTopic.name(),
             config = configWithHigherMaxPoll,
-            delayTimeMillis = 1L,
             pollDuration = testPollDuration,
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
@@ -301,6 +296,68 @@ class ManagedKafkaConsumerTest {
         } finally {
             consumer.stop()
         }
+    }
+
+    @Test
+    fun `ManagedKafkaConsumer - run er idempotent`() {
+        val consumer = ManagedKafkaConsumer(
+            topic = topic,
+            config = stringConsumerConfig,
+            pollDuration = testPollDuration,
+            baseBackoffDelayMillis = testBaseBackoffDelayMillis,
+            initialBackoffDelayMillis = testInitialBackoffDelayMillis,
+            log = null,
+        ) { _: String, _: String -> }
+
+        try {
+            val firstJob = consumer.run()
+            // Gjentatte kall skal ikke starte en ny loop, men returnere den samme job-en.
+            consumer.run() shouldBe firstJob
+            consumer.start() shouldBe firstJob
+        } finally {
+            consumer.stop()
+        }
+    }
+
+    @Test
+    fun `ManagedKafkaConsumer - stop venter på at pågående prosessering blir ferdig`() {
+        val key = "key"
+        val value = "value"
+        val topic = "graceful.stop.topic"
+        produceStringString(ProducerRecord(topic, key, value))
+
+        val config = LocalKafkaConfig(SingletonKafkaProvider.getHost())
+            .consumerConfig(
+                keyDeserializer = StringDeserializer(),
+                valueDeserializer = StringDeserializer(),
+                groupId = "test-consumer-${UUID.randomUUID()}",
+            )
+
+        var processingStarted = false
+        var processingFinished = false
+        val consumer = ManagedKafkaConsumer(
+            topic = topic,
+            config = config,
+            pollDuration = testPollDuration,
+            baseBackoffDelayMillis = testBaseBackoffDelayMillis,
+            initialBackoffDelayMillis = testInitialBackoffDelayMillis,
+            log = null,
+        ) { _: String, _: String ->
+            processingStarted = true
+            // Simuler litt arbeid som må få fullføre selv om stop() kalles underveis.
+            delay(500)
+            processingFinished = true
+        }
+        consumer.run()
+
+        runBlocking {
+            eventually {
+                processingStarted shouldBe true
+            }
+        }
+        // stop() skal blokkere til den pågående prosesseringen er ferdig.
+        consumer.stop()
+        processingFinished shouldBe true
     }
 }
 

@@ -1,5 +1,5 @@
 [versions]
-arrow = "2.2.2.1"
+arrow = "2.2.3"
 atomicfu = "0.33.0"
 auth0-jwt = "4.5.2"
 auth0-jwks = "0.24.1"

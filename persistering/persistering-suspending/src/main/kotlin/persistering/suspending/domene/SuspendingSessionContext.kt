@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.persistering.domene.v2
+package no.nav.tiltakspenger.libs.persistering.suspending.domene
 
 /** Holder en sesjon åpen på tvers av repo-kall. Ikke trådsikker. */
 interface SuspendingSessionContext {

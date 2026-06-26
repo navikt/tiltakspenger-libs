@@ -13,6 +13,7 @@ include(
     "test-common",
     "persistering:persistering-infrastruktur",
     "persistering:persistering-domene",
+    "persistering:persistering-suspending",
     "persistering:persistering-test-common",
     "auth-test-core",
     "httpklient",

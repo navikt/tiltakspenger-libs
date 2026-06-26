@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.persistering.infrastruktur
+package no.nav.tiltakspenger.libs.persistering.suspending.infrastruktur
 
 import io.r2dbc.spi.ConnectionFactories
 import io.r2dbc.spi.ConnectionFactory

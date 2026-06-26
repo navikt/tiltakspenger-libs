@@ -7,8 +7,8 @@ plugins {
     id("java-library")
     id("com.diffplug.spotless")
 }
-val javaVersion = JavaVersion.VERSION_21
-val jvmVersion = JvmTarget.JVM_21
+val javaVersion = JavaVersion.VERSION_25
+val jvmVersion = JvmTarget.JVM_25
 
 group = "com.github.navikt.tiltakspenger-libs"
 

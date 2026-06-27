@@ -1,5 +1,4 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -7,8 +6,6 @@ plugins {
     id("java-library")
     id("com.diffplug.spotless")
 }
-val javaVersion = JavaVersion.VERSION_25
-val jvmVersion = JvmTarget.JVM_25
 
 group = "com.github.navikt.tiltakspenger-libs"
 
@@ -48,8 +45,8 @@ spotless {
 }
 tasks {
     kotlin {
+        jvmToolchain(25)
         compilerOptions {
-            jvmTarget.set(jvmVersion)
             freeCompilerArgs.add("-Xconsistent-data-class-copy-visibility")
         }
     }
@@ -69,8 +66,6 @@ tasks {
     }
 }
 java {
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
     withSourcesJar()
 }
 publishing {

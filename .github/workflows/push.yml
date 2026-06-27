@@ -3,6 +3,20 @@ name: Push
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.gitattributes'
+      - '.gitHooks/**'
+      - '.gitignore'
+      - '.idea/**'
+      - '.nais/alerts.yml'
+      - 'clean_lint_and_build.sh'
+      - 'CODEOWNERS'
+      - 'doc/**'
+      - 'docker-compose/**'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'lint_and_build.sh'
 
 jobs:
   build:

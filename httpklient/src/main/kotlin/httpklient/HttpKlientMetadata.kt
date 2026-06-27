@@ -11,7 +11,7 @@ import kotlin.time.Duration
  *   - klientens default-headere: `Accept: application/json` for response-typer som ikke er `String`/`Unit`, og `Content-Type: application/json` for JSON-body (eller `application/x-www-form-urlencoded` for `formUrlEncoded`),
  *   - en eventuell bearer-token materialisert av klienten, i klartekst som `Authorization: Bearer ...` (bruk derfor [rawRequestString], som redakterer sensitive headere, ved logging).
  *   Bevarer innsettings-rekkefølge fra `RequestBuilder`; klientens default-headere havner til slutt.
- *   Inneholder bevisst _ikke_ transport-headerne `java.net.http.HttpClient` legger på selv ved sending — på Java 21 er det `Host`, `User-Agent` (`Java-http-client/21`) og `Content-Length` (sistnevnte for body-requester).
+ *   Inneholder bevisst _ikke_ transport-headerne `java.net.http.HttpClient` legger på selv ved sending — typisk `Host`, `User-Agent` (`Java-http-client/<jdk-versjon>`, f.eks. `Java-http-client/25`) og `Content-Length` (sistnevnte for body-requester).
  *   Disse settes i JDK-ens ikke-offentlige connection-lag og eksponeres ikke via `HttpRequest.headers()` (verifisert), så vi kan verken lese dem tilbake fra klienten eller speile dem her uten å reimplementere JDK-intern oppførsel — som ville bundet oss til Java-versjonen.
  * @property responseHeaders Headere fra HTTP-responsen.
  *   Rekkefølgen kommer fra JDK `HttpHeaders.map()` og er typisk alfabetisk (case-insensitiv) — ikke wire-rekkefølgen.

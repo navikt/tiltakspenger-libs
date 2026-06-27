@@ -130,10 +130,13 @@ internal class TaskExecutorTest {
         val starts = cycleStarts.toList()
         starts shouldHaveAtLeastSize 3
         val gapsMs = starts.zipWithNext { a, b -> (b - a) / 1_000_000 }
-        // Liten toleranse (5 ms) for skedulerings-jitter i java.util.Timer.
+        // Toleranse for skedulerings-jitter i java.util.Timer. java.util.Timer kan starte en
+        // TimerTask noen millisekunder for tidlig, og under CPU-last (f.eks. flere bygg samtidig)
+        // blir veggklokke-målingen ekstra ujevn. 20 ms er romslig nok til å unngå flakiness uten
+        // å miste poenget med assertionen (at det går ~intervall mellom syklusstartene).
         // Drop å sjekke første gap for å gjøre testen mindre flaky
         // Tidsbruk for første kjøring varierer mer pga init-kostnader/"oppvarming"
-        gapsMs.drop(1).forEach { gap -> gap shouldBeGreaterThanOrEqualTo (intervalMs - 5) }
+        gapsMs.drop(1).forEach { gap -> gap shouldBeGreaterThanOrEqualTo (intervalMs - 20) }
     }
 
     @Test

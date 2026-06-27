@@ -10,6 +10,7 @@ jackson = "3.2.0"
 jackson-annotations = "2.22"
 junit = "6.1.0"
 kafka = "4.3.0"
+konsist = "0.17.3"
 kotest = "6.2.1"
 kotest-extensions-wiremock = "3.1.0"
 kotlin = "2.4.0"
@@ -49,6 +50,7 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jun
 junit-jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
 kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
+konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
 kotest-assertions-json = { module = "io.kotest:kotest-assertions-json", version.ref = "kotest" }
 kotest-extensions = { module = "io.kotest:kotest-extensions", version.ref = "kotest" }

@@ -27,7 +27,7 @@ Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tilta
 | `json`          | Delt Jackson-`objectMapper` + hjelperne `serialize()`/`deserialize()`                                                                     |
 | `logging`       | `Sikkerlogg` for NAIS secure logging via markers                                                                                          |
 | `httpklient`    | Delt `java.net.http.HttpClient`-innpakning med `HttpKlient`, Arrow `Either`-feil, JSON-hjelpere, valgfri bearer-token-støtte via `AccessToken`, valgfri retry basert på Arrow Resilience `Schedule` (standard predikat for idempotente metoder, per-forsøk-timing i metadata, hook for overdreven retry), og valgfri circuit breaker basert på Arrow Resilience `CircuitBreaker` |
-| `test-common`   | Delt test-infra: `fixedClock`, `TikkendeKlokke`, `getOrFail()` for `Either`, `HttpKlientFake`, wiremock-hjelpere                          |
+| `test-common`   | Delt test-infra: `fixedClock`, `TikkendeKlokke`, `getOrFail()` for `Either`, `HttpKlientFake`, IPv4-trygge WireMock-hjelpere (`withWireMockServer`, `stoppedServerUri`, `ipv4WireMockServer`)                          |
 | `texas`         | NAIS Texas auth: token-introspeksjon, system-tokens, Ktor auth provider                                                                   |
 | `ktor-common`   | Ktor-server-extensions (bruker `compileOnly` for ktor-deps)                                                                               |
 | `jobber`        | Leader election + stoppable job-abstraksjoner for NAIS                                                                                    |

@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import arrow.resilience.Schedule
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -16,6 +15,8 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.TikkendeKlokke
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.stoppedServerUri
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import no.nav.tiltakspenger.libs.httpklient.retry.AttemptOutcome
 import no.nav.tiltakspenger.libs.httpklient.retry.NeverRetry
 import no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig
@@ -41,7 +42,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `default RetryConfig retry-er ikke`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/x")).willReturn(aResponse().withStatus(503).withBody("nei")))
             val klient = testHttpKlient()
 
@@ -55,7 +56,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `RetryConfig uten eksplisitt retryOn retry-er ikke som default`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/default-retryon")).willReturn(aResponse().withStatus(503)))
             // Default retryOn er NeverRetry: en bar RetryConfig(schedule = ...) retry-er ikke før konsumenten eksplisitt opt-iner.
             // GET er idempotent og 503 er en retry-bar status, så det er kun default-predikatet (NeverRetry) som hindrer retry her.
@@ -69,7 +70,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `respons godtatt av successStatus retry-es ikke selv om statusen er i retryable-mengden`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/503-er-ok")).willReturn(aResponse().withStatus(503).withBody("degradert")))
             // Konsumenten godtar 503 som suksess; da skal retry-loopen ikke brenne budsjett på den.
             val klient = testHttpKlient(
@@ -88,7 +89,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `alle retryable statuskoder retry-es, naboer gjør det ikke`() = runTest {
-        suspend fun attemptsForStatus(status: Int): Int = withWireMock { wiremock ->
+        suspend fun attemptsForStatus(status: Int): Int = withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/status")).willReturn(aResponse().withStatus(status)))
             val klient = testHttpKlient(retryConfig = RetryConfig(schedule = recursSchedule(1), retryOn = { true }))
             klient.get<String>(URI.create("${wiremock.baseUrl()}/status")).swap().getOrNull()!!.metadata.attempts
@@ -104,7 +105,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `retry lykkes på andre forsøk`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/y"))
                     .inScenario("retry-y").whenScenarioStateIs(Scenario.STARTED)
@@ -134,7 +135,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `bruker opp alle retries og returnerer siste feil`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/z")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 retryConfig = RetryConfig(schedule = recursSchedule(2), retryOn = RetryOnServerErrorsAndNetwork),
@@ -150,7 +151,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `4xx blir ikke retry-et med default-predikat for idempotente metoder`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/q")).willReturn(aResponse().withStatus(404)))
             val klient = testHttpKlient(
                 retryConfig = RetryConfig(schedule = recursSchedule(2), retryOn = RetryOnServerErrorsAndNetwork),
@@ -164,7 +165,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `POST blir ikke retry-et med default-predikat`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/p")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 retryConfig = RetryConfig(schedule = recursSchedule(2), retryOn = RetryOnServerErrorsAndNetwork),
@@ -178,7 +179,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `POST kan retry-es med custom predikat`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/p2")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 retryConfig = RetryConfig(
@@ -219,7 +220,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `per-request retryConfig overstyrer klient-default`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/o")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(retryConfig = RetryConfig.None)
 
@@ -233,7 +234,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `excessiveRetries-callback firer når terskelen er passert`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/e")).willReturn(aResponse().withStatus(503)))
             var notified: RetryOutcome? = null
             val klient = testHttpKlient(
@@ -254,7 +255,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `excessiveRetries-callback firer ikke under terskelen`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/u")).willReturn(aResponse().withStatus(200).withBody("ok")))
             var notified = false
             val klient = testHttpKlient(
@@ -337,7 +338,7 @@ internal class HttpKlientRetryTest {
             jitter = false,
             random = Random(seed = 1),
         )
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/exp")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(retryConfig = cfg)
             val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/exp")).swap().getOrNull()!!
@@ -354,7 +355,7 @@ internal class HttpKlientRetryTest {
             jitter = true,
             random = Random(seed = 7),
         )
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/jit")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(retryConfig = cfg)
             klient.get<String>(URI.create("${wiremock.baseUrl()}/jit")).swap().getOrNull()!!
@@ -377,7 +378,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `RetryConfig fixed factory venter mellom forsøk`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/b")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 retryConfig = RetryConfig.fixed(maxRetries = 1, delay = 5.milliseconds),
@@ -470,7 +471,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `loop retry-er ikke ikke-retryable utfall selv om predikatet sier ja`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/g")).willReturn(aResponse().withStatus(404)))
             var predicateCalls = 0
             val klient = testHttpKlient(
@@ -497,7 +498,7 @@ internal class HttpKlientRetryTest {
             Schedule.spaced<AttemptOutcome>(1.milliseconds)
                 .zipLeft(Schedule.recurs(2L))
 
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/s")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 retryConfig = RetryConfig(schedule = schedule, retryOn = RetryOnServerErrorsAndNetwork),
@@ -510,7 +511,7 @@ internal class HttpKlientRetryTest {
 
     @Test
     fun `per-forsøk varigheter måles mot klokka`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/tikk")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 retryConfig = RetryConfig(schedule = recursSchedule(1), retryOn = RetryOnServerErrorsAndNetwork),
@@ -529,7 +530,7 @@ internal class HttpKlientRetryTest {
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     @Test
     fun `fixed backoff venter konfigurert tid mellom forsøk`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/backoff")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 retryConfig = RetryConfig.fixed(maxRetries = 2, delay = 10.milliseconds, retryOn = RetryOnServerErrorsAndNetwork),

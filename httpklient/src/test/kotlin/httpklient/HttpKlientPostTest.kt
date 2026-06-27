@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
@@ -9,13 +8,14 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 
 internal class HttpKlientPostTest {
     @Test
     fun `request builder sender og mottar json som string`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 post(urlEqualTo("/echo")).willReturn(
                     aResponse()
@@ -52,7 +52,7 @@ internal class HttpKlientPostTest {
 
     @Test
     fun `post serialiserer request-dto og returnerer json som string`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 post(urlEqualTo("/dto-til-string")).willReturn(
                     aResponse()
@@ -80,7 +80,7 @@ internal class HttpKlientPostTest {
 
     @Test
     fun `post serialiserer request-dto og deserialiserer response-dto`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 post(urlEqualTo("/dto-til-dto")).willReturn(
                     aResponse()
@@ -113,7 +113,7 @@ internal class HttpKlientPostTest {
 
     @Test
     fun `body sender raw tekst med eksplisitte headere`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 post(urlEqualTo("/raw")).withHeader("Content-Type", equalTo("text/plain")).willReturn(
                     aResponse()
@@ -134,7 +134,7 @@ internal class HttpKlientPostTest {
 
     @Test
     fun `body-shorthand for post put patch sender DTO som JSON`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/p")).willReturn(aResponse().withStatus(200).withBody("ok")))
             wiremock.stubFor(
                 com.github.tomakehurst.wiremock.client.WireMock.put(urlEqualTo("/u"))
@@ -171,7 +171,7 @@ internal class HttpKlientPostTest {
 
     @Test
     fun `body-shorthand med extra builder kan overstyre headere`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/x")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -190,7 +190,7 @@ internal class HttpKlientPostTest {
 
     @Test
     fun `body-shorthand med JSON-string sender verbatim uten dobbel-serialisering`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/verbatim")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -207,7 +207,7 @@ internal class HttpKlientPostTest {
 
     @Test
     fun `formUrlEncoded url-koder felter og setter content-type`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/token")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -226,7 +226,7 @@ internal class HttpKlientPostTest {
     @Test
     fun `formUrlEncoded med varargs bevarer gjentatte nøkler`() = runTest {
         // For application/x-www-form-urlencoded er gjentatte felter gyldige (f.eks. scope=a&scope=b), så varargs-formen må ikke kollapse duplikater via toMap().
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/scopes")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -243,7 +243,7 @@ internal class HttpKlientPostTest {
 
     @Test
     fun `body-shorthand med JSON-string for put og patch sender verbatim`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 com.github.tomakehurst.wiremock.client.WireMock.put(urlEqualTo("/vu"))
                     .willReturn(aResponse().withStatus(200).withBody("ok")),
@@ -272,7 +272,7 @@ internal class HttpKlientPostTest {
 
     @Test
     fun `formUrlEncoded med Map honorerer eksisterende content-type`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/form-map")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -292,7 +292,7 @@ internal class HttpKlientPostTest {
     @Test
     fun `formUrlEncoded honorerer eksisterende content-type med annen casing og lager ikke duplikat`() = runTest {
         // HTTP-headernavn er case-insensitive (RFC 9110 §5.1), så en allerede satt "content-type" skal forhindre at formUrlEncoded legger til en duplikat "Content-Type".
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/form-casing")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 

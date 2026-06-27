@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -15,13 +14,14 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 
 internal class HttpKlientHeadersTest {
     @Test
     fun `header overskriver tidligere verdier for samme key`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/replace"))
                     .withHeader("X-Foo", equalTo("siste"))
@@ -46,7 +46,7 @@ internal class HttpKlientHeadersTest {
     @Test
     fun `addHeader sender flere verdier for samme key som separate header-linjer til serveren`() = runTest {
         // Bruker custom header (X-Variant) for å unngå at Jetty automatisk gzipper response-bodyen (slik den gjør ved Accept-Encoding: gzip), som ville forstyrret body-assertions.
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/multi")).willReturn(aResponse().withStatus(200).withBody("ok")),
             )
@@ -73,7 +73,7 @@ internal class HttpKlientHeadersTest {
 
     @Test
     fun `addHeader kombinerer med tidligere header-kall på samme key`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/blandet")).willReturn(aResponse().withStatus(200).withBody("ok")),
             )
@@ -96,7 +96,7 @@ internal class HttpKlientHeadersTest {
 
     @Test
     fun `header etter addHeader fjerner alle tidligere verdier`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/reset")).willReturn(aResponse().withStatus(200).withBody("ok")),
             )
@@ -119,7 +119,7 @@ internal class HttpKlientHeadersTest {
     @Test
     fun `header slår opp eksisterende key case-insensitivt og overskriver i stedet for å lage duplikat`() = runTest {
         // HTTP-headernavn er case-insensitive (RFC 9110 §5.1), så header("X-Foo") etterfulgt av header("x-foo") skal overskrive samme header – ikke sende to separate header-linjer til serveren.
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/case-replace")).willReturn(aResponse().withStatus(200).withBody("ok")),
             )
@@ -150,7 +150,7 @@ internal class HttpKlientHeadersTest {
     @Test
     fun `addHeader slår opp eksisterende key case-insensitivt og appender på samme header`() = runTest {
         // addHeader("X-Variant") etterfulgt av addHeader("x-variant") skal legge verdien på samme header, ikke opprette en duplikat-header med annen casing.
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/case-append")).willReturn(aResponse().withStatus(200).withBody("ok")),
             )
@@ -176,7 +176,7 @@ internal class HttpKlientHeadersTest {
     fun `headere bevarer innsettingsrekkefølge i rawRequestString, default-headere havner til slutt`() = runTest {
         // HttpKlientRequest-kontrakten lover at headere bevarer rekkefølgen konsumenten satte dem i, med klientens default-headere (her Content-Type for JSON-body) lagt til på slutten.
         // En alfabetisk sortert map ville feilaktig plassert Content-Type ("C") før X-Test ("X").
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 post(urlEqualTo("/rekkefolge")).willReturn(aResponse().withStatus(200).withBody("ok")),
             )
@@ -194,7 +194,7 @@ internal class HttpKlientHeadersTest {
     @Test
     fun `header etterfulgt av header med annen casing bruker den siste casingen`() = runTest {
         // Den siste skriveren bestemmer casingen: header("min-header") så header("Min-header") skal ende opp med nøkkelen "Min-header".
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/casing-hh")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -212,7 +212,7 @@ internal class HttpKlientHeadersTest {
     @Test
     fun `header etterfulgt av addHeader med annen casing bruker den siste casingen og beholder begge verdier`() = runTest {
         // header("min-header") så addHeader("Min-header") skal appende på samme header, med nøkkelen oppdatert til den siste casingen "Min-header".
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/casing-ha")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -230,7 +230,7 @@ internal class HttpKlientHeadersTest {
     @Test
     fun `addHeader etterfulgt av header med annen casing bruker den siste casingen og overskriver verdiene`() = runTest {
         // addHeader("min-header") så header("Min-header") skal overskrive verdien og bruke den siste casingen "Min-header".
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/casing-ah")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -248,7 +248,7 @@ internal class HttpKlientHeadersTest {
     @Test
     fun `addHeader etterfulgt av addHeader med annen casing bruker den siste casingen og beholder begge verdier`() = runTest {
         // addHeader("min-header") så addHeader("Min-header") skal appende på samme header, med nøkkelen oppdatert til den siste casingen "Min-header".
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/casing-aa")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -265,7 +265,7 @@ internal class HttpKlientHeadersTest {
 
     @Test
     fun `responseHeader-aksessorene slår opp case-insensitivt`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/svar-headere")).willReturn(
                     aResponse().withStatus(200).withBody("ok")
@@ -287,7 +287,7 @@ internal class HttpKlientHeadersTest {
 
     @Test
     fun `requestHeader-aksessorene slår opp case-insensitivt`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/req-headere")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -301,7 +301,7 @@ internal class HttpKlientHeadersTest {
 
     @Test
     fun `sensitive headere maskeres i rawRequestString men ikke i den strukturerte header-mappen`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/redaksjon")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 

@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -13,6 +12,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import no.nav.tiltakspenger.libs.common.stoppedServerUri
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 import kotlin.time.Duration.Companion.milliseconds
@@ -56,7 +57,7 @@ internal class HttpKlientFaultTest {
         // Vi må bruke runBlocking (ikke runTest) for å få ekte tid og cancellation propagering gjennom Dispatchers.IO.
         // wiremock holder responsen i 2 sekunder, vi kansellerer etter 100ms.
         runBlocking {
-            withWireMock { wiremock ->
+            withWireMockServer { wiremock ->
                 wiremock.stubFor(
                     get(urlEqualTo("/slow")).willReturn(aResponse().withStatus(200).withFixedDelay(2_000).withBody("aldri")),
                 )
@@ -77,7 +78,7 @@ internal class HttpKlientFaultTest {
 }
 
 private suspend fun assertFaultGirNetworkError(fault: Fault, path: String) {
-    withWireMock { wiremock ->
+    withWireMockServer { wiremock ->
         wiremock.stubFor(get(urlEqualTo(path)).willReturn(aResponse().withFault(fault)))
         val klient = testHttpKlient(timeout = 1_000.milliseconds)
 

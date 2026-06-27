@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -8,6 +7,7 @@ import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.ServerSocket
 import java.net.URI
@@ -82,7 +82,7 @@ internal class HttpKlientResponseTest {
 
     @Test
     fun `Java HttpClient returnerer status 600 fra WireMock`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/status-600")).willReturn(
                     aResponse()
@@ -106,7 +106,7 @@ internal class HttpKlientResponseTest {
 
     @Test
     fun `HttpKlient returnerer UventetStatus for WireMock status 600 med default successStatus`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/status-600")).willReturn(
                     aResponse()
@@ -129,7 +129,7 @@ internal class HttpKlientResponseTest {
 
     @Test
     fun `HttpKlient kan returnere status 600 hvis konsumenten eksplisitt definerer den som success`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/status-600")).willReturn(
                     aResponse()

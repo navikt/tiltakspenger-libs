@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -11,6 +10,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerConfig
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerDecisionContext
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerOnRetryableErrors
@@ -30,7 +30,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `default CircuitBreakerConfig gjør ingenting`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/default")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(circuitBreakerConfig = CircuitBreakerConfig.None)
 
@@ -43,7 +43,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `åpner etter konfigurert antall retryable feil og avviser uten nytt HTTP-kall`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/ustabil")).willReturn(aResponse().withStatus(503).withBody("nei")))
             val klient = testHttpKlient(
                 circuitBreakerConfig = CircuitBreakerConfig.count(
@@ -73,7 +73,7 @@ internal class HttpKlientCircuitBreakerTest {
     @Test
     fun `resetter etter resetTimeout og lukker ved vellykket half-open kall`() = runTest {
         val timeSource = TestTimeSource()
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/kommer-seg"))
                     .inScenario("circuit-reset").whenScenarioStateIs(Scenario.STARTED)
@@ -116,7 +116,7 @@ internal class HttpKlientCircuitBreakerTest {
     @Test
     fun `feiler half-open kall åpner breakeren igjen og avviser neste kall uten HTTP`() = runTest {
         val timeSource = TestTimeSource()
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/fortsatt-syk")).willReturn(aResponse().withStatus(503)))
             var halfOpen = 0
             var open = 0
@@ -154,7 +154,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `circuit breaker state er lokal per navn innenfor samme klient`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/tjeneste-a")).willReturn(aResponse().withStatus(503)))
             wiremock.stubFor(get(urlEqualTo("/tjeneste-b")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient()
@@ -179,7 +179,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `count maxFailures 1 åpner etter første registrerte feil`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/count-off-by-one")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 circuitBreakerConfig = CircuitBreakerConfig.count(
@@ -200,7 +200,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `slidingWindow maxFailures 1 åpner etter første registrerte feil`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/sliding-off-by-one")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 circuitBreakerConfig = CircuitBreakerConfig.slidingWindow(
@@ -222,7 +222,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `circuit breaker state er lokal per JavaHttpKlient-instans`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/lokal")).willReturn(aResponse().withStatus(503)))
             val config = CircuitBreakerConfig.count(
                 name = "lokal",
@@ -245,7 +245,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `per-request circuitBreakerConfig overstyrer klient-default`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/override")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(circuitBreakerConfig = CircuitBreakerConfig.None)
 
@@ -271,7 +271,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `inline per-request configs med nye lambdaer deler breaker via navn`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/inline-lambdaer")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(circuitBreakerConfig = CircuitBreakerConfig.None)
 
@@ -297,7 +297,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `circuit breaker teller sluttresultat etter retry`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/retry-og-circuit")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 retryConfig = RetryConfig.fixed(
@@ -323,7 +323,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `failurePredicate styrer hva som teller mot circuit breaker`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/fire-null-fire")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 circuitBreakerConfig = CircuitBreakerConfig.count(
@@ -345,7 +345,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `callbacks for open og rejected kalles`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/callbacks")).willReturn(aResponse().withStatus(503)))
             var open = 0
             var rejected = 0
@@ -369,7 +369,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `ikke-sentinel exception fra protectEither-blokken propagerer`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/predicate-kaster")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 circuitBreakerConfig = CircuitBreakerConfig.count(
@@ -478,7 +478,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `ikke-retryable status (404) åpner ikke breakeren med default-predikat`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/fire-null-fire-default")).willReturn(aResponse().withStatus(404)))
             val klient = testHttpKlient(
                 circuitBreakerConfig = CircuitBreakerConfig.count(
@@ -500,7 +500,7 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `forbigående feil som lykkes via retry holder breakeren lukket`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/transient")).inScenario("forb").whenScenarioStateIs(Scenario.STARTED)
                     .willReturn(aResponse().withStatus(503))

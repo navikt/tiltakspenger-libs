@@ -1,13 +1,11 @@
 package no.nav.tiltakspenger.libs.httpklient
 
-import com.github.tomakehurst.wiremock.WireMockServer
 import io.github.oshai.kotlinlogging.KLogger
 import io.mockk.mockk
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerConfig
 import no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig
-import java.net.URI
 import java.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
@@ -47,31 +45,6 @@ internal fun testHttpKlient(
     this.logging = loggingConfig
     this.defaultRetry = retryConfig
     this.defaultCircuitBreaker = circuitBreakerConfig
-}
-
-/**
- * Starter en wiremock-server, gir den til [block], og stopper den uansett om [block] feiler.
- */
-internal suspend fun <T> withWireMock(block: suspend (WireMockServer) -> T): T {
-    val server = WireMockServer(0)
-    server.start()
-    return try {
-        block(server)
-    } finally {
-        server.stop()
-    }
-}
-
-/**
- * Starter en wiremock-server, henter base-url, stopper serveren igjen og returnerer en URI som peker mot en port der ingen lytter.
- * Brukes for å teste NetworkError ved "server ikke kontaktbar".
- */
-internal fun stoppedServerUri(path: String): URI {
-    val server = WireMockServer(0)
-    server.start()
-    val uri = URI.create("${server.baseUrl()}$path")
-    server.stop()
-    return uri
 }
 
 /**

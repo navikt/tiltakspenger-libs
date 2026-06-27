@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -10,6 +9,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 import java.util.concurrent.atomic.AtomicInteger
@@ -20,7 +20,7 @@ internal class HttpKlientConcurrencyTest {
     fun `samme HttpKlient-instans kan brukes fra mange coroutines parallelt`() {
         val antallRequests = 50
         runBlocking {
-            withWireMock { wiremock ->
+            withWireMockServer { wiremock ->
                 repeat(antallRequests) { i ->
                     wiremock.stubFor(
                         get(urlEqualTo("/parallell/$i")).willReturn(

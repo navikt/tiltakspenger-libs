@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -8,6 +7,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 
@@ -19,7 +19,7 @@ import java.net.URI
 internal class HttpKlientDefaultHeadersTest {
     @Test
     fun `java-klienten legger på transport-headere som når serveren uten at vi fjerner dem`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/defaults")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -40,7 +40,7 @@ internal class HttpKlientDefaultHeadersTest {
 
     @Test
     fun `metadata inneholder headerne vi setter, men ikke JDK-ens transport-headere som ikke kan leses tilbake`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/metadata")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 

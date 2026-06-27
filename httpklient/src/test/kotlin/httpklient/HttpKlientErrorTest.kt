@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -7,6 +6,7 @@ import com.github.tomakehurst.wiremock.http.UniformDistribution
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 import kotlin.time.Duration.Companion.milliseconds
@@ -16,7 +16,7 @@ internal class HttpKlientErrorTest {
     fun `returnerer UventetStatus ved status som ikke godtas av successStatus`() = runTest {
         // Java-trigger: HttpResponse med statusCode som default successStatus (is2xx) forkaster.
         // Ingen exception — feilen utledes av selve statuskoden i finalize().
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/feil")).willReturn(aResponse().withStatus(500).withBody("feil")),
             )
@@ -64,7 +64,7 @@ internal class HttpKlientErrorTest {
     @Test
     fun `returnerer DeserializationError ved ugyldig json i vellykket respons`() = runTest {
         // Java-trigger: 200-respons godtas av successStatus, men objectMapper.readValue kaster når body ikke kan parses til måltypen.
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/ugyldig-json")).willReturn(
                     aResponse()
@@ -89,7 +89,7 @@ internal class HttpKlientErrorTest {
     @Test
     fun `returnerer Timeout ved request-timeout`() = runTest {
         // Java-trigger: sendAsync fullfører med java.net.http.HttpTimeoutException når serverens delay overstiger request-timeouten.
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/treg")).willReturn(
                     aResponse()
@@ -113,7 +113,7 @@ internal class HttpKlientErrorTest {
     @Test
     fun `returnerer Timeout ved varierende latens fra UniformDistribution`() = runTest {
         // Verifiserer at timeout-håndtering fungerer selv når serverens delay varierer (mer realistisk simulering av faktisk nettverksstøy enn fast withFixedDelay).
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/jitter")).willReturn(
                     aResponse()
@@ -161,7 +161,7 @@ internal class HttpKlientErrorTest {
     @Test
     fun `tom body med DTO-type gir DeserializationError`() = runTest {
         // Java-trigger: 200 godtas av successStatus, men objectMapper.readValue kaster «No content to map» når bodyen er tom.
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/tom-body")).willReturn(aResponse().withStatus(200)))
             val klient = testHttpKlient()
 

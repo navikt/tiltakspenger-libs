@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -8,6 +7,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 import java.net.http.HttpClient
@@ -15,7 +15,7 @@ import java.net.http.HttpClient
 internal class HttpKlientRedirectTest {
     @Test
     fun `default følger ikke redirects og eksponerer 3xx som UventetStatus`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/fra")).willReturn(
                     aResponse().withStatus(302).withHeader("Location", "${wiremock.baseUrl()}/til"),
@@ -33,7 +33,7 @@ internal class HttpKlientRedirectTest {
 
     @Test
     fun `followRedirects NORMAL følger redirecten`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/fra")).willReturn(
                     aResponse().withStatus(302).withHeader("Location", "${wiremock.baseUrl()}/til"),

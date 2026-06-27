@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -12,13 +11,14 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 
 internal class HttpKlientAuthTokenTest {
     @Test
     fun `bearer-token sendes ekte til serveren men maskeres i metadata`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/redaksjon")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -36,7 +36,7 @@ internal class HttpKlientAuthTokenTest {
 
     @Test
     fun `authTokenProvider gir Bearer-header på hver request`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/a")).willReturn(aResponse().withStatus(200).withBody("ok")))
             var calls = 0
             val klient = HttpKlient(clock = fixedClock) {
@@ -57,7 +57,7 @@ internal class HttpKlientAuthTokenTest {
 
     @Test
     fun `per-request bearerToken overstyrer klient-default`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/b")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = HttpKlient(clock = fixedClock) {
                 authTokenProvider = { error("provider skal ikke kalles når request setter token") }
@@ -73,7 +73,7 @@ internal class HttpKlientAuthTokenTest {
 
     @Test
     fun `eksplisitt Authorization-header beholdes uendret`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/c")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = HttpKlient(clock = fixedClock) {
                 authTokenProvider = { error("provider skal ikke kalles når Authorization er satt") }
@@ -89,7 +89,7 @@ internal class HttpKlientAuthTokenTest {
 
     @Test
     fun `ingen authTokenProvider gir ingen Authorization-header`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/d")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -102,7 +102,7 @@ internal class HttpKlientAuthTokenTest {
 
     @Test
     fun `authTokenProvider som kaster gir AuthError uten HTTP-kall`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/e")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = HttpKlient(clock = fixedClock) {
                 authTokenProvider = { throw IllegalStateException("token-endepunkt nede") }

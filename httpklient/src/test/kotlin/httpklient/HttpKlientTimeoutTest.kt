@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -8,6 +7,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.runBlocking
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 import kotlin.time.Duration.Companion.milliseconds
@@ -27,7 +27,7 @@ internal class HttpKlientTimeoutTest {
     @Test
     fun `rask respons innenfor timeout returnerer raskt og venter ikke til timeout utløper`() {
         runBlocking {
-            withWireMock { wiremock ->
+            withWireMockServer { wiremock ->
                 wiremock.stubFor(get(urlEqualTo("/rask")).willReturn(aResponse().withStatus(200).withBody("rask")))
                 val timeout = 5.seconds
                 val klient = testHttpKlient(timeout = timeout)
@@ -51,7 +51,7 @@ internal class HttpKlientTimeoutTest {
     @Test
     fun `respons som overskrider per-request timeout gir Timeout uten å vente på serveren`() {
         runBlocking {
-            withWireMock { wiremock ->
+            withWireMockServer { wiremock ->
                 wiremock.stubFor(
                     get(urlEqualTo("/treg")).willReturn(aResponse().withStatus(200).withFixedDelay(3_000).withBody("treg")),
                 )
@@ -72,7 +72,7 @@ internal class HttpKlientTimeoutTest {
     @Test
     fun `tilkobling innenfor connect-timeout lykkes`() {
         runBlocking {
-            withWireMock { wiremock ->
+            withWireMockServer { wiremock ->
                 wiremock.stubFor(get(urlEqualTo("/connect-ok")).willReturn(aResponse().withStatus(200).withBody("ok")))
                 // Eksplisitt kort connect-timeout: en localhost-tilkobling skal lykkes godt innenfor.
                 val klient = testHttpKlient(connectTimeout = 1.seconds, timeout = 2.seconds)

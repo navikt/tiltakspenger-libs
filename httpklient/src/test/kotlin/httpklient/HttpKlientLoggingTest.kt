@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -10,13 +9,15 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.stoppedServerUri
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 
 internal class HttpKlientLoggingTest {
     @Test
     fun `kan konfigurere logging globalt og per request`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/logg-info")).willReturn(aResponse().withStatus(200).withBody("ok")))
             wiremock.stubFor(get(urlEqualTo("/logg-warn")).willReturn(aResponse().withStatus(404).withBody("borte")))
             wiremock.stubFor(get(urlEqualTo("/logg-error")).willReturn(aResponse().withStatus(500).withBody("feil")))
@@ -44,7 +45,7 @@ internal class HttpKlientLoggingTest {
 
     @Test
     fun `kan konfigurere logging med builder per request`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/per-request-logg")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val logger = testLogger()
             val klient = testHttpKlient()
@@ -74,7 +75,7 @@ internal class HttpKlientLoggingTest {
 
     @Test
     fun `logger på riktig nivå per status`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/ok")).willReturn(aResponse().withStatus(200).withBody("ok")))
             wiremock.stubFor(get(urlEqualTo("/klientfeil")).willReturn(aResponse().withStatus(404)))
             wiremock.stubFor(get(urlEqualTo("/serverfeil")).willReturn(aResponse().withStatus(500)))
@@ -106,7 +107,7 @@ internal class HttpKlientLoggingTest {
 
     @Test
     fun `disableLogging gir ingen logger-kall`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/stille")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val logger = testLogger()
             val klient = testHttpKlient(loggingConfig = HttpKlientLoggingConfig(logger = logger))
@@ -119,7 +120,7 @@ internal class HttpKlientLoggingTest {
 
     @Test
     fun `sensitive headere maskeres i logg-meldingen`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/logg-redaksjon")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val logger = testLogger()
             val klient = testHttpKlient(

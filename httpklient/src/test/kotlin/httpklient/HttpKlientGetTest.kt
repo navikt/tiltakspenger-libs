@@ -1,5 +1,4 @@
 package no.nav.tiltakspenger.libs.httpklient
-
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -14,6 +13,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 import kotlin.time.Duration.Companion.milliseconds
@@ -23,7 +23,7 @@ internal class HttpKlientGetTest {
     @Test
     fun `uri-scheme er case-insensitivt (RFC 3986) og store bokstaver godtas`() = runTest {
         // RFC 3986 §3.1: scheme er case-insensitivt. JDK-klienten lowercaser scheme selv, så HTTP:// skal fungere som http://.
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/store-scheme")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
@@ -34,7 +34,7 @@ internal class HttpKlientGetTest {
 
     @Test
     fun `request og post kan brukes uten builder`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/default-request")).willReturn(aResponse().withStatus(200).withBody("default-request")))
             wiremock.stubFor(post(urlEqualTo("/default-post")).willReturn(aResponse().withStatus(200).withBody("default-post")))
             val klient = testHttpKlient()
@@ -46,7 +46,7 @@ internal class HttpKlientGetTest {
 
     @Test
     fun `request builder sender GET og deserialiserer response-dto`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/bruker")).withHeader("X-Trace-Id", equalTo("trace-1")).willReturn(
                     aResponse()
@@ -83,7 +83,7 @@ internal class HttpKlientGetTest {
 
     @Test
     fun `verb helpers setter riktig http method`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/get")).willReturn(aResponse().withStatus(200).withBody("get")))
             wiremock.stubFor(put(urlEqualTo("/put")).willReturn(aResponse().withStatus(200).withBody("put")))
             wiremock.stubFor(patch(urlEqualTo("/patch")).willReturn(aResponse().withStatus(200).withBody("patch")))
@@ -103,7 +103,7 @@ internal class HttpKlientGetTest {
 
     @Test
     fun `kan konfigurere success status globalt`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/accepted")).willReturn(aResponse().withStatus(202).withBody("accepted")))
             val klient = testHttpKlient(successStatus = { it == 202 })
 
@@ -113,7 +113,7 @@ internal class HttpKlientGetTest {
 
     @Test
     fun `kan overstyre success status per request`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/not-modified")).willReturn(aResponse().withStatus(304).withBody("")))
             val klient = testHttpKlient()
 
@@ -125,7 +125,7 @@ internal class HttpKlientGetTest {
 
     @Test
     fun `kan deserialisere generiske response-typer som List Set og Map`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/list")).willReturn(
                     aResponse()
@@ -177,7 +177,7 @@ internal class HttpKlientGetTest {
 
     @Test
     fun `stor respons-body leses komplett`() = runTest {
-        withWireMock { wiremock ->
+        withWireMockServer { wiremock ->
             val storBody = "x".repeat(1_000_000)
             wiremock.stubFor(get(urlEqualTo("/stor")).willReturn(aResponse().withStatus(200).withBody(storBody)))
             val klient = testHttpKlient(timeout = 5.seconds)

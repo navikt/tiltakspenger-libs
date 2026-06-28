@@ -215,6 +215,20 @@ internal class ApplicationCallRespondExTest {
         }
     }
 
+    @Test
+    fun `respondJson kaster IllegalArgumentException når verdien er en String`() {
+        testApplication {
+            routing {
+                get("/test") {
+                    // Eksplisitt type Any tvinger den generiske overloaden slik at require-sjekken (value !is String) trigges.
+                    call.respondJson<Any>(value = "en-allerede-serialisert-streng")
+                }
+            }
+
+            client.get("/test").status shouldBe HttpStatusCode.InternalServerError
+        }
+    }
+
     private data class TestResponseBody(
         val name: String,
         val value: Int,

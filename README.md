@@ -50,6 +50,7 @@ dependencies {
 - **JSON:** Bruk delt `objectMapper` fra `json`-modulen — ikke lag egne.
 - **Logging:** Bruk `Sikkerlogg` fra `logging` for sensitive data, ellers `kotlin-logging`.
 - **Imports:** Ingen star imports.
+- **Kommentarer og KDoc:** Én setning per linje. Start hver setning på ny linje i stedet for å samle flere setninger i samme linje, slik at diff-er blir små og setninger er lette å flytte/endre.
 - **Stil:** Funksjonell stil, immutability, DDD — logikk på domeneobjektet nærmest dataene.
 - **Tester:** Kotest assertions (`shouldBe`), ikke JUnit-assertions. JUnit 5 som runner.
 - **Avhengigheter:** Hold minimalt. Bruk `compileOnly`/`testImplementation` der det passer.

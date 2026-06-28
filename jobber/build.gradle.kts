@@ -12,7 +12,5 @@ dependencies {
     implementation(libs.arrow.core)
     implementation(libs.atomicfu)
 
-    implementation(libs.ktor.utils)
-
     testImplementation(project(":test-common"))
 }

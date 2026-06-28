@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.jobber
 
+import arrow.core.left
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.assertions.throwables.shouldThrowWithMessage
@@ -91,7 +92,7 @@ internal class StoppableJobTest {
             mdcCallIdKey = "test-call-id",
             runJobCheck = listOf(
                 object : RunJobCheck {
-                    override fun shouldRun(): Boolean = false
+                    override fun shouldRun() = JobbSkalIkkeKjøre.IkkeKlar.left()
                 },
             ),
             enableDebuggingLogging = false,
@@ -198,7 +199,7 @@ internal class StoppableJobTest {
             mdcCallIdKey = "test-call-id",
             runJobCheck = listOf(
                 object : RunJobCheck {
-                    override fun shouldRun(): Boolean = false
+                    override fun shouldRun() = JobbSkalIkkeKjøre.IkkeKlar.left()
                 },
             ),
             job = { error("Jobben skal ikke kjøres") },

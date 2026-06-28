@@ -5,8 +5,6 @@ import io.kotest.matchers.collections.shouldHaveAtLeastSize
 import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import io.ktor.util.AttributeKey
-import io.ktor.util.Attributes
 import kotlinx.coroutines.delay
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import org.junit.jupiter.api.Test
@@ -24,16 +22,12 @@ import kotlin.time.Duration.Companion.milliseconds
 internal class TaskExecutorTest {
 
     private fun runCheckFactoryThatAlwaysAllowsRun(): RunCheckFactory {
-        val attrs = Attributes()
-        val isReadyKey = AttributeKey<Boolean>("isReady")
-        attrs.put(isReadyKey, true)
         val leaderPodLookup = object : LeaderPodLookup {
             override fun amITheLeader(localHostName: String) = true.right()
         }
         return RunCheckFactory(
             leaderPodLookup = leaderPodLookup,
-            attributes = attrs,
-            isReadyKey = isReadyKey,
+            isReady = { true },
         )
     }
 

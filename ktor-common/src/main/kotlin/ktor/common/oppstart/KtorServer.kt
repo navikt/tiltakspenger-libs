@@ -33,10 +33,6 @@ fun startKtorServer(
     shutdownTimeoutMillis: Long = 30_000,
     module: Application.(shutdownPågår: AtomicBoolean) -> Unit,
 ) {
-    Thread.setDefaultUncaughtExceptionHandler { _, e ->
-        log.error(e) { e.message }
-    }
-
     log.info { "starting server" }
 
     val shutdownPågår = AtomicBoolean(false)

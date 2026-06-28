@@ -577,12 +577,6 @@ class OppstartTest {
             )
             svar.statusCode() shouldBe 200
             svar.body() shouldBe "ALIVE"
-
-            // startKtorServer installerer en default uncaught exception handler som logger feilen; verifiser at den kan kjøres.
-            Thread.getDefaultUncaughtExceptionHandler().uncaughtException(
-                Thread.currentThread(),
-                RuntimeException("uventet feil i en tråd"),
-            )
         } finally {
             // Stopper den ekte serveren slik at server.start(wait = true) returnerer og tråden avsluttes.
             appRef.get()?.engine?.stop(0, 500)

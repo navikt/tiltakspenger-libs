@@ -7,6 +7,9 @@ dependencies {
     implementation(project(":common"))
     implementation(project(":logging"))
     implementation(project(":json"))
+    // Det felles oppstartsmønsteret bygger skedulerte jobber (GruppertTaskExecutor/TaskGruppe) og leader-election (RunCheckFactory) for konsumentene.
+    // jobber er bevisst dependency-lett (ingen ktor/kafka), så koblingen drar ikke tunge avhengigheter inn i rene ktor-apper.
+    implementation(project(":jobber"))
 
     implementation(libs.arrow.core)
     implementation(libs.kotlinx.coroutines.core.jvm)

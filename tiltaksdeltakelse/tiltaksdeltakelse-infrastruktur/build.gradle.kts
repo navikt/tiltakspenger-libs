@@ -10,5 +10,5 @@ dependencies {
 }
 
 tasks.withType<Jar> {
-    archiveBaseName.set("tiltaksdeltakelse-domene")
+    archiveBaseName.set("tiltaksdeltakelse-infrastruktur")
 }

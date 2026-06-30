@@ -15,6 +15,8 @@ include(
     "persistering:persistering-domene",
     "persistering:persistering-suspending",
     "persistering:persistering-test-common",
+    "tiltak:tiltak-infrastruktur",
+    "tiltak:tiltak-domene",
     "auth-test-core",
     "httpklient",
     "json",

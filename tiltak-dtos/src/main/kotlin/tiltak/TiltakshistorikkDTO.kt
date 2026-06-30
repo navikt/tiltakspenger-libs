@@ -1,7 +1,7 @@
 package no.nav.tiltakspenger.libs.tiltak
 
 import no.nav.tiltakspenger.libs.tiltak.TiltakResponsDTO.DeltakerStatusDTO
-import no.nav.tiltakspenger.libs.tiltak.TiltakResponsDTO.TiltakType
+import no.nav.tiltakspenger.libs.tiltak.TiltakResponsDTO.TiltakTypeDTO
 import java.time.LocalDate
 
 data class TiltakshistorikkDTO(
@@ -19,7 +19,7 @@ data class TiltakshistorikkDTO(
         val visningsnavn: String,
         val arrangornavn: String?,
         val typeNavn: String,
-        val arenaKode: TiltakType,
+        val arenaKode: TiltakTypeDTO,
         val deltidsprosent: Double?,
     )
 

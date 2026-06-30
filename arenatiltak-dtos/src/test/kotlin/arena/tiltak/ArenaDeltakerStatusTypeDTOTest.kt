@@ -6,7 +6,7 @@ import no.nav.tiltakspenger.libs.tiltak.TiltakResponsDTO
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
-internal class ArenaDeltakerStatusTypeTest {
+internal class ArenaDeltakerStatusTypeDTOTest {
     @Test
     fun `mapper arena deltakerstatus til deltakerstatus DTO`() {
         val iDag = LocalDate.now(fixedClock)

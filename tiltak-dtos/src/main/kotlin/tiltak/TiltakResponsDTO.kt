@@ -32,7 +32,7 @@ data class TiltakResponsDTO(
         val id: String,
         val arrangørnavn: String,
         val typeNavn: String,
-        val arenaKode: TiltakType,
+        val arenaKode: TiltakTypeDTO,
         val deltidsprosent: Double?,
     )
 
@@ -54,7 +54,7 @@ data class TiltakResponsDTO(
         VURDERES("Vurderes", false),
     }
 
-    enum class TiltakType(
+    enum class TiltakTypeDTO(
         val navn: String,
         val rettPåTiltakspenger: Boolean,
     ) {
@@ -187,7 +187,7 @@ data class TiltakResponsDTO(
         SUPPEMP("Supported Employment", false),
     }
 
-    enum class DeltakerStatusType(
+    enum class DeltakerStatusTypeDTO(
         val navn: String,
         val girRettTilÅASøke: Boolean,
     ) {
@@ -211,144 +211,144 @@ data class TiltakResponsDTO(
 
 object TiltakstypeGirIkkeRett
 
-fun TiltakResponsDTO.TiltakType.toTiltakstypeSomGirRett(): Either<TiltakstypeGirIkkeRett, TiltakstypeSomGirRett> =
+fun TiltakResponsDTO.TiltakTypeDTO.toTiltakstypeSomGirRett(): Either<TiltakstypeGirIkkeRett, TiltakstypeSomGirRettDTO> =
     when (this) {
-        TiltakResponsDTO.TiltakType.ARBEIDSMARKEDSOPPLAERING -> TiltakstypeSomGirRett.ARBEIDSMARKEDSOPPLAERING.right()
+        TiltakResponsDTO.TiltakTypeDTO.ARBEIDSMARKEDSOPPLAERING -> TiltakstypeSomGirRettDTO.ARBEIDSMARKEDSOPPLAERING.right()
 
-        TiltakResponsDTO.TiltakType.ARBFORB -> TiltakstypeSomGirRett.ARBEIDSFORBEREDENDE_TRENING.right()
+        TiltakResponsDTO.TiltakTypeDTO.ARBFORB -> TiltakstypeSomGirRettDTO.ARBEIDSFORBEREDENDE_TRENING.right()
 
-        TiltakResponsDTO.TiltakType.ARBRRHDAG -> TiltakstypeSomGirRett.ARBEIDSRETTET_REHABILITERING.right()
+        TiltakResponsDTO.TiltakTypeDTO.ARBRRHDAG -> TiltakstypeSomGirRettDTO.ARBEIDSRETTET_REHABILITERING.right()
 
-        TiltakResponsDTO.TiltakType.ARBTREN -> TiltakstypeSomGirRett.ARBEIDSTRENING.right()
+        TiltakResponsDTO.TiltakTypeDTO.ARBTREN -> TiltakstypeSomGirRettDTO.ARBEIDSTRENING.right()
 
-        TiltakResponsDTO.TiltakType.AVKLARAG -> TiltakstypeSomGirRett.AVKLARING.right()
+        TiltakResponsDTO.TiltakTypeDTO.AVKLARAG -> TiltakstypeSomGirRettDTO.AVKLARING.right()
 
-        TiltakResponsDTO.TiltakType.DIGIOPPARB -> TiltakstypeSomGirRett.DIGITAL_JOBBKLUBB.right()
+        TiltakResponsDTO.TiltakTypeDTO.DIGIOPPARB -> TiltakstypeSomGirRettDTO.DIGITAL_JOBBKLUBB.right()
 
-        TiltakResponsDTO.TiltakType.ENKELAMO -> TiltakstypeSomGirRett.ENKELTPLASS_AMO.right()
+        TiltakResponsDTO.TiltakTypeDTO.ENKELAMO -> TiltakstypeSomGirRettDTO.ENKELTPLASS_AMO.right()
 
-        TiltakResponsDTO.TiltakType.ENKFAGYRKE -> TiltakstypeSomGirRett.ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG.right()
+        TiltakResponsDTO.TiltakTypeDTO.ENKFAGYRKE -> TiltakstypeSomGirRettDTO.ENKELTPLASS_VGS_OG_HØYERE_YRKESFAG.right()
 
-        TiltakResponsDTO.TiltakType.FAG_OG_YRKESOPPLAERING -> TiltakstypeSomGirRett.FAG_OG_YRKESOPPLAERING.right()
+        TiltakResponsDTO.TiltakTypeDTO.FAG_OG_YRKESOPPLAERING -> TiltakstypeSomGirRettDTO.FAG_OG_YRKESOPPLAERING.right()
 
-        TiltakResponsDTO.TiltakType.FORSOPPLEV -> TiltakstypeSomGirRett.FORSØK_OPPLÆRING_LENGRE_VARIGHET.right()
+        TiltakResponsDTO.TiltakTypeDTO.FORSOPPLEV -> TiltakstypeSomGirRettDTO.FORSØK_OPPLÆRING_LENGRE_VARIGHET.right()
 
-        TiltakResponsDTO.TiltakType.GRUPPEAMO -> TiltakstypeSomGirRett.GRUPPE_AMO.right()
+        TiltakResponsDTO.TiltakTypeDTO.GRUPPEAMO -> TiltakstypeSomGirRettDTO.GRUPPE_AMO.right()
 
-        TiltakResponsDTO.TiltakType.GRUFAGYRKE -> TiltakstypeSomGirRett.GRUPPE_VGS_OG_HØYERE_YRKESFAG.right()
+        TiltakResponsDTO.TiltakTypeDTO.GRUFAGYRKE -> TiltakstypeSomGirRettDTO.GRUPPE_VGS_OG_HØYERE_YRKESFAG.right()
 
-        TiltakResponsDTO.TiltakType.HOYEREUTD -> TiltakstypeSomGirRett.HØYERE_UTDANNING.right()
+        TiltakResponsDTO.TiltakTypeDTO.HOYEREUTD -> TiltakstypeSomGirRettDTO.HØYERE_UTDANNING.right()
 
-        TiltakResponsDTO.TiltakType.HOYERE_YRKESFAGLIG_UTDANNING -> TiltakstypeSomGirRett.HOYERE_YRKESFAGLIG_UTDANNING.right()
+        TiltakResponsDTO.TiltakTypeDTO.HOYERE_YRKESFAGLIG_UTDANNING -> TiltakstypeSomGirRettDTO.HOYERE_YRKESFAGLIG_UTDANNING.right()
 
-        TiltakResponsDTO.TiltakType.INDJOBSTOT -> TiltakstypeSomGirRett.INDIVIDUELL_JOBBSTØTTE.right()
+        TiltakResponsDTO.TiltakTypeDTO.INDJOBSTOT -> TiltakstypeSomGirRettDTO.INDIVIDUELL_JOBBSTØTTE.right()
 
-        TiltakResponsDTO.TiltakType.IPSUNG -> TiltakstypeSomGirRett.INDIVIDUELL_KARRIERESTØTTE_UNG.right()
+        TiltakResponsDTO.TiltakTypeDTO.IPSUNG -> TiltakstypeSomGirRettDTO.INDIVIDUELL_KARRIERESTØTTE_UNG.right()
 
-        TiltakResponsDTO.TiltakType.JOBBK -> TiltakstypeSomGirRett.JOBBKLUBB.right()
+        TiltakResponsDTO.TiltakTypeDTO.JOBBK -> TiltakstypeSomGirRettDTO.JOBBKLUBB.right()
 
-        TiltakResponsDTO.TiltakType.INDOPPFAG -> TiltakstypeSomGirRett.OPPFØLGING.right()
+        TiltakResponsDTO.TiltakTypeDTO.INDOPPFAG -> TiltakstypeSomGirRettDTO.OPPFØLGING.right()
 
-        TiltakResponsDTO.TiltakType.NORSKOPPLAERING_GRUNNLEGGENDE_FERDIGHETER_FOV -> TiltakstypeSomGirRett.NORSKOPPLAERING_GRUNNLEGGENDE_FERDIGHETER_FOV.right()
+        TiltakResponsDTO.TiltakTypeDTO.NORSKOPPLAERING_GRUNNLEGGENDE_FERDIGHETER_FOV -> TiltakstypeSomGirRettDTO.NORSKOPPLAERING_GRUNNLEGGENDE_FERDIGHETER_FOV.right()
 
-        TiltakResponsDTO.TiltakType.STUDIESPESIALISERING -> TiltakstypeSomGirRett.STUDIESPESIALISERING.right()
+        TiltakResponsDTO.TiltakTypeDTO.STUDIESPESIALISERING -> TiltakstypeSomGirRettDTO.STUDIESPESIALISERING.right()
 
-        TiltakResponsDTO.TiltakType.UTVAOONAV -> TiltakstypeSomGirRett.UTVIDET_OPPFØLGING_I_NAV.right()
+        TiltakResponsDTO.TiltakTypeDTO.UTVAOONAV -> TiltakstypeSomGirRettDTO.UTVIDET_OPPFØLGING_I_NAV.right()
 
-        TiltakResponsDTO.TiltakType.UTVOPPFOPL -> TiltakstypeSomGirRett.UTVIDET_OPPFØLGING_I_OPPLÆRING.right()
+        TiltakResponsDTO.TiltakTypeDTO.UTVOPPFOPL -> TiltakstypeSomGirRettDTO.UTVIDET_OPPFØLGING_I_OPPLÆRING.right()
 
-        TiltakResponsDTO.TiltakType.REFINO,
-        TiltakResponsDTO.TiltakType.MIDLONTIL,
-        TiltakResponsDTO.TiltakType.VARLONTIL,
-        TiltakResponsDTO.TiltakType.TILSJOBB,
-        TiltakResponsDTO.TiltakType.ETAB,
-        TiltakResponsDTO.TiltakType.VASV,
-        TiltakResponsDTO.TiltakType.VATIAROR,
-        TiltakResponsDTO.TiltakType.FUNKSJASS,
-        TiltakResponsDTO.TiltakType.INKLUTILS,
-        TiltakResponsDTO.TiltakType.EKSPEBIST,
-        TiltakResponsDTO.TiltakType.MENTOR,
-        TiltakResponsDTO.TiltakType.FIREARIG_LONNSTILSKUDD,
-        TiltakResponsDTO.TiltakType.AMBF1,
-        TiltakResponsDTO.TiltakType.KURS,
-        TiltakResponsDTO.TiltakType.ANNUTDANN,
-        TiltakResponsDTO.TiltakType.ABOPPF,
-        TiltakResponsDTO.TiltakType.ABUOPPF,
-        TiltakResponsDTO.TiltakType.ABIST,
-        TiltakResponsDTO.TiltakType.ABTBOPPF,
-        TiltakResponsDTO.TiltakType.AMO,
-        TiltakResponsDTO.TiltakType.AMOE,
-        TiltakResponsDTO.TiltakType.AMOB,
-        TiltakResponsDTO.TiltakType.AMOY,
-        TiltakResponsDTO.TiltakType.PRAKSORD,
-        TiltakResponsDTO.TiltakType.PRAKSKJERM,
-        TiltakResponsDTO.TiltakType.ARBRRHBAG,
-        TiltakResponsDTO.TiltakType.ARBRRHBSM,
-        TiltakResponsDTO.TiltakType.ARBRDAGSM,
-        TiltakResponsDTO.TiltakType.ARBRRDOGN,
-        TiltakResponsDTO.TiltakType.ARBDOGNSM,
-        TiltakResponsDTO.TiltakType.ASV,
-        TiltakResponsDTO.TiltakType.ATG,
-        TiltakResponsDTO.TiltakType.AVKLARUS,
-        TiltakResponsDTO.TiltakType.AVKLARSP,
-        TiltakResponsDTO.TiltakType.AVKLARKV,
-        TiltakResponsDTO.TiltakType.AVKLARSV,
-        TiltakResponsDTO.TiltakType.BIA,
-        TiltakResponsDTO.TiltakType.BREVKURS,
-        TiltakResponsDTO.TiltakType.DIVTILT,
-        TiltakResponsDTO.TiltakType.FLEKSJOBB,
-        TiltakResponsDTO.TiltakType.TILRTILSK,
-        TiltakResponsDTO.TiltakType.KAT,
-        TiltakResponsDTO.TiltakType.VALS,
-        TiltakResponsDTO.TiltakType.GRUNNSKOLE,
-        TiltakResponsDTO.TiltakType.HOYSKOLE,
-        TiltakResponsDTO.TiltakType.INDOPPFOLG,
-        TiltakResponsDTO.TiltakType.ITGRTILS,
-        TiltakResponsDTO.TiltakType.JOBBKLUBB,
-        TiltakResponsDTO.TiltakType.JOBBFOKUS,
-        TiltakResponsDTO.TiltakType.JOBBBONUS,
-        TiltakResponsDTO.TiltakType.JOBBSKAP,
-        TiltakResponsDTO.TiltakType.AMBF2,
-        TiltakResponsDTO.TiltakType.STATLAERL,
-        TiltakResponsDTO.TiltakType.LONNTILS,
-        TiltakResponsDTO.TiltakType.REAKTUFOR,
-        TiltakResponsDTO.TiltakType.LONNTILL,
-        TiltakResponsDTO.TiltakType.NETTAMO,
-        TiltakResponsDTO.TiltakType.NETTKURS,
-        TiltakResponsDTO.TiltakType.INST_S,
-        TiltakResponsDTO.TiltakType.INDOPPFSP,
-        TiltakResponsDTO.TiltakType.SYSSLANG,
-        TiltakResponsDTO.TiltakType.YHEMMOFF,
-        TiltakResponsDTO.TiltakType.SYSSOFF,
-        TiltakResponsDTO.TiltakType.LONNTIL,
-        TiltakResponsDTO.TiltakType.TIDSUBLONN,
-        TiltakResponsDTO.TiltakType.AMBF3,
-        TiltakResponsDTO.TiltakType.TILRETTEL,
-        TiltakResponsDTO.TiltakType.TILPERBED,
-        TiltakResponsDTO.TiltakType.PV,
-        TiltakResponsDTO.TiltakType.SPA,
-        TiltakResponsDTO.TiltakType.UFØREPENLØ,
-        TiltakResponsDTO.TiltakType.UTDYRK,
-        TiltakResponsDTO.TiltakType.UTDPERMVIK,
-        TiltakResponsDTO.TiltakType.VIKARBLED,
-        TiltakResponsDTO.TiltakType.UTBHLETTPS,
-        TiltakResponsDTO.TiltakType.UTBHPSLD,
-        TiltakResponsDTO.TiltakType.UTBHSAMLI,
-        TiltakResponsDTO.TiltakType.VV,
-        TiltakResponsDTO.TiltakType.VIDRSKOLE,
-        TiltakResponsDTO.TiltakType.OPPLT2AAR,
-        TiltakResponsDTO.TiltakType.LONNTILAAP,
-        TiltakResponsDTO.TiltakType.BIO,
-        TiltakResponsDTO.TiltakType.TESTING,
-        TiltakResponsDTO.TiltakType.NYTEST,
-        TiltakResponsDTO.TiltakType.INDOPPRF,
-        TiltakResponsDTO.TiltakType.SUPPEMP,
+        TiltakResponsDTO.TiltakTypeDTO.REFINO,
+        TiltakResponsDTO.TiltakTypeDTO.MIDLONTIL,
+        TiltakResponsDTO.TiltakTypeDTO.VARLONTIL,
+        TiltakResponsDTO.TiltakTypeDTO.TILSJOBB,
+        TiltakResponsDTO.TiltakTypeDTO.ETAB,
+        TiltakResponsDTO.TiltakTypeDTO.VASV,
+        TiltakResponsDTO.TiltakTypeDTO.VATIAROR,
+        TiltakResponsDTO.TiltakTypeDTO.FUNKSJASS,
+        TiltakResponsDTO.TiltakTypeDTO.INKLUTILS,
+        TiltakResponsDTO.TiltakTypeDTO.EKSPEBIST,
+        TiltakResponsDTO.TiltakTypeDTO.MENTOR,
+        TiltakResponsDTO.TiltakTypeDTO.FIREARIG_LONNSTILSKUDD,
+        TiltakResponsDTO.TiltakTypeDTO.AMBF1,
+        TiltakResponsDTO.TiltakTypeDTO.KURS,
+        TiltakResponsDTO.TiltakTypeDTO.ANNUTDANN,
+        TiltakResponsDTO.TiltakTypeDTO.ABOPPF,
+        TiltakResponsDTO.TiltakTypeDTO.ABUOPPF,
+        TiltakResponsDTO.TiltakTypeDTO.ABIST,
+        TiltakResponsDTO.TiltakTypeDTO.ABTBOPPF,
+        TiltakResponsDTO.TiltakTypeDTO.AMO,
+        TiltakResponsDTO.TiltakTypeDTO.AMOE,
+        TiltakResponsDTO.TiltakTypeDTO.AMOB,
+        TiltakResponsDTO.TiltakTypeDTO.AMOY,
+        TiltakResponsDTO.TiltakTypeDTO.PRAKSORD,
+        TiltakResponsDTO.TiltakTypeDTO.PRAKSKJERM,
+        TiltakResponsDTO.TiltakTypeDTO.ARBRRHBAG,
+        TiltakResponsDTO.TiltakTypeDTO.ARBRRHBSM,
+        TiltakResponsDTO.TiltakTypeDTO.ARBRDAGSM,
+        TiltakResponsDTO.TiltakTypeDTO.ARBRRDOGN,
+        TiltakResponsDTO.TiltakTypeDTO.ARBDOGNSM,
+        TiltakResponsDTO.TiltakTypeDTO.ASV,
+        TiltakResponsDTO.TiltakTypeDTO.ATG,
+        TiltakResponsDTO.TiltakTypeDTO.AVKLARUS,
+        TiltakResponsDTO.TiltakTypeDTO.AVKLARSP,
+        TiltakResponsDTO.TiltakTypeDTO.AVKLARKV,
+        TiltakResponsDTO.TiltakTypeDTO.AVKLARSV,
+        TiltakResponsDTO.TiltakTypeDTO.BIA,
+        TiltakResponsDTO.TiltakTypeDTO.BREVKURS,
+        TiltakResponsDTO.TiltakTypeDTO.DIVTILT,
+        TiltakResponsDTO.TiltakTypeDTO.FLEKSJOBB,
+        TiltakResponsDTO.TiltakTypeDTO.TILRTILSK,
+        TiltakResponsDTO.TiltakTypeDTO.KAT,
+        TiltakResponsDTO.TiltakTypeDTO.VALS,
+        TiltakResponsDTO.TiltakTypeDTO.GRUNNSKOLE,
+        TiltakResponsDTO.TiltakTypeDTO.HOYSKOLE,
+        TiltakResponsDTO.TiltakTypeDTO.INDOPPFOLG,
+        TiltakResponsDTO.TiltakTypeDTO.ITGRTILS,
+        TiltakResponsDTO.TiltakTypeDTO.JOBBKLUBB,
+        TiltakResponsDTO.TiltakTypeDTO.JOBBFOKUS,
+        TiltakResponsDTO.TiltakTypeDTO.JOBBBONUS,
+        TiltakResponsDTO.TiltakTypeDTO.JOBBSKAP,
+        TiltakResponsDTO.TiltakTypeDTO.AMBF2,
+        TiltakResponsDTO.TiltakTypeDTO.STATLAERL,
+        TiltakResponsDTO.TiltakTypeDTO.LONNTILS,
+        TiltakResponsDTO.TiltakTypeDTO.REAKTUFOR,
+        TiltakResponsDTO.TiltakTypeDTO.LONNTILL,
+        TiltakResponsDTO.TiltakTypeDTO.NETTAMO,
+        TiltakResponsDTO.TiltakTypeDTO.NETTKURS,
+        TiltakResponsDTO.TiltakTypeDTO.INST_S,
+        TiltakResponsDTO.TiltakTypeDTO.INDOPPFSP,
+        TiltakResponsDTO.TiltakTypeDTO.SYSSLANG,
+        TiltakResponsDTO.TiltakTypeDTO.YHEMMOFF,
+        TiltakResponsDTO.TiltakTypeDTO.SYSSOFF,
+        TiltakResponsDTO.TiltakTypeDTO.LONNTIL,
+        TiltakResponsDTO.TiltakTypeDTO.TIDSUBLONN,
+        TiltakResponsDTO.TiltakTypeDTO.AMBF3,
+        TiltakResponsDTO.TiltakTypeDTO.TILRETTEL,
+        TiltakResponsDTO.TiltakTypeDTO.TILPERBED,
+        TiltakResponsDTO.TiltakTypeDTO.PV,
+        TiltakResponsDTO.TiltakTypeDTO.SPA,
+        TiltakResponsDTO.TiltakTypeDTO.UFØREPENLØ,
+        TiltakResponsDTO.TiltakTypeDTO.UTDYRK,
+        TiltakResponsDTO.TiltakTypeDTO.UTDPERMVIK,
+        TiltakResponsDTO.TiltakTypeDTO.VIKARBLED,
+        TiltakResponsDTO.TiltakTypeDTO.UTBHLETTPS,
+        TiltakResponsDTO.TiltakTypeDTO.UTBHPSLD,
+        TiltakResponsDTO.TiltakTypeDTO.UTBHSAMLI,
+        TiltakResponsDTO.TiltakTypeDTO.VV,
+        TiltakResponsDTO.TiltakTypeDTO.VIDRSKOLE,
+        TiltakResponsDTO.TiltakTypeDTO.OPPLT2AAR,
+        TiltakResponsDTO.TiltakTypeDTO.LONNTILAAP,
+        TiltakResponsDTO.TiltakTypeDTO.BIO,
+        TiltakResponsDTO.TiltakTypeDTO.TESTING,
+        TiltakResponsDTO.TiltakTypeDTO.NYTEST,
+        TiltakResponsDTO.TiltakTypeDTO.INDOPPRF,
+        TiltakResponsDTO.TiltakTypeDTO.SUPPEMP,
         // Disse har gitt rett tidligere, men er ikke aktuelle mer.
         // Behandler dem som om de ikke gir rett fordi det ikke finnes utbetalingskoder for dem.
-        TiltakResponsDTO.TiltakType.FORSAMOGRU,
-        TiltakResponsDTO.TiltakType.FORSAMOENK,
-        TiltakResponsDTO.TiltakType.FORSFAGGRU,
-        TiltakResponsDTO.TiltakType.FORSFAGENK,
-        TiltakResponsDTO.TiltakType.FORSHOYUTD,
+        TiltakResponsDTO.TiltakTypeDTO.FORSAMOGRU,
+        TiltakResponsDTO.TiltakTypeDTO.FORSAMOENK,
+        TiltakResponsDTO.TiltakTypeDTO.FORSFAGGRU,
+        TiltakResponsDTO.TiltakTypeDTO.FORSFAGENK,
+        TiltakResponsDTO.TiltakTypeDTO.FORSHOYUTD,
         -> TiltakstypeGirIkkeRett.left()
     }

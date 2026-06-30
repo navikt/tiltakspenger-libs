@@ -3,7 +3,7 @@ package no.nav.tiltakspenger.libs.tiltak
 /**
  * https://confluence.adeo.no/pages/viewpage.action?pageId=653427539
  */
-enum class TiltakstypeSomGirRett {
+enum class TiltakstypeSomGirRettDTO {
     /** ARBEIDSFORBEREDENDE_TRENING i Komet per 2024-08-14  */
     ARBEIDSFORBEREDENDE_TRENING,
 

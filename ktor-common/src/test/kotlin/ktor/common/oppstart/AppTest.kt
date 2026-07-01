@@ -96,10 +96,14 @@ class AppTest {
     }
 
     @Test
-    fun `bakgrunnsprosessSteg uten jobber og consumere gir ingen steg`() {
+    fun `bakgrunnsprosessSteg uten jobber og consumere gir ingen steg og bygger ikke runCheckFactory`() {
+        var factoryBygget = false
         val steg = bakgrunnsprosessSteg(
             log = log,
-            runCheckFactory = runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness()),
+            runCheckFactory = {
+                factoryBygget = true
+                runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness())
+            },
             mdcCallIdKey = "call-id",
             isNais = false,
             clock = clock,
@@ -109,13 +113,38 @@ class AppTest {
         )
 
         steg.isEmpty() shouldBe true
+        // Uten jobber skal vi ikke bygge runCheckFactory (og dermed ikke hente ut electorPath/leader-election).
+        factoryBygget shouldBe false
+    }
+
+    @Test
+    fun `bakgrunnsprosessSteg med kun Kafka-consumere gir steg uten å bygge runCheckFactory`() {
+        var factoryBygget = false
+        val steg = bakgrunnsprosessSteg(
+            log = log,
+            runCheckFactory = {
+                factoryBygget = true
+                runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness())
+            },
+            mdcCallIdKey = "call-id",
+            isNais = false,
+            clock = clock,
+            tasks = emptyList(),
+            taskGrupper = emptyList(),
+            kafkaConsumers = listOf(KafkaConsumerOppsett(navn = "kun-kafka", start = {}, stopp = {})),
+        )
+
+        steg.size shouldBe 1
+        // Leader-election gjelder kun skedulerte jobber; med kun Kafka skal runCheckFactory ikke bygges.
+        factoryBygget shouldBe false
+        steg.first()()?.stopp()
     }
 
     @Test
     fun `bakgrunnsprosessSteg med eksplisitte taskGrupper gir ett skedulert steg`() {
         val steg = bakgrunnsprosessSteg(
             log = log,
-            runCheckFactory = runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness()),
+            runCheckFactory = { runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness()) },
             mdcCallIdKey = "call-id",
             isNais = false,
             clock = clock,
@@ -133,7 +162,7 @@ class AppTest {
     fun `bakgrunnsprosessSteg bygger én seriell gruppe per Task med miljøavhengige verdier`() {
         val steg = bakgrunnsprosessSteg(
             log = log,
-            runCheckFactory = runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness()),
+            runCheckFactory = { runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness()) },
             mdcCallIdKey = "call-id",
             isNais = false,
             clock = clock,

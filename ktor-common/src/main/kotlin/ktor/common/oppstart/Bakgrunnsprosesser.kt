@@ -100,11 +100,12 @@ fun stoppbarSkedulerteJobber(
  * Hver [KafkaConsumerOppsett] blir et steg som starter consumeren og pakker den i [stoppbarKafkaConsumer].
  * Trukket ut som en egen, ren funksjon slik at sammensetningen kan testes uten å starte en ekte server.
  *
+ * @param runCheckFactory Bygges lat ([runCheckFactory]) slik at leader-election/[electorPath] kun hentes ut når det faktisk finnes skedulerte jobber.
  * @param isNais Om appen kjører i NAIS; brukes til å resolve [Task] sine miljøavhengige verdier ([Miljøverdi]).
  */
 internal fun bakgrunnsprosessSteg(
     log: KLogger,
-    runCheckFactory: RunCheckFactory,
+    runCheckFactory: () -> RunCheckFactory,
     mdcCallIdKey: String,
     isNais: Boolean,
     clock: Clock,
@@ -114,10 +115,11 @@ internal fun bakgrunnsprosessSteg(
 ): List<() -> StoppbarBakgrunnsprosess?> = buildList {
     val grupper = (tasks.map { it.tilTaskGruppe(isNais) } + taskGrupper).toNonEmptyListOrNull()
     if (grupper != null) {
+        val factory = runCheckFactory()
         add {
             stoppbarSkedulerteJobber(
                 log = log,
-                runCheckFactory = runCheckFactory,
+                runCheckFactory = factory,
                 mdcCallIdKey = mdcCallIdKey,
                 grupper = grupper,
                 clock = clock,

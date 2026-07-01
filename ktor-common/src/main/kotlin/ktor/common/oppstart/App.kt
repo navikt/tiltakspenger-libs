@@ -52,13 +52,6 @@ fun Application.konfigurerOppstart(
     oppsett: Bakgrunnsprosessoppsett,
     shutdownPågår: AtomicBoolean = AtomicBoolean(false),
 ) {
-    val runCheckFactory = runCheckFactory(
-        isNais = isNais,
-        electorPath = oppsett.electorPath,
-        readiness = readiness,
-        logger = log,
-    )
-
     konfigurerLivssyklus(
         log = log,
         readiness = readiness,
@@ -68,7 +61,15 @@ fun Application.konfigurerOppstart(
                 log = log,
                 startSteg = bakgrunnsprosessSteg(
                     log = log,
-                    runCheckFactory = runCheckFactory,
+                    // Bygges lazyily slik at electorPath/leader-election kun hentes ut når det faktisk finnes skedulerte jobber.
+                    runCheckFactory = {
+                        runCheckFactory(
+                            isNais = isNais,
+                            electorPath = oppsett.electorPath,
+                            readiness = readiness,
+                            logger = log,
+                        )
+                    },
                     mdcCallIdKey = oppsett.mdcCallIdKey,
                     isNais = isNais,
                     clock = oppsett.clock,

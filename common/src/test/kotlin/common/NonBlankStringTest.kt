@@ -1,15 +1,15 @@
 package no.nav.tiltakspenger.libs.common
 
+import io.kotest.assertions.throwables.shouldNotThrowAny
+import io.kotest.assertions.throwables.shouldThrow
 import no.nav.tiltakspenger.libs.common.NonBlankString.Companion.toNonBlankString
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 
 class NonBlankStringTest {
 
     @Test
     fun `exception dersom strengen er blank`() {
-        assertThrows<IllegalArgumentException> {
+        shouldThrow<IllegalArgumentException> {
             NonBlankString.create("")
             "".toNonBlankString()
         }
@@ -17,7 +17,7 @@ class NonBlankStringTest {
 
     @Test
     fun `exception dersom strengen er bare en space`() {
-        assertThrows<IllegalArgumentException> {
+        shouldThrow<IllegalArgumentException> {
             NonBlankString.create(" ")
             " ".toNonBlankString()
         }
@@ -25,7 +25,7 @@ class NonBlankStringTest {
 
     @Test
     fun `exception dersom strengen er newline`() {
-        assertThrows<IllegalArgumentException> {
+        shouldThrow<IllegalArgumentException> {
             NonBlankString.create("\n")
             "\n".toNonBlankString()
         }
@@ -33,7 +33,7 @@ class NonBlankStringTest {
 
     @Test
     fun `konstruerer NonBlankString`() {
-        assertDoesNotThrow {
+        shouldNotThrowAny {
             NonBlankString.create("a")
             "a".toNonBlankString()
         }

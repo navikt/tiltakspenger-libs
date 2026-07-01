@@ -43,13 +43,14 @@ class Bakgrunnsprosessoppsett(
  * Bygger [RunCheckFactory][no.nav.tiltakspenger.libs.jobber.RunCheckFactory] via [runCheckFactory], setter sammen stegene via [bakgrunnsprosessSteg], og lar [startMedOpprydding] rydde opp dersom et startsteg kaster.
  *
  * @param oppsett Hva som skal kjøres (jobber + Kafka) og leader-election-/scheduling-oppsettet, se [Bakgrunnsprosessoppsett].
+ *   `null` (default) betyr at appen ikke har noen bakgrunnsprosesser – da slipper konsumenten å konstruere et oppsett med `electorPath`/`clock`.
  * @param shutdownPågår Deles med server-bootstrap slik at livssyklusen og [startKtorServer] ser samme shutdown-tilstand.
  */
 fun Application.konfigurerOppstart(
     log: KLogger,
     isNais: Boolean,
     readiness: Readiness,
-    oppsett: Bakgrunnsprosessoppsett,
+    oppsett: Bakgrunnsprosessoppsett? = null,
     shutdownPågår: AtomicBoolean = AtomicBoolean(false),
 ) {
     konfigurerLivssyklus(
@@ -57,27 +58,31 @@ fun Application.konfigurerOppstart(
         readiness = readiness,
         shutdownPågår = shutdownPågår,
         startBakgrunnsprosesser = {
-            startMedOpprydding(
-                log = log,
-                startSteg = bakgrunnsprosessSteg(
+            if (oppsett == null) {
+                emptyList()
+            } else {
+                startMedOpprydding(
                     log = log,
-                    // Bygges lazyily slik at electorPath/leader-election kun hentes ut når det faktisk finnes skedulerte jobber.
-                    runCheckFactory = {
-                        runCheckFactory(
-                            isNais = isNais,
-                            electorPath = oppsett.electorPath,
-                            readiness = readiness,
-                            logger = log,
-                        )
-                    },
-                    mdcCallIdKey = oppsett.mdcCallIdKey,
-                    isNais = isNais,
-                    clock = oppsett.clock,
-                    tasks = oppsett.tasks,
-                    taskGrupper = oppsett.taskGrupper,
-                    kafkaConsumers = oppsett.kafkaConsumers,
-                ),
-            )
+                    startSteg = bakgrunnsprosessSteg(
+                        log = log,
+                        // Bygges lat slik at electorPath/leader-election kun hentes ut når det faktisk finnes skedulerte jobber.
+                        runCheckFactory = {
+                            runCheckFactory(
+                                isNais = isNais,
+                                electorPath = oppsett.electorPath,
+                                readiness = readiness,
+                                logger = log,
+                            )
+                        },
+                        mdcCallIdKey = oppsett.mdcCallIdKey,
+                        isNais = isNais,
+                        clock = oppsett.clock,
+                        tasks = oppsett.tasks,
+                        taskGrupper = oppsett.taskGrupper,
+                        kafkaConsumers = oppsett.kafkaConsumers,
+                    ),
+                )
+            }
         },
     )
 }
@@ -110,6 +115,7 @@ fun Application.konfigurerOppstart(
  * ```
  *
  * @param oppsett Hva som skal kjøres (jobber + Kafka) og leader-election-/scheduling-oppsettet, se [Bakgrunnsprosessoppsett].
+ *   `null` (default) betyr at appen ikke har noen bakgrunnsprosesser (kun HTTP), og da trengs verken `electorPath` eller `clock`.
  * @param ktorModule Konsumentens eget Ktor-oppsett.
  *   Får [Readiness] slik at den kan registrere `healthRoutes(readiness::erKlar)`.
  */
@@ -117,7 +123,7 @@ fun startApp(
     log: KLogger,
     port: Int,
     isNais: Boolean,
-    oppsett: Bakgrunnsprosessoppsett,
+    oppsett: Bakgrunnsprosessoppsett? = null,
     shutdownGracePeriodMillis: Long = 5_000,
     shutdownTimeoutMillis: Long = 30_000,
     ktorModule: Application.(readiness: Readiness) -> Unit,

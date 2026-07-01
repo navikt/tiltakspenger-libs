@@ -247,18 +247,37 @@ class AppTest {
     }
 
     @Test
+    fun `konfigurerOppstart uten oppsett i det hele tatt markerer fortsatt appen klar ved ServerReady`() = testApplication {
+        lateinit var app: Application
+        application {
+            app = this
+            val readiness = Readiness()
+            routing { healthRoutes(readiness::erKlar) }
+            // Utelater oppsett helt (null) for en app uten bakgrunnsprosesser – da trengs verken electorPath eller clock.
+            konfigurerOppstart(
+                log = log,
+                isNais = false,
+                readiness = readiness,
+            )
+        }
+
+        client.get("/isready").status shouldBe HttpStatusCode.ServiceUnavailable
+        app.monitor.raise(ServerReady, app.environment)
+        client.get("/isready").status shouldBe HttpStatusCode.OK
+    }
+
+    @Test
     fun `startApp starter en ekte app og stopper rent`() {
         val port = ServerSocket(0).use { it.localPort }
         val serverKlar = CountDownLatch(1)
         val appRef = AtomicReference<Application?>(null)
 
         val serverTråd = Thread {
-            // Utelater readiness, tasks, kafkaConsumers og shutdown*-parametrene for å dekke default-verdiene.
+            // Utelater oppsett, readiness og shutdown*-parametrene for å dekke default-verdiene (app uten bakgrunnsprosesser).
             startApp(
                 log = log,
                 port = port,
                 isNais = false,
-                oppsett = Bakgrunnsprosessoppsett(mdcCallIdKey = "call-id", clock = clock, electorPath = { error("electorPath skal ikke leses lokalt") }),
             ) { readiness ->
                 appRef.set(this)
                 routing { healthRoutes(readiness::erKlar) }

@@ -14,3 +14,17 @@ dependencies {
 
     testImplementation(project(":test-common"))
 }
+
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(100)
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn("koverVerify")
+}

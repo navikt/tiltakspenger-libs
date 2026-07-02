@@ -88,7 +88,9 @@ internal class HttpKlientLoggingTest {
 
             verify(exactly = 1) { logger.info(any<() -> Any?>()) }
             verify(exactly = 0) { logger.warn(any<() -> Any?>()) }
-            verify(exactly = 2) { logger.error(any<() -> Any?>()) }
+            val feilmeldinger = mutableListOf<() -> Any?>()
+            verify(exactly = 2) { logger.error(capture(feilmeldinger)) }
+            feilmeldinger.forEach { it() }
         }
     }
 
@@ -102,7 +104,9 @@ internal class HttpKlientLoggingTest {
         klient.post<String>(URI.create("http://localhost/pre-flight"), SelvRefererendeDto())
             .swap().getOrNull()!!.shouldBeInstanceOf<HttpKlientError.SerializationError>()
 
-        verify(exactly = 1) { logger.error(any<() -> Any?>()) }
+        val feilmeldinger = mutableListOf<() -> Any?>()
+        verify(exactly = 1) { logger.error(capture(feilmeldinger)) }
+        feilmeldinger.forEach { it() }
     }
 
     @Test
@@ -136,6 +140,45 @@ internal class HttpKlientLoggingTest {
             val rendered = messages.joinToString("\n") { it().toString() }
             rendered.shouldNotContain("logg-hemmelig")
             rendered.shouldContain("***")
+        }
+    }
+
+    @Test
+    fun `URI-query havner ikke i vanlig logg (kun path)`() = runTest {
+        withWireMockServer { wiremock ->
+            wiremock.stubFor(get(urlEqualTo("/personer?fnr=12345678901")).willReturn(aResponse().withStatus(200).withBody("ok")))
+            val logger = testLogger()
+            val klient = testHttpKlient(loggingConfig = HttpKlientLoggingConfig(logger = logger))
+
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/personer?fnr=12345678901")).getOrFail()
+
+            val messages = mutableListOf<() -> Any?>()
+            verify { logger.info(capture(messages)) }
+            val rendered = messages.joinToString("\n") { it().toString() }
+            rendered.shouldContain("/personer")
+            rendered.shouldNotContain("12345678901")
+            rendered.shouldNotContain("fnr=")
+        }
+    }
+
+    @Test
+    fun `egendefinert header-verdi maskeres i vanlig logg`() = runTest {
+        withWireMockServer { wiremock ->
+            wiremock.stubFor(get(urlEqualTo("/pii-header")).willReturn(aResponse().withStatus(200).withBody("ok")))
+            val logger = testLogger()
+            val klient = testHttpKlient(
+                loggingConfig = HttpKlientLoggingConfig(logger = logger, inkluderHeadere = true),
+            )
+
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/pii-header")) {
+                header("X-Person-Ident", "12345678901")
+            }.getOrFail()
+
+            val messages = mutableListOf<() -> Any?>()
+            verify { logger.info(capture(messages)) }
+            val rendered = messages.joinToString("\n") { it().toString() }
+            rendered.shouldContain("X-Person-Ident")
+            rendered.shouldNotContain("12345678901")
         }
     }
 

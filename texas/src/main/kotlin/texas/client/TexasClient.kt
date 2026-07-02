@@ -14,11 +14,13 @@ interface TexasClient {
         audienceTarget: String,
         identityProvider: IdentityProvider,
         rewriteAudienceTarget: Boolean = true,
+        skipCache: Boolean = false,
     ): AccessToken
 
     suspend fun exchangeToken(
         userToken: String,
         audienceTarget: String,
         identityProvider: IdentityProvider,
+        skipCache: Boolean = false,
     ): AccessToken
 }

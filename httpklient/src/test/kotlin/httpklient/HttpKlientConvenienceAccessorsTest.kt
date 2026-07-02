@@ -45,6 +45,25 @@ internal class HttpKlientConvenienceAccessorsTest {
     }
 
     @Test
+    fun `throwableOrNull gir throwable for feil som bærer en, ellers null`() {
+        val throwable = RuntimeException("feil")
+
+        val requestIkkeSendt: HttpKlientError = HttpKlientError.InvalidRequest(throwable = throwable, metadata = metadata)
+        requestIkkeSendt.throwableOrNull() shouldBe throwable
+
+        val ingenRespons: HttpKlientError = HttpKlientError.NetworkError(throwable = throwable, metadata = metadata)
+        ingenRespons.throwableOrNull() shouldBe throwable
+
+        val deserialisering: HttpKlientError =
+            HttpKlientError.DeserializationError(throwable = throwable, body = "body", statusCode = 200, metadata = metadata)
+        deserialisering.throwableOrNull() shouldBe throwable
+
+        val uventetStatus: HttpKlientError =
+            HttpKlientError.UventetStatus(statusCode = 500, body = "body", metadata = metadata)
+        uventetStatus.throwableOrNull() shouldBe null
+    }
+
+    @Test
     fun `RequestBuilder eksponerer authToken som er satt`() {
         val token = testAccessToken("token-123")
         val builder = RequestBuilder(URI.create("https://example.com/api")).apply {

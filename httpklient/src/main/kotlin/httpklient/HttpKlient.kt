@@ -12,6 +12,13 @@ import kotlin.reflect.typeOf
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * Felles HTTP-klient for tiltakspenger-tjenester, med innebygd auth, timeouts, retry, circuit breaker, logging og en enhetlig feiltype ([HttpKlientError]).
+ *
+ * ## Mangler noe felles?
+ * Trenger du oppførsel som andre konsumenter også vil ha nytte av (nye config-felter, hjelpere rundt [HttpKlientError], nye test-utilities på `HttpKlientFake` e.l.), legg det heller til her i libs enn å bygge det lokalt i din egen app.
+ * Poenget med modulen er at klientene konvergerer mot samme oppførsel i stedet for at hver app dupliserer sin egen variant.
+ */
 interface HttpKlient {
     /**
      * Den eneste metoden en [HttpKlient]-implementasjon må implementere.

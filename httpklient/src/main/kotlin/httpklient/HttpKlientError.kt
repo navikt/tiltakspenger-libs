@@ -25,6 +25,9 @@ import kotlin.time.Duration
  *     is HttpKlientError.ResponsMottatt -> // inspiser error.statusCode
  * }
  * ```
+ *
+ * ## Mangler noe felles?
+ * Hvis du finner deg selv i å skrive hjelpere rundt denne typen som andre konsumenter også vil trenge (f.eks. [throwableOrNull] eller felles feillogging), legg det heller her i libs enn lokalt i din app, slik at alle konsumentene deler samme oppførsel.
  */
 sealed interface HttpKlientError {
     val metadata: HttpKlientMetadata
@@ -190,3 +193,15 @@ val HttpKlientError.responseHeaders: Map<String, List<String>> get() = metadata.
 val HttpKlientError.attempts: Int get() = metadata.attempts
 val HttpKlientError.attemptDurations: List<Duration> get() = metadata.attemptDurations
 val HttpKlientError.totalDuration: Duration get() = metadata.totalDuration
+
+/**
+ * Den underliggende exceptionen når feilen bærer en, ellers `null`.
+ * [HttpKlientError.UventetStatus] har ingen throwable (serveren svarte, bare med en uventet status), så den logges uten stacktrace.
+ * Nyttig for konsumenter som logger feilen: da slipper de å gjenta denne `when`-en selv.
+ */
+fun HttpKlientError.throwableOrNull(): Throwable? = when (this) {
+    is HttpKlientError.RequestIkkeSendt -> throwable
+    is HttpKlientError.IngenRespons -> throwable
+    is HttpKlientError.DeserializationError -> throwable
+    is HttpKlientError.UventetStatus -> null
+}

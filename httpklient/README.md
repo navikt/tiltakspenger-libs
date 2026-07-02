@@ -170,6 +170,30 @@ val response = klient.get<MinResponseDto>(URI.create("https://example.com/api/12
 }
 ```
 
+### Granulær nivåstyring
+
+Loggnivået styres per kategori av kall, slik at du kan skru ned støy uten å miste feillogging (og motsatt):
+
+| Felt | Kategori | Default |
+|---|---|---|
+| `suksessNivå` | Kall godtatt av `successStatus`-predikatet | `INFO` |
+| `klientfeilNivå` | Respons med `4xx` som ikke ble godtatt som suksess | `ERROR` |
+| `serverfeilNivå` | Respons med annen uventet status (typisk `5xx`) | `ERROR` |
+| `feilNivå` | Feil uten godtatt respons (transport, timeout, serialisering, deserialisering, auth, circuit breaker) | `ERROR` |
+
+Hver kategori settes til et `HttpKlientLogNivå` (`OFF`, `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`). `OFF` slår kategorien helt av. Nivået gjelder både `logger` og — når `loggTilSikkerlogg = true` — `Sikkerlogg` (`Sikkerlogg` har ikke `trace`, så `TRACE` mappes til `debug` der).
+
+```kotlin
+val klient = HttpKlient(clock = clock) {
+    logging = HttpKlientLoggingConfig(
+        logger = logg,
+        suksessNivå = HttpKlientLogNivå.OFF, // ingen støy fra vellykkede kall
+        klientfeilNivå = HttpKlientLogNivå.INFO, // 4xx er forventet her, logg lavt
+        // serverfeilNivå og feilNivå beholder ERROR
+    )
+}
+```
+
 ## Suksess-statuser
 
 Som standard er `2xx` suksess (`HttpStatusSuccess.is2xx`). Dette kan overstyres globalt, enten med et eget predikat eller med en av hjelperne i `HttpStatusSuccess`:

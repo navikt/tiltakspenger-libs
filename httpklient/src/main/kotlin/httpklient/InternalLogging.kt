@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.httpklient
 
+import io.github.oshai.kotlinlogging.KLogger
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 
 internal fun HttpKlientLoggingConfig.logSuccess(
@@ -9,28 +10,16 @@ internal fun HttpKlientLoggingConfig.logSuccess(
     responseHeaders: Map<String, List<String>>,
 ) {
     val message = melding(request, statusCode, requestHeaders, responseHeaders)
-    logger?.info { message }
-    if (loggTilSikkerlogg) {
-        Sikkerlogg.info { message }
-    }
+    logg(suksessNivå) { message }
 }
 
 internal fun HttpKlientLoggingConfig.logUventetStatus(
     request: HttpKlientRequest,
     error: HttpKlientError.UventetStatus,
 ) {
+    val nivå = if (error.statusCode in 400..499) klientfeilNivå else serverfeilNivå
     val message = melding(request, error.statusCode, error.metadata.requestHeaders, error.metadata.responseHeaders)
-    if (error.statusCode in 400..499) {
-        logger?.warn { message }
-        if (loggTilSikkerlogg) {
-            Sikkerlogg.warn { "$message body=${error.body}" }
-        }
-    } else {
-        logger?.error { message }
-        if (loggTilSikkerlogg) {
-            Sikkerlogg.error { "$message body=${error.body}" }
-        }
-    }
+    logg(nivå, sikkerloggMessage = { "$message body=${error.body}" }) { message }
 }
 
 internal fun HttpKlientLoggingConfig.logError(
@@ -38,9 +27,46 @@ internal fun HttpKlientLoggingConfig.logError(
     error: HttpKlientError,
 ) {
     val message = melding(request, null, error.metadata.requestHeaders, error.metadata.responseHeaders)
-    logger?.error { message }
+    logg(feilNivå) { message }
+}
+
+/**
+ * Logger [message] på det oppgitte [nivå]et til [HttpKlientLoggingConfig.logger] og — når [HttpKlientLoggingConfig.loggTilSikkerlogg] er `true` — til `Sikkerlogg`.
+ * [HttpKlientLogNivå.OFF] betyr ingen logging for denne kategorien.
+ * [sikkerloggMessage] lar Sikkerlogg-varianten inkludere ekstra (potensielt sensitiv) detalj, f.eks. responsbody; den defaulter til [message].
+ */
+private fun HttpKlientLoggingConfig.logg(
+    nivå: HttpKlientLogNivå,
+    sikkerloggMessage: () -> Any? = { null },
+    message: () -> Any?,
+) {
+    if (nivå == HttpKlientLogNivå.OFF) return
+    logger?.loggPå(nivå, message)
     if (loggTilSikkerlogg) {
-        Sikkerlogg.error { message }
+        val sikker = sikkerloggMessage().let { it ?: message() }
+        sikkerloggPå(nivå) { sikker }
+    }
+}
+
+private fun KLogger.loggPå(nivå: HttpKlientLogNivå, message: () -> Any?) {
+    when (nivå) {
+        HttpKlientLogNivå.OFF -> {}
+        HttpKlientLogNivå.TRACE -> trace(message)
+        HttpKlientLogNivå.DEBUG -> debug(message)
+        HttpKlientLogNivå.INFO -> info(message)
+        HttpKlientLogNivå.WARN -> warn(message)
+        HttpKlientLogNivå.ERROR -> error(message)
+    }
+}
+
+private fun sikkerloggPå(nivå: HttpKlientLogNivå, message: () -> Any?) {
+    when (nivå) {
+        HttpKlientLogNivå.OFF -> {}
+        HttpKlientLogNivå.TRACE -> Sikkerlogg.trace(loggstatement = message)
+        HttpKlientLogNivå.DEBUG -> Sikkerlogg.debug(loggstatement = message)
+        HttpKlientLogNivå.INFO -> Sikkerlogg.info(loggstatement = message)
+        HttpKlientLogNivå.WARN -> Sikkerlogg.warn(loggstatement = message)
+        HttpKlientLogNivå.ERROR -> Sikkerlogg.error(loggstatement = message)
     }
 }
 

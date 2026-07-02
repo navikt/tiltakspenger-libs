@@ -9,6 +9,10 @@ object Sikkerlogg {
     private val sikkerLogger: KLogger = KotlinLogging.logger("team-logs-logger")
     private val sikkerMarker = KMarkerFactory.getMarker("TEAM_LOGS")
 
+    fun trace(throwable: Throwable? = null, loggstatement: () -> Any?) {
+        sikkerLogger.trace(throwable = throwable, marker = sikkerMarker, message = loggstatement)
+    }
+
     fun debug(throwable: Throwable? = null, loggstatement: () -> Any?) {
         sikkerLogger.debug(throwable = throwable, marker = sikkerMarker, message = loggstatement)
     }

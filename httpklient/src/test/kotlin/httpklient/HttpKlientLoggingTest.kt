@@ -87,8 +87,8 @@ internal class HttpKlientLoggingTest {
             klient.get<String>(URI.create("${wiremock.baseUrl()}/serverfeil"))
 
             verify(exactly = 1) { logger.info(any<() -> Any?>()) }
-            verify(exactly = 1) { logger.warn(any<() -> Any?>()) }
-            verify(exactly = 1) { logger.error(any<() -> Any?>()) }
+            verify(exactly = 0) { logger.warn(any<() -> Any?>()) }
+            verify(exactly = 2) { logger.error(any<() -> Any?>()) }
         }
     }
 
@@ -136,6 +136,139 @@ internal class HttpKlientLoggingTest {
             val rendered = messages.joinToString("\n") { it().toString() }
             rendered.shouldNotContain("logg-hemmelig")
             rendered.shouldContain("***")
+        }
+    }
+
+    @Test
+    fun `suksessNivå OFF skrur av suksess-logging men beholder feillogging`() = runTest {
+        withWireMockServer { wiremock ->
+            wiremock.stubFor(get(urlEqualTo("/ok")).willReturn(aResponse().withStatus(200).withBody("ok")))
+            wiremock.stubFor(get(urlEqualTo("/serverfeil")).willReturn(aResponse().withStatus(500)))
+            val logger = testLogger()
+            val klient = testHttpKlient(
+                loggingConfig = HttpKlientLoggingConfig(
+                    logger = logger,
+                    suksessNivå = HttpKlientLogNivå.OFF,
+                ),
+            )
+
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/ok")).getOrFail()
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/serverfeil"))
+
+            verify(exactly = 0) { logger.info(any<() -> Any?>()) }
+            verify(exactly = 1) { logger.error(any<() -> Any?>()) }
+        }
+    }
+
+    @Test
+    fun `klientfeilNivå kan senkes fra default error`() = runTest {
+        withWireMockServer { wiremock ->
+            wiremock.stubFor(get(urlEqualTo("/klientfeil")).willReturn(aResponse().withStatus(404)))
+            val logger = testLogger()
+            val klient = testHttpKlient(
+                loggingConfig = HttpKlientLoggingConfig(
+                    logger = logger,
+                    klientfeilNivå = HttpKlientLogNivå.INFO,
+                ),
+            )
+
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/klientfeil"))
+
+            verify(exactly = 0) { logger.error(any<() -> Any?>()) }
+            verify(exactly = 1) { logger.info(any<() -> Any?>()) }
+        }
+    }
+
+    @Test
+    fun `suksessNivå kan senkes til debug`() = runTest {
+        withWireMockServer { wiremock ->
+            wiremock.stubFor(get(urlEqualTo("/ok")).willReturn(aResponse().withStatus(200).withBody("ok")))
+            val logger = testLogger()
+            val klient = testHttpKlient(
+                loggingConfig = HttpKlientLoggingConfig(
+                    logger = logger,
+                    loggTilSikkerlogg = true,
+                    suksessNivå = HttpKlientLogNivå.DEBUG,
+                ),
+            )
+
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/ok")).getOrFail()
+
+            verify(exactly = 0) { logger.info(any<() -> Any?>()) }
+            verify(exactly = 1) { logger.debug(any<() -> Any?>()) }
+        }
+    }
+
+    @Test
+    fun `feilNivå styrer transport-feil-logging`() = runTest {
+        val uri = stoppedServerUri("/stoppet")
+        val logger = testLogger()
+        val klient = testHttpKlient(
+            loggingConfig = HttpKlientLoggingConfig(
+                logger = logger,
+                loggTilSikkerlogg = true,
+                feilNivå = HttpKlientLogNivå.WARN,
+            ),
+        )
+
+        klient.get<String>(uri).swap().getOrNull()!!.shouldBeInstanceOf<HttpKlientError.NetworkError>()
+
+        verify(exactly = 0) { logger.error(any<() -> Any?>()) }
+        verify(exactly = 1) { logger.warn(any<() -> Any?>()) }
+    }
+
+    @Test
+    fun `feilNivå OFF skrur av transport-feil-logging`() = runTest {
+        val uri = stoppedServerUri("/stoppet-off")
+        val logger = testLogger()
+        val klient = testHttpKlient(
+            loggingConfig = HttpKlientLoggingConfig(
+                logger = logger,
+                feilNivå = HttpKlientLogNivå.OFF,
+            ),
+        )
+
+        klient.get<String>(uri).swap().getOrNull()!!.shouldBeInstanceOf<HttpKlientError.NetworkError>()
+
+        verify(exactly = 0) { logger.error(any<() -> Any?>()) }
+        verify(exactly = 0) { logger.warn(any<() -> Any?>()) }
+    }
+
+    @Test
+    fun `granulære nivåer kan settes via builder per request`() = runTest {
+        withWireMockServer { wiremock ->
+            wiremock.stubFor(get(urlEqualTo("/ok")).willReturn(aResponse().withStatus(200).withBody("ok")))
+            val logger = testLogger()
+            val klient = testHttpKlient()
+
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/ok")) {
+                logging {
+                    this.logger = logger
+                    suksessNivå = HttpKlientLogNivå.OFF
+                }
+            }.getOrFail()
+
+            verify(exactly = 0) { logger.info(any<() -> Any?>()) }
+        }
+    }
+
+    @Test
+    fun `trace-nivå logger til både logger og sikkerlogg`() = runTest {
+        withWireMockServer { wiremock ->
+            wiremock.stubFor(get(urlEqualTo("/ok")).willReturn(aResponse().withStatus(200).withBody("ok")))
+            val logger = testLogger()
+            val klient = testHttpKlient(
+                loggingConfig = HttpKlientLoggingConfig(
+                    logger = logger,
+                    loggTilSikkerlogg = true,
+                    suksessNivå = HttpKlientLogNivå.TRACE,
+                ),
+            )
+
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/ok")).getOrFail()
+
+            verify(exactly = 1) { logger.trace(any<() -> Any?>()) }
+            verify(exactly = 0) { logger.info(any<() -> Any?>()) }
         }
     }
 }

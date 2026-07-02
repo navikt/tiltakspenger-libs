@@ -19,7 +19,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 internal class FellesHttpPersonklientTest {
 
-    private val token = AccessToken("token", Instant.now(fixedClock).plusSeconds(3600)) {}
+    private val token = AccessToken("token", Instant.now(fixedClock).plusSeconds(3600))
 
     @Test
     fun `should be able to serialize non-errors`() {

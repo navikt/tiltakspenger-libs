@@ -26,5 +26,5 @@ data class TexasTokenResponse(
         AccessToken(
             token = accessToken,
             expiresAt = Instant.now(clock).plusSeconds(expiresInSeconds),
-        ) {}
+        )
 }

@@ -79,5 +79,4 @@ internal fun testAccessToken(
 ): AccessToken = AccessToken(
     token = token,
     expiresAt = clock.instant().plusSeconds(60),
-    invaliderCache = {},
 )

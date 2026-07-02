@@ -51,7 +51,6 @@ internal class HttpKlientFakeTest {
         val token = AccessToken(
             token = "hemmelig-token",
             expiresAt = Instant.now().plusSeconds(60),
-            invaliderCache = {},
         )
 
         val response = fake.get<String>(URI.create("http://localhost/auth")) {

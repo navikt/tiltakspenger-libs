@@ -38,6 +38,13 @@ private fun Map<String, List<String>>.containsHeaderIgnoreCase(name: String): Bo
     keys.any { it.equals(name, ignoreCase = true) }
 
 /**
+ * Sant hvis konsumenten allerede har satt en `Authorization`-header (case-insensitivt).
+ * Brukes for å avgjøre om klientens `authTokenProvider` skal styre headeren eller la konsumentens verdi stå.
+ */
+internal fun Map<String, List<String>>.containsAuthorizationHeader(): Boolean =
+    containsHeaderIgnoreCase("Authorization")
+
+/**
  * Headernavn (case-insensitivt) hvis verdier maskeres når headere gjengis i `rawRequestString` eller logges.
  * Dette gjelder kun tekstrepresentasjonen/loggingen; den faktiske HTTP-requesten sendes med ekte verdier.
  */
@@ -53,4 +60,14 @@ fun Map<String, List<String>>.redactSensitiveHeaders(): Map<String, List<String>
     return mapValues { (name, values) ->
         if (name.lowercase() in sensitiveHeaderNames) values.map { "***" } else values
     }
+}
+
+/**
+ * Returnerer headerne med _alle_ verdier erstattet med `***`, men med headernavnene bevart.
+ * Brukes for den PII-trygge varianten som går til den vanlige loggen: en egendefinert header (f.eks. `X-Person-Ident`) kan inneholde PII, og [redactSensitiveHeaders] maskerer kun auth/cookie.
+ * `Sikkerlogg`-varianten bruker fortsatt [redactSensitiveHeaders] slik at faktiske header-verdier (unntatt hemmeligheter) er synlige der PII er tillatt.
+ */
+internal fun Map<String, List<String>>.maskAllHeaderValues(): Map<String, List<String>> {
+    if (isEmpty()) return this
+    return mapValues { (_, values) -> values.map { "***" } }
 }

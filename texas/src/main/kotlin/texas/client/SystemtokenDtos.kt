@@ -8,12 +8,14 @@ import java.time.Instant
 data class TexasTokenRequest(
     @param:JsonProperty("identity_provider") val identityProvider: String,
     val target: String,
+    @param:JsonProperty("skip_cache") val skipCache: Boolean,
 )
 
 data class TexasExchangeTokenRequest(
     @param:JsonProperty("identity_provider") val identityProvider: String,
     val target: String,
     @param:JsonProperty("user_token") val userToken: String,
+    @param:JsonProperty("skip_cache") val skipCache: Boolean,
 )
 
 data class TexasTokenResponse(

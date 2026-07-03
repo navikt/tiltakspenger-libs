@@ -125,7 +125,7 @@ val metadata: HttpKlientMetadata = response.metadata
 
 Left-verdier fyller inn så mye metadata som finnes for feilsituasjonen. For eksempel har `SerializationError` request-informasjon, men ingen response, mens `UventetStatus` har både request, response-body, response-headere og status.
 
-Sensitive headere (`Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`) maskeres til `***` i `rawRequestString` og i logging, slik at bearer-tokens ikke lekker til logger. Selve HTTP-requesten sendes med de ekte verdiene, og det strukturerte `requestHeaders`-mappet beholder også de uredigerte verdiene (bruk `rawRequestString` hvis du skal logge).
+Sensitive headere (`Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`) maskeres til `***` i `rawRequestString`, slik at bearer-tokens ikke lekker. Selve HTTP-requesten sendes med de ekte verdiene, og det strukturerte `requestHeaders`-mappet beholder også de uredigerte verdiene (bruk `rawRequestString` hvis du skal logge). For hva som maskeres i selve loggingen, se [Vanlig logg vs. Sikkerlogg (PII)](#vanlig-logg-vs-sikkerlogg-pii).
 
 HTTP-headere er case-insensitive, så bruk hjelperne `responseHeader(name)` / `responseHeaderValues(name)` (og `requestHeader` / `requestHeaderValues`) på `HttpKlientMetadata` i stedet for å slå opp direkte i mappet:
 
@@ -180,8 +180,19 @@ Loggnivået styres per kategori av kall, slik at du kan skru ned støy uten å m
 | `klientfeilNivå` | Respons med `4xx` som ikke ble godtatt som suksess | `ERROR` |
 | `serverfeilNivå` | Respons med annen uventet status (typisk `5xx`) | `ERROR` |
 | `feilNivå` | Feil uten godtatt respons (transport, timeout, serialisering, deserialisering, auth, circuit breaker) | `ERROR` |
+| `skipCacheRetryNivå` | Diagnostikk når en skip-cache-retry ikke hjalp: et ferskt token ble også avvist (typisk persistent `401`/`403`) | `WARN` |
 
 Hver kategori settes til et `HttpKlientLogNivå` (`OFF`, `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`). `OFF` slår kategorien helt av. Nivået gjelder både `logger` og — når `loggTilSikkerlogg = true` — `Sikkerlogg` (`Sikkerlogg` har ikke `trace`, så `TRACE` mappes til `debug` der).
+
+### Vanlig logg vs. Sikkerlogg (PII)
+
+Vanlig `logger` skal aldri inneholde PII, mens `Sikkerlogg` kan. Modulen håndhever dette i alle loggkategorier:
+
+- **URI**: Til vanlig `logger` logges kun `scheme://host:port/path` — query-parametre, fragment og eventuell user-info (potensiell PII, f.eks. `?fnr=…`) strippes bort. `Sikkerlogg` får hele URI-en.
+- **Headere** (`inkluderHeadere = true`): Til vanlig `logger` vises headernavn, men *alle* verdier maskeres til `***` (en egendefinert header kan inneholde PII). `Sikkerlogg` får de ekte verdiene, med unntak av de faste sensitive headerne (`Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`) som er hemmeligheter og alltid maskeres.
+- **Respons-body**: Logges kun til `Sikkerlogg`, aldri til vanlig `logger`.
+
+Vil du ha alt (full URI, ekte header-verdier, body) til ett sted, sett `loggTilSikkerlogg = true`.
 
 ```kotlin
 val klient = HttpKlient(clock = clock) {
@@ -269,7 +280,7 @@ val response = klient.post<String>(URI.create("https://example.com/api/idempoten
 
 `HttpKlientMetadata` får alltid med `attempts`, `attemptDurations` og `totalDuration`, både på vellykkede svar og på alle `HttpKlientError`-varianter. Disse kan brukes til å få et bilde av hvor mye tid og hvor mange retries et kall faktisk forbrukte.
 
-`onExcessiveRetries` kalles når antall retries (`attempts - 1`) er minst `excessiveRetriesThreshold`. Default-callbacken logger en WARN — bruk `withoutExcessiveRetriesNotification()` for å skru av varslingen igjen, eller `notifyOnExcessiveRetries(threshold) { ... }` for å eksponere som metrikk.
+`onExcessiveRetries` kalles når antall retries (`attempts - 1`) er minst `excessiveRetriesThreshold`. Uten en egen hook logges et default-varsel via klientens `HttpKlientLoggingConfig` på `excessiveRetriesNivå` (default `WARN`) — skrur du av logging (eller setter kategorien til `OFF`), er også dette varselet stille. Setter du en egen hook med `notifyOnExcessiveRetries(threshold) { ... }`, får den hele `RetryOutcome` (samme data som default-loggingen) og tar over ansvaret, f.eks. for å eksponere som metrikk. Bruk `withoutExcessiveRetriesNotification()` for å skru av varslingen helt.
 
 ### Retryable-flagg
 
@@ -361,9 +372,16 @@ Klient-nivå (kalles foran hver request — egnet for `texas`/Token-X-flyter):
 
 ```kotlin
 val klient: HttpKlient = HttpKlient(clock = clock) {
-    authTokenProvider = { tokenService.systemToken("api://app-x") } // AccessToken
+    authTokenProvider = object : AuthTokenProvider {
+        override suspend fun hentToken(skipCache: Boolean): AccessToken =
+            tokenService.systemToken("api://app-x", skipCache = skipCache)
+    }
 }
 ```
+
+`AuthTokenProvider` er bevisst et vanlig interface (ikke en typealias eller `fun interface`) slik at eksisterende wiring må implementere `hentToken` og navngi `skipCache` når `libs` bumpes — i stedet for at en gammel parameterløs lambda stille kompilerer videre med en ignorert `it`.
+
+`hentToken` kalles med `skipCache = false` på det første forsøket. Hvis serveren svarer med en status i `skipCacheRetryStatuses` (default kun `401`), gjør klienten _ett_ nytt forsøk der `hentToken` kalles med `skipCache = true`, slik at et cachet, men avvist, token kan byttes ut med et ferskt. `403` er bevisst ikke med i default (ofte et persistent tilgangsavslag som ville doblet trafikken uten å hjelpe) — sett `skipCacheRetryStatuses = setOf(401, 403)` for å opt-e inn, eller `emptySet()` for å slå retryen av. Feiler også det andre forsøket, logges en diagnostikkmelding via `loggingConfig` på `skipCacheRetryNivå` (default `WARN`) slik at klienter der dette skjer i loop-aktig volum kan oppdages — konsekvent styrt av samme logging-config som resten av modulen (sett `skipCacheRetryNivå = HttpKlientLogNivå.OFF` for å slå den av).
 
 Per-request (overstyrer klient-default):
 

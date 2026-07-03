@@ -1,7 +1,6 @@
 package no.nav.tiltakspenger.libs.httpklient.retry
 
 import arrow.resilience.Schedule
-import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.HttpMethod
 import no.nav.tiltakspenger.libs.httpklient.isRetryableStatusCode
@@ -9,8 +8,6 @@ import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
-
-private val excessiveRetriesLogger = KotlinLogging.logger("no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig")
 
 /**
  * Predikat som avgjør om et nytt forsøk skal gjøres etter siste utfall.
@@ -29,13 +26,15 @@ typealias RetryPredicate = (RetryDecisionContext) -> Boolean
  *
  * @property schedule Arrow [Schedule] som styrer ventetid mellom forsøk og maks antall retries.
  * @property retryOn Domene-predikat som typisk sjekker HTTP-metode-idempotens og lignende.
- * @property excessiveRetriesThreshold Hvis satt og `attempts - 1 >= terskel`, kalles [onExcessiveRetries] etter at requesten er ferdig.
+ * @property excessiveRetriesThreshold Hvis satt og `attempts - 1 >= terskel`, varsles det etter at requesten er ferdig — enten via [onExcessiveRetries] (hvis satt) eller klientens default-logging.
+ * @property onExcessiveRetries Valgfri hook som får hele [RetryOutcome] når terskelen passeres, slik at konsumenten kan ta helt egne valg med samme data som default-loggingen har.
+ *   Er den `null`, logges et default-varsel via klientens `HttpKlientLoggingConfig` på `excessiveRetriesNivå` (og er da stille når logging er avskrudd).
  */
 data class RetryConfig(
     val schedule: Schedule<AttemptOutcome, *>,
     val retryOn: RetryPredicate = NeverRetry,
     val excessiveRetriesThreshold: Int? = null,
-    val onExcessiveRetries: (RetryOutcome) -> Unit = ::defaultLogExcessiveRetries,
+    val onExcessiveRetries: ((RetryOutcome) -> Unit)? = null,
 ) {
     init {
         excessiveRetriesThreshold?.let {
@@ -52,10 +51,11 @@ data class RetryConfig(
 
     /**
      * Slår på varsling når antall retries (`attempts - 1`) er minst [threshold].
+     * Uten en egen [onExcessiveRetries]-hook logges varselet via klientens `HttpKlientLoggingConfig`.
      */
     fun notifyOnExcessiveRetries(
         threshold: Int,
-        onExcessiveRetries: (RetryOutcome) -> Unit = this.onExcessiveRetries,
+        onExcessiveRetries: ((RetryOutcome) -> Unit)? = this.onExcessiveRetries,
     ): RetryConfig {
         return copy(
             excessiveRetriesThreshold = threshold,
@@ -183,10 +183,3 @@ data class RetryOutcome(
     val finalStatusCode: Int?,
     val finalError: HttpKlientError?,
 )
-
-internal fun defaultLogExcessiveRetries(outcome: RetryOutcome) {
-    excessiveRetriesLogger.warn {
-        "HTTP-klient brukte ${outcome.attempts} forsøk (totalt ${outcome.totalDuration}). " +
-            "Vurder å øke timeout eller undersøke nedstrømsstabilitet."
-    }
-}

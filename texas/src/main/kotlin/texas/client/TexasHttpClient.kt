@@ -21,6 +21,23 @@ import tools.jackson.module.kotlin.kotlinModule
 import java.time.Clock
 import java.time.Duration
 
+/**
+ * [TexasClient] mot NAIS Texas-sidecaren (token exchange as a service).
+ *
+ * ## Statuser fra token-endepunktene
+ * `/api/v1/token` ([getSystemToken]) og `/api/v1/token/exchange` ([exchangeToken]) svarer per Texas' OpenAPI-spec med `200 OK` (token), `400 Bad Request` eller `500 Internal Server Error` — se [OpenAPI-spec](https://doc.nais.io/auth/reference/#openapi-specification).
+ * Texas' token-endepunkter returnerer altså _ikke_ `401`/`403`.
+ * En `401 Unauthorized`/`403 Forbidden` kommer fra _target-API-et_ du kaller med det utstedte tokenet, ikke fra Texas selv.
+ *
+ * Denne klienten inspiserer eller transformerer ikke statuskoden fra Texas.
+ * `HttpClient` er satt opp med `expectSuccess = false`, så Ktor kaster _ikke_ [io.ktor.client.plugins.ResponseException] for ikke-2xx-svar; klienten forsøker kun å deserialisere responsbodyen til [TexasTokenResponse], og en ikke-2xx-status vil derfor typisk boble opp som en deserialiseringsfeil som logges og kastes videre.
+ *
+ * ## Caching og `skip_cache` ([skipCache])
+ * Texas cacher tokens: endepunktet returnerer alltid et cachet token hvis det finnes, og aldri et utløpt token.
+ * `skipCache = true` setter `skip_cache` i requesten og tvinger Texas til å gå forbi cachen og hente et ferskt token fra identity provideren (f.eks. Entra ID).
+ * Per NAIS-docs er dette kun nødvendig når target-API-et avviser tokenet, f.eks. fordi tilganger har endret seg siden tokenet ble utstedt — se [Consume internal API as an application](https://doc.nais.io/auth/entra-id/how-to/consume-m2m/#acquire-token).
+ * Beslutningen om _når_ et avvist token skal trigge et nytt kall med `skipCache = true` (typisk ved `401` fra target-API-et) ligger hos kalleren, f.eks. `httpklient` sin `authTokenProvider` sammen med `skipCacheRetryStatuses`.
+ */
 class TexasHttpClient(
     private val introspectionUrl: String,
     private val tokenUrl: String,
@@ -71,6 +88,7 @@ class TexasHttpClient(
         audienceTarget: String,
         identityProvider: IdentityProvider,
         rewriteAudienceTarget: Boolean,
+        skipCache: Boolean,
     ): AccessToken {
         val texasTokenRequest = TexasTokenRequest(
             identityProvider = identityProvider.value,
@@ -80,6 +98,7 @@ class TexasHttpClient(
             } else {
                 audienceTarget
             },
+            skipCache = skipCache,
         )
         try {
             val response =
@@ -103,11 +122,13 @@ class TexasHttpClient(
         userToken: String,
         audienceTarget: String,
         identityProvider: IdentityProvider,
+        skipCache: Boolean,
     ): AccessToken {
         val texasExchangeTokenRequest = TexasExchangeTokenRequest(
             identityProvider = identityProvider.value,
             target = audienceTarget,
             userToken = userToken,
+            skipCache = skipCache,
         )
         try {
             val response =

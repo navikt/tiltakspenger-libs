@@ -11,7 +11,9 @@ import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.TikkendeKlokke
 import no.nav.tiltakspenger.libs.common.getOrFail
@@ -23,7 +25,6 @@ import no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig
 import no.nav.tiltakspenger.libs.httpklient.retry.RetryDecisionContext
 import no.nav.tiltakspenger.libs.httpklient.retry.RetryOnServerErrorsAndNetwork
 import no.nav.tiltakspenger.libs.httpklient.retry.RetryOutcome
-import no.nav.tiltakspenger.libs.httpklient.retry.defaultLogExcessiveRetries
 import no.nav.tiltakspenger.libs.httpklient.retry.isIdempotent
 import org.junit.jupiter.api.Test
 import java.net.URI
@@ -288,16 +289,64 @@ internal class HttpKlientRetryTest {
     }
 
     @Test
-    fun `default onExcessiveRetries logger uten å kaste`() {
-        defaultLogExcessiveRetries(
-            RetryOutcome(
-                attempts = 3,
-                totalDuration = 100.milliseconds,
-                attemptDurations = listOf(40.milliseconds, 30.milliseconds, 30.milliseconds),
-                finalStatusCode = 503,
-                finalError = null,
-            ),
-        )
+    fun `default excessiveRetries-varsel logges via loggingConfig (default WARN)`() = runTest {
+        withWireMockServer { wiremock ->
+            wiremock.stubFor(get(urlEqualTo("/e-default")).willReturn(aResponse().withStatus(503)))
+            val logger = testLogger()
+            val klient = testHttpKlient(
+                loggingConfig = HttpKlientLoggingConfig(logger = logger),
+                retryConfig = RetryConfig(schedule = recursSchedule(2))
+                    .withRetryOn(RetryOnServerErrorsAndNetwork)
+                    .notifyOnExcessiveRetries(threshold = 2),
+            )
+
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/e-default"))
+
+            // Uten egen hook går default-varselet via loggingConfig på excessiveRetriesNivå (default WARN).
+            val meldinger = mutableListOf<() -> Any?>()
+            verify(exactly = 1) { logger.warn(capture(meldinger)) }
+            meldinger.single()().toString().shouldContain("forsøk")
+        }
+    }
+
+    @Test
+    fun `excessiveRetriesNivå OFF slår av default-varselet`() = runTest {
+        withWireMockServer { wiremock ->
+            wiremock.stubFor(get(urlEqualTo("/e-av")).willReturn(aResponse().withStatus(503)))
+            val logger = testLogger()
+            val klient = testHttpKlient(
+                loggingConfig = HttpKlientLoggingConfig(logger = logger, excessiveRetriesNivå = HttpKlientLogNivå.OFF),
+                retryConfig = RetryConfig(schedule = recursSchedule(2))
+                    .withRetryOn(RetryOnServerErrorsAndNetwork)
+                    .notifyOnExcessiveRetries(threshold = 2),
+            )
+
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/e-av"))
+
+            verify(exactly = 0) { logger.warn(any<() -> Any?>()) }
+        }
+    }
+
+    @Test
+    fun `egen onExcessiveRetries-hook erstatter default-loggingen`() = runTest {
+        withWireMockServer { wiremock ->
+            wiremock.stubFor(get(urlEqualTo("/e-hook")).willReturn(aResponse().withStatus(503)))
+            val logger = testLogger()
+            var notified: RetryOutcome? = null
+            val klient = testHttpKlient(
+                loggingConfig = HttpKlientLoggingConfig(logger = logger),
+                retryConfig = RetryConfig(schedule = recursSchedule(2))
+                    .withRetryOn(RetryOnServerErrorsAndNetwork)
+                    .notifyOnExcessiveRetries(threshold = 2) { notified = it },
+            )
+
+            klient.get<String>(URI.create("${wiremock.baseUrl()}/e-hook"))
+
+            // Hooken får hele RetryOutcome ...
+            notified!!.attempts shouldBe 3
+            // ... og tar over ansvaret, så default-varselet logges ikke i tillegg.
+            verify(exactly = 0) { logger.warn(any<() -> Any?>()) }
+        }
     }
 
     @Test

@@ -26,8 +26,9 @@ class SystemtokenDtosTest {
             identityProvider = "identityProvider",
             target = "target",
             userToken = "userToken",
+            skipCache = false,
         )
-        val expectedJson = """{"identity_provider":"identityProvider","target":"target","user_token":"userToken"}"""
+        val expectedJson = """{"identity_provider":"identityProvider","target":"target","user_token":"userToken","skip_cache":false}"""
         serialize(expectedObject) shouldBe expectedJson
         deserialize<TexasExchangeTokenRequest>(expectedJson) shouldBe expectedObject
     }
@@ -37,8 +38,9 @@ class SystemtokenDtosTest {
         val expectedObject = TexasTokenRequest(
             identityProvider = "identityProvider",
             target = "target",
+            skipCache = true,
         )
-        val expectedJson = """{"identity_provider":"identityProvider","target":"target"}"""
+        val expectedJson = """{"identity_provider":"identityProvider","target":"target","skip_cache":true}"""
         serialize(expectedObject) shouldBe expectedJson
         deserialize<TexasTokenRequest>(expectedJson) shouldBe expectedObject
     }

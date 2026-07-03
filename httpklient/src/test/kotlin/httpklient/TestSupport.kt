@@ -80,3 +80,12 @@ internal fun testAccessToken(
     token = token,
     expiresAt = clock.instant().plusSeconds(60),
 )
+
+/**
+ * Test-adapter som lager en [AuthTokenProvider] fra en lambda.
+ * [AuthTokenProvider] er bevisst et vanlig interface (se KDoc der) slik at produksjons-wiring må navngi `skipCache`; i tester holder det å adaptere en lambda.
+ */
+internal fun authTokenProvider(hent: suspend (skipCache: Boolean) -> AccessToken): AuthTokenProvider =
+    object : AuthTokenProvider {
+        override suspend fun hentToken(skipCache: Boolean): AccessToken = hent(skipCache)
+    }

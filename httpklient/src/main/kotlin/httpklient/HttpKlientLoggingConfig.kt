@@ -24,6 +24,8 @@ enum class HttpKlientLogNivå {
  * - [klientfeilNivå] — respons med `4xx`-status som ikke ble godtatt som suksess (default [HttpKlientLogNivå.ERROR]).
  * - [serverfeilNivå] — respons med annen uventet status (typisk `5xx`, men også f.eks. `3xx` når den ikke godtas) (default [HttpKlientLogNivå.ERROR]).
  * - [feilNivå] — feil der vi aldri fikk en godtatt respons: transport-/timeout-/serialiserings-/deserialiserings-/auth-/circuit breaker-feil (default [HttpKlientLogNivå.ERROR]).
+ * - [skipCacheRetryNivå] — diagnostikk når en skip-cache-retry ikke hjalp: et ferskt token ble også avvist (typisk persistent `401`/`403`) (default [HttpKlientLogNivå.WARN]).
+ * - [excessiveRetriesNivå] — varsel om overdreven retry-bruk når en request passerer [no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig.excessiveRetriesThreshold] og ingen egen `onExcessiveRetries`-hook er satt (default [HttpKlientLogNivå.WARN]).
  *
  * Sett en kategori til [HttpKlientLogNivå.OFF] for å skru den av, eller hev/senk nivået etter behov.
  * Nivået gjelder både [logger] og — når [loggTilSikkerlogg] er `true` — `Sikkerlogg`.
@@ -36,6 +38,8 @@ data class HttpKlientLoggingConfig(
     val klientfeilNivå: HttpKlientLogNivå = HttpKlientLogNivå.ERROR,
     val serverfeilNivå: HttpKlientLogNivå = HttpKlientLogNivå.ERROR,
     val feilNivå: HttpKlientLogNivå = HttpKlientLogNivå.ERROR,
+    val skipCacheRetryNivå: HttpKlientLogNivå = HttpKlientLogNivå.WARN,
+    val excessiveRetriesNivå: HttpKlientLogNivå = HttpKlientLogNivå.WARN,
 ) {
     companion object {
         val Disabled = HttpKlientLoggingConfig()
@@ -54,6 +58,8 @@ class HttpKlientLoggingConfigBuilder {
     var klientfeilNivå: HttpKlientLogNivå = HttpKlientLogNivå.ERROR
     var serverfeilNivå: HttpKlientLogNivå = HttpKlientLogNivå.ERROR
     var feilNivå: HttpKlientLogNivå = HttpKlientLogNivå.ERROR
+    var skipCacheRetryNivå: HttpKlientLogNivå = HttpKlientLogNivå.WARN
+    var excessiveRetriesNivå: HttpKlientLogNivå = HttpKlientLogNivå.WARN
 
     fun build(): HttpKlientLoggingConfig {
         return HttpKlientLoggingConfig(
@@ -64,6 +70,8 @@ class HttpKlientLoggingConfigBuilder {
             klientfeilNivå = klientfeilNivå,
             serverfeilNivå = serverfeilNivå,
             feilNivå = feilNivå,
+            skipCacheRetryNivå = skipCacheRetryNivå,
+            excessiveRetriesNivå = excessiveRetriesNivå,
         )
     }
 }

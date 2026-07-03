@@ -13,6 +13,20 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
+ * Leverandør av auth-token til [HttpKlient].
+ *
+ * Bevisst et vanlig interface (ikke en typealias eller `fun interface`): eksisterende wiring må da implementere [hentToken] eksplisitt og navngi [skipCache]-parameteren, i stedet for at en gammel parameterløs lambda kompilerer videre med en implisitt, ignorert `it`.
+ * Det tvinger konsumenten til å ta stilling til parameteren når `libs` bumpes, slik at skip-cache-retryen faktisk videreformidler et ferskt token og ikke stille blir en noop (samme felle som den gamle `invaliderCache`-noopen).
+ *
+ * [hentToken] kalles med `skipCache = false` på det første forsøket for en request.
+ * Hvis serveren svarer med en av [HttpKlient.HttpKlientConfig.skipCacheRetryStatuses] (default `401`), gjør klienten ett nytt forsøk der [hentToken] kalles med `skipCache = true`, slik at et cachet token som ble avvist kan byttes ut med et ferskt.
+ * Implementasjonen bestemmer selv hva [skipCache] betyr (typisk å tvinge fornyelse forbi en lokal token-cache, f.eks. `skip_cache` mot NAIS Texas).
+ */
+interface AuthTokenProvider {
+    suspend fun hentToken(skipCache: Boolean): AccessToken
+}
+
+/**
  * Felles HTTP-klient for tiltakspenger-tjenester, med innebygd auth, timeouts, retry, circuit breaker, logging og en enhetlig feiltype ([HttpKlientError]).
  *
  * ## Mangler noe felles?
@@ -106,10 +120,24 @@ interface HttpKlient {
 
         /**
          * Valgfri token-provider.
-         * Når satt vil klienten kalle denne foran hver request og legge resultatet i `Authorization: Bearer <token>`-headeren (med mindre konsumenten allerede har satt `Authorization` eksplisitt, eller har satt en per-request token via [RequestBuilder.bearerToken]).
+         * Når satt vil klienten kalle [AuthTokenProvider.hentToken] foran hver request og legge resultatet i `Authorization: Bearer <token>`-headeren (med mindre konsumenten allerede har satt `Authorization` eksplisitt, eller har satt en per-request token via [RequestBuilder.bearerToken]).
          * Hvis providern kaster, returneres [HttpKlientError.AuthError] og det HTTP-kallet gjøres aldri.
+         *
+         * Providern kalles med `skipCache = false` på det første forsøket.
+         * Hvis serveren svarer med en status i [skipCacheRetryStatuses], gjør klienten _ett_ nytt forsøk der providern kalles med `skipCache = true`, slik at et eventuelt cachet, men avvist, token kan byttes ut med et ferskt.
+         * Denne skip-cache-retryen skjer kun når providern faktisk styrer `Authorization`-headeren (dvs. verken per-request [RequestBuilder.bearerToken] eller en eksplisitt `Authorization`-header er satt).
          */
-        var authTokenProvider: (suspend () -> AccessToken)? = null
+        var authTokenProvider: AuthTokenProvider? = null
+
+        /**
+         * HTTP-statuser som utløser skip-cache-retryen beskrevet på [authTokenProvider].
+         *
+         * Default er kun `401 Unauthorized` — den statusen betyr utvetydig at tokenet ble avvist av autentiseringen, og et ferskt token kan hjelpe.
+         * `403 Forbidden` er bevisst _ikke_ med som default: for mange API-er er `403` et persistent tilgangsavslag (ABAC, manglende rolle på ressursen — ikke på tokenet), og en skip-cache-retry ville da doblet trafikken (ekstra Texas-kall forbi cachen + ekstra kall mot target) uten å hjelpe.
+         * Konsumenter der `403` faktisk betyr «token-permissions har endret seg» kan opt-e inn ved å sette `skipCacheRetryStatuses = setOf(401, 403)`.
+         * Tom mengde slår skip-cache-retryen helt av.
+         */
+        var skipCacheRetryStatuses: Set<Int> = setOf(401)
     }
 }
 

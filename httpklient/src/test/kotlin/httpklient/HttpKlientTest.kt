@@ -128,6 +128,7 @@ private class RecordingHttpKlient : HttpKlient {
                 attempts = 1,
                 attemptDurations = emptyList(),
                 totalDuration = Duration.ZERO,
+                tidsstempler = HttpKlientTidsstempler.INGEN,
             ),
         ).right()
     }

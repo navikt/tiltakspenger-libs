@@ -8,6 +8,10 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalUnit
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 private val startPoint = LocalDate.parse("2025-01-01")
 
@@ -55,4 +59,24 @@ class TikkendeKlokke(
     }
 
     fun copy(): TikkendeKlokke = TikkendeKlokke(initialClock)
+}
+
+/**
+ * Monoton [TimeSource]-analog til [TikkendeKlokke]: hver avlesning ([TimeMark.elapsedNow]) rykker den delte «forløpte tiden» ett fast [stegPerAvlesning] fremover.
+ * Gir deterministiske varigheter i tester på samme måte som [TikkendeKlokke] gir deterministiske tidsstempler.
+ */
+class TikkendeTidskilde(
+    private val stegPerAvlesning: Duration = 1.seconds,
+) : TimeSource {
+    private var forløpt: Duration = Duration.ZERO
+
+    override fun markNow(): TimeMark {
+        val vedMarkering = forløpt
+        return object : TimeMark {
+            override fun elapsedNow(): Duration {
+                forløpt += stegPerAvlesning
+                return forløpt - vedMarkering
+            }
+        }
+    }
 }

@@ -43,7 +43,7 @@ class HttpKlientFake : HttpKlient {
         rawResponseString: String? = if (body is Unit) "" else body.toString(),
         attempts: Int = 1,
         attemptDurations: List<Duration> = List(attempts) { Duration.ZERO },
-        /** Total veggklokketid inkl. backoff mellom forsøk; null gir summen av attemptDurations. Sett eksplisitt for å modellere retry-backoff. */
+        /** Total tid inkl. backoff mellom forsøk; null gir summen av attemptDurations. Sett eksplisitt for å modellere retry-backoff. */
         totalDuration: Duration? = null,
     ) {
         krevUtførtForsøk(attempts)
@@ -285,6 +285,11 @@ class HttpKlientFake : HttpKlient {
         attemptDurations: List<Duration> = List(attempts) { Duration.ZERO },
         /** I produksjon inkluderer totalDuration backoff mellom forsøk og kan overstige summen av attemptDurations; null gir summen som fornuftig standard. */
         totalDuration: Duration? = null,
+        /**
+         * Fakens standard er [HttpKlientTidsstempler.INGEN]: faken har ingen klokke og kaller ingen ekte auth-provider, så den kan ikke produsere meningsfulle absolutte tidsstempler.
+         * Tester som trenger å verifisere tidsstempler kan sende dem inn eksplisitt.
+         */
+        tidsstempler: HttpKlientTidsstempler = HttpKlientTidsstempler.INGEN,
     ): HttpKlientMetadata {
         val effectiveHeaders = effectiveRequestHeaders(request)
         val summertForsøkstid = attemptDurations.fold(Duration.ZERO) { sum, duration -> sum + duration }
@@ -297,6 +302,7 @@ class HttpKlientFake : HttpKlient {
             attempts = attempts,
             attemptDurations = attemptDurations,
             totalDuration = totalDuration ?: summertForsøkstid,
+            tidsstempler = tidsstempler,
         )
     }
 

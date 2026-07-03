@@ -15,7 +15,7 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
-import no.nav.tiltakspenger.libs.common.TikkendeKlokke
+import no.nav.tiltakspenger.libs.common.TikkendeTidskilde
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.common.stoppedServerUri
 import no.nav.tiltakspenger.libs.common.withWireMockServer
@@ -559,20 +559,21 @@ internal class HttpKlientRetryTest {
     }
 
     @Test
-    fun `per-forsøk varigheter måles mot klokka`() = runTest {
+    fun `per-forsøk varigheter måles monotont via TimeSource`() = runTest {
         withWireMockServer { wiremock ->
             wiremock.stubFor(get(urlEqualTo("/tikk")).willReturn(aResponse().withStatus(503)))
             val klient = testHttpKlient(
                 retryConfig = RetryConfig(schedule = recursSchedule(1), retryOn = RetryOnServerErrorsAndNetwork),
-                clock = TikkendeKlokke(),
+                timeSource = TikkendeTidskilde(),
             )
 
             val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/tikk")).swap().getOrNull()!!
 
-            // TikkendeKlokke tikker 1 sekund per instant()-kall, og RetryExecutor leser klokka én gang ved start og slutt av hvert forsøk.
-            // Det gir deterministiske varigheter: hvert forsøk «varer» 1 sekund, og total tid spenner over alle seks instant()-kallene.
+            // TikkendeTidskilde rykker den delte forløpte tiden 1 sekund per avlesning (elapsedNow); markNow rykker den ikke.
+            // RetryExecutor leser varighet én gang per forsøk pluss én gang for total-vinduet, så hvert forsøk «varer» 1 sekund.
+            // Total-vinduet spenner over alle tre avlesningene (to forsøk + total) og blir derfor 3 sekunder.
             error.metadata.attemptDurations shouldContainExactly listOf(1.seconds, 1.seconds)
-            error.metadata.totalDuration shouldBe 5.seconds
+            error.metadata.totalDuration shouldBe 3.seconds
         }
     }
 

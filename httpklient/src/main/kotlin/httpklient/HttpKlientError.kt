@@ -193,6 +193,7 @@ val HttpKlientError.responseHeaders: Map<String, List<String>> get() = metadata.
 val HttpKlientError.attempts: Int get() = metadata.attempts
 val HttpKlientError.attemptDurations: List<Duration> get() = metadata.attemptDurations
 val HttpKlientError.totalDuration: Duration get() = metadata.totalDuration
+val HttpKlientError.tidsstempler: HttpKlientTidsstempler get() = metadata.tidsstempler
 
 /**
  * Den underliggende exceptionen når feilen bærer en, ellers `null`.

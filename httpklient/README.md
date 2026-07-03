@@ -120,8 +120,24 @@ val metadata: HttpKlientMetadata = response.metadata
 - `responseHeaders` — response-headere når en response finnes.
 - `statusCode` — HTTP-status når en response finnes.
 - `attempts` — antall forsøk som ble utført, inkludert det første. `1` betyr at det ikke ble retry-et, og `0` at det aldri ble gjort et HTTP-forsøk (pre-flight-feil eller åpen circuit breaker).
-- `attemptDurations` — varighet per forsøk i den rekkefølgen de ble kjørt.
-- `totalDuration` — total veggklokketid for hele kallet (inkludert backoff mellom forsøk).
+- `attemptDurations` — varighet per forsøk i den rekkefølgen de ble kjørt. Måles monotont via `timeSource` (default `TimeSource.Monotonic`), ikke mot veggklokka, så de er immune mot klokkejustering (NTP-hopp).
+- `totalDuration` — total tid for hele kallet (inkludert backoff mellom forsøk), også målt monotont via `timeSource`.
+- `tidsstempler` — absolutte veggklokke-`LocalDateTime`-er (samme semantikk som `nå(clock)`) for nøkkelpunktene i kallet, se under.
+
+### Tidsstempler
+
+`metadata.tidsstempler` (`HttpKlientTidsstempler`) utfyller de relative varighetene med faktiske `LocalDateTime`-er — samme semantikk som `nå(clock)` (klokkas sone, truncated til mikrosekunder for PostgreSQL-kompatibilitet) — slik at konsumenter som må lagre «når skjedde dette» (f.eks. et oversendt-tidspunkt mot et fagsystem) kan lese det rett fra klienten og lagre det direkte i et `LocalDateTime`-felt, i stedet for å kalle sin egen klokke ved siden av:
+
+- `authStartet` / `authFullført` — rett før/etter `AuthTokenProvider.hentToken`. `null` når ingen provider faktisk ble kalt (per-request `bearerToken`, eksplisitt `Authorization`-header, eller ingen provider konfigurert).
+- `requestSendt` — start på det _første_ HTTP-forsøket. `null` når det aldri ble gjort et reelt forsøk (pre-flight-feil eller åpen circuit breaker).
+- `responsMottatt` — slutt på det _siste_ HTTP-forsøket, men bare når det forsøket faktisk ga en respons. `null` når det _endelige_ utfallet ikke ga en respons (timeout/nettverksfeil på siste forsøk), eller når det aldri ble gjort et forsøk. Metadata reflekterer alltid det endelige utfallet: fikk et _tidligere_ forsøk en respons, men siste forsøk timet ut, er `responsMottatt` likevel `null` (på linje med at `statusCode` og `rawResponseString` også er `null` for et slikt utfall).
+
+Tidsstemplene er også tilgjengelige via convenience-aksessoren `error.tidsstempler` på `HttpKlientError` (på lik linje med `error.attempts` osv.).
+
+```kotlin
+val oversendtTidspunkt: LocalDateTime? = response.metadata.tidsstempler.requestSendt
+```
+
 
 Left-verdier fyller inn så mye metadata som finnes for feilsituasjonen. For eksempel har `SerializationError` request-informasjon, men ingen response, mens `UventetStatus` har både request, response-body, response-headere og status.
 

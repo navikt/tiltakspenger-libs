@@ -12,6 +12,7 @@ import kotlin.time.toJavaDuration
 internal fun HttpKlientRequest.toJavaHttpRequest(
     defaultTimeout: Duration,
     requestHeaders: Map<String, List<String>>,
+    authTidsstempler: HttpKlientTidsstempler,
 ): Either<HttpKlientError, PreparedHttpKlientRequest> {
     val bodyAsString = when (body) {
         is HttpKlientRequest.Body.Json -> Either.catch { serialize(body.value) }
@@ -24,6 +25,7 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
                             bodyAsString = "<json-serialisering feilet>",
                         ),
                         requestHeaders = requestHeaders,
+                        tidsstempler = authTidsstempler,
                     ),
                 ).left()
             }
@@ -66,6 +68,7 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
             metadata = preFlightMetadata(
                 rawRequestString = rawRequestString,
                 requestHeaders = requestHeaders,
+                tidsstempler = authTidsstempler,
             ),
         )
     }
@@ -74,10 +77,12 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
 /**
  * Metadata for feil som oppstår _før_ vi har gjort et reelt HTTP-forsøk (serialization-/validerings-feil).
  * [HttpKlientMetadata] krever alle felter, så vi setter dem eksplisitt til "ikke utført": ingen response, 0 forsøk, ingen varigheter.
+ * [tidsstempler] kan likevel inneholde auth-tidsstempler dersom en [AuthTokenProvider] rakk å bli kalt før feilen.
  */
 private fun preFlightMetadata(
     rawRequestString: String,
     requestHeaders: Map<String, List<String>>,
+    tidsstempler: HttpKlientTidsstempler,
 ): HttpKlientMetadata = HttpKlientMetadata(
     rawRequestString = rawRequestString,
     rawResponseString = null,
@@ -87,6 +92,7 @@ private fun preFlightMetadata(
     attempts = 0,
     attemptDurations = emptyList(),
     totalDuration = ZERO,
+    tidsstempler = tidsstempler,
 )
 
 internal fun HttpKlientRequest.rawRequestString(

@@ -14,6 +14,7 @@ import no.nav.tiltakspenger.libs.httpklient.retry.AttemptResult
 import no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig
 import no.nav.tiltakspenger.libs.httpklient.retry.notifyExcessiveRetries
 import java.net.http.HttpResponse
+import java.time.LocalDateTime
 import kotlin.time.Duration
 
 /**
@@ -29,6 +30,7 @@ internal suspend fun JavaHttpKlient.executeWithCircuitBreaker(
     requestHeaders: Map<String, List<String>>,
     loggingConfig: HttpKlientLoggingConfig,
     circuitBreakerConfig: CircuitBreakerConfig.Enabled,
+    authTidsstempler: HttpKlientTidsstempler,
     execute: suspend () -> Either<HttpKlientError, HttpKlientResponse<String>>,
 ): Either<HttpKlientError, HttpKlientResponse<String>> {
     val circuitBreaker = circuitBreakers.computeIfAbsent(circuitBreakerConfig.cacheKey) {
@@ -61,6 +63,8 @@ internal suspend fun JavaHttpKlient.executeWithCircuitBreaker(
                         attempts = 0,
                         attemptDurations = emptyList(),
                         totalDuration = Duration.ZERO,
+                        // Circuit breaker var åpen, så det ble aldri gjort et HTTP-forsøk; kun eventuelle auth-tidsstempler er relevante.
+                        tidsstempler = authTidsstempler,
                     ),
                 )
                 loggingConfig.logError(request, error)
@@ -75,17 +79,14 @@ internal suspend fun JavaHttpKlient.executeWithCircuitBreaker(
 
 /**
  * Kjører ett enkelt HTTP-forsøk på IO-dispatcheren og pakker resultatet i [AttemptResult].
- * En kastet exception blir en [AttemptResult.Failure]; et HTTP-svar (uansett status) blir en [AttemptResult.Success].
+ * En kastet exception blir en `Either.Left` med en [AttemptOutcome.Failure]; et HTTP-svar (uansett status) blir en `Either.Right`.
  */
 internal suspend fun JavaHttpKlient.runSingleAttempt(request: java.net.http.HttpRequest): AttemptResult {
     return Either.catch {
         withContext(Dispatchers.IO) {
             client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()
         }
-    }.fold(
-        ifLeft = { AttemptResult.Failure(it.toAttemptFailure()) },
-        ifRight = { AttemptResult.Success(it) },
-    )
+    }.mapLeft { it.toAttemptFailure() }
 }
 
 /**
@@ -102,10 +103,13 @@ internal fun JavaHttpKlient.finalize(
     attemptDurations: List<Duration>,
     totalDuration: Duration,
     lastResult: AttemptResult,
+    authTidsstempler: HttpKlientTidsstempler,
+    requestSendt: LocalDateTime,
+    responsMottatt: LocalDateTime,
 ): Either<HttpKlientError, HttpKlientResponse<String>> {
-    return when (lastResult) {
-        is AttemptResult.Failure -> {
-            val error = lastResult.failure.toHttpKlientError(
+    return lastResult.fold(
+        { failure ->
+            val error = failure.toHttpKlientError(
                 metadata = HttpKlientMetadata(
                     rawRequestString = preparedRequest.rawRequestString,
                     rawResponseString = null,
@@ -115,15 +119,15 @@ internal fun JavaHttpKlient.finalize(
                     attempts = attempts,
                     attemptDurations = attemptDurations,
                     totalDuration = totalDuration,
+                    // Requesten ble sendt, men vi fikk ingen (fullstendig) respons — derfor er responsMottatt null.
+                    tidsstempler = authTidsstempler.copy(requestSendt = requestSendt),
                 ),
             )
             loggingConfig.logError(request, error)
             retryConfig.notifyExcessiveRetries(loggingConfig, attempts, totalDuration, attemptDurations, null, error)
             error.left()
-        }
-
-        is AttemptResult.Success -> {
-            val response = lastResult.response
+        },
+        { response ->
             val responseBody = response.body()
             val statusCode = response.statusCode()
             val responseHeaders = response.headers().map()
@@ -136,6 +140,7 @@ internal fun JavaHttpKlient.finalize(
                 attempts = attempts,
                 attemptDurations = attemptDurations,
                 totalDuration = totalDuration,
+                tidsstempler = authTidsstempler.copy(requestSendt = requestSendt, responsMottatt = responsMottatt),
             )
             if ((successStatusOverride ?: config.successStatus).invoke(statusCode)) {
                 loggingConfig.logSuccess(request, statusCode, requestHeaders, responseHeaders)
@@ -155,8 +160,8 @@ internal fun JavaHttpKlient.finalize(
                 retryConfig.notifyExcessiveRetries(loggingConfig, attempts, totalDuration, attemptDurations, statusCode, error)
                 error.left()
             }
-        }
-    }
+        },
+    )
 }
 
 /**

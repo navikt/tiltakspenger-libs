@@ -16,6 +16,7 @@ internal class HttpKlientConvenienceAccessorsTest {
         attempts = 3,
         attemptDurations = listOf(100.milliseconds, 200.milliseconds, 700.milliseconds),
         totalDuration = 1.seconds,
+        tidsstempler = HttpKlientTidsstempler.INGEN,
     )
 
     @Test

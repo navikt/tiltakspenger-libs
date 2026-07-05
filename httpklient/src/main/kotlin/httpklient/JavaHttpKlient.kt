@@ -63,13 +63,15 @@ internal class JavaHttpKlient(
         val loggingConfig = request.loggingConfig ?: config.logging
         val retryConfig = request.retryConfig ?: config.defaultRetry
         val circuitBreakerConfig = request.circuitBreakerConfig ?: config.defaultCircuitBreaker
-        val authToken = request.resolveAuthToken(config, skipCache).getOrElse {
+        val resolvedAuth = request.resolveAuthToken(config, skipCache).getOrElse {
             loggingConfig.logError(request, it)
             return it.left()
         }
+        val authToken = resolvedAuth.token
+        val authTidsstempler = resolvedAuth.tidsstempler
         val requestHeaders = if (authToken != null) request.headers.withBearerToken(authToken) else request.headers
         val preparedRequest = request
-            .toJavaHttpRequest(config.defaultTimeout, requestHeaders)
+            .toJavaHttpRequest(config.defaultTimeout, requestHeaders, authTidsstempler)
             .getOrElse {
                 // Pre-flight-feil (serialisering/ugyldig request) skal logges på lik linje med auth- og respons-feil, ikke bli stille.
                 loggingConfig.logError(request, it)
@@ -78,7 +80,7 @@ internal class JavaHttpKlient(
 
         val effectiveSuccessStatus = request.successStatus ?: config.successStatus
         val executeWithRetry = suspend {
-            val retryExecution = RetryExecutor(config.clock).execute(
+            val retryExecution = RetryExecutor(config.clock, config.timeSource).execute(
                 request = request,
                 retryConfig = retryConfig,
                 isSuccessfulResponse = effectiveSuccessStatus,
@@ -94,6 +96,9 @@ internal class JavaHttpKlient(
                 attemptDurations = retryExecution.attemptDurations,
                 totalDuration = retryExecution.totalDuration,
                 lastResult = retryExecution.lastResult,
+                authTidsstempler = authTidsstempler,
+                requestSendt = retryExecution.requestSendt,
+                responsMottatt = retryExecution.responsMottatt,
             )
         }
         return when (circuitBreakerConfig) {
@@ -105,6 +110,7 @@ internal class JavaHttpKlient(
                 requestHeaders = requestHeaders,
                 loggingConfig = loggingConfig,
                 circuitBreakerConfig = circuitBreakerConfig,
+                authTidsstempler = authTidsstempler,
                 execute = executeWithRetry,
             )
         }

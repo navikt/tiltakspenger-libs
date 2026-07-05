@@ -10,6 +10,7 @@ import java.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 internal data class TestRequestDto(
     val id: String,
@@ -38,6 +39,7 @@ internal fun testHttpKlient(
     retryConfig: RetryConfig = RetryConfig.None,
     circuitBreakerConfig: CircuitBreakerConfig = CircuitBreakerConfig.None,
     clock: Clock = fixedClock,
+    timeSource: TimeSource = TimeSource.Monotonic,
 ): HttpKlient = HttpKlient(clock = clock) {
     this.connectTimeout = connectTimeout
     this.defaultTimeout = timeout
@@ -45,6 +47,7 @@ internal fun testHttpKlient(
     this.logging = loggingConfig
     this.defaultRetry = retryConfig
     this.defaultCircuitBreaker = circuitBreakerConfig
+    this.timeSource = timeSource
 }
 
 /**
@@ -71,6 +74,7 @@ internal fun tomMetadata(
     attempts = 0,
     attemptDurations = emptyList(),
     totalDuration = ZERO,
+    tidsstempler = HttpKlientTidsstempler.INGEN,
 )
 
 internal fun testAccessToken(

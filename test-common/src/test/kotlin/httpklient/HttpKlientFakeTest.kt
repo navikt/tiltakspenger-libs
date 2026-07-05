@@ -136,6 +136,7 @@ internal class HttpKlientFakeTest {
                         attempts = 1,
                         attemptDurations = emptyList(),
                         totalDuration = kotlin.time.Duration.ZERO,
+                        tidsstempler = HttpKlientTidsstempler.INGEN,
                     ),
                 ).left()
             }

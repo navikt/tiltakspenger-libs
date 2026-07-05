@@ -3,7 +3,18 @@ package no.nav.tiltakspenger.libs.httpklient
 import arrow.core.Either
 import arrow.core.right
 import no.nav.tiltakspenger.libs.common.AccessToken
+import no.nav.tiltakspenger.libs.common.nå
 import kotlin.time.Duration
+
+/**
+ * Resultatet av [resolveAuthToken]: det resolvede [token]et (eller `null` når ingen `Authorization` skal settes) sammen med [tidsstempler] som fanger når auth-provideren faktisk ble kalt.
+ *
+ * [tidsstempler] har kun [HttpKlientTidsstempler.authStartet]/[HttpKlientTidsstempler.authFullført] satt når en [AuthTokenProvider] faktisk ble kalt; ellers er den [HttpKlientTidsstempler.INGEN].
+ */
+internal data class ResolvedAuth(
+    val token: AccessToken?,
+    val tidsstempler: HttpKlientTidsstempler,
+)
 
 /**
  * Provideren som faktisk skal styre `Authorization`-headeren for denne requesten, ellers `null`.
@@ -23,18 +34,22 @@ internal fun HttpKlientRequest.effectiveAuthProvider(config: HttpKlient.HttpKlie
  *
  * - En per-request [HttpKlientRequest.authToken] vinner alltid.
  * - Ellers henter [effectiveAuthProvider] via [AuthTokenProvider.hentToken] med [skipCache].
- * - `Right(null)` betyr "ingen auth-header skal settes" (konsumenten styrer selv, eller ingen provider).
+ * - `Right(ResolvedAuth(token = null, …))` betyr "ingen auth-header skal settes" (konsumenten styrer selv, eller ingen provider).
  * - `Left` returneres hvis provideren kaster.
+ *
+ * [ResolvedAuth.tidsstempler] fanger når provideren faktisk ble kalt, og er [HttpKlientTidsstempler.INGEN] når ingen provider ble kalt.
  *
  * Se [AuthTokenProvider] for hvordan [skipCache] brukes til skip-cache-retry ved f.eks. `401`.
  */
 internal suspend fun HttpKlientRequest.resolveAuthToken(
     config: HttpKlient.HttpKlientConfig,
     skipCache: Boolean,
-): Either<HttpKlientError.AuthError, AccessToken?> {
-    authToken?.let { return it.right() }
-    val provider = effectiveAuthProvider(config) ?: return null.right()
+): Either<HttpKlientError.AuthError, ResolvedAuth> {
+    authToken?.let { return ResolvedAuth(it, HttpKlientTidsstempler.INGEN).right() }
+    val provider = effectiveAuthProvider(config) ?: return ResolvedAuth(null, HttpKlientTidsstempler.INGEN).right()
+    val authStartet = nå(config.clock)
     return Either.catch { provider.hentToken(skipCache) }.mapLeft { e ->
+        val authFullført = nå(config.clock)
         HttpKlientError.AuthError(
             throwable = e,
             metadata = HttpKlientMetadata(
@@ -46,7 +61,10 @@ internal suspend fun HttpKlientRequest.resolveAuthToken(
                 attempts = 0,
                 attemptDurations = emptyList(),
                 totalDuration = Duration.ZERO,
+                tidsstempler = HttpKlientTidsstempler(authStartet = authStartet, authFullført = authFullført, requestSendt = null, responsMottatt = null),
             ),
         )
+    }.map { token ->
+        ResolvedAuth(token, HttpKlientTidsstempler(authStartet = authStartet, authFullført = nå(config.clock), requestSendt = null, responsMottatt = null))
     }
 }

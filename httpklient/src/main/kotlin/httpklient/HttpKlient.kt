@@ -11,6 +11,7 @@ import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 /**
  * Leverandør av auth-token til [HttpKlient].
@@ -66,11 +67,21 @@ interface HttpKlient {
      */
     class HttpKlientConfig(
         /**
-         * Klokken som brukes til all tidsmåling i klienten (retry-timing, metadata, auth-token-utløp).
+         * Klokken som brukes til veggklokke-tidsstempler i klienten (metadata-tidsstempler som request/respons/auth, samt auth-token-utløp).
          * Påkrevd; ingen default i produksjonskode (se AGENTS.md).
+         *
+         * Merk: _varigheter_ (retry-timing) måles ikke mot denne klokken, men monotont via [timeSource], slik at de er immune mot klokkejustering (NTP-hopp).
          */
         val clock: Clock,
     ) {
+        /**
+         * Tidskilde for varighetsmåling (per-forsøk-varigheter og total retry-tid).
+         * Bevisst atskilt fra [clock]: en [TimeSource] er monoton og immun mot klokkejustering, i motsetning til veggklokken.
+         * Default er [TimeSource.Monotonic]; sett en [kotlin.time.TestTimeSource] (eller lignende) for deterministiske tester.
+         * Samme mønster som circuit breakerens egen tidskilde.
+         */
+        var timeSource: TimeSource = TimeSource.Monotonic
+
         /**
          * Connect-timeout for den underliggende `java.net.http.HttpClient`.
          * Brukes kun ved opprettelse av selve [java.net.http.HttpClient]-instansen.

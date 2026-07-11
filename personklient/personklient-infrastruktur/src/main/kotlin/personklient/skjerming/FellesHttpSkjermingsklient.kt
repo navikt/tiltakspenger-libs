@@ -26,7 +26,13 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 /**
- * https://skjermede-personer-pip.dev.adeo.no/swagger-ui/index.html
+ * HTTP-klient for å sjekke om personer er skjermet (egen ansatt) via skjermede-personer-pip.
+ *
+ * Kildekode: https://github.com/navikt/skjerming
+ * Dokumentasjon: https://navikt.github.io/skjerming/
+ * API-spec: https://skjermede-personer-pip.dev.adeo.no/swagger-ui/index.html
+ * Slack: #skjermingsløsningen
+ * Teamkatalog: https://teamkatalogen.nav.no/tag/Skjermingsl%C3%B8sningen
  */
 class FellesHttpSkjermingsklient(
     endepunkt: String,

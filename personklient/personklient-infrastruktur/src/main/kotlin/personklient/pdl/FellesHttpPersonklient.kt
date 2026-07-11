@@ -19,6 +19,14 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 /**
+ * HTTP-klient for å hente persondata fra PDL (persondataløsningen) via GraphQL.
+ *
+ * Kildekode: https://github.com/navikt/pdl
+ * Dokumentasjon: https://pdl-docs.ansatt.nav.no/
+ * API-spec: https://github.com/navikt/pdl/blob/master/apps/api/src/main/resources/schemas/pdl.graphqls og https://pdl-playground.dev.intern.nav.no/ og https://pdl-pip-api.intern.dev.nav.no/swagger-ui/index.html (Swagger)
+ * Slack: #pdl
+ * Teamkatalog: https://teamkatalogen.nav.no/team/034cbcd2-ac28-4e2e-88c8-345945933f70
+ *
  * @param endepunkt Hele URLen til PDL-tjenesten. F.eks https://pdl-api.prod-fss-pub.nais.io/graphql
  * @param tema Tema for henvendelsen. F.eks "IND" for individstønad (det gamle navnet på tiltakspenger)
  */

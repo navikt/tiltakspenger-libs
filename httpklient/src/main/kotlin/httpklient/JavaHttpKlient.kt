@@ -42,12 +42,12 @@ internal class JavaHttpKlient(
         request: HttpKlientRequest,
         responseType: KType,
     ): Either<HttpKlientError, HttpKlientResponse<Response>> {
-        return requestStringInternal(request).flatMap { response -> response.toTypedResponse(responseType) }
+        return requestBytesInternal(request).flatMap { response -> response.toTypedResponse(responseType) }
     }
 
-    private suspend fun requestStringInternal(
+    private suspend fun requestBytesInternal(
         request: HttpKlientRequest,
-    ): Either<HttpKlientError, HttpKlientResponse<String>> {
+    ): Either<HttpKlientError, HttpKlientResponse<ByteArray>> {
         return executeWithSkipCacheRetry(
             request = request,
             providerStyrerAuthHeader = request.effectiveAuthProvider(config) != null,
@@ -59,7 +59,7 @@ internal class JavaHttpKlient(
     private suspend fun utførMedResolvedAuth(
         request: HttpKlientRequest,
         skipCache: Boolean,
-    ): Either<HttpKlientError, HttpKlientResponse<String>> {
+    ): Either<HttpKlientError, HttpKlientResponse<ByteArray>> {
         val loggingConfig = request.loggingConfig ?: config.logging
         val retryConfig = request.retryConfig ?: config.defaultRetry
         val circuitBreakerConfig = request.circuitBreakerConfig ?: config.defaultCircuitBreaker

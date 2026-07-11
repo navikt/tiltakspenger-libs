@@ -6,7 +6,11 @@ import no.nav.tiltakspenger.libs.json.objectMapper
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.javaType
 
-internal fun <Response : Any> HttpKlientResponse<String>.deserializeBody(
+/**
+ * Deserialiserer respons-bytene til [Response] med Jackson.
+ * Jackson leser bytes direkte og detekterer encoding selv (per JSON-spesifikasjonen), så vi dekoder ikke via `String` først.
+ */
+internal fun <Response : Any> HttpKlientResponse<ByteArray>.deserializeBody(
     responseType: KType,
 ): Either<HttpKlientError, HttpKlientResponse<Response>> {
     return Either.catch {
@@ -20,22 +24,39 @@ internal fun <Response : Any> HttpKlientResponse<String>.deserializeBody(
     }.mapLeft { e ->
         HttpKlientError.DeserializationError(
             throwable = e,
-            body = body,
+            // body skal være lesbar tekst (den havner typisk i konsumentens sikkerlogg), aldri rå binærdata — samme regel som metadata.rawResponseString.
+            body = body.tilLesbarResponsString(metadata.responseHeaders),
             statusCode = statusCode,
             metadata = metadata,
         )
     }
 }
 
-internal fun <Response : Any> HttpKlientResponse<String>.toTypedResponse(
+/**
+ * Konverterer den rå bytes-responsen til forventet [responseType]:
+ * - `ByteArray` får de rå bytene uendret (binært innhold, f.eks. PDF).
+ * - `String` dekodes med charset fra `Content-Type` (default UTF-8) — samme oppførsel som JDK-ens `BodyHandlers.ofString()`.
+ * - `Unit` ignorerer bodyen.
+ * - Alt annet deserialiseres med Jackson via [deserializeBody].
+ */
+internal fun <Response : Any> HttpKlientResponse<ByteArray>.toTypedResponse(
     responseType: KType,
 ): Either<HttpKlientError, HttpKlientResponse<Response>> {
     return when (responseType.classifier) {
-        String::class -> {
+        ByteArray::class -> {
             @Suppress("UNCHECKED_CAST")
             HttpKlientResponse(
                 statusCode = statusCode,
                 body = body as Response,
+                metadata = metadata,
+            ).right()
+        }
+
+        String::class -> {
+            @Suppress("UNCHECKED_CAST")
+            HttpKlientResponse(
+                statusCode = statusCode,
+                body = body.dekodSomTekst(metadata.responseHeaders) as Response,
                 metadata = metadata,
             ).right()
         }

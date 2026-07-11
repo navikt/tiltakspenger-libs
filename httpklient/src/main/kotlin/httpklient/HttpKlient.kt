@@ -41,6 +41,8 @@ interface HttpKlient {
      * Tar en ferdig materialisert [HttpKlientRequest] (bygget av de reified verb-extensionene) i stedet for en builder-callback, slik at implementasjoner får rene data og fakes kan asserte direkte på requesten.
      * Tar [responseType] som [KType] (ikke `KClass`) slik at generiske parametre overlever gjennom Jackson-deserialiseringen — `request<List<Foo>>(...)` produserer faktisk `List<Foo>`, ikke `List<LinkedHashMap>`.
      * De reified extensionene bruker [typeOf] for å fange typen.
+     *
+     * Response-typen styrer konverteringen av bodyen: `ByteArray` gir rå bytes (binært innhold, f.eks. PDF — sett `Accept` selv, klienten defaulter den ikke), `String` gir dekodet tekst (charset fra `Content-Type`, default UTF-8), `Unit` ignorerer bodyen, og alt annet deserialiseres fra JSON med Jackson.
      */
     suspend fun <Response : Any> request(
         request: HttpKlientRequest,

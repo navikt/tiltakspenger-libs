@@ -40,7 +40,7 @@ class HttpKlientFake : HttpKlient {
         body: Any,
         statusCode: Int = 200,
         responseHeaders: Map<String, List<String>> = emptyMap(),
-        rawResponseString: String? = if (body is Unit) "" else body.toString(),
+        rawResponseString: String? = defaultRawResponseString(body),
         attempts: Int = 1,
         attemptDurations: List<Duration> = List(attempts) { Duration.ZERO },
         /** Total tid inkl. backoff mellom forsøk; null gir summen av attemptDurations. Sett eksplisitt for å modellere retry-backoff. */
@@ -81,6 +81,22 @@ class HttpKlientFake : HttpKlient {
 
     fun enqueueStringResponse(
         body: String,
+        statusCode: Int = 200,
+        responseHeaders: Map<String, List<String>> = emptyMap(),
+    ) {
+        enqueueResponse(
+            body = body,
+            statusCode = statusCode,
+            responseHeaders = responseHeaders,
+        )
+    }
+
+    /**
+     * Køer en binær respons (f.eks. en PDF) for requester med `ByteArray` som response-type.
+     * `rawResponseString` i metadata defaulter til samme placeholder som produksjon (`<binær respons, N bytes>`) — sikkerlogg skal aldri få rå binærdata.
+     */
+    fun enqueueBytesResponse(
+        body: ByteArray,
         statusCode: Int = 200,
         responseHeaders: Map<String, List<String>> = emptyMap(),
     ) {
@@ -242,8 +258,8 @@ class HttpKlientFake : HttpKlient {
                     "HttpKlientFake konfigurert med body av type ${body::class.qualifiedName}, " +
                         "men requesten forventet ${responseType.qualifiedName}",
                 ),
-                // I produksjon kommer body alltid fra den rå respons-stringen, så vi speiler metadata.rawResponseString (med body.toString() som fallback) for å holde error.body konsistent med metadata.
-                body = metadata.rawResponseString ?: body.toString(),
+                // I produksjon kommer body alltid fra den lesbare respons-stringen, så vi speiler metadata.rawResponseString (med samme default som enqueueResponse som fallback) for å holde error.body konsistent med metadata.
+                body = metadata.rawResponseString ?: defaultRawResponseString(body),
                 statusCode = statusCode,
                 metadata = metadata,
             ).left()
@@ -254,6 +270,16 @@ class HttpKlientFake : HttpKlient {
             body = body as Response,
             metadata = metadata,
         ).right()
+    }
+
+    /**
+     * Speiler produksjonens regler for `rawResponseString`: tom streng for `Unit` (ingen body), placeholder for binært innhold, ellers `toString()`.
+     * Placeholder-formatet holdes med vilje i synk med `binærResponsPlaceholder` (som er `private` i `httpklient`), slik at fakens metadata ser ut som produksjonens — og sikkerlogg aldri får rå binærdata.
+     */
+    private fun defaultRawResponseString(body: Any): String = when (body) {
+        is Unit -> ""
+        is ByteArray -> "<binær respons, ${body.size} bytes>"
+        else -> body.toString()
     }
 
     /**

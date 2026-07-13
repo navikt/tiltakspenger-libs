@@ -144,7 +144,7 @@ class RequestBuilder(
     /**
      * Sender en ferdigserialisert JSON-string og legger til `Content-Type: application/json` hvis den ikke allerede er satt case-insensitivt.
      *
-     * `Accept`-headeren styres bevisst _ikke_ herfra — den følger forventet response-type på `request<T>(...)`/verb-extensionene, som setter `Accept: application/json` automatisk for alle response-typer som ikke er `String` eller `Unit`.
+     * `Accept`-headeren styres bevisst _ikke_ herfra — den følger forventet response-type på `request<T>(...)`/verb-extensionene, som setter `Accept: application/json` automatisk for alle response-typer som ikke er `String`, `Unit` eller `ByteArray`.
      */
     fun json(body: String) {
         requestBody = HttpKlientRequest.Body.RawJson(body)
@@ -153,7 +153,7 @@ class RequestBuilder(
     /**
      * Serialiserer DTO-en med `tiltakspenger-libs/json` og legger til `Content-Type: application/json` hvis den ikke allerede er satt case-insensitivt.
      *
-     * `Accept`-headeren styres bevisst _ikke_ herfra — den følger forventet response-type på `request<T>(...)`/verb-extensionene, som setter `Accept: application/json` automatisk for alle response-typer som ikke er `String` eller `Unit`.
+     * `Accept`-headeren styres bevisst _ikke_ herfra — den følger forventet response-type på `request<T>(...)`/verb-extensionene, som setter `Accept: application/json` automatisk for alle response-typer som ikke er `String`, `Unit` eller `ByteArray`.
      */
     fun json(value: Any) {
         requestBody = HttpKlientRequest.Body.Json(value)
@@ -161,14 +161,16 @@ class RequestBuilder(
 
     /**
      * Materialiserer builderen til en [HttpKlientRequest] som [HttpKlient.request] kan ta imot.
-     * Legger på klientens default-headere: `Accept: application/json` for [responseType] som ikke er `String`/`Unit`, og `Content-Type: application/json` for JSON-body — begge kun hvis de mangler (case-insensitivt).
+     * Legger på klientens default-headere: `Accept: application/json` for [responseType] som ikke er `String`/`Unit`/`ByteArray`, og `Content-Type: application/json` for JSON-body — begge kun hvis de mangler (case-insensitivt).
      *
      * `@PublishedApi internal` fordi den kalles fra de public reified verb-extensionene (som er `inline`), men ikke skal være en del av det public API-et.
      */
     @PublishedApi
     internal fun materialize(responseType: KType, method: HttpMethod): HttpKlientRequest {
         val headersMedAccept = when (responseType.classifier) {
-            String::class, Unit::class -> headers.toMap()
+            // For String/Unit/ByteArray vet vi ikke hvilket format konsumenten forventer (tekst, ingenting, binært — f.eks. `application/pdf`), så konsumenten setter selv Accept ved behov.
+            String::class, Unit::class, ByteArray::class -> headers.toMap()
+
             else -> headers.withDefaultJsonAcceptHeader()
         }
         val headersMedContentType = when (requestBody) {

@@ -19,8 +19,8 @@ internal suspend fun executeWithSkipCacheRetry(
     providerStyrerAuthHeader: Boolean,
     skipCacheRetryStatuses: Set<Int>,
     loggingConfig: HttpKlientLoggingConfig,
-    execute: suspend (skipCache: Boolean) -> Either<HttpKlientError, HttpKlientResponse<String>>,
-): Either<HttpKlientError, HttpKlientResponse<String>> {
+    execute: suspend (skipCache: Boolean) -> Either<HttpKlientError, HttpKlientResponse<ByteArray>>,
+): Either<HttpKlientError, HttpKlientResponse<ByteArray>> {
     val førsteResultat = execute(false)
     if (!providerStyrerAuthHeader) return førsteResultat
 
@@ -42,5 +42,5 @@ internal suspend fun executeWithSkipCacheRetry(
  * Statuskoden fra et resultat som ble regnet som en feil (`Left`); `null` for et vellykket resultat (`Right`).
  * Se KDoc-en over for hvorfor vi bevisst ikke leser status fra en `Right`.
  */
-private fun Either<HttpKlientError, HttpKlientResponse<String>>.avvistStatusCode(): Int? =
+private fun Either<HttpKlientError, HttpKlientResponse<ByteArray>>.avvistStatusCode(): Int? =
     fold(ifLeft = { it.metadata.statusCode }, ifRight = { null })

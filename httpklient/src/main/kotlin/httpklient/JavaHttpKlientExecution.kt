@@ -31,8 +31,8 @@ internal suspend fun JavaHttpKlient.executeWithCircuitBreaker(
     loggingConfig: HttpKlientLoggingConfig,
     circuitBreakerConfig: CircuitBreakerConfig.Enabled,
     authTidsstempler: HttpKlientTidsstempler,
-    execute: suspend () -> Either<HttpKlientError, HttpKlientResponse<String>>,
-): Either<HttpKlientError, HttpKlientResponse<String>> {
+    execute: suspend () -> Either<HttpKlientError, HttpKlientResponse<ByteArray>>,
+): Either<HttpKlientError, HttpKlientResponse<ByteArray>> {
     val circuitBreaker = circuitBreakers.computeIfAbsent(circuitBreakerConfig.cacheKey) {
         circuitBreakerConfig.toCircuitBreaker()
     }
@@ -79,12 +79,13 @@ internal suspend fun JavaHttpKlient.executeWithCircuitBreaker(
 
 /**
  * Kjører ett enkelt HTTP-forsøk på IO-dispatcheren og pakker resultatet i [AttemptResult].
+ * Responsen leses som rå bytes (`BodyHandlers.ofByteArray`) slik at binært innhold (f.eks. PDF) ikke korrupteres av charset-dekoding; dekoding til tekst skjer først i [toTypedResponse] og metadata-byggingen i [finalize].
  * En kastet exception blir en `Either.Left` med en [AttemptOutcome.Failure]; et HTTP-svar (uansett status) blir en `Either.Right`.
  */
 internal suspend fun JavaHttpKlient.runSingleAttempt(request: java.net.http.HttpRequest): AttemptResult {
     return Either.catch {
         withContext(Dispatchers.IO) {
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).await()
         }
     }.mapLeft { it.toAttemptFailure() }
 }
@@ -106,7 +107,7 @@ internal fun JavaHttpKlient.finalize(
     authTidsstempler: HttpKlientTidsstempler,
     requestSendt: LocalDateTime,
     responsMottatt: LocalDateTime,
-): Either<HttpKlientError, HttpKlientResponse<String>> {
+): Either<HttpKlientError, HttpKlientResponse<ByteArray>> {
     return lastResult.fold(
         { failure ->
             val error = failure.toHttpKlientError(
@@ -131,9 +132,11 @@ internal fun JavaHttpKlient.finalize(
             val responseBody = response.body()
             val statusCode = response.statusCode()
             val responseHeaders = response.headers().map()
+            // rawResponseString og UventetStatus.body skal være lesbar tekst (de havner typisk i konsumentens sikkerlogg): tekstlig innhold dekodes, binært innhold blir en placeholder.
+            val lesbarResponsString = responseBody.tilLesbarResponsString(responseHeaders)
             val metadata = HttpKlientMetadata(
                 rawRequestString = preparedRequest.rawRequestString,
-                rawResponseString = responseBody,
+                rawResponseString = lesbarResponsString,
                 requestHeaders = requestHeaders,
                 responseHeaders = responseHeaders,
                 statusCode = statusCode,
@@ -145,7 +148,7 @@ internal fun JavaHttpKlient.finalize(
             if ((successStatusOverride ?: config.successStatus).invoke(statusCode)) {
                 loggingConfig.logSuccess(request, statusCode, requestHeaders, responseHeaders)
                 retryConfig.notifyExcessiveRetries(loggingConfig, attempts, totalDuration, attemptDurations, statusCode, null)
-                HttpKlientResponse<String>(
+                HttpKlientResponse<ByteArray>(
                     statusCode = statusCode,
                     body = responseBody,
                     metadata = metadata,
@@ -153,7 +156,7 @@ internal fun JavaHttpKlient.finalize(
             } else {
                 val error = HttpKlientError.UventetStatus(
                     statusCode = statusCode,
-                    body = responseBody,
+                    body = lesbarResponsString,
                     metadata = metadata,
                 )
                 loggingConfig.logUventetStatus(request, error)

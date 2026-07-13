@@ -60,7 +60,8 @@ sealed interface HttpKlientError {
 
     /**
      * Serveren returnerte en fullstendig HTTP-respons, men kallet regnes likevel som mislykket: enten fordi statusen ikke ble godtatt som suksess ([UventetStatus]) eller fordi en suksess-body ikke lot seg deserialisere ([DeserializationError]).
-     * Siden serveren faktisk svarte, er både [statusCode] og rå-responsen [body] alltid tilgjengelig for denne gruppen (i tillegg til [responseHeaders] fra [metadata]).
+     * Siden serveren faktisk svarte, er både [statusCode] og en lesbar [body] alltid tilgjengelig for denne gruppen (i tillegg til [responseHeaders] fra [metadata]).
+     * [body] følger samme regel som [HttpKlientMetadata.rawResponseString]: tekstlig innhold er dekodet tekst, mens binært innhold er placeholderen `<binær respons, N bytes>` — aldri rå binærdata, slik at verdien trygt kan sendes til sikkerlogg.
      */
     sealed interface ResponsMottatt : HttpKlientError {
         val statusCode: Int
@@ -133,7 +134,7 @@ sealed interface HttpKlientError {
 
     /**
      * Serveren svarte med en status som ble godtatt som suksess, men deserialisering av body til forventet type med Jackson (`objectMapper.readValue`) kastet.
-     * [throwable] er parse-feilen og [body] er den rå responsen, slik at konsumenten kan inspisere/feilsøke.
+     * [throwable] er parse-feilen og [body] er den lesbare responsen (se [ResponsMottatt]), slik at konsumenten kan inspisere/feilsøke.
      * Permanent gitt samme respons, derfor `retryable = false`.
      */
     data class DeserializationError(

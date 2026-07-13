@@ -122,6 +122,46 @@ internal class HttpKlientFakeTest {
     }
 
     @Test
+    fun `enqueueBytesResponse gir bytene tilbake eksakt og placeholder i rawResponseString`() = runTest {
+        // Bytes som er ugyldige som UTF-8, slik at en eventuell charset-dekoding i faken ville korruptert innholdet.
+        val bytes = byteArrayOf(0x25, 0x50, 0x44, 0x46, 0xFF.toByte(), 0xFE.toByte())
+        val fake = HttpKlientFake().apply {
+            enqueueBytesResponse(bytes)
+        }
+
+        val response = fake.get<ByteArray>(URI.create("http://localhost/pdf")).getOrFail()
+
+        response.statusCode shouldBe 200
+        response.body.toList() shouldBe bytes.toList()
+        // Speiler produksjon: sikkerlogg skal aldri få rå binærdata, kun placeholderen.
+        response.metadata.rawResponseString shouldBe "<binær respons, 6 bytes>"
+    }
+
+    @Test
+    fun `enqueueResponse med ByteArray-body defaulter placeholder i rawResponseString i stedet for toString`() = runTest {
+        val fake = HttpKlientFake().apply {
+            enqueueResponse(body = byteArrayOf(1, 2, 3))
+        }
+
+        val metadata = fake.get<ByteArray>(URI.create("http://localhost/bytes")).getOrFail().metadata
+
+        metadata.rawResponseString shouldBe "<binær respons, 3 bytes>"
+    }
+
+    @Test
+    fun `type-mismatch med ByteArray-body gir DeserializationError med placeholder-body, ikke rå bytes`() = runTest {
+        val fake = HttpKlientFake().apply {
+            enqueueBytesResponse(byteArrayOf(1, 2, 3, 4))
+        }
+
+        val error = fake.get<String>(URI.create("http://localhost/bytes-som-string")).swap().getOrNull()!!
+
+        val deserializationError = error.shouldBeInstanceOf<HttpKlientError.DeserializationError>()
+        deserializationError.body shouldBe "<binær respons, 4 bytes>"
+        deserializationError.body shouldBe deserializationError.metadata.rawResponseString
+    }
+
+    @Test
     fun `kan køe custom handler og error`() = runTest {
         val fake = HttpKlientFake().apply {
             enqueue { request ->

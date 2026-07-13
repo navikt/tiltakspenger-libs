@@ -40,8 +40,9 @@ internal data class RetryExecutionResult(
 /**
  * Utfallet av ett HTTP-forsøk: enten en [AttemptOutcome.Failure] (venstre) eller en fullført HTTP-respons (høyre).
  * Modellert som en Arrow [Either] slik at konsumenter får hele Either-API-et; de beskrivende `Success`/`Failure`-navnene erstattes av `left`/`right`.
+ * Responsen bærer rå bytes slik at binært innhold ikke korrupteres; dekoding til tekst skjer først i konverterings-/metadata-laget.
  */
-internal typealias AttemptResult = Either<AttemptOutcome.Failure, HttpResponse<String>>
+internal typealias AttemptResult = Either<AttemptOutcome.Failure, HttpResponse<ByteArray>>
 
 internal fun AttemptResult.toAttemptOutcome(): AttemptOutcome =
     fold({ it }, { AttemptOutcome.Status(it.statusCode()) })

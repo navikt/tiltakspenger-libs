@@ -43,9 +43,12 @@ data class HttpKlientTidsstempler(
  * Beskrivelse av en faktisk utført request/response (eller forsøk på dette).
  * Skal fylles ut eksplisitt av produsenten — det finnes ingen "fornuftige" default-verdier for denne typen informasjon, og defaults vil bare maskere bugs hvor felter ikke blir satt riktig.
  *
+ * @property rawResponseString Lesbar tekst-representasjon av respons-bodyen, eller `null` når det ikke finnes noen respons.
+ *   Tekstlig innhold (`Content-Type` med `text/`-prefiks, JSON eller XML — eller manglende `Content-Type`) er dekodet med charset fra `Content-Type` (default UTF-8).
+ *   Binært innhold (f.eks. `application/pdf`) representeres som placeholderen `<binær respons, N bytes>` — rå binærdata havner aldri her, slik at verdien trygt kan sendes til sikkerlogg.
  * @property requestHeaders Kun headerne klienten selv setter på requesten:
  *   - konsumentens egne headere (via `RequestBuilder.header`/`addHeader`),
- *   - klientens default-headere: `Accept: application/json` for response-typer som ikke er `String`/`Unit`, og `Content-Type: application/json` for JSON-body (eller `application/x-www-form-urlencoded` for `formUrlEncoded`),
+ *   - klientens default-headere: `Accept: application/json` for response-typer som ikke er `String`/`Unit`/`ByteArray`, og `Content-Type: application/json` for JSON-body (eller `application/x-www-form-urlencoded` for `formUrlEncoded`),
  *   - en eventuell bearer-token materialisert av klienten, i klartekst som `Authorization: Bearer ...` (bruk derfor [rawRequestString], som redakterer sensitive headere, ved logging).
  *   Bevarer innsettings-rekkefølge fra `RequestBuilder`; klientens default-headere havner til slutt.
  *   Inneholder bevisst _ikke_ transport-headerne `java.net.http.HttpClient` legger på selv ved sending — typisk `Host`, `User-Agent` (`Java-http-client/<jdk-versjon>`, f.eks. `Java-http-client/25`) og `Content-Length` (sistnevnte for body-requester).

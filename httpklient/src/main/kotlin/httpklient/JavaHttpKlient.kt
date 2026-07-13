@@ -8,26 +8,24 @@ import arrow.resilience.CircuitBreaker
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerCacheKey
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerConfig
 import no.nav.tiltakspenger.libs.httpklient.retry.RetryExecutor
-import java.net.http.HttpClient
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KType
-import kotlin.time.toJavaDuration
 
 /**
- * `java.net.http.HttpClient`-baserte implementasjonen av [HttpKlient].
+ * Standardimplementasjonen av [HttpKlient]: hele pipelinen er felles kode, og kun [transport] (default [JavaHttpTransport], backet av `java.net.http.HttpClient`) rører nettverket.
  *
  * Ansvaret er delt på flere filer for å holde hver del lesbar:
  *  - denne filen orkestrerer én request (auth-resolve → prepare → retry → circuit breaker),
  *  - [resolveAuthToken]/[effectiveAuthProvider] (InternalAuth.kt) håndterer `Authorization`,
  *  - [executeWithSkipCacheRetry] (SkipCacheRetry.kt) håndterer skip-cache-retryen,
- *  - [runSingleAttempt]/[finalize]/[executeWithCircuitBreaker] (JavaHttpKlientExecution.kt) kjører selve HTTP-kallet.
+ *  - [runSingleAttempt]/[finalize]/[executeWithCircuitBreaker] (JavaHttpKlientExecution.kt) kjører selve HTTP-kallet via [transport].
  */
 internal class JavaHttpKlient(
     internal val config: HttpKlient.HttpKlientConfig,
-    internal val client: HttpClient = HttpClient.newBuilder()
-        .connectTimeout(config.connectTimeout.toJavaDuration())
-        .followRedirects(config.followRedirects)
-        .build(),
+    internal val transport: HttpTransport = JavaHttpTransport(
+        connectTimeout = config.connectTimeout,
+        followRedirects = config.followRedirects,
+    ),
 ) : HttpKlient {
     /**
      * Cache av [CircuitBreaker]-instanser per [CircuitBreakerCacheKey] (dvs. per circuit breaker-`name`) for denne klienten.

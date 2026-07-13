@@ -11,8 +11,8 @@ import no.nav.tiltakspenger.libs.common.nå
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientLoggingConfig
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientRequest
+import no.nav.tiltakspenger.libs.httpklient.TransportRespons
 import no.nav.tiltakspenger.libs.httpklient.logExcessiveRetries
-import java.net.http.HttpResponse
 import java.time.Clock
 import java.time.LocalDateTime
 import kotlin.time.Duration
@@ -38,14 +38,14 @@ internal data class RetryExecutionResult(
 }
 
 /**
- * Utfallet av ett HTTP-forsøk: enten en [AttemptOutcome.Failure] (venstre) eller en fullført HTTP-respons (høyre).
+ * Utfallet av ett HTTP-forsøk: enten en [AttemptOutcome.Failure] (venstre) eller en fullført HTTP-respons fra transporten (høyre).
  * Modellert som en Arrow [Either] slik at konsumenter får hele Either-API-et; de beskrivende `Success`/`Failure`-navnene erstattes av `left`/`right`.
- * Responsen bærer rå bytes slik at binært innhold ikke korrupteres; dekoding til tekst skjer først i konverterings-/metadata-laget.
+ * [TransportRespons] bærer rå bytes slik at binært innhold ikke korrupteres; dekoding til tekst skjer først i konverterings-/metadata-laget.
  */
-internal typealias AttemptResult = Either<AttemptOutcome.Failure, HttpResponse<ByteArray>>
+internal typealias AttemptResult = Either<AttemptOutcome.Failure, TransportRespons>
 
 internal fun AttemptResult.toAttemptOutcome(): AttemptOutcome =
-    fold({ it }, { AttemptOutcome.Status(it.statusCode()) })
+    fold({ it }, { AttemptOutcome.Status(it.statusCode) })
 
 /**
  * Ett faktisk utført HTTP-forsøk, med tidsvindu og målt varighet.

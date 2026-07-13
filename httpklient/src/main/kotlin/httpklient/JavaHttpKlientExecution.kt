@@ -3,9 +3,6 @@ package no.nav.tiltakspenger.libs.httpklient
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.future.await
-import kotlinx.coroutines.withContext
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerConfig
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerDecisionContext
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.cacheKey
@@ -13,7 +10,6 @@ import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.toCircuitBreaker
 import no.nav.tiltakspenger.libs.httpklient.retry.AttemptResult
 import no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig
 import no.nav.tiltakspenger.libs.httpklient.retry.notifyExcessiveRetries
-import java.net.http.HttpResponse
 import java.time.LocalDateTime
 import kotlin.time.Duration
 
@@ -78,16 +74,12 @@ internal suspend fun JavaHttpKlient.executeWithCircuitBreaker(
 }
 
 /**
- * Kjører ett enkelt HTTP-forsøk på IO-dispatcheren og pakker resultatet i [AttemptResult].
- * Responsen leses som rå bytes (`BodyHandlers.ofByteArray`) slik at binært innhold (f.eks. PDF) ikke korrupteres av charset-dekoding; dekoding til tekst skjer først i [toTypedResponse] og metadata-byggingen i [finalize].
- * En kastet exception blir en `Either.Left` med en [AttemptOutcome.Failure]; et HTTP-svar (uansett status) blir en `Either.Right`.
+ * Kjører ett enkelt HTTP-forsøk via [JavaHttpKlient.transport] og pakker resultatet i [AttemptResult].
+ * En kastet exception blir en `Either.Left` med en [AttemptOutcome.Failure]; en fullstendig HTTP-respons (uansett status) blir en `Either.Right`.
+ * IO-dispatcher og rå bytes-lesing er transportens ansvar (se [JavaHttpTransport]); dekoding til tekst skjer først i [toTypedResponse] og metadata-byggingen i [finalize].
  */
 internal suspend fun JavaHttpKlient.runSingleAttempt(request: java.net.http.HttpRequest): AttemptResult {
-    return Either.catch {
-        withContext(Dispatchers.IO) {
-            client.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray()).await()
-        }
-    }.mapLeft { it.toAttemptFailure() }
+    return Either.catch { transport.send(request) }.mapLeft { it.toAttemptFailure() }
 }
 
 /**
@@ -129,9 +121,9 @@ internal fun JavaHttpKlient.finalize(
             error.left()
         },
         { response ->
-            val responseBody = response.body()
-            val statusCode = response.statusCode()
-            val responseHeaders = response.headers().map()
+            val responseBody = response.body
+            val statusCode = response.statusCode
+            val responseHeaders = response.headere
             // rawResponseString og UventetStatus.body skal være lesbar tekst (de havner typisk i konsumentens sikkerlogg): tekstlig innhold dekodes, binært innhold blir en placeholder.
             val lesbarResponsString = responseBody.tilLesbarResponsString(responseHeaders)
             val metadata = HttpKlientMetadata(

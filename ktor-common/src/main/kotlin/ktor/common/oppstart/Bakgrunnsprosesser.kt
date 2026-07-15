@@ -38,15 +38,17 @@ class KafkaConsumerOppsett(
  * I begge tilfeller styres «kjør kun når appen er klar» av [readiness] (`isReady = readiness::erKlar`).
  *
  * [electorPath] er en lambda slik at den kun evalueres når vi faktisk kjører i NAIS (lokalt finnes ofte ikke `ELECTOR_PATH`).
+ * [clock] brukes av [LeaderPodLookupClient] sin `HttpKlient` til tidsstempler i metadata; påkrevd uten default, som ellers i libs.
  */
 fun runCheckFactory(
     isNais: Boolean,
     electorPath: () -> String,
     readiness: Readiness,
+    clock: Clock,
     logger: KLogger = KotlinLogging.logger { },
 ): RunCheckFactory = if (isNais) {
     RunCheckFactory(
-        leaderPodLookup = LeaderPodLookupClient(electorPath = electorPath(), logger = logger),
+        leaderPodLookup = LeaderPodLookupClient(electorPath = electorPath(), logger = logger, clock = clock),
         isReady = readiness::erKlar,
     )
 } else {

@@ -1,6 +1,13 @@
 package no.nav.tiltakspenger.libs.httpklient
 
+import arrow.core.Either
 import arrow.resilience.CircuitBreaker
+import io.github.oshai.kotlinlogging.KLogger
+import no.nav.tiltakspenger.libs.json.objectMapper
+import no.nav.tiltakspenger.libs.logging.Sikkerlogg
+import kotlin.reflect.KType
+import kotlin.reflect.jvm.javaType
+import kotlin.reflect.typeOf
 import kotlin.time.Duration
 
 /**
@@ -70,7 +77,7 @@ sealed interface HttpKlientError {
 
     /**
      * Forsøket time-et ut.
-     * Trigges av `java.net.http.HttpTimeoutException` fra JDK-klienten — enten request-timeout ([RequestBuilder.timeout] / `HttpKlientConfig.defaultTimeout`) eller connect-timeout (`HttpKlientConfig.connectTimeout`).
+     * Trigges av `java.net.http.HttpTimeoutException` fra JDK-klienten — enten request-timeout ([HttpKlientConfig.timeout]) eller connect-timeout ([HttpKlientConfig.connectTimeout]).
      * Forbigående, derfor `retryable = true`.
      */
     data class Timeout(
@@ -116,11 +123,12 @@ sealed interface HttpKlientError {
     }
 
     /**
-     * Serveren svarte, men [statusCode] ble _ikke_ godtatt som suksess av det konfigurerte `successStatus`-predikatet (default [HttpStatusSuccess.is2xx]).
+     * Serveren svarte, men [statusCode] ble _ikke_ godtatt som suksess av kallets [Statusregel] (default [Statusregel.Alle2xx]).
      *
      * Merk navnet: dette er **ikke** bokstavelig «status utenfor 2xx».
-     * Suksess-predikatet er konfigurerbart per klient og per request ([RequestBuilder.successStatus]), så en `2xx` kan havne her (hvis du f.eks. kun godtar `200`), og en non-2xx kan regnes som suksess.
-     * Trenger du å skille mellom flere suksess-statuser (f.eks. `200` vs `209`), les `statusCode` på [HttpKlientResponse] i suksess-grenen i stedet.
+     * Statusregelen settes per kall via `godta`-parameteren, så en `2xx` kan havne her (hvis du f.eks. kun godtar `200` via [Statusregel.Eksakt]), og en non-2xx kan regnes som suksess.
+     * Trenger du å skille mellom flere suksess-statuser (f.eks. `200` vs `202`), les `statusCode` på [HttpKlientResponse] i suksess-grenen i stedet.
+     * Statuser som bærer et domeneutfall (tilgangsmaskinens `403`, dokarkivs dedup-`409`) skal _ikke_ inn i statusregelen — utled dem herfra med [harStatus] og [ResponsMottatt.bodySomJson].
      *
      * Retryability følger [isRetryableStatusCode]: et utvalg statuser (408, 425, 429, 500, 502, 503, 504) er retryable, resten ikke.
      */
@@ -206,4 +214,85 @@ fun HttpKlientError.throwableOrNull(): Throwable? = when (this) {
     is HttpKlientError.IngenRespons -> throwable
     is HttpKlientError.DeserializationError -> throwable
     is HttpKlientError.UventetStatus -> null
+}
+
+/**
+ * Sant når feilen er en respons fra serveren med en av [statuser] — grunnmuren for å utlede domeneutfall fra feiltypen.
+ * Typisk brukt sammen med [HttpKlientError.ResponsMottatt.bodySomJson] for statuser som bærer et strukturert svar (tilgangsmaskinens `403`, dokarkivs dedup-`409`).
+ */
+fun HttpKlientError.harStatus(vararg statuser: Int): Boolean =
+    this is HttpKlientError.ResponsMottatt && statusCode in statuser.toSet()
+
+/**
+ * Parser feil-bodyen som JSON til [T] med felles objectMapper — for statuser der serveren svarer med en strukturert feil-body.
+ * Returnerer `Left(DeserializationError)` med denne feilens metadata når bodyen ikke lar seg parse, slik at call sites slipper å håndbygge feiltyper.
+ * Merk at [ResponsMottatt.body] alltid er lesbar tekst (aldri rå binærdata), så JSON-feilbodies kan parses trygt herfra.
+ */
+inline fun <reified T : Any> HttpKlientError.ResponsMottatt.bodySomJson(): Either<HttpKlientError.DeserializationError, T> {
+    @Suppress("UNCHECKED_CAST")
+    return bodySomJsonInternal(typeOf<T>()) as Either<HttpKlientError.DeserializationError, T>
+}
+
+@PublishedApi
+internal fun HttpKlientError.ResponsMottatt.bodySomJsonInternal(type: KType): Either<HttpKlientError.DeserializationError, Any> =
+    Either.catch {
+        objectMapper.readValue<Any>(body, objectMapper.typeFactory.constructType(type.javaType))
+    }.mapLeft { e ->
+        HttpKlientError.DeserializationError(
+            throwable = e,
+            body = body,
+            statusCode = statusCode,
+            metadata = metadata,
+        )
+    }
+
+/**
+ * Bygger en [HttpKlientError.AuthError] for token-feil som oppstår _før_ noe kall er gjort — typisk en OBO-veksling konsumenten gjør selv (tilgangsmaskinen).
+ * Gir slike feil samme form som klientens egne, slik at felles feilmapping og [loggFeil] kan gjenbrukes uten en parallell feiltype.
+ */
+fun authFeilUtenKall(throwable: Throwable): HttpKlientError.AuthError = HttpKlientError.AuthError(
+    throwable = throwable,
+    metadata = HttpKlientMetadata(
+        rawRequestString = "",
+        rawResponseString = null,
+        requestHeaders = emptyMap(),
+        responseHeaders = emptyMap(),
+        statusCode = null,
+        attempts = 0,
+        attemptDurations = emptyList(),
+        totalDuration = Duration.ZERO,
+        tidsstempler = HttpKlientTidsstempler.INGEN,
+    ),
+)
+
+/**
+ * Felles feillogging for konsumenter av `httpklient`.
+ *
+ * Klienten logger aldri selv; logg i stedet én gang her, fra det laget som har domenekonteksten (typisk en service).
+ * Slik unngås dobbeltlogging (transport-logg fra libs + domenelogg fra konsument), og det blir nøyaktig én logghendelse per feilsituasjon.
+ * All HTTP-kontekst hentes fra feilen selv ([HttpKlientError.metadata]), så kalleren bidrar bare med det kalleren vet mer om enn klienten: [operasjon] og [kontekst].
+ *
+ * En «logghendelse» er paret [logger].error (uten personopplysninger) + `Sikkerlogg.error` (med redigert request og lesbar respons), i tråd med resten av kodebasen.
+ *
+ * @param logger Kallerens egen logger, slik at logglinja får kallerens navnrom.
+ * @param operasjon Kort beskrivelse av hva som feilet, f.eks. `"sending til datadeling"`.
+ * @param kontekst Domenekontekst som bare kalleren har, f.eks. `"Sak abc, saksnummer 123"`.
+ */
+fun HttpKlientError.loggFeil(
+    logger: KLogger,
+    operasjon: String,
+    kontekst: String,
+) {
+    val throwable = throwableOrNull()
+    val logMelding =
+        "Feil ved $operasjon. $kontekst. Status: ${metadata.statusCode}, forsøk: ${metadata.attempts}. Se sikkerlogg for detaljer."
+    val sikkerMelding =
+        "Feil ved $operasjon. $kontekst. Status: ${metadata.statusCode}, forsøk: ${metadata.attempts}, request: ${metadata.rawRequestString}. response: ${metadata.rawResponseString}. responseHeaders: ${metadata.responseHeaders}."
+    if (throwable != null) {
+        logger.error(throwable) { logMelding }
+        Sikkerlogg.error(throwable) { sikkerMelding }
+    } else {
+        logger.error { logMelding }
+        Sikkerlogg.error { sikkerMelding }
+    }
 }

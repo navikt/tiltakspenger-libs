@@ -1,24 +1,71 @@
 package no.nav.tiltakspenger.libs.httpklient
 
 import arrow.core.Either
+import arrow.core.left
 import arrow.core.right
 import no.nav.tiltakspenger.libs.json.objectMapper
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.javaType
 
 /**
- * Deserialiserer respons-bytene til [Response] med Jackson.
- * Jackson leser bytes direkte og detekterer encoding selv (per JSON-spesifikasjonen), så vi dekoder ikke via `String` først.
+ * Konverterer den rå bytes-responsen etter [format] — bestemt av metoden konsumenten kalte, aldri av typeargumentet alene.
+ * Den usjekkede casten er trygg by construction: de offentlige metodene på [HttpKlient] parer alltid typeargumentet med riktig [ResponsFormat].
  */
-internal fun <Response : Any> HttpKlientResponse<ByteArray>.deserializeBody(
+internal fun <Res> HttpKlientResponse<ByteArray>.tilTypetRespons(
+    format: ResponsFormat,
+): Either<HttpKlientError, HttpKlientResponse<Res>> {
+    @Suppress("UNCHECKED_CAST")
+    return when (format) {
+        is ResponsFormat.Json -> deserializeBody(format.type) as Either<HttpKlientError, HttpKlientResponse<Res>>
+
+        is ResponsFormat.JsonEllerNull ->
+            if (statusCode in format.nullVedStatus) {
+                HttpKlientResponse(
+                    statusCode = statusCode,
+                    body = null as Res,
+                    metadata = metadata,
+                ).right()
+            } else {
+                deserializeBody(format.type) as Either<HttpKlientError, HttpKlientResponse<Res>>
+            }
+
+        ResponsFormat.PdfBytes -> HttpKlientResponse(
+            statusCode = statusCode,
+            body = body as Res,
+            metadata = metadata,
+        ).right()
+
+        ResponsFormat.IngenBody -> HttpKlientResponse(
+            statusCode = statusCode,
+            body = Unit as Res,
+            metadata = metadata,
+        ).right()
+    }
+}
+
+/**
+ * Deserialiserer respons-bytene med Jackson.
+ * Jackson leser bytes direkte og detekterer encoding selv (per JSON-spesifikasjonen), så vi dekoder ikke via `String` først.
+ * En tom body gis en egen feilmelding med pekepinn: statuser uten body (typisk `204`) på en ikke-nullable metode er nesten alltid et tegn på at kallet skulle brukt en EllerNull-/UtenSvar-variant.
+ */
+private fun HttpKlientResponse<ByteArray>.deserializeBody(
     responseType: KType,
-): Either<HttpKlientError, HttpKlientResponse<Response>> {
+): Either<HttpKlientError, HttpKlientResponse<Any>> {
+    if (body.isEmpty()) {
+        return HttpKlientError.DeserializationError(
+            throwable = IllegalStateException(
+                "Tom respons-body (status $statusCode) kan ikke deserialiseres til JSON. Er dette en status uten body (f.eks. 204)? Bruk getJsonEllerNull/postJsonEllerNull med nullVedStatus, eller en UtenSvar-variant.",
+            ),
+            body = "",
+            statusCode = statusCode,
+            metadata = metadata,
+        ).left()
+    }
     return Either.catch {
         val javaType = objectMapper.typeFactory.constructType(responseType.javaType)
-        @Suppress("UNCHECKED_CAST")
-        HttpKlientResponse(
+        HttpKlientResponse<Any>(
             statusCode = statusCode,
-            body = objectMapper.readValue<Any>(body, javaType) as Response,
+            body = objectMapper.readValue<Any>(body, javaType),
             metadata = metadata,
         )
     }.mapLeft { e ->
@@ -29,47 +76,5 @@ internal fun <Response : Any> HttpKlientResponse<ByteArray>.deserializeBody(
             statusCode = statusCode,
             metadata = metadata,
         )
-    }
-}
-
-/**
- * Konverterer den rå bytes-responsen til forventet [responseType]:
- * - `ByteArray` får de rå bytene uendret (binært innhold, f.eks. PDF).
- * - `String` dekodes med charset fra `Content-Type` (default UTF-8) — samme oppførsel som JDK-ens `BodyHandlers.ofString()`.
- * - `Unit` ignorerer bodyen.
- * - Alt annet deserialiseres med Jackson via [deserializeBody].
- */
-internal fun <Response : Any> HttpKlientResponse<ByteArray>.toTypedResponse(
-    responseType: KType,
-): Either<HttpKlientError, HttpKlientResponse<Response>> {
-    return when (responseType.classifier) {
-        ByteArray::class -> {
-            @Suppress("UNCHECKED_CAST")
-            HttpKlientResponse(
-                statusCode = statusCode,
-                body = body as Response,
-                metadata = metadata,
-            ).right()
-        }
-
-        String::class -> {
-            @Suppress("UNCHECKED_CAST")
-            HttpKlientResponse(
-                statusCode = statusCode,
-                body = body.dekodSomTekst(metadata.responseHeaders) as Response,
-                metadata = metadata,
-            ).right()
-        }
-
-        Unit::class -> {
-            @Suppress("UNCHECKED_CAST")
-            HttpKlientResponse(
-                statusCode = statusCode,
-                body = Unit as Response,
-                metadata = metadata,
-            ).right()
-        }
-
-        else -> deserializeBody(responseType)
     }
 }

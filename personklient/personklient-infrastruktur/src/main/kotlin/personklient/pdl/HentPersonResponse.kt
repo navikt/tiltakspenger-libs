@@ -21,9 +21,10 @@ internal data class HentPersonResponse(
             } else {
                 UkjentFeil(this.errors).left()
             }
+        } else if (data == null) {
+            ResponsManglerData.left()
         } else {
-            this.data?.toString()?.right()
-                ?: ResponsManglerData.left()
+            data.toString().right()
         }
     }
 }

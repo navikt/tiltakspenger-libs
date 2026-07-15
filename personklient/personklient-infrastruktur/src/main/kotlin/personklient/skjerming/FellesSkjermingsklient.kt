@@ -6,6 +6,7 @@ import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesSkjermingError
+import java.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -24,11 +25,13 @@ interface FellesSkjermingsklient {
         fun create(
             endepunkt: String,
             getToken: suspend () -> AccessToken,
+            clock: Clock,
             connectTimeout: Duration = 1.seconds,
             timeout: Duration = 1.seconds,
         ): FellesSkjermingsklient = FellesHttpSkjermingsklient(
             endepunkt = endepunkt,
             getToken = getToken,
+            clock = clock,
             connectTimeout = connectTimeout,
             timeout = timeout,
         )

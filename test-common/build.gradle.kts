@@ -4,7 +4,6 @@ plugins {
 
 dependencies {
     api(project(":common"))
-    api(project(":httpklient"))
     implementation(project(":json"))
 
     api(libs.arrow.core)

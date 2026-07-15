@@ -3,8 +3,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.collections.shouldNotContain
@@ -19,46 +19,27 @@ import org.junit.jupiter.api.Test
 import java.net.URI
 
 internal class HttpKlientHeadersTest {
-    @Test
-    fun `header overskriver tidligere verdier for samme key`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/replace"))
-                    .withHeader("X-Foo", equalTo("siste"))
-                    .willReturn(aResponse().withStatus(200).withBody("ok")),
-            )
-            val klient = testHttpKlient()
-
-            val response = klient.get<String>(URI.create("${wiremock.baseUrl()}/replace")) {
-                header("X-Foo", "forste")
-                header("X-Foo", "siste")
-            }.getOrFail()
-
-            response.body shouldBe "ok"
-            response.metadata.requestHeaders["X-Foo"] shouldBe listOf("siste")
-            wiremock.verify(
-                1,
-                getRequestedFor(urlEqualTo("/replace")).withHeader("X-Foo", equalTo("siste")),
-            )
-        }
-    }
+    private val uri = URI.create("http://headers.test/ressurs")
+    private val okJson = """{"status":"ok","antall":1}"""
 
     @Test
-    fun `addHeader sender flere verdier for samme key som separate header-linjer til serveren`() = runTest {
+    fun `gjentatt headernavn i headere-lista gir multi-verdi-header som sendes som separate header-linjer`() = runTest {
         // Bruker custom header (X-Variant) for å unngå at Jetty automatisk gzipper response-bodyen (slik den gjør ved Accept-Encoding: gzip), som ville forstyrret body-assertions.
         withWireMockServer { wiremock ->
             wiremock.stubFor(
-                get(urlEqualTo("/multi")).willReturn(aResponse().withStatus(200).withBody("ok")),
+                get(urlEqualTo("/multi")).willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody(okJson)),
             )
             val klient = testHttpKlient()
 
-            val response = klient.get<String>(URI.create("${wiremock.baseUrl()}/multi")) {
-                addHeader("X-Variant", "alpha")
-                addHeader("X-Variant", "beta")
-                addHeader("X-Variant", "gamma")
-            }.getOrFail()
+            val response = klient.getJson<TestResponseDto>(
+                uri = URI.create("${wiremock.baseUrl()}/multi"),
+                headere = listOf(
+                    Header("X-Variant", "alpha"),
+                    Header("X-Variant", "beta"),
+                    Header("X-Variant", "gamma"),
+                ),
+            ).getOrFail()
 
-            response.body shouldBe "ok"
             response.metadata.requestHeaders["X-Variant"] shouldBe listOf("alpha", "beta", "gamma")
             // Verifiser at alle tre verdiene faktisk ble sendt som separate header-linjer på wire.
             wiremock.verify(
@@ -72,252 +53,141 @@ internal class HttpKlientHeadersTest {
     }
 
     @Test
-    fun `addHeader kombinerer med tidligere header-kall på samme key`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/blandet")).willReturn(aResponse().withStatus(200).withBody("ok")),
-            )
-            val klient = testHttpKlient()
+    fun `gjentatt headernavn med annen casing appender på samme header med første casing bevart`() = runTest {
+        // HTTP-headernavn er case-insensitive (RFC 9110 §5.1): to innslag med ulik casing skal bli én header, ikke to.
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(transport)
 
-            val response = klient.get<String>(URI.create("${wiremock.baseUrl()}/blandet")) {
-                header("X-Multi", "forste")
-                addHeader("X-Multi", "andre")
-            }.getOrFail()
+        val headers = klient.getJson<TestResponseDto>(
+            uri = uri,
+            headere = listOf(Header("X-Foo", "forste"), Header("x-foo", "andre")),
+        ).getOrFail().metadata.requestHeaders
 
-            response.metadata.requestHeaders["X-Multi"] shouldBe listOf("forste", "andre")
-            wiremock.verify(
-                1,
-                getRequestedFor(urlEqualTo("/blandet"))
-                    .withHeader("X-Multi", equalTo("forste"))
-                    .withHeader("X-Multi", equalTo("andre")),
-            )
-        }
+        headers.keys.count { it.equals("X-Foo", ignoreCase = true) } shouldBe 1
+        headers.keys shouldContain "X-Foo"
+        headers.keys shouldNotContain "x-foo"
+        headers["X-Foo"] shouldBe listOf("forste", "andre")
     }
 
     @Test
-    fun `header etter addHeader fjerner alle tidligere verdier`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/reset")).willReturn(aResponse().withStatus(200).withBody("ok")),
-            )
-            val klient = testHttpKlient()
-
-            val response = klient.get<String>(URI.create("${wiremock.baseUrl()}/reset")) {
-                addHeader("X-Foo", "a")
-                addHeader("X-Foo", "b")
-                header("X-Foo", "kun-denne")
-            }.getOrFail()
-
-            response.metadata.requestHeaders["X-Foo"] shouldBe listOf("kun-denne")
-            wiremock.verify(
-                1,
-                getRequestedFor(urlEqualTo("/reset")).withHeader("X-Foo", equalTo("kun-denne")),
-            )
-        }
-    }
-
-    @Test
-    fun `header slår opp eksisterende key case-insensitivt og overskriver i stedet for å lage duplikat`() = runTest {
-        // HTTP-headernavn er case-insensitive (RFC 9110 §5.1), så header("X-Foo") etterfulgt av header("x-foo") skal overskrive samme header – ikke sende to separate header-linjer til serveren.
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/case-replace")).willReturn(aResponse().withStatus(200).withBody("ok")),
-            )
-            val klient = testHttpKlient()
-
-            val metadata = klient.get<String>(URI.create("${wiremock.baseUrl()}/case-replace")) {
-                header("X-Foo", "forste")
-                header("x-foo", "siste")
-            }.getOrFail().metadata
-
-            // Kun én header beholdes på tvers av casing, med den sist satte verdien.
-            metadata.requestHeaders.keys.count { it.equals("X-Foo", ignoreCase = true) } shouldBe 1
-            metadata.requestHeaderValues("X-Foo") shouldBe listOf("siste")
-            // På wire skal serveren se nøyaktig én verdi for headeren, og den gamle verdien skal være borte.
-            wiremock.verify(
-                1,
-                getRequestedFor(urlEqualTo("/case-replace"))
-                    .withHeader("X-Foo", equalTo("siste")),
-            )
-            wiremock.verify(
-                0,
-                getRequestedFor(urlEqualTo("/case-replace"))
-                    .withHeader("X-Foo", equalTo("forste")),
-            )
-        }
-    }
-
-    @Test
-    fun `addHeader slår opp eksisterende key case-insensitivt og appender på samme header`() = runTest {
-        // addHeader("X-Variant") etterfulgt av addHeader("x-variant") skal legge verdien på samme header, ikke opprette en duplikat-header med annen casing.
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/case-append")).willReturn(aResponse().withStatus(200).withBody("ok")),
-            )
-            val klient = testHttpKlient()
-
-            val metadata = klient.get<String>(URI.create("${wiremock.baseUrl()}/case-append")) {
-                addHeader("X-Variant", "alpha")
-                addHeader("x-variant", "beta")
-            }.getOrFail().metadata
-
-            metadata.requestHeaders.keys.count { it.equals("X-Variant", ignoreCase = true) } shouldBe 1
-            metadata.requestHeaderValues("X-Variant") shouldBe listOf("alpha", "beta")
-            wiremock.verify(
-                1,
-                getRequestedFor(urlEqualTo("/case-append"))
-                    .withHeader("X-Variant", equalTo("alpha"))
-                    .withHeader("X-Variant", equalTo("beta")),
-            )
-        }
-    }
-
-    @Test
-    fun `headere bevarer innsettingsrekkefølge i rawRequestString, default-headere havner til slutt`() = runTest {
-        // HttpKlientRequest-kontrakten lover at headere bevarer rekkefølgen konsumenten satte dem i, med klientens default-headere (her Content-Type for JSON-body) lagt til på slutten.
+    fun `headere bevarer innsettingsrekkefølge i rawRequestString, klientens default-headere havner til slutt`() = runTest {
         // En alfabetisk sortert map ville feilaktig plassert Content-Type ("C") før X-Test ("X").
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                post(urlEqualTo("/rekkefolge")).willReturn(aResponse().withStatus(200).withBody("ok")),
-            )
-            val klient = testHttpKlient()
+        val transport = FakeHttpTransport()
+        transport.leggIKøTomRespons(statusCode = 200)
+        val klient = fakeHttpKlient(transport)
 
-            val metadata = klient.post<String>(URI.create("${wiremock.baseUrl()}/rekkefolge"), """{"a":1}""") {
-                header("X-Test", "1")
-            }.getOrFail().metadata
+        val metadata = klient.postJsonUtenSvar(
+            uri = uri,
+            body = SerialisertJson("""{"a":1}"""),
+            headere = listOf(Header("X-Test", "1")),
+        ).getOrFail().metadata
 
-            val raw = metadata.rawRequestString
-            raw.indexOf("X-Test:") shouldBeLessThan raw.indexOf("Content-Type:")
+        val raw = metadata.rawRequestString
+        raw.indexOf("X-Test:") shouldBeLessThan raw.indexOf("Content-Type:")
+    }
+
+    @Test
+    fun `reserverte headernavn avvises fail-fast uansett casing`() {
+        listOf("Content-Type", "content-type", "Accept", "ACCEPT", "Authorization", "authorization", "Content-Length", "Host").forEach { navn ->
+            shouldThrowWithMessage<IllegalArgumentException>("Headeren '$navn' eies av HttpKlient og settes automatisk av metoden du kaller.") {
+                Header(navn, "verdi")
+            }
         }
     }
 
     @Test
-    fun `header etterfulgt av header med annen casing bruker den siste casingen`() = runTest {
-        // Den siste skriveren bestemmer casingen: header("min-header") så header("Min-header") skal ende opp med nøkkelen "Min-header".
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/casing-hh")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = testHttpKlient()
-
-            val headers = klient.get<String>(URI.create("${wiremock.baseUrl()}/casing-hh")) {
-                header("min-header", "forste")
-                header("Min-header", "siste")
-            }.getOrFail().metadata.requestHeaders
-
-            headers.keys shouldContain "Min-header"
-            headers.keys shouldNotContain "min-header"
-            headers["Min-header"] shouldBe listOf("siste")
+    fun `blankt headernavn avvises`() {
+        shouldThrowWithMessage<IllegalArgumentException>("Headernavn kan ikke være blankt") {
+            Header("  ", "verdi")
         }
     }
 
     @Test
-    fun `header etterfulgt av addHeader med annen casing bruker den siste casingen og beholder begge verdier`() = runTest {
-        // header("min-header") så addHeader("Min-header") skal appende på samme header, med nøkkelen oppdatert til den siste casingen "Min-header".
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/casing-ha")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = testHttpKlient()
+    fun `sensitiv Header maskeres i rawRequestString men ikke i den strukturerte header-mappen og ikke på wire`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(transport)
 
-            val headers = klient.get<String>(URI.create("${wiremock.baseUrl()}/casing-ha")) {
-                header("min-header", "forste")
-                addHeader("Min-header", "siste")
-            }.getOrFail().metadata.requestHeaders
+        val metadata = klient.getJson<TestResponseDto>(
+            uri = uri,
+            headere = listOf(Header("ident", "12345678901", sensitiv = true), Header("X-Vanlig", "synlig")),
+        ).getOrFail().metadata
 
-            headers.keys shouldContain "Min-header"
-            headers.keys shouldNotContain "min-header"
-            headers["Min-header"] shouldBe listOf("forste", "siste")
-        }
+        // rawRequestString er beregnet for logging og maskerer derfor sensitive verdier.
+        metadata.rawRequestString shouldContain "ident: ***"
+        metadata.rawRequestString shouldContain "X-Vanlig: synlig"
+        metadata.rawRequestString shouldNotContain "12345678901"
+        // Den strukturerte mappen beholder ekte verdier slik at kallere kan inspisere dem programmatisk.
+        metadata.requestHeaders["ident"] shouldBe listOf("12345678901")
+        // Og transporten (wire) får alltid den ekte verdien.
+        transport.mottatteKall.single().request.headers().firstValue("ident").orElse(null) shouldBe "12345678901"
     }
 
     @Test
-    fun `addHeader etterfulgt av header med annen casing bruker den siste casingen og overskriver verdiene`() = runTest {
-        // addHeader("min-header") så header("Min-header") skal overskrive verdien og bruke den siste casingen "Min-header".
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/casing-ah")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = testHttpKlient()
+    fun `cookie-headere maskeres i rawRequestString via standardsettet`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(transport)
 
-            val headers = klient.get<String>(URI.create("${wiremock.baseUrl()}/casing-ah")) {
-                addHeader("min-header", "forste")
-                header("Min-header", "siste")
-            }.getOrFail().metadata.requestHeaders
+        val metadata = klient.getJson<TestResponseDto>(
+            uri = uri,
+            headere = listOf(Header("Cookie", "session=hemmelig-cookie")),
+        ).getOrFail().metadata
 
-            headers.keys shouldContain "Min-header"
-            headers.keys shouldNotContain "min-header"
-            headers["Min-header"] shouldBe listOf("siste")
-        }
-    }
-
-    @Test
-    fun `addHeader etterfulgt av addHeader med annen casing bruker den siste casingen og beholder begge verdier`() = runTest {
-        // addHeader("min-header") så addHeader("Min-header") skal appende på samme header, med nøkkelen oppdatert til den siste casingen "Min-header".
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/casing-aa")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = testHttpKlient()
-
-            val headers = klient.get<String>(URI.create("${wiremock.baseUrl()}/casing-aa")) {
-                addHeader("min-header", "forste")
-                addHeader("Min-header", "siste")
-            }.getOrFail().metadata.requestHeaders
-
-            headers.keys shouldContain "Min-header"
-            headers.keys shouldNotContain "min-header"
-            headers["Min-header"] shouldBe listOf("forste", "siste")
-        }
+        metadata.rawRequestString shouldContain "Cookie: ***"
+        metadata.rawRequestString shouldNotContain "hemmelig-cookie"
+        metadata.requestHeaders["Cookie"] shouldBe listOf("session=hemmelig-cookie")
     }
 
     @Test
     fun `responseHeader-aksessorene slår opp case-insensitivt`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/svar-headere")).willReturn(
-                    aResponse().withStatus(200).withBody("ok")
-                        .withHeader("X-Enkelt", "verdi")
-                        .withHeader("X-Multi", "a", "b"),
+        val transport = FakeHttpTransport()
+        transport.leggIKø(
+            TransportRespons(
+                statusCode = 200,
+                headere = mapOf(
+                    "Content-Type" to listOf("application/json"),
+                    "X-Enkelt" to listOf("verdi"),
+                    "X-Multi" to listOf("a", "b"),
                 ),
-            )
-            val klient = testHttpKlient()
+                body = okJson.toByteArray(),
+            ),
+        )
+        val klient = fakeHttpKlient(transport)
 
-            val metadata = klient.get<String>(URI.create("${wiremock.baseUrl()}/svar-headere")).getOrFail().metadata
+        val metadata = klient.getJson<TestResponseDto>(uri).getOrFail().metadata
 
-            metadata.responseHeader("x-enkelt") shouldBe "verdi"
-            metadata.responseHeader("X-ENKELT") shouldBe "verdi"
-            metadata.responseHeaderValues("x-multi") shouldBe listOf("a", "b")
-            metadata.responseHeader("finnes-ikke") shouldBe null
-            metadata.responseHeaderValues("finnes-ikke").shouldBeEmpty()
-        }
+        metadata.responseHeader("x-enkelt") shouldBe "verdi"
+        metadata.responseHeader("X-ENKELT") shouldBe "verdi"
+        metadata.responseHeaderValues("x-multi") shouldBe listOf("a", "b")
+        metadata.responseHeader("finnes-ikke") shouldBe null
+        metadata.responseHeaderValues("finnes-ikke").shouldBeEmpty()
     }
 
     @Test
     fun `requestHeader-aksessorene slår opp case-insensitivt`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/req-headere")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = testHttpKlient()
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(transport)
 
-            val metadata = klient.get<String>(URI.create("${wiremock.baseUrl()}/req-headere")) {
-                header("X-Trace-Id", "trace-1")
-            }.getOrFail().metadata
+        val metadata = klient.getJson<TestResponseDto>(
+            uri = uri,
+            headere = listOf(Header("X-Trace-Id", "trace-1")),
+        ).getOrFail().metadata
 
-            metadata.requestHeader("x-trace-id") shouldBe "trace-1"
-        }
+        metadata.requestHeader("x-trace-id") shouldBe "trace-1"
     }
 
     @Test
-    fun `sensitive headere maskeres i rawRequestString men ikke i den strukturerte header-mappen`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/redaksjon")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = testHttpKlient()
-
-            val metadata = klient.get<String>(URI.create("${wiremock.baseUrl()}/redaksjon")) {
-                header("authorization", "Bearer hemmelig-token")
-                header("Cookie", "session=hemmelig-cookie")
-            }.getOrFail().metadata
-
-            // rawRequestString er beregnet for logging og maskerer derfor sensitive verdier.
-            metadata.rawRequestString shouldContain "authorization: ***"
-            metadata.rawRequestString shouldContain "Cookie: ***"
-            metadata.rawRequestString shouldNotContain "hemmelig-token"
-            metadata.rawRequestString shouldNotContain "hemmelig-cookie"
-            // Den strukturerte mappen beholder ekte verdier slik at kallere kan inspisere dem programmatisk.
-            metadata.requestHeaders["authorization"] shouldBe listOf("Bearer hemmelig-token")
-            metadata.requestHeaders["Cookie"] shouldBe listOf("session=hemmelig-cookie")
-        }
+    fun `NavHeadere bruker de eksakte stavemåtene nedstrømstjenestene krever`() {
+        NavHeadere.xCorrelationId("id") shouldBe Header("X-Correlation-ID", "id")
+        NavHeadere.navCallId("id") shouldBe Header("Nav-Call-Id", "id")
+        NavHeadere.navCallid("id") shouldBe Header("Nav-Callid", "id")
+        NavHeadere.navConsumerId("app") shouldBe Header("Nav-Consumer-Id", "app")
+        NavHeadere.tema("IND") shouldBe Header("Tema", "IND")
+        NavHeadere.behandlingsnummer("B123") shouldBe Header("behandlingsnummer", "B123")
+        // Fnr i klartekst — skal alltid maskeres i rawRequestString.
+        NavHeadere.ident("12345678901") shouldBe Header("ident", "12345678901", sensitiv = true)
     }
 }

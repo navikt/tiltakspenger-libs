@@ -1,140 +1,89 @@
 package no.nav.tiltakspenger.libs.httpklient
 
-import arrow.core.Either
-import arrow.core.right
-import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
-import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import java.net.URI
-import kotlin.reflect.KType
 import kotlin.reflect.typeOf
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * Enhetstester for request-byggingen ([byggHttpKlientRequest]): `Content-Type`/`Accept`-matrisen er en konsekvens av body og responsformat, aldri noe konsumenten setter selv.
+ */
 internal class HttpKlientTest {
+    private val uri = URI.create("http://localhost/test")
+
+    private fun bygg(
+        body: HttpKlientRequest.Body = HttpKlientRequest.Body.Ingen,
+        responsFormat: ResponsFormat = ResponsFormat.Json(typeOf<TestResponseDto>()),
+        headere: List<Header> = emptyList(),
+        metode: HttpMethod = HttpMethod.GET,
+    ): HttpKlientRequest = byggHttpKlientRequest(
+        metode = metode,
+        uri = uri,
+        headere = headere,
+        bearerToken = null,
+        godta = Statusregel.Alle2xx,
+        body = body,
+        responsFormat = responsFormat,
+    )
+
     @Test
-    fun `reified request extension uten builder delegerer til interface`() = runTest {
-        val klient = RecordingHttpKlient()
+    fun `Content-Type utledes av body-typen`() {
+        bygg(body = HttpKlientRequest.Body.Ingen).headers["Content-Type"] shouldBe null
+        bygg(body = HttpKlientRequest.Body.Json(TestRequestDto("a", 1))).headers["Content-Type"] shouldBe listOf("application/json")
+        bygg(body = HttpKlientRequest.Body.FerdigJson("{}")).headers["Content-Type"] shouldBe listOf("application/json")
+        bygg(body = HttpKlientRequest.Body.Tekst("hei", sensitiv = false)).headers["Content-Type"] shouldBe listOf("text/plain; charset=utf-8")
+        bygg(body = HttpKlientRequest.Body.Form("a=1")).headers["Content-Type"] shouldBe listOf("application/x-www-form-urlencoded")
+    }
 
-        klient.request<String>(URI.create("http://localhost/request"), HttpMethod.GET).rightOrThrow()
+    @Test
+    fun `Accept utledes av responsformatet`() {
+        bygg(responsFormat = ResponsFormat.Json(typeOf<TestResponseDto>())).headers["Accept"] shouldBe listOf("application/json")
+        bygg(responsFormat = ResponsFormat.JsonEllerNull(typeOf<TestResponseDto>(), setOf(204))).headers["Accept"] shouldBe listOf("application/json")
+        bygg(responsFormat = ResponsFormat.PdfBytes).headers["Accept"] shouldBe listOf("application/pdf")
+        bygg(responsFormat = ResponsFormat.IngenBody).headers["Accept"] shouldBe null
+    }
 
-        klient.calls.shouldContainExactly(
-            RecordedCall(
-                uri = URI.create("http://localhost/request"),
-                responseType = typeOf<String>(),
-                request = HttpKlientRequest(
-                    uri = URI.create("http://localhost/request"),
-                    method = HttpMethod.GET,
-                    headers = emptyMap(),
-                    body = null,
-                    timeout = null,
-                    authToken = null,
-                    successStatus = null,
-                    loggingConfig = null,
-                    retryConfig = null,
-                    circuitBreakerConfig = null,
-                ),
+    @Test
+    fun `konsument-headere kommer først og klientens defaults til slutt`() {
+        val request = bygg(
+            body = HttpKlientRequest.Body.FerdigJson("{}"),
+            headere = listOf(Header("X-Test", "1")),
+            metode = HttpMethod.POST,
+        )
+
+        request.headers.keys.toList() shouldBe listOf("X-Test", "Content-Type", "Accept")
+    }
+
+    @Test
+    fun `sensitive headernavn samles lowercase for redaksjonen`() {
+        val request = bygg(
+            headere = listOf(
+                Header("Ident", "12345678901", sensitiv = true),
+                Header("X-Vanlig", "synlig"),
             ),
         )
+
+        request.sensitiveHeaderNavn shouldBe setOf("ident")
     }
 
     @Test
-    fun `reified request extension med builder delegerer til interface`() = runTest {
-        val klient = RecordingHttpKlient()
-
-        klient.request<String>(URI.create("http://localhost/request-builder"), HttpMethod.POST) {
-            body("raw")
-            timeout = 123.milliseconds
-        }.rightOrThrow()
-
-        klient.calls.single().request.method shouldBe HttpMethod.POST
-        klient.calls.single().request.body shouldBe HttpKlientRequest.Body.Raw("raw")
-        klient.calls.single().request.timeout shouldBe 123.milliseconds
+    fun `enkodFormFelter url-koder og bevarer gjentatte nøkler`() {
+        enkodFormFelter(listOf("scope" to "a", "scope" to "b")) shouldBe "scope=a&scope=b"
+        enkodFormFelter(listOf("grant_type" to "client_credentials", "scope" to "api://app x")) shouldBe "grant_type=client_credentials&scope=api%3A%2F%2Fapp+x"
+        enkodFormFelter(emptyList()) shouldBe ""
     }
 
     @Test
-    fun `verb extensions setter riktig metode`() = runTest {
-        val klient = RecordingHttpKlient()
-        val uri = URI.create("http://localhost/verb")
+    fun `erSuksessStatus utvides med nullVedStatus for JsonEllerNull`() {
+        val vanlig = bygg(responsFormat = ResponsFormat.Json(typeOf<TestResponseDto>()))
+        vanlig.erSuksessStatus(200) shouldBe true
+        vanlig.erSuksessStatus(204) shouldBe true
+        vanlig.erSuksessStatus(404) shouldBe false
 
-        klient.get<String>(uri).rightOrThrow()
-        klient.post<String>(uri).rightOrThrow()
-        klient.put<String>(uri).rightOrThrow()
-        klient.patch<String>(uri).rightOrThrow()
-        klient.delete<String>(uri).rightOrThrow()
-        klient.head<String>(uri).rightOrThrow()
-        klient.options<String>(uri).rightOrThrow()
-
-        klient.calls.map { it.request.method } shouldBe listOf(
-            HttpMethod.GET,
-            HttpMethod.POST,
-            HttpMethod.PUT,
-            HttpMethod.PATCH,
-            HttpMethod.DELETE,
-            HttpMethod.HEAD,
-            HttpMethod.OPTIONS,
-        )
-    }
-
-    @Test
-    fun `request materialisering dekker alle body-varianter`() {
-        RequestBuilder(URI.create("http://localhost/raw"))
-            .apply { body("raw") }
-            .materialize(typeOf<String>(), HttpMethod.GET)
-            .body shouldBe HttpKlientRequest.Body.Raw("raw")
-
-        RequestBuilder(URI.create("http://localhost/raw-json"))
-            .apply { json("{}") }
-            .materialize(typeOf<String>(), HttpMethod.GET)
-            .body shouldBe HttpKlientRequest.Body.RawJson("{}")
-
-        val dto = TestRequestDto(id = "id", antall = 1)
-        RequestBuilder(URI.create("http://localhost/json"))
-            .apply { json(dto) }
-            .materialize(typeOf<String>(), HttpMethod.GET)
-            .body shouldBe HttpKlientRequest.Body.Json(dto)
-
-        RequestBuilder(URI.create("http://localhost/no-body"))
-            .materialize(typeOf<String>(), HttpMethod.GET)
-            .body shouldBe null
+        val ellerNull = bygg(responsFormat = ResponsFormat.JsonEllerNull(typeOf<TestResponseDto>(), setOf(404)))
+        ellerNull.erSuksessStatus(200) shouldBe true
+        // 404 regnes som suksess (med null-body) uten at konsumenten må gjenta den i godta.
+        ellerNull.erSuksessStatus(404) shouldBe true
+        ellerNull.erSuksessStatus(500) shouldBe false
     }
 }
-
-private data class RecordedCall(
-    val uri: URI,
-    val responseType: KType,
-    val request: HttpKlientRequest,
-)
-
-private class RecordingHttpKlient : HttpKlient {
-    val calls = mutableListOf<RecordedCall>()
-
-    override suspend fun <Response : Any> request(
-        request: HttpKlientRequest,
-        responseType: KType,
-    ): Either<HttpKlientError, HttpKlientResponse<Response>> {
-        calls += RecordedCall(uri = request.uri, responseType = responseType, request = request)
-        @Suppress("UNCHECKED_CAST")
-        return HttpKlientResponse(
-            statusCode = 200,
-            body = "ok" as Response,
-            metadata = HttpKlientMetadata(
-                rawRequestString = "${request.method} ${request.uri}",
-                rawResponseString = "ok",
-                requestHeaders = request.headers,
-                responseHeaders = emptyMap(),
-                statusCode = 200,
-                attempts = 1,
-                attemptDurations = emptyList(),
-                totalDuration = Duration.ZERO,
-                tidsstempler = HttpKlientTidsstempler.INGEN,
-            ),
-        ).right()
-    }
-}
-
-private fun <A> Either<HttpKlientError, A>.rightOrThrow(): A = fold(
-    ifLeft = { error("Forventet Right, fikk $it") },
-    ifRight = { it },
-)

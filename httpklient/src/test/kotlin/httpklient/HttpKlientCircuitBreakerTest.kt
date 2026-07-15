@@ -1,24 +1,17 @@
 package no.nav.tiltakspenger.libs.httpklient
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.stubbing.Scenario
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.getOrFail
-import no.nav.tiltakspenger.libs.common.withWireMockServer
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerConfig
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerDecisionContext
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerOnRetryableErrors
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerOpeningStrategy
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerPredicate
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.NeverRecordCircuitBreakerFailure
-import no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig
-import no.nav.tiltakspenger.libs.httpklient.retry.RetryOnServerErrorsAndNetwork
 import org.junit.jupiter.api.Test
 import java.net.URI
 import kotlin.time.Duration.Companion.ZERO
@@ -26,362 +19,285 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.TestTimeSource
 
+/**
+ * Circuit breakeren konfigureres per klientinstans i v2 (per-request-aksen er borte).
+ * Pipeline-oppførselen testes over [FakeHttpTransport]; antall kall som faktisk nådde transporten tilsvarer antall HTTP-kall på wire.
+ */
 internal class HttpKlientCircuitBreakerTest {
+    private val uri = URI.create("http://cb.test/ressurs")
+    private val okJson = """{"status":"ok","antall":1}"""
 
     @Test
     fun `default CircuitBreakerConfig gjør ingenting`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/default")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(circuitBreakerConfig = CircuitBreakerConfig.None)
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        transport.leggIKøStatus(503)
+        val klient = fakeHttpKlient(transport, circuitBreaker = CircuitBreakerConfig.None)
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/default"))
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/default"))
+        klient.getJson<TestResponseDto>(uri)
+        klient.getJson<TestResponseDto>(uri)
 
-            wiremock.verify(2, getRequestedFor(urlEqualTo("/default")))
-        }
+        transport.mottatteKall shouldHaveSize 2
     }
 
     @Test
     fun `åpner etter konfigurert antall retryable feil og avviser uten nytt HTTP-kall`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/ustabil")).willReturn(aResponse().withStatus(503).withBody("nei")))
-            val klient = testHttpKlient(
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "ustabil",
-                    maxFailures = 2,
-                    resetTimeout = 100.milliseconds,
-                ),
-            )
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503, "nei")
+        transport.leggIKøStatus(503, "nei")
+        val klient = fakeHttpKlient(
+            transport = transport,
+            circuitBreaker = CircuitBreakerConfig.count(
+                name = "ustabil",
+                maxFailures = 2,
+                resetTimeout = 100.milliseconds,
+            ),
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/ustabil")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/ustabil")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            val rejected = klient.get<String>(URI.create("${wiremock.baseUrl()}/ustabil")).swap().getOrNull()!!
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        val rejected = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            val circuitBreakerOpen = rejected.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
-            circuitBreakerOpen.retryable shouldBe false
-            circuitBreakerOpen.metadata.attempts shouldBe 0
-            circuitBreakerOpen.metadata.attemptDurations.shouldBeEmpty()
-            circuitBreakerOpen.metadata.statusCode shouldBe null
-            circuitBreakerOpen.metadata.rawRequestString shouldBe "GET ${wiremock.baseUrl()}/ustabil"
-            wiremock.verify(2, getRequestedFor(urlEqualTo("/ustabil")))
-        }
+        val circuitBreakerOpen = rejected.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
+        circuitBreakerOpen.retryable shouldBe false
+        circuitBreakerOpen.metadata.attempts shouldBe 0
+        circuitBreakerOpen.metadata.attemptDurations.shouldBeEmpty()
+        circuitBreakerOpen.metadata.statusCode shouldBe null
+        circuitBreakerOpen.metadata.rawRequestString shouldBe "GET $uri\nAccept: application/json"
+        transport.mottatteKall shouldHaveSize 2
     }
 
     @OptIn(ExperimentalTime::class)
     @Test
     fun `resetter etter resetTimeout og lukker ved vellykket half-open kall`() = runTest {
         val timeSource = TestTimeSource()
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/kommer-seg"))
-                    .inScenario("circuit-reset").whenScenarioStateIs(Scenario.STARTED)
-                    .willReturn(aResponse().withStatus(503))
-                    .willSetStateTo("ok"),
-            )
-            wiremock.stubFor(
-                get(urlEqualTo("/kommer-seg"))
-                    .inScenario("circuit-reset").whenScenarioStateIs("ok")
-                    .willReturn(aResponse().withStatus(200).withBody("frisk")),
-            )
-            var halfOpen = 0
-            var closed = 0
-            val klient = testHttpKlient(
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "kommer-seg",
-                    maxFailures = 1,
-                    resetTimeout = 10.milliseconds,
-                ).withTimeSource(timeSource)
-                    .doOnHalfOpen { halfOpen++ }
-                    .doOnClosed { closed++ },
-            )
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        transport.leggIKøJson(okJson)
+        var halfOpen = 0
+        var closed = 0
+        val klient = fakeHttpKlient(
+            transport = transport,
+            circuitBreaker = CircuitBreakerConfig.count(
+                name = "kommer-seg",
+                maxFailures = 1,
+                resetTimeout = 10.milliseconds,
+            ).withTimeSource(timeSource)
+                .doOnHalfOpen { halfOpen++ }
+                .doOnClosed { closed++ },
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/kommer-seg")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/kommer-seg")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
-            timeSource += 11.milliseconds
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
+        timeSource += 11.milliseconds
 
-            val response = klient.get<String>(URI.create("${wiremock.baseUrl()}/kommer-seg")).getOrFail()
+        val response = klient.getJson<TestResponseDto>(uri).getOrFail()
 
-            response.body shouldBe "frisk"
-            halfOpen shouldBe 1
-            closed shouldBe 1
-            wiremock.verify(2, getRequestedFor(urlEqualTo("/kommer-seg")))
-        }
+        response.body shouldBe TestResponseDto(status = "ok", antall = 1)
+        halfOpen shouldBe 1
+        closed shouldBe 1
+        transport.mottatteKall shouldHaveSize 2
     }
 
     @OptIn(ExperimentalTime::class)
     @Test
     fun `feiler half-open kall åpner breakeren igjen og avviser neste kall uten HTTP`() = runTest {
         val timeSource = TestTimeSource()
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/fortsatt-syk")).willReturn(aResponse().withStatus(503)))
-            var halfOpen = 0
-            var open = 0
-            val klient = testHttpKlient(
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "fortsatt-syk",
-                    maxFailures = 1,
-                    resetTimeout = 10.milliseconds,
-                ).withTimeSource(timeSource)
-                    .doOnHalfOpen { halfOpen++ }
-                    .doOnOpen { open++ },
-            )
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        transport.leggIKøStatus(503)
+        var halfOpen = 0
+        var open = 0
+        val klient = fakeHttpKlient(
+            transport = transport,
+            circuitBreaker = CircuitBreakerConfig.count(
+                name = "fortsatt-syk",
+                maxFailures = 1,
+                resetTimeout = 10.milliseconds,
+            ).withTimeSource(timeSource)
+                .doOnHalfOpen { halfOpen++ }
+                .doOnOpen { open++ },
+        )
 
-            // Første feil åpner breakeren.
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/fortsatt-syk")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/fortsatt-syk")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
+        // Første feil åpner breakeren.
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
 
-            // Etter reset slipper half-open ett prøvekall gjennom — som også feiler, så breakeren åpner igjen.
-            timeSource += 11.milliseconds
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/fortsatt-syk")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        // Etter reset slipper half-open ett prøvekall gjennom — som også feiler, så breakeren åpner igjen.
+        timeSource += 11.milliseconds
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
 
-            // Neste kall avvises igjen uten nytt HTTP-kall.
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/fortsatt-syk")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
+        // Neste kall avvises igjen uten nytt HTTP-kall.
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
 
-            halfOpen shouldBe 1
-            open shouldBe 2
-            // Kun det første kallet og half-open-prøvekallet traff serveren.
-            wiremock.verify(2, getRequestedFor(urlEqualTo("/fortsatt-syk")))
-        }
-    }
-
-    @Test
-    fun `circuit breaker state er lokal per navn innenfor samme klient`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/tjeneste-a")).willReturn(aResponse().withStatus(503)))
-            wiremock.stubFor(get(urlEqualTo("/tjeneste-b")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient()
-
-            // Åpner breakeren for navnet "a".
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/tjeneste-a")) {
-                circuitBreakerConfig = CircuitBreakerConfig.count("a", maxFailures = 1, resetTimeout = 100.milliseconds)
-            }.swap().getOrNull()!!.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/tjeneste-a")) {
-                circuitBreakerConfig = CircuitBreakerConfig.count("a", maxFailures = 1, resetTimeout = 100.milliseconds)
-            }.swap().getOrNull()!!.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
-
-            // Navnet "b" er upåvirket og slipper fortsatt HTTP-kallet gjennom.
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/tjeneste-b")) {
-                circuitBreakerConfig = CircuitBreakerConfig.count("b", maxFailures = 1, resetTimeout = 100.milliseconds)
-            }.swap().getOrNull()!!.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/tjeneste-a")))
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/tjeneste-b")))
-        }
+        halfOpen shouldBe 1
+        open shouldBe 2
+        // Kun det første kallet og half-open-prøvekallet traff transporten.
+        transport.mottatteKall shouldHaveSize 2
     }
 
     @Test
     fun `count maxFailures 1 åpner etter første registrerte feil`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/count-off-by-one")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "count-off-by-one",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                ),
-            )
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        val klient = fakeHttpKlient(
+            transport = transport,
+            circuitBreaker = CircuitBreakerConfig.count(
+                name = "count-off-by-one",
+                maxFailures = 1,
+                resetTimeout = 100.milliseconds,
+            ),
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/count-off-by-one")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            val rejected = klient.get<String>(URI.create("${wiremock.baseUrl()}/count-off-by-one")).swap().getOrNull()!!
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        val rejected = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            rejected.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/count-off-by-one")))
-        }
+        rejected.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
+        transport.mottatteKall shouldHaveSize 1
     }
 
     @Test
     fun `slidingWindow maxFailures 1 åpner etter første registrerte feil`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/sliding-off-by-one")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                circuitBreakerConfig = CircuitBreakerConfig.slidingWindow(
-                    name = "sliding-off-by-one",
-                    maxFailures = 1,
-                    windowDuration = 100.milliseconds,
-                    resetTimeout = 100.milliseconds,
-                ),
-            )
-
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/sliding-off-by-one")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            val rejected = klient.get<String>(URI.create("${wiremock.baseUrl()}/sliding-off-by-one")).swap().getOrNull()!!
-
-            rejected.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/sliding-off-by-one")))
-        }
-    }
-
-    @Test
-    fun `circuit breaker state er lokal per JavaHttpKlient-instans`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/lokal")).willReturn(aResponse().withStatus(503)))
-            val config = CircuitBreakerConfig.count(
-                name = "lokal",
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        val klient = fakeHttpKlient(
+            transport = transport,
+            circuitBreaker = CircuitBreakerConfig.slidingWindow(
+                name = "sliding-off-by-one",
                 maxFailures = 1,
+                windowDuration = 100.milliseconds,
                 resetTimeout = 100.milliseconds,
-            )
-            val klient1 = testHttpKlient(circuitBreakerConfig = config)
-            val klient2 = testHttpKlient(circuitBreakerConfig = config)
+            ),
+        )
 
-            klient1.get<String>(URI.create("${wiremock.baseUrl()}/lokal")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            klient1.get<String>(URI.create("${wiremock.baseUrl()}/lokal")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
-            klient2.get<String>(URI.create("${wiremock.baseUrl()}/lokal")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        val rejected = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            wiremock.verify(2, getRequestedFor(urlEqualTo("/lokal")))
-        }
+        rejected.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
+        transport.mottatteKall shouldHaveSize 1
     }
 
     @Test
-    fun `per-request circuitBreakerConfig overstyrer klient-default`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/override")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(circuitBreakerConfig = CircuitBreakerConfig.None)
+    fun `circuit breaker state er lokal per HttpKlient-instans`() = runTest {
+        val transport1 = FakeHttpTransport()
+        transport1.leggIKøStatus(503)
+        val transport2 = FakeHttpTransport()
+        transport2.leggIKøStatus(503)
+        val config = CircuitBreakerConfig.count(
+            name = "lokal",
+            maxFailures = 1,
+            resetTimeout = 100.milliseconds,
+        )
+        val klient1 = fakeHttpKlient(transport1, circuitBreaker = config)
+        val klient2 = fakeHttpKlient(transport2, circuitBreaker = config)
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/override")) {
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "override",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                ).withFailurePredicate { ctx -> ctx.error.retryable }
-            }.swap().getOrNull()!!.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            val rejected = klient.get<String>(URI.create("${wiremock.baseUrl()}/override")) {
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "override",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                ).withFailurePredicate { ctx -> ctx.error.retryable }
-            }.swap().getOrNull()!!
+        klient1.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        klient1.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
+        // Samme config-verdi, men egen instans: klient2s breaker er upåvirket av klient1s feil.
+        klient2.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
 
-            rejected.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/override")))
-        }
-    }
-
-    @Test
-    fun `inline per-request configs med nye lambdaer deler breaker via navn`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/inline-lambdaer")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(circuitBreakerConfig = CircuitBreakerConfig.None)
-
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/inline-lambdaer")) {
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "inline-lambdaer",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                ).withFailurePredicate { ctx -> ctx.error.retryable }
-            }.swap().getOrNull()!!.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            val rejected = klient.get<String>(URI.create("${wiremock.baseUrl()}/inline-lambdaer")) {
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "inline-lambdaer",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                ).withFailurePredicate { ctx -> ctx.error.retryable }
-            }.swap().getOrNull()!!
-
-            rejected.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>()
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/inline-lambdaer")))
-        }
+        transport1.mottatteKall shouldHaveSize 1
+        transport2.mottatteKall shouldHaveSize 1
     }
 
     @Test
     fun `circuit breaker teller sluttresultat etter retry`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/retry-og-circuit")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig.fixed(
-                    maxRetries = 1,
-                    delay = ZERO,
-                    retryOn = RetryOnServerErrorsAndNetwork,
-                ),
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "retry-og-circuit",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                ),
-            )
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        transport.leggIKøStatus(503)
+        val klient = fakeHttpKlient(
+            transport = transport,
+            retry = Retry.Fast(maksForsøk = 2, delay = ZERO),
+            circuitBreaker = CircuitBreakerConfig.count(
+                name = "retry-og-circuit",
+                maxFailures = 1,
+                resetTimeout = 100.milliseconds,
+            ),
+        )
 
-            val first = klient.get<String>(URI.create("${wiremock.baseUrl()}/retry-og-circuit")).swap().getOrNull()!!
-            val second = klient.get<String>(URI.create("${wiremock.baseUrl()}/retry-og-circuit")).swap().getOrNull()!!
+        val first = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+        val second = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            first.shouldBeInstanceOf<HttpKlientError.UventetStatus>().metadata.attempts shouldBe 2
-            second.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>().metadata.attempts shouldBe 0
-            wiremock.verify(2, getRequestedFor(urlEqualTo("/retry-og-circuit")))
-        }
+        first.shouldBeInstanceOf<HttpKlientError.UventetStatus>().metadata.attempts shouldBe 2
+        second.shouldBeInstanceOf<HttpKlientError.CircuitBreakerOpen>().metadata.attempts shouldBe 0
+        transport.mottatteKall shouldHaveSize 2
     }
 
     @Test
     fun `failurePredicate styrer hva som teller mot circuit breaker`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/fire-null-fire")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "fire-null-fire",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                )
-                    .withFailurePredicate(NeverRecordCircuitBreakerFailure),
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        transport.leggIKøStatus(503)
+        val klient = fakeHttpKlient(
+            transport = transport,
+            circuitBreaker = CircuitBreakerConfig.count(
+                name = "fire-null-fire",
+                maxFailures = 1,
+                resetTimeout = 100.milliseconds,
             )
+                .withFailurePredicate(NeverRecordCircuitBreakerFailure),
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/fire-null-fire")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/fire-null-fire")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
 
-            wiremock.verify(2, getRequestedFor(urlEqualTo("/fire-null-fire")))
-        }
+        transport.mottatteKall shouldHaveSize 2
     }
 
     @Test
     fun `callbacks for open og rejected kalles`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/callbacks")).willReturn(aResponse().withStatus(503)))
-            var open = 0
-            var rejected = 0
-            val klient = testHttpKlient(
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "callbacks",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                )
-                    .doOnOpen { open++ }
-                    .doOnRejectedTask { rejected++ },
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        var open = 0
+        var rejected = 0
+        val klient = fakeHttpKlient(
+            transport = transport,
+            circuitBreaker = CircuitBreakerConfig.count(
+                name = "callbacks",
+                maxFailures = 1,
+                resetTimeout = 100.milliseconds,
             )
+                .doOnOpen { open++ }
+                .doOnRejectedTask { rejected++ },
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/callbacks"))
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/callbacks"))
+        klient.getJson<TestResponseDto>(uri)
+        klient.getJson<TestResponseDto>(uri)
 
-            open shouldBe 1
-            rejected shouldBe 1
-        }
+        open shouldBe 1
+        rejected shouldBe 1
     }
 
     @Test
     fun `ikke-sentinel exception fra protectEither-blokken propagerer`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/predicate-kaster")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "predicate-kaster",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                ).withFailurePredicate { error("predikat-feil") },
-            )
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        val klient = fakeHttpKlient(
+            transport = transport,
+            circuitBreaker = CircuitBreakerConfig.count(
+                name = "predicate-kaster",
+                maxFailures = 1,
+                resetTimeout = 100.milliseconds,
+            ).withFailurePredicate { error("predikat-feil") },
+        )
 
-            shouldThrowWithMessage<IllegalStateException>("predikat-feil") {
-                klient.get<String>(URI.create("${wiremock.baseUrl()}/predicate-kaster"))
-            }
+        shouldThrowWithMessage<IllegalStateException>("predikat-feil") {
+            klient.getJson<TestResponseDto>(uri)
         }
     }
 
@@ -478,51 +394,45 @@ internal class HttpKlientCircuitBreakerTest {
 
     @Test
     fun `ikke-retryable status (404) åpner ikke breakeren med default-predikat`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/fire-null-fire-default")).willReturn(aResponse().withStatus(404)))
-            val klient = testHttpKlient(
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "fnf-default",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                ),
-            )
+        val transport = FakeHttpTransport()
+        repeat(3) { transport.leggIKøStatus(404) }
+        val klient = fakeHttpKlient(
+            transport = transport,
+            circuitBreaker = CircuitBreakerConfig.count(
+                name = "fnf-default",
+                maxFailures = 1,
+                resetTimeout = 100.milliseconds,
+            ),
+        )
 
-            // Default-predikatet teller bare retryable feil; 404 er permanent, så breakeren forblir lukket og alle tre kallene treffer serveren.
-            repeat(3) {
-                klient.get<String>(URI.create("${wiremock.baseUrl()}/fire-null-fire-default")).swap().getOrNull()!!
-                    .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            }
-
-            wiremock.verify(3, getRequestedFor(urlEqualTo("/fire-null-fire-default")))
+        // Default-predikatet teller bare retryable feil; 404 er permanent, så breakeren forblir lukket og alle tre kallene treffer transporten.
+        repeat(3) {
+            klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
         }
+
+        transport.mottatteKall shouldHaveSize 3
     }
 
     @Test
     fun `forbigående feil som lykkes via retry holder breakeren lukket`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/transient")).inScenario("forb").whenScenarioStateIs(Scenario.STARTED)
-                    .willReturn(aResponse().withStatus(503))
-                    .willSetStateTo("ok"),
-            )
-            wiremock.stubFor(
-                get(urlEqualTo("/transient")).inScenario("forb").whenScenarioStateIs("ok")
-                    .willReturn(aResponse().withStatus(200).withBody("oppe")),
-            )
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig.fixed(maxRetries = 1, delay = ZERO, retryOn = RetryOnServerErrorsAndNetwork),
-                circuitBreakerConfig = CircuitBreakerConfig.count(
-                    name = "forb",
-                    maxFailures = 1,
-                    resetTimeout = 100.milliseconds,
-                ),
-            )
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        transport.leggIKøJson(okJson)
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(
+            transport = transport,
+            retry = Retry.Fast(maksForsøk = 2, delay = ZERO),
+            circuitBreaker = CircuitBreakerConfig.count(
+                name = "forb",
+                maxFailures = 1,
+                resetTimeout = 100.milliseconds,
+            ),
+        )
 
-            // Første kall feiler én gang (503) og lykkes på retry; sluttresultatet er suksess, så breakeren registrerer ingen feil.
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/transient")).getOrFail().body shouldBe "oppe"
-            // Breakeren er fortsatt lukket, så neste kall går rett gjennom.
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/transient")).getOrFail().body shouldBe "oppe"
-        }
+        // Første kall feiler én gang (503) og lykkes på retry; sluttresultatet er suksess, så breakeren registrerer ingen feil.
+        klient.getJson<TestResponseDto>(uri).getOrFail().body shouldBe TestResponseDto(status = "ok", antall = 1)
+        // Breakeren er fortsatt lukket, så neste kall går rett gjennom.
+        klient.getJson<TestResponseDto>(uri).getOrFail().body shouldBe TestResponseDto(status = "ok", antall = 1)
     }
 }

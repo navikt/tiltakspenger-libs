@@ -1,53 +1,68 @@
 package no.nav.tiltakspenger.libs.httpklient
 
 import no.nav.tiltakspenger.libs.common.AccessToken
-import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerConfig
-import no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig
 import java.net.URI
-import kotlin.time.Duration
+import kotlin.reflect.KType
 
 /**
- * En ferdig materialisert request, slik den ser ut etter at [RequestBuilder] er kjørt og klientens default-headere er lagt til.
+ * Den interne, ferdig materialiserte beskrivelsen av ett kall — bygget av de offentlige metodene på [HttpKlient].
  *
- * Dette er typen [HttpKlient.request] mottar.
- * De reified verb-extensionene bygger en [RequestBuilder], materialiserer den til denne typen, og kaller [HttpKlient.request] med den.
- * Implementasjoner (den virkelige klienten og `HttpKlientFake`) får dermed rene data å jobbe med i stedet for en builder-callback, og fakes kan asserte direkte på requesten uten å røre [RequestBuilder].
- *
- * Headere bevarer innsettingsrekkefølge, med eventuelle default-headere som klienten legger til (JSON `Content-Type` for body, `Accept` for response-type), til slutt.
- * En eksplisitt `Authorization`-header satt via [RequestBuilder.header] er inkludert her, og beholdes uendret av implementasjonen.
- * Det som _ikke_ ligger her, er en bearer-token fra [authToken] eller klientens `authTokenProvider`; den resolves og materialiseres til `Authorization: Bearer ...` av implementasjonen ved sending.
- *
- * Per-request-overstyringer ([retryConfig], [circuitBreakerConfig], [loggingConfig], [successStatus]) følger med fordi implementasjonen trenger dem.
- * De er funksjons-/konfig-verdier; `equals`/`hashCode` faller derfor tilbake på referanselikhet for disse feltene, så tester bør asserte på [uri], [method], [headers] og [body].
+ * Erstatter den gamle `RequestBuilder`-en: konsumenten tar ingen valg utover metodens parametre, og `Accept`/`Content-Type` er allerede lagt på [headers] som en konsekvens av metode + bodytype (se `byggHttpKlientRequest`).
+ * Headere bevarer innsettingsrekkefølge, med klientens default-headere til slutt.
  */
-data class HttpKlientRequest(
-    val uri: URI,
+internal data class HttpKlientRequest(
     val method: HttpMethod,
+    val uri: URI,
     val headers: Map<String, List<String>>,
-    val body: Body?,
-    val timeout: Duration?,
+    /** Lowercase-navn på konsument-headere markert [Header.sensitiv] — maskeres i `rawRequestString` i tillegg til standard auth-/cookie-headere. */
+    val sensitiveHeaderNavn: Set<String>,
+    val body: Body,
+    /** Per-kall bearer-token (typisk OBO); overstyrer [KlientAuth.System] på klienten. */
     val authToken: AccessToken?,
-    val successStatus: ((Int) -> Boolean)?,
-    val loggingConfig: HttpKlientLoggingConfig?,
-    val retryConfig: RetryConfig?,
-    val circuitBreakerConfig: CircuitBreakerConfig?,
+    val godta: Statusregel,
+    val responsFormat: ResponsFormat,
 ) {
     sealed interface Body {
-        /**
-         * Rå tekst-body.
-         * `httpklient` legger ikke til JSON-headere for denne varianten.
-         */
-        data class Raw(val body: String) : Body
+        data object Ingen : Body
 
-        /**
-         * Ferdigserialisert JSON-string.
-         * `httpklient` legger til standard JSON-headere hvis de mangler.
-         */
-        data class RawJson(val body: String) : Body
-
-        /**
-         * DTO/verdi som serialiseres med `tiltakspenger-libs/json` før requesten sendes.
-         */
+        /** DTO som serialiseres med `tiltakspenger-libs/json` før sending. */
         data class Json(val value: Any) : Body
+
+        /** Ferdigserialisert JSON som sendes verbatim (se [SerialisertJson]). */
+        data class FerdigJson(val json: String) : Body
+
+        /** Rå tekst (`text/plain`). [sensitiv] maskerer bodyen i `rawRequestString` (f.eks. fnr mot tilgangsmaskinen). */
+        data class Tekst(val tekst: String, val sensitiv: Boolean) : Body
+
+        /** Ferdig URL-enkodet `application/x-www-form-urlencoded`-body. */
+        data class Form(val enkodet: String) : Body
     }
+}
+
+/**
+ * Hvordan respons-bytene skal tolkes — bestemt av hvilken metode konsumenten kalte, aldri av respons-typeargumentet alene.
+ * Dette erstatter den gamle runtime-dispatchen på `String`/`Unit`/`ByteArray`-typeargumenter.
+ */
+internal sealed interface ResponsFormat {
+    /** Deserialiseres fra JSON med Jackson til [type]. */
+    data class Json(val type: KType) : ResponsFormat
+
+    /** Som [Json], men statuser i [nullVedStatus] regnes som suksess med `null`-body og hopper over deserialisering. */
+    data class JsonEllerNull(val type: KType, val nullVedStatus: Set<Int>) : ResponsFormat
+
+    /** Rå bytes, aldri dekodet som tekst (PDF). */
+    data object PdfBytes : ResponsFormat
+
+    /** Bodyen ignoreres typemessig (`Unit`), men fanges fortsatt lesbart i metadata. */
+    data object IngenBody : ResponsFormat
+}
+
+/**
+ * Det effektive suksess-predikatet for kallet: [Statusregel]-en, utvidet med [ResponsFormat.JsonEllerNull.nullVedStatus] når det er relevant.
+ * En `getJsonEllerNull(nullVedStatus = setOf(204, 404))` trenger altså ikke (og skal ikke) gjenta statusene i `godta`.
+ */
+internal fun HttpKlientRequest.erSuksessStatus(statusCode: Int): Boolean {
+    if (godta.godtar(statusCode)) return true
+    val format = responsFormat
+    return format is ResponsFormat.JsonEllerNull && statusCode in format.nullVedStatus
 }

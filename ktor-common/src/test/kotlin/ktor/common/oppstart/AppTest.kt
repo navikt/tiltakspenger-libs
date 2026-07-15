@@ -49,7 +49,7 @@ class AppTest {
     fun `runCheckFactory lokalt later som leder og respekterer readiness`() {
         val readiness = Readiness()
         // Utelater logger for å dekke default-loggeren.
-        val factory = runCheckFactory(isNais = false, electorPath = { error("electorPath skal ikke leses lokalt") }, readiness = readiness)
+        val factory = runCheckFactory(isNais = false, electorPath = { error("electorPath skal ikke leses lokalt") }, readiness = readiness, clock = clock)
 
         // LokalAlltidLeder lar oss alltid være leder lokalt.
         factory.leaderPod().shouldRun() shouldBe Unit.right()
@@ -70,6 +70,7 @@ class AppTest {
                 "http://localhost:1/"
             },
             readiness = Readiness(),
+            clock = clock,
             logger = log,
         )
 
@@ -84,7 +85,7 @@ class AppTest {
         // Utelater navn for å dekke default-verdien.
         val prosess = stoppbarSkedulerteJobber(
             log = log,
-            runCheckFactory = runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness()),
+            runCheckFactory = runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness(), clock = clock),
             mdcCallIdKey = "call-id",
             grupper = nonEmptyListOf(TaskGruppe(navn = "test", intervall = 1.seconds, tasks = nonEmptyListOf(tomTask))),
             clock = clock,
@@ -102,7 +103,7 @@ class AppTest {
             log = log,
             runCheckFactory = {
                 factoryBygget = true
-                runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness())
+                runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness(), clock = clock)
             },
             mdcCallIdKey = "call-id",
             isNais = false,
@@ -124,7 +125,7 @@ class AppTest {
             log = log,
             runCheckFactory = {
                 factoryBygget = true
-                runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness())
+                runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness(), clock = clock)
             },
             mdcCallIdKey = "call-id",
             isNais = false,
@@ -144,7 +145,7 @@ class AppTest {
     fun `bakgrunnsprosessSteg med eksplisitte taskGrupper gir ett skedulert steg`() {
         val steg = bakgrunnsprosessSteg(
             log = log,
-            runCheckFactory = { runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness()) },
+            runCheckFactory = { runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness(), clock = clock) },
             mdcCallIdKey = "call-id",
             isNais = false,
             clock = clock,
@@ -162,7 +163,7 @@ class AppTest {
     fun `bakgrunnsprosessSteg bygger én seriell gruppe per Task med miljøavhengige verdier`() {
         val steg = bakgrunnsprosessSteg(
             log = log,
-            runCheckFactory = { runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness()) },
+            runCheckFactory = { runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness(), clock = clock) },
             mdcCallIdKey = "call-id",
             isNais = false,
             clock = clock,

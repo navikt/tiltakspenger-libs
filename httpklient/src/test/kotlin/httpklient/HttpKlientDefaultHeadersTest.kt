@@ -23,9 +23,11 @@ internal class HttpKlientDefaultHeadersTest {
             wiremock.stubFor(post(urlEqualTo("/defaults")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
-            klient.post<String>(URI.create("${wiremock.baseUrl()}/defaults"), """{"a":1}""") {
-                header("X-Consumer", "satt-av-oss")
-            }.getOrFail().body shouldBe "ok"
+            klient.postJsonUtenSvar(
+                uri = URI.create("${wiremock.baseUrl()}/defaults"),
+                body = SerialisertJson("""{"a":1}"""),
+                headere = listOf(Header("X-Consumer", "satt-av-oss")),
+            ).getOrFail()
 
             // Det serveren faktisk mottok på wire: JDK legger på transport-headere vi aldri satte, og vi fjerner dem ikke.
             val mottatt = wiremock.findAll(postRequestedFor(urlEqualTo("/defaults"))).single()
@@ -44,9 +46,11 @@ internal class HttpKlientDefaultHeadersTest {
             wiremock.stubFor(post(urlEqualTo("/metadata")).willReturn(aResponse().withStatus(200).withBody("ok")))
             val klient = testHttpKlient()
 
-            val metadata = klient.post<String>(URI.create("${wiremock.baseUrl()}/metadata"), """{"a":1}""") {
-                header("X-Consumer", "satt-av-oss")
-            }.getOrFail().metadata
+            val metadata = klient.postJsonUtenSvar(
+                uri = URI.create("${wiremock.baseUrl()}/metadata"),
+                body = SerialisertJson("""{"a":1}"""),
+                headere = listOf(Header("X-Consumer", "satt-av-oss")),
+            ).getOrFail().metadata
 
             // Headerne vi selv setter (konsument + klient-defaults) er med.
             metadata.requestHeader("X-Consumer") shouldBe "satt-av-oss"

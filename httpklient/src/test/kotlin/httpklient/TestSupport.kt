@@ -5,7 +5,6 @@ import io.mockk.mockk
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.httpklient.circuitbreaker.CircuitBreakerConfig
-import no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig
 import java.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
@@ -29,26 +28,51 @@ internal class SelvRefererendeDto {
 
 /**
  * Standard test-klient med romslige timeouts som tåler treg CI uten å bli flaky.
- * Tester som faktisk verifiserer timeout-oppførsel overstyrer alltid timeout eksplisitt (per request eller her).
+ * Tester som faktisk verifiserer timeout-oppførsel overstyrer alltid timeout eksplisitt.
+ * [transport] = `null` bruker klientens default (ekte [JavaHttpTransport] mot f.eks. WireMock); pipeline-tester sender inn en `FakeHttpTransport`.
  */
 internal fun testHttpKlient(
     connectTimeout: Duration = 2.seconds,
     timeout: Duration = 10.seconds,
-    successStatus: (Int) -> Boolean = HttpStatusSuccess.is2xx,
-    loggingConfig: HttpKlientLoggingConfig = HttpKlientLoggingConfig.Disabled,
-    retryConfig: RetryConfig = RetryConfig.None,
-    circuitBreakerConfig: CircuitBreakerConfig = CircuitBreakerConfig.None,
+    auth: KlientAuth = KlientAuth.Ingen,
+    retry: Retry = Retry.Ingen,
+    circuitBreaker: CircuitBreakerConfig = CircuitBreakerConfig.None,
+    skipCacheRetryStatuses: Set<Int> = setOf(401),
     clock: Clock = fixedClock,
     timeSource: TimeSource = TimeSource.Monotonic,
-): HttpKlient = HttpKlient(clock = clock) {
-    this.connectTimeout = connectTimeout
-    this.defaultTimeout = timeout
-    this.successStatus = successStatus
-    this.logging = loggingConfig
-    this.defaultRetry = retryConfig
-    this.defaultCircuitBreaker = circuitBreakerConfig
-    this.timeSource = timeSource
+    transport: HttpTransport? = null,
+): HttpKlient {
+    val config = HttpKlientConfig(
+        connectTimeout = connectTimeout,
+        timeout = timeout,
+        auth = auth,
+        retry = retry,
+        circuitBreaker = circuitBreaker,
+        skipCacheRetryStatuses = skipCacheRetryStatuses,
+        timeSource = timeSource,
+    )
+    // Uten transport-argument brukes konstruktørens default, slik at default-uttrykket (JavaHttpTransport) også utøves av testene.
+    return if (transport == null) HttpKlient(clock = clock, config = config) else HttpKlient(clock = clock, config = config, transport = transport)
 }
+
+/** Test-klient over en [FakeHttpTransport] — hele den reelle pipelinen kjører, kun nettverket er byttet ut. */
+internal fun fakeHttpKlient(
+    transport: FakeHttpTransport,
+    auth: KlientAuth = KlientAuth.Ingen,
+    retry: Retry = Retry.Ingen,
+    circuitBreaker: CircuitBreakerConfig = CircuitBreakerConfig.None,
+    skipCacheRetryStatuses: Set<Int> = setOf(401),
+    clock: Clock = fixedClock,
+    timeSource: TimeSource = TimeSource.Monotonic,
+): HttpKlient = testHttpKlient(
+    auth = auth,
+    retry = retry,
+    circuitBreaker = circuitBreaker,
+    skipCacheRetryStatuses = skipCacheRetryStatuses,
+    clock = clock,
+    timeSource = timeSource,
+    transport = transport,
+)
 
 /**
  * Innkapsler `mockk(relaxed = true)` for KLogger – logging kan ikke testes uten å observere logger, og KLogger har for mange metoder/overloads til at en håndlaget fake er praktisk.

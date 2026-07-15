@@ -5,25 +5,27 @@ import arrow.core.getOrElse
 import java.nio.charset.Charset
 
 /**
- * Lesbar tekst-representasjon av rå respons-bytes, brukt i [HttpKlientMetadata.rawResponseString] og [HttpKlientError.ResponsMottatt.body].
- * Disse strengene havner typisk i konsumentenes sikkerlogg, så de skal alltid være lesbar tekst: tekstlig innhold dekodes (charset fra `Content-Type`, default UTF-8), alt annet blir placeholderen fra [binærResponsPlaceholder].
+ * Maks lengde på de lesbare tekstrepresentasjonene i metadata ([HttpKlientMetadata.rawRequestString]/[HttpKlientMetadata.rawResponseString]).
+ * Konstant og ikke konfigurerbar: høyt nok for alle reelle sikkerlogg-behov (dedup-bodies, feilsøking), lavt nok til å stoppe MB-duplisering i minne og logg fra f.eks. dokarkiv-payloads med base64-PDF.
  */
-internal fun ByteArray.tilLesbarResponsString(responseHeaders: Map<String, List<String>>): String {
-    val contentType = responseHeaders.contentTypeHeader()
-    return if (erTekstligContentType(contentType)) String(this, charsetFra(contentType)) else binærResponsPlaceholder(size)
+internal const val MAKS_RAW_STRING_LENGDE = 100_000
+
+/** Kapper strengen ved [MAKS_RAW_STRING_LENGDE] tegn med et suffiks som oppgir opprinnelig lengde. */
+internal fun String.trunkert(): String {
+    if (length <= MAKS_RAW_STRING_LENGDE) return this
+    return take(MAKS_RAW_STRING_LENGDE) + "… [trunkert, totalt $length tegn]"
 }
 
 /**
- * Dekoder respons-bytene til tekst med charset fra `Content-Type` (default UTF-8) — samme oppførsel som JDK-ens `BodyHandlers.ofString()`.
- * Brukes for `String`-responser, der konsumenten eksplisitt har bedt om tekst og dekodingen derfor skjer uavhengig av om `Content-Type` regnes som tekstlig.
+ * Lesbar tekst-representasjon av rå respons-bytes, brukt i [HttpKlientMetadata.rawResponseString] og [HttpKlientError.ResponsMottatt.body].
+ * Disse strengene havner typisk i konsumentenes sikkerlogg, så de skal alltid være lesbar tekst: tekstlig innhold dekodes (charset fra `Content-Type`, default UTF-8) og trunkeres ved [MAKS_RAW_STRING_LENGDE] tegn, alt annet blir placeholderen fra [binærResponsPlaceholder].
  */
-internal fun ByteArray.dekodSomTekst(responseHeaders: Map<String, List<String>>): String =
-    String(this, charsetFra(responseHeaders.contentTypeHeader()))
+internal fun ByteArray.tilLesbarResponsString(responseHeaders: Map<String, List<String>>): String {
+    val contentType = responseHeaders.contentTypeHeader()
+    return if (erTekstligContentType(contentType)) String(this, charsetFra(contentType)).trunkert() else binærResponsPlaceholder(size)
+}
 
-/**
- * Placeholderen som brukes i stedet for rå binærdata.
- * `HttpKlientFake` i `test-common` speiler dette formatet (holdes med vilje i synk; funksjonen er `private` og kan uansett ikke deles på tvers av modulene).
- */
+/** Placeholderen som brukes i stedet for rå binærdata. */
 private fun binærResponsPlaceholder(antallBytes: Int): String = "<binær respons, $antallBytes bytes>"
 
 /** Første verdi av `Content-Type`-headeren, case-insensitivt (HTTP-headere er case-insensitive), eller `null` hvis den mangler. */

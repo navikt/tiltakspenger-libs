@@ -8,11 +8,8 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import no.nav.tiltakspenger.libs.common.nå
-import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
-import no.nav.tiltakspenger.libs.httpklient.HttpKlientLoggingConfig
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientRequest
 import no.nav.tiltakspenger.libs.httpklient.TransportRespons
-import no.nav.tiltakspenger.libs.httpklient.logExcessiveRetries
 import java.time.Clock
 import java.time.LocalDateTime
 import kotlin.time.Duration
@@ -129,26 +126,4 @@ internal class RetryExecutor(
             forsøk += nesteForsøk
         }
     }
-}
-
-internal fun RetryConfig.notifyExcessiveRetries(
-    loggingConfig: HttpKlientLoggingConfig,
-    attempts: Int,
-    totalDuration: Duration,
-    attemptDurations: List<Duration>,
-    finalStatusCode: Int?,
-    finalError: HttpKlientError?,
-) {
-    val threshold = excessiveRetriesThreshold ?: return
-    val retriesUsed = (attempts - 1).coerceAtLeast(0)
-    if (retriesUsed < threshold) return
-    val outcome = RetryOutcome(
-        attempts = attempts,
-        totalDuration = totalDuration,
-        attemptDurations = attemptDurations,
-        finalStatusCode = finalStatusCode,
-        finalError = finalError,
-    )
-    // En egen hook tar over ansvaret (og får hele RetryOutcome); ellers logger vi default via klientens loggingConfig.
-    onExcessiveRetries?.invoke(outcome) ?: loggingConfig.logExcessiveRetries(outcome)
 }

@@ -1,137 +1,27 @@
 package no.nav.tiltakspenger.libs.httpklient.retry
 
 import arrow.resilience.Schedule
-import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.HttpMethod
 import no.nav.tiltakspenger.libs.httpklient.isRetryableStatusCode
-import kotlin.random.Random
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Predikat som avgjør om et nytt forsøk skal gjøres etter siste utfall.
  * Kalles _bare_ når outcome er retryable, og før [RetryConfig.schedule] spørres om retry-budsjett.
  */
-typealias RetryPredicate = (RetryDecisionContext) -> Boolean
+internal typealias RetryPredicate = (RetryDecisionContext) -> Boolean
 
 /**
- * Konfigurasjon for retry-logikk.
- * Retry-loopen styres av en Arrow [Schedule] som bestemmer timing (backoff) og antall retries; vår kode kort-slutter på [AttemptOutcome.retryable] og konsulterer [retryOn] før schedulen får ordet.
- *
- * Default ([None]) gir _ingen_ retries, bakover-kompatibelt med klienter som ikke aktiverer retry.
- *
- * [retryOn] defaulter til [NeverRetry]; en bar `RetryConfig(schedule = ...)` retry-er altså ikke før du eksplisitt setter et predikat (f.eks. [RetryOnServerErrorsAndNetwork]).
- * Fabrikkene [exponential] og [fixed] defaulter derimot til [RetryOnServerErrorsAndNetwork], siden det å velge en av dem allerede uttrykker eksplisitt retry-intensjon.
- *
- * @property schedule Arrow [Schedule] som styrer ventetid mellom forsøk og maks antall retries.
- * @property retryOn Domene-predikat som typisk sjekker HTTP-metode-idempotens og lignende.
- * @property excessiveRetriesThreshold Hvis satt og `attempts - 1 >= terskel`, varsles det etter at requesten er ferdig — enten via [onExcessiveRetries] (hvis satt) eller klientens default-logging.
- * @property onExcessiveRetries Valgfri hook som får hele [RetryOutcome] når terskelen passeres, slik at konsumenten kan ta helt egne valg med samme data som default-loggingen har.
- *   Er den `null`, logges et default-varsel via klientens `HttpKlientLoggingConfig` på `excessiveRetriesNivå` (og er da stille når logging er avskrudd).
+ * Den interne retry-motorens konfig, bygget fra den offentlige [no.nav.tiltakspenger.libs.httpklient.Retry]-datamodellen.
+ * Retry-loopen styres av en Arrow [Schedule] som bestemmer timing (backoff) og antall retries; motoren kort-slutter på [AttemptOutcome.retryable] og konsulterer [retryOn] før schedulen får ordet.
  */
-data class RetryConfig(
+internal data class RetryConfig(
     val schedule: Schedule<AttemptOutcome, *>,
-    val retryOn: RetryPredicate = NeverRetry,
-    val excessiveRetriesThreshold: Int? = null,
-    val onExcessiveRetries: ((RetryOutcome) -> Unit)? = null,
+    val retryOn: RetryPredicate,
 ) {
-    init {
-        excessiveRetriesThreshold?.let {
-            require(it >= 1) { "excessiveRetriesThreshold må være minst 1 (terskelen telles i antall retries), var $it" }
-        }
-    }
-
-    /**
-     * Fluent variant for å bytte retry-predikat uten å måtte bruke `copy(...)` i konsumentkode.
-     */
-    fun withRetryOn(retryOn: RetryPredicate): RetryConfig {
-        return copy(retryOn = retryOn)
-    }
-
-    /**
-     * Slår på varsling når antall retries (`attempts - 1`) er minst [threshold].
-     * Uten en egen [onExcessiveRetries]-hook logges varselet via klientens `HttpKlientLoggingConfig`.
-     */
-    fun notifyOnExcessiveRetries(
-        threshold: Int,
-        onExcessiveRetries: ((RetryOutcome) -> Unit)? = this.onExcessiveRetries,
-    ): RetryConfig {
-        return copy(
-            excessiveRetriesThreshold = threshold,
-            onExcessiveRetries = onExcessiveRetries,
-        )
-    }
-
-    /**
-     * Slår av excessive-retry-varsling uten å endre schedule eller retry-predikat.
-     */
-    fun withoutExcessiveRetriesNotification(): RetryConfig {
-        return copy(excessiveRetriesThreshold = null)
-    }
-
     companion object {
-        /** Ingen retries — default. */
-        val None: RetryConfig = RetryConfig(schedule = Schedule.recurs(0L), retryOn = NeverRetry)
-
-        /**
-         * Eksponentiell backoff med valgfri jitter, opp til [maxRetries] retries.
-         * Bygger `Schedule.exponential(initialDelay)`, legger på valgfri moderat symmetrisk jitter (`0.5..1.5`), og capper deretter resultatet hardt på [maxDelay] — jitter kan altså aldri presse en ventetid over [maxDelay].
-         * Dette er ikke full jitter / maksimal dekorrelasjon; konsumenter som trenger AWS-aktig full jitter kan sende inn en egen Arrow [Schedule] direkte.
-         * Kombineres med `Schedule.recurs(maxRetries)` via `zipLeft` (dvs. behold delay-output, stopp så snart en av de to schedulene sier Done).
-         */
-        fun exponential(
-            maxRetries: Int,
-            initialDelay: Duration = 200.milliseconds,
-            maxDelay: Duration = 5.seconds,
-            jitter: Boolean = true,
-            retryOn: RetryPredicate = RetryOnServerErrorsAndNetwork,
-            random: Random = Random.Default,
-        ): RetryConfig {
-            require(maxRetries >= 0) { "maxRetries kan ikke være negativ, var $maxRetries" }
-            require(initialDelay >= Duration.ZERO) { "initialDelay kan ikke være negativ, var $initialDelay" }
-            require(maxDelay >= initialDelay) { "maxDelay ($maxDelay) må være >= initialDelay ($initialDelay)" }
-            val base: Schedule<AttemptOutcome, Duration> =
-                Schedule.exponential<AttemptOutcome>(initialDelay)
-            val withJitter: Schedule<AttemptOutcome, Duration> =
-                if (jitter) base.jittered(0.5, 1.5, random) else base
-            // Cappes til slutt slik at [maxDelay] er et hardt tak også med jitter.
-            val capped: Schedule<AttemptOutcome, Duration> =
-                withJitter.delayed { _, d -> d.coerceAtMost(maxDelay) }
-            val limited: Schedule<AttemptOutcome, *> =
-                capped.zipLeft(Schedule.recurs(maxRetries.toLong()))
-            return RetryConfig(schedule = limited, retryOn = retryOn)
-        }
-
-        /** Konstant backoff opp til [maxRetries] retries. */
-        fun fixed(
-            maxRetries: Int,
-            delay: Duration,
-            retryOn: RetryPredicate = RetryOnServerErrorsAndNetwork,
-        ): RetryConfig {
-            require(maxRetries >= 0) { "maxRetries kan ikke være negativ, var $maxRetries" }
-            require(delay >= Duration.ZERO) { "delay kan ikke være negativ, var $delay" }
-            val schedule: Schedule<AttemptOutcome, *> =
-                Schedule.spaced<AttemptOutcome>(delay)
-                    .zipLeft(Schedule.recurs(maxRetries.toLong()))
-            return RetryConfig(schedule = schedule, retryOn = retryOn)
-        }
+        /** Ingen retries. */
+        val None: RetryConfig = RetryConfig(schedule = Schedule.recurs(0L), retryOn = { false })
     }
-}
-
-/** Default predikat: aldri retry. Konsumenter må eksplisitt si hva som skal retry-es. */
-val NeverRetry: RetryPredicate = { false }
-
-/**
- * Praktisk default-predikat: tillater retry _kun_ for idempotente HTTP-metoder (`GET`, `HEAD`, `OPTIONS`, `PUT`, `DELETE`).
- * Følger RFC 7231 §4.2.2 og er på linje med Failsafe sin idempotent-default.
- * Hvilke utfall som er retry-bare (`408`/`425`/`429`/`500`/`502`/`503`/`504`/`Timeout`/`NetworkError`) avgjøres av [AttemptOutcome.retryable].
- */
-val RetryOnServerErrorsAndNetwork: RetryPredicate = { ctx -> ctx.method.isIdempotent() }
-
-fun HttpMethod.isIdempotent(): Boolean = when (this) {
-    HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS, HttpMethod.PUT, HttpMethod.DELETE -> true
-    HttpMethod.POST, HttpMethod.PATCH -> false
 }
 
 /**
@@ -141,13 +31,13 @@ fun HttpMethod.isIdempotent(): Boolean = when (this) {
  * @property attemptNumber Forsøket som akkurat ble fullført (1-basert).
  * @property outcome Utfallet av forsøket.
  */
-data class RetryDecisionContext(
+internal data class RetryDecisionContext(
     val method: HttpMethod,
     val attemptNumber: Int,
     val outcome: AttemptOutcome,
 )
 
-sealed interface AttemptOutcome {
+internal sealed interface AttemptOutcome {
     /**
      * `true` hvis utfallet i seg selv kan tenkes å gi et annet resultat ved nytt forsøk.
      * Brukes av retry-loopen som en hard gate — selv om [RetryConfig.retryOn] sier "ja", vil loopen aldri retry-e et utfall der `retryable = false`.
@@ -174,12 +64,3 @@ sealed interface AttemptOutcome {
         override val retryable: Boolean get() = true
     }
 }
-
-/** Sammenfatning av retry-forbruket etter at requesten er ferdig (uansett utfall). */
-data class RetryOutcome(
-    val attempts: Int,
-    val totalDuration: Duration,
-    val attemptDurations: List<Duration>,
-    val finalStatusCode: Int?,
-    val finalError: HttpKlientError?,
-)

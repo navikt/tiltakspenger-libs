@@ -10,12 +10,14 @@ import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.toJavaDuration
 
 internal fun HttpKlientRequest.toJavaHttpRequest(
-    defaultTimeout: Duration,
+    timeout: Duration,
     requestHeaders: Map<String, List<String>>,
     authTidsstempler: HttpKlientTidsstempler,
 ): Either<HttpKlientError, PreparedHttpKlientRequest> {
-    val bodyAsString = when (body) {
-        is HttpKlientRequest.Body.Json -> Either.catch { serialize(body.value) }
+    val bodyAsString = when (val requestBody = body) {
+        HttpKlientRequest.Body.Ingen -> null
+
+        is HttpKlientRequest.Body.Json -> Either.catch { serialize(requestBody.value) }
             .getOrElse { e ->
                 return HttpKlientError.SerializationError(
                     throwable = e,
@@ -30,11 +32,11 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
                 ).left()
             }
 
-        is HttpKlientRequest.Body.Raw -> body.body
+        is HttpKlientRequest.Body.FerdigJson -> requestBody.json
 
-        is HttpKlientRequest.Body.RawJson -> body.body
+        is HttpKlientRequest.Body.Tekst -> requestBody.tekst
 
-        null -> null
+        is HttpKlientRequest.Body.Form -> requestBody.enkodet
     }
     val rawRequestString = rawRequestString(
         requestHeaders = requestHeaders,
@@ -46,7 +48,7 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
         // Det gjenbruket gjør at vi hverken dupliserer eller divergerer fra spec-en; en ugyldig URI kaster IllegalArgumentException som fanges av Either.catch og mappes til InvalidRequest under.
         val builder = HttpRequest.newBuilder()
             .uri(uri)
-            .timeout((timeout ?: defaultTimeout).toJavaDuration())
+            .timeout(timeout.toJavaDuration())
 
         requestHeaders.forEach { (name, values) -> values.forEach { value -> builder.header(name, value) } }
 
@@ -95,15 +97,24 @@ private fun preFlightMetadata(
     tidsstempler = tidsstempler,
 )
 
+/**
+ * Lesbar tekst-representasjon av requesten, til [HttpKlientMetadata.rawRequestString].
+ * Sensitive headere maskeres (standardsettet i [redactSensitiveHeaders] pluss konsumentens [Header.sensitiv]-markerte), en [HttpKlientRequest.Body.Tekst] med `sensitiv = true` vises som `***`, og resultatet trunkeres til [MAKS_RAW_STRING_LENGDE] tegn.
+ * Selve HTTP-requesten sendes alltid med ekte verdier; dette gjelder kun tekstrepresentasjonen som havner i logger.
+ */
 internal fun HttpKlientRequest.rawRequestString(
     requestHeaders: Map<String, List<String>>,
     bodyAsString: String?,
 ): String {
+    val visningsBody = when (val requestBody = body) {
+        is HttpKlientRequest.Body.Tekst -> if (requestBody.sensitiv) "***" else bodyAsString
+        else -> bodyAsString
+    }
     return buildString {
         append(method.name)
         append(" ")
         append(uri)
-        requestHeaders.redactSensitiveHeaders().forEach { (name, values) ->
+        requestHeaders.redactSensitiveHeaders(ekstraSensitive = sensitiveHeaderNavn).forEach { (name, values) ->
             values.forEach { value ->
                 append("\n")
                 append(name)
@@ -111,9 +122,9 @@ internal fun HttpKlientRequest.rawRequestString(
                 append(value)
             }
         }
-        if (bodyAsString != null) {
+        if (visningsBody != null) {
             append("\n\n")
-            append(bodyAsString)
+            append(visningsBody)
         }
-    }
+    }.trunkert()
 }

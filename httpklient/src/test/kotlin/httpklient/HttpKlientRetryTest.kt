@@ -2,98 +2,71 @@ package no.nav.tiltakspenger.libs.httpklient
 import arrow.resilience.Schedule
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.longs.shouldBeInRange
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.TikkendeTidskilde
 import no.nav.tiltakspenger.libs.common.getOrFail
-import no.nav.tiltakspenger.libs.common.stoppedServerUri
 import no.nav.tiltakspenger.libs.common.withWireMockServer
 import no.nav.tiltakspenger.libs.httpklient.retry.AttemptOutcome
-import no.nav.tiltakspenger.libs.httpklient.retry.NeverRetry
 import no.nav.tiltakspenger.libs.httpklient.retry.RetryConfig
-import no.nav.tiltakspenger.libs.httpklient.retry.RetryDecisionContext
-import no.nav.tiltakspenger.libs.httpklient.retry.RetryOnServerErrorsAndNetwork
-import no.nav.tiltakspenger.libs.httpklient.retry.RetryOutcome
-import no.nav.tiltakspenger.libs.httpklient.retry.isIdempotent
 import org.junit.jupiter.api.Test
+import java.io.IOException
 import java.net.URI
+import java.net.http.HttpTimeoutException
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * Liten hjelper for tester som bare trenger en schedule som tillater N retries uten ventetid.
- */
-private fun recursSchedule(maxRetries: Int): Schedule<AttemptOutcome, *> =
-    Schedule.recurs(maxRetries.toLong())
-
 internal class HttpKlientRetryTest {
+    private val uri = URI.create("http://retry.test/ressurs")
+    private val okJson = """{"status":"ok","antall":1}"""
 
     @Test
-    fun `default RetryConfig retry-er ikke`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/x")).willReturn(aResponse().withStatus(503).withBody("nei")))
-            val klient = testHttpKlient()
+    fun `default (Retry Ingen) retry-er ikke`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503, "nei")
+        val klient = fakeHttpKlient(transport)
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/x")).swap().getOrNull()!!
+        val error = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            val ikke2xx = error.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            ikke2xx.metadata.attempts shouldBe 1
-            ikke2xx.metadata.attemptDurations shouldHaveSize 1
-        }
+        val ikke2xx = error.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        ikke2xx.metadata.attempts shouldBe 1
+        ikke2xx.metadata.attemptDurations shouldHaveSize 1
+        transport.mottatteKall shouldHaveSize 1
     }
 
     @Test
-    fun `RetryConfig uten eksplisitt retryOn retry-er ikke som default`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/default-retryon")).willReturn(aResponse().withStatus(503)))
-            // Default retryOn er NeverRetry: en bar RetryConfig(schedule = ...) retry-er ikke før konsumenten eksplisitt opt-iner.
-            // GET er idempotent og 503 er en retry-bar status, så det er kun default-predikatet (NeverRetry) som hindrer retry her.
-            val klient = testHttpKlient(retryConfig = RetryConfig(schedule = recursSchedule(2)))
+    fun `respons godtatt av godta retry-es ikke selv om statusen er i retryable-mengden`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503, """{"status":"degradert","antall":0}""")
+        // Konsumenten godtar 503 som suksess; da skal retry-loopen ikke brenne budsjett på den.
+        val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 3, delay = ZERO))
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/default-retryon")).swap().getOrNull()!!
+        val response = klient.getJson<TestResponseDto>(uri, godta = Statusregel.Eksakt(200, 503)).getOrFail()
 
-            error.metadata.attempts shouldBe 1
-        }
-    }
-
-    @Test
-    fun `respons godtatt av successStatus retry-es ikke selv om statusen er i retryable-mengden`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/503-er-ok")).willReturn(aResponse().withStatus(503).withBody("degradert")))
-            // Konsumenten godtar 503 som suksess; da skal retry-loopen ikke brenne budsjett på den.
-            val klient = testHttpKlient(
-                successStatus = { it == 503 || it in 200..299 },
-                retryConfig = RetryConfig(schedule = recursSchedule(3), retryOn = { true }),
-            )
-
-            val response = klient.get<String>(URI.create("${wiremock.baseUrl()}/503-er-ok")).getOrFail()
-
-            response.statusCode shouldBe 503
-            response.body shouldBe "degradert"
-            response.metadata.attempts shouldBe 1
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/503-er-ok")))
-        }
+        response.statusCode shouldBe 503
+        response.metadata.attempts shouldBe 1
+        transport.mottatteKall shouldHaveSize 1
     }
 
     @Test
     fun `alle retryable statuskoder retry-es, naboer gjør det ikke`() = runTest {
-        suspend fun attemptsForStatus(status: Int): Int = withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/status")).willReturn(aResponse().withStatus(status)))
-            val klient = testHttpKlient(retryConfig = RetryConfig(schedule = recursSchedule(1), retryOn = { true }))
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/status")).swap().getOrNull()!!.metadata.attempts
+        suspend fun attemptsForStatus(status: Int): Int {
+            val transport = FakeHttpTransport()
+            // Retry konsumerer ett køet svar per forsøk; kø nok til begge forsøkene.
+            transport.leggIKøStatus(status)
+            transport.leggIKøStatus(status)
+            val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 2, delay = ZERO))
+            return klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!.metadata.attempts
         }
 
         listOf(408, 425, 429, 500, 502, 503, 504).forEach { status ->
@@ -105,7 +78,22 @@ internal class HttpKlientRetryTest {
     }
 
     @Test
-    fun `retry lykkes på andre forsøk`() = runTest {
+    fun `retry lykkes på andre forsøk over fake transport`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 2, delay = ZERO))
+
+        val response = klient.getJson<TestResponseDto>(uri).getOrFail()
+
+        response.statusCode shouldBe 200
+        response.body shouldBe TestResponseDto(status = "ok", antall = 1)
+        response.metadata.attempts shouldBe 2
+        response.metadata.attemptDurations shouldHaveSize 2
+    }
+
+    @Test
+    fun `retry lykkes på andre forsøk ende-til-ende via WireMock`() = runTest {
         withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/y"))
@@ -116,365 +104,214 @@ internal class HttpKlientRetryTest {
             wiremock.stubFor(
                 get(urlEqualTo("/y"))
                     .inScenario("retry-y").whenScenarioStateIs("ok")
-                    .willReturn(aResponse().withStatus(200).withBody("hei")),
+                    .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody(okJson)),
             )
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig(
-                    schedule = recursSchedule(2),
-                    retryOn = RetryOnServerErrorsAndNetwork,
-                ),
-            )
+            val klient = testHttpKlient(retry = Retry.Fast(maksForsøk = 2, delay = ZERO))
 
-            val response = klient.get<String>(URI.create("${wiremock.baseUrl()}/y")).getOrFail()
+            val response = klient.getJson<TestResponseDto>(URI.create("${wiremock.baseUrl()}/y")).getOrFail()
 
             response.statusCode shouldBe 200
-            response.body shouldBe "hei"
             response.metadata.attempts shouldBe 2
-            response.metadata.attemptDurations shouldHaveSize 2
         }
     }
 
     @Test
-    fun `bruker opp alle retries og returnerer siste feil`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/z")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig(schedule = recursSchedule(2), retryOn = RetryOnServerErrorsAndNetwork),
-            )
+    fun `bruker opp alle forsøk og returnerer siste feil`() = runTest {
+        val transport = FakeHttpTransport()
+        repeat(3) { transport.leggIKøStatus(503) }
+        val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 3, delay = ZERO))
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/z")).swap().getOrNull()!!
+        val error = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            val ikke2xx = error.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            ikke2xx.metadata.attempts shouldBe 3
-            ikke2xx.metadata.attemptDurations shouldHaveSize 3
-        }
+        val ikke2xx = error.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        ikke2xx.metadata.attempts shouldBe 3
+        ikke2xx.metadata.attemptDurations shouldHaveSize 3
     }
 
     @Test
-    fun `4xx blir ikke retry-et med default-predikat for idempotente metoder`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/q")).willReturn(aResponse().withStatus(404)))
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig(schedule = recursSchedule(2), retryOn = RetryOnServerErrorsAndNetwork),
-            )
-
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/q")).swap().getOrNull()!!
-
-            error.metadata.attempts shouldBe 1
+    fun `POST og PATCH retry-es ikke uten retryIkkeIdempotente - GET og PUT retry-es`() = runTest {
+        suspend fun attemptsFor(kall: suspend (HttpKlient) -> Unit): Int {
+            val transport = FakeHttpTransport()
+            transport.leggIKøStatus(503)
+            transport.leggIKøStatus(503)
+            val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 2, delay = ZERO))
+            kall(klient)
+            return transport.mottatteKall.size
         }
+
+        // Idempotens-gaten: POST/PATCH kan ha sideeffekter og retry-es aldri uten eksplisitt opt-in.
+        attemptsFor { it.postJsonUtenSvar(uri, TestRequestDto(id = "a", antall = 1)) } shouldBe 1
+        attemptsFor { it.patchJsonUtenSvar(uri, TestRequestDto(id = "a", antall = 1)) } shouldBe 1
+        attemptsFor { it.getJson<TestResponseDto>(uri) } shouldBe 2
+        attemptsFor { it.putJsonUtenSvar(uri, TestRequestDto(id = "a", antall = 1)) } shouldBe 2
     }
 
     @Test
-    fun `POST blir ikke retry-et med default-predikat`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(post(urlEqualTo("/p")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig(schedule = recursSchedule(2), retryOn = RetryOnServerErrorsAndNetwork),
-            )
+    fun `retryIkkeIdempotente er eksplisitt opt-in for POST mot dedup-endepunkt`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        transport.leggIKøTomRespons(statusCode = 201)
+        val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 2, delay = ZERO, retryIkkeIdempotente = true))
 
-            val error = klient.post<String>(URI.create("${wiremock.baseUrl()}/p")) { body("x") }.swap().getOrNull()!!
+        val response = klient.postJsonUtenSvar(uri, TestRequestDto(id = "a", antall = 1)).getOrFail()
 
-            error.metadata.attempts shouldBe 1
-        }
+        response.statusCode shouldBe 201
+        response.metadata.attempts shouldBe 2
     }
 
     @Test
-    fun `POST kan retry-es med custom predikat`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(post(urlEqualTo("/p2")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig(
-                    schedule = recursSchedule(1),
-                    retryOn = {
-                        val outcome = it.outcome
-                        outcome is AttemptOutcome.Status && outcome.statusCode == 503
-                    },
-                ),
-            )
+    fun `Retry Standard har samme idempotens-gate som Fast`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        val klient = fakeHttpKlient(transport, retry = Retry.Standard(maksForsøk = 3, grunnDelay = ZERO, maksDelay = ZERO))
 
-            val error = klient.post<String>(URI.create("${wiremock.baseUrl()}/p2")) { body("x") }.swap().getOrNull()!!
+        klient.postJsonUtenSvar(uri, TestRequestDto(id = "a", antall = 1))
 
-            error.metadata.attempts shouldBe 2
-        }
+        transport.mottatteKall shouldHaveSize 1
     }
 
     @Test
-    fun `retry på NetworkError`() = runTest {
-        val uri = stoppedServerUri("/dod")
-        var calls = 0
-        val klient = testHttpKlient(
-            retryConfig = RetryConfig(
-                schedule = recursSchedule(2),
-                retryOn = { ctx ->
-                    calls++
-                    ctx.outcome is AttemptOutcome.Failure
-                },
-            ),
-        )
+    fun `retry på NetworkError fra transporten`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøKast(IOException("connection reset"))
+        transport.leggIKøKast(IOException("connection reset"))
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 3, delay = ZERO))
 
-        val error = klient.get<String>(uri).swap().getOrNull()!!
+        val response = klient.getJson<TestResponseDto>(uri).getOrFail()
 
-        (error is HttpKlientError.NetworkError || error is HttpKlientError.Timeout) shouldBe true
-        error.metadata.attempts shouldBe 3
-        calls shouldBe 3
+        response.metadata.attempts shouldBe 3
     }
 
     @Test
-    fun `per-request retryConfig overstyrer klient-default`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/o")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(retryConfig = RetryConfig.None)
+    fun `CompletionException og ExecutionException pakkes ut før feilmapping`() = runTest {
+        // java.net.http kan levere feil pakket i CompletionException/ExecutionException; feiltypen skal bære den underliggende årsaken.
+        val transport = FakeHttpTransport()
+        transport.leggIKøKast(java.util.concurrent.CompletionException(HttpTimeoutException("pakket timeout")))
+        transport.leggIKøKast(java.util.concurrent.ExecutionException(IOException("pakket io-feil")))
+        val klient = fakeHttpKlient(transport)
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/o")) {
-                retryConfig = RetryConfig(schedule = recursSchedule(1), retryOn = RetryOnServerErrorsAndNetwork)
-            }.swap().getOrNull()!!
+        val timeout = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+        timeout.shouldBeInstanceOf<HttpKlientError.Timeout>().throwable.message shouldBe "pakket timeout"
 
-            error.metadata.attempts shouldBe 2
-        }
+        val nettverksfeil = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+        nettverksfeil.shouldBeInstanceOf<HttpKlientError.NetworkError>().throwable.message shouldBe "pakket io-feil"
     }
 
     @Test
-    fun `excessiveRetries-callback firer når terskelen er passert`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/e")).willReturn(aResponse().withStatus(503)))
-            var notified: RetryOutcome? = null
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig(schedule = recursSchedule(2))
-                    .withRetryOn(RetryOnServerErrorsAndNetwork)
-                    .notifyOnExcessiveRetries(threshold = 2) { notified = it },
-            )
+    fun `retry på Timeout fra transporten`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøKast(HttpTimeoutException("timeout"))
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 2, delay = ZERO))
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/e"))
+        val response = klient.getJson<TestResponseDto>(uri).getOrFail()
 
-            val outcome = notified!!
-            outcome.attempts shouldBe 3
-            outcome.finalStatusCode shouldBe 503
-            outcome.finalError.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            outcome.attemptDurations shouldHaveSize 3
-        }
+        response.metadata.attempts shouldBe 2
     }
 
     @Test
-    fun `excessiveRetries-callback firer ikke under terskelen`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/u")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            var notified = false
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig(schedule = recursSchedule(2))
-                    .withRetryOn(RetryOnServerErrorsAndNetwork)
-                    .notifyOnExcessiveRetries(threshold = 1) { notified = true },
-            )
+    fun `Retry Fast venter konfigurert tid mellom forsøk`() = runTest {
+        val transport = FakeHttpTransport()
+        repeat(3) { transport.leggIKøStatus(503) }
+        val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 3, delay = 10.milliseconds))
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/u")).getOrFail()
+        val før = testScheduler.currentTime
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+        val virtuellTidBrukt = testScheduler.currentTime - før
 
-            notified shouldBe false
-        }
+        // 3 forsøk = 2 ventinger à 10 ms i virtuell tid, uten jitter.
+        virtuellTidBrukt shouldBe 20
     }
 
     @Test
-    fun `excessiveRetries-callback firer for NetworkError-utfall`() = runTest {
-        val uri = stoppedServerUri("/n")
-        var notified: RetryOutcome? = null
-        val klient = testHttpKlient(
-            retryConfig = RetryConfig(schedule = recursSchedule(1))
-                .withRetryOn(RetryOnServerErrorsAndNetwork)
-                .notifyOnExcessiveRetries(threshold = 1) { notified = it },
-        )
+    fun `Retry Standard bruker eksponentiell backoff med jitter innenfor grensene og hardt tak`() = runTest {
+        val transport = FakeHttpTransport()
+        repeat(3) { transport.leggIKøStatus(503) }
+        val klient = fakeHttpKlient(transport, retry = Retry.Standard(maksForsøk = 3, grunnDelay = 100.milliseconds, maksDelay = 150.milliseconds))
 
-        klient.get<String>(uri)
+        val før = testScheduler.currentTime
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+        val virtuellTidBrukt = testScheduler.currentTime - før
 
-        val outcome = notified!!
-        outcome.finalStatusCode shouldBe null
-        outcome.finalError.shouldBeInstanceOf<HttpKlientError.NetworkError>()
+        // Delay 1: 100 ms × jitter(0.5–1.5) cappet på 150 → [50, 150]. Delay 2: 200 ms × jitter cappet → [100, 150]. Totalt [150, 300].
+        virtuellTidBrukt shouldBeInRange 150L..300L
     }
 
     @Test
-    fun `default excessiveRetries-varsel logges via loggingConfig (default WARN)`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/e-default")).willReturn(aResponse().withStatus(503)))
-            val logger = testLogger()
-            val klient = testHttpKlient(
-                loggingConfig = HttpKlientLoggingConfig(logger = logger),
-                retryConfig = RetryConfig(schedule = recursSchedule(2))
-                    .withRetryOn(RetryOnServerErrorsAndNetwork)
-                    .notifyOnExcessiveRetries(threshold = 2),
-            )
-
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/e-default"))
-
-            // Uten egen hook går default-varselet via loggingConfig på excessiveRetriesNivå (default WARN).
-            val meldinger = mutableListOf<() -> Any?>()
-            verify(exactly = 1) { logger.warn(capture(meldinger)) }
-            meldinger.single()().toString().shouldContain("forsøk")
+    fun `toRetryConfig med samme seed gir deterministisk jitter`() = runTest {
+        suspend fun førsteDelay(seed: Int): kotlin.time.Duration {
+            val schedule = Retry.Standard(maksForsøk = 3, grunnDelay = 100.milliseconds, maksDelay = 10.seconds)
+                .toRetryConfig(Random(seed))
+                .schedule
+            return when (val decision = schedule.invoke(AttemptOutcome.Status(503))) {
+                is Schedule.Decision.Continue -> decision.delay
+                is Schedule.Decision.Done -> error("forventet Continue")
+            }
         }
+
+        førsteDelay(seed = 42) shouldBe førsteDelay(seed = 42)
+        // Med et annet seed skal jitteret (praktisk talt alltid) gi en annen delay; likhet her ville betydd at random-parameteren ikke brukes.
+        (førsteDelay(seed = 42) == førsteDelay(seed = 1337)) shouldBe false
     }
 
     @Test
-    fun `excessiveRetriesNivå OFF slår av default-varselet`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/e-av")).willReturn(aResponse().withStatus(503)))
-            val logger = testLogger()
-            val klient = testHttpKlient(
-                loggingConfig = HttpKlientLoggingConfig(logger = logger, excessiveRetriesNivå = HttpKlientLogNivå.OFF),
-                retryConfig = RetryConfig(schedule = recursSchedule(2))
-                    .withRetryOn(RetryOnServerErrorsAndNetwork)
-                    .notifyOnExcessiveRetries(threshold = 2),
-            )
-
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/e-av"))
-
-            verify(exactly = 0) { logger.warn(any<() -> Any?>()) }
-        }
-    }
-
-    @Test
-    fun `egen onExcessiveRetries-hook erstatter default-loggingen`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/e-hook")).willReturn(aResponse().withStatus(503)))
-            val logger = testLogger()
-            var notified: RetryOutcome? = null
-            val klient = testHttpKlient(
-                loggingConfig = HttpKlientLoggingConfig(logger = logger),
-                retryConfig = RetryConfig(schedule = recursSchedule(2))
-                    .withRetryOn(RetryOnServerErrorsAndNetwork)
-                    .notifyOnExcessiveRetries(threshold = 2) { notified = it },
-            )
-
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/e-hook"))
-
-            // Hooken får hele RetryOutcome ...
-            notified!!.attempts shouldBe 3
-            // ... og tar over ansvaret, så default-varselet logges ikke i tillegg.
-            verify(exactly = 0) { logger.warn(any<() -> Any?>()) }
-        }
-    }
-
-    @Test
-    fun `RetryConfig validerer input`() {
-        shouldThrowWithMessage<IllegalArgumentException>("excessiveRetriesThreshold må være minst 1 (terskelen telles i antall retries), var -1") {
-            RetryConfig(schedule = Schedule.recurs(0L), excessiveRetriesThreshold = -1)
-        }
-        shouldThrowWithMessage<IllegalArgumentException>("excessiveRetriesThreshold må være minst 1 (terskelen telles i antall retries), var -1") {
-            RetryConfig(schedule = Schedule.recurs(0L)).notifyOnExcessiveRetries(threshold = -1)
-        }
-    }
-
-    @Test
-    fun `RetryConfig fluent helpers oppdaterer kun relevante felter`() {
-        val callback: (RetryOutcome) -> Unit = {}
-        val config = RetryConfig(schedule = recursSchedule(3))
-            .withRetryOn(RetryOnServerErrorsAndNetwork)
-            .notifyOnExcessiveRetries(threshold = 2, onExcessiveRetries = callback)
-
-        config.retryOn shouldBe RetryOnServerErrorsAndNetwork
-        config.excessiveRetriesThreshold shouldBe 2
-        config.onExcessiveRetries shouldBe callback
-
-        val utenVarsling = config.withoutExcessiveRetriesNotification()
-
-        utenVarsling.schedule shouldBe config.schedule
-        utenVarsling.retryOn shouldBe RetryOnServerErrorsAndNetwork
-        utenVarsling.excessiveRetriesThreshold shouldBe null
-        utenVarsling.onExcessiveRetries shouldBe callback
-    }
-
-    @Test
-    fun `RetryConfig exponential factory bygger schedule som retry-er`() = runTest {
-        val cfg = RetryConfig.exponential(
-            maxRetries = 1,
-            initialDelay = 1.milliseconds,
-            maxDelay = 10.milliseconds,
-            jitter = false,
-            random = Random(seed = 1),
-        )
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/exp")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(retryConfig = cfg)
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/exp")).swap().getOrNull()!!
-            error.metadata.attempts shouldBe 2
-        }
-    }
-
-    @Test
-    fun `RetryConfig exponential med jitter bygger schedule`() = runTest {
-        val cfg = RetryConfig.exponential(
-            maxRetries = 1,
-            initialDelay = 1.milliseconds,
-            maxDelay = 5.milliseconds,
-            jitter = true,
-            random = Random(seed = 7),
-        )
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/jit")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(retryConfig = cfg)
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/jit")).swap().getOrNull()!!
-                .metadata.attempts shouldBe 2
-        }
-    }
-
-    @Test
-    fun `RetryConfig exponential validerer input`() {
-        shouldThrowWithMessage<IllegalArgumentException>("maxRetries kan ikke være negativ, var -1") {
-            RetryConfig.exponential(maxRetries = -1)
-        }
-        shouldThrowWithMessage<IllegalArgumentException>("initialDelay kan ikke være negativ, var -1ms") {
-            RetryConfig.exponential(maxRetries = 1, initialDelay = (-1).milliseconds)
-        }
-        shouldThrowWithMessage<IllegalArgumentException>("maxDelay (50ms) må være >= initialDelay (100ms)") {
-            RetryConfig.exponential(maxRetries = 1, initialDelay = 100.milliseconds, maxDelay = 50.milliseconds)
-        }
-    }
-
-    @Test
-    fun `RetryConfig fixed factory venter mellom forsøk`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/b")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig.fixed(maxRetries = 1, delay = 5.milliseconds),
-            )
-
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/b")).swap().getOrNull()!!
-
-            error.metadata.attempts shouldBe 2
-        }
-    }
-
-    @Test
-    fun `RetryConfig fixed validerer input`() {
-        shouldThrowWithMessage<IllegalArgumentException>("maxRetries kan ikke være negativ, var -1") {
-            RetryConfig.fixed(maxRetries = -1, delay = ZERO)
+    fun `Retry Fast og Standard validerer input`() {
+        shouldThrowWithMessage<IllegalArgumentException>("maksForsøk må være minst 1, var 0") {
+            Retry.Fast(maksForsøk = 0)
         }
         shouldThrowWithMessage<IllegalArgumentException>("delay kan ikke være negativ, var -1ms") {
-            RetryConfig.fixed(maxRetries = 1, delay = (-1).milliseconds)
+            Retry.Fast(maksForsøk = 1, delay = (-1).milliseconds)
+        }
+        shouldThrowWithMessage<IllegalArgumentException>("maksForsøk må være minst 1, var 0") {
+            Retry.Standard(maksForsøk = 0)
+        }
+        shouldThrowWithMessage<IllegalArgumentException>("grunnDelay kan ikke være negativ, var -1ms") {
+            Retry.Standard(maksForsøk = 1, grunnDelay = (-1).milliseconds)
+        }
+        shouldThrowWithMessage<IllegalArgumentException>("maksDelay (50ms) må være >= grunnDelay (100ms)") {
+            Retry.Standard(maksForsøk = 1, grunnDelay = 100.milliseconds, maksDelay = 50.milliseconds)
         }
     }
 
     @Test
-    fun `NeverRetry returnerer false for alle utfall`() {
-        NeverRetry(RetryDecisionContext(HttpMethod.GET, 1, AttemptOutcome.Status(500))) shouldBe false
+    fun `loop retry-er ikke ikke-retryable utfall selv om predikatet sier ja`() = runTest {
+        // Den harde gaten ligger foran retryOn-predikatet: et ikke-retryable utfall (404) skal aldri konsultere predikatet.
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(404)
+        var predicateCalls = 0
+        val retryConfig = RetryConfig(
+            schedule = Schedule.recurs(5L),
+            retryOn = {
+                predicateCalls++
+                true
+            },
+        )
+        val klient = fakeHttpKlient(transport)
+        val request = byggHttpKlientRequest(
+            metode = HttpMethod.GET,
+            uri = uri,
+            headere = emptyList(),
+            bearerToken = null,
+            godta = Statusregel.Alle2xx,
+            body = HttpKlientRequest.Body.Ingen,
+            responsFormat = ResponsFormat.IngenBody,
+        )
+        val prepared = request.toJavaHttpRequest(1.seconds, request.headers, HttpKlientTidsstempler.INGEN).getOrNull()!!
+
+        val result = no.nav.tiltakspenger.libs.httpklient.retry.RetryExecutor(klient.clock, klient.config.timeSource)
+            .execute(request, retryConfig, isSuccessfulResponse = request::erSuksessStatus) { klient.runSingleAttempt(prepared.request) }
+
+        result.attempts shouldBe 1
+        predicateCalls shouldBe 0
     }
 
     @Test
-    fun `RetryOnServerErrorsAndNetwork tillater idempotente metoder og avviser andre`() {
-        val anyOutcome = AttemptOutcome.Status(500)
-        RetryOnServerErrorsAndNetwork(RetryDecisionContext(HttpMethod.GET, 1, anyOutcome)) shouldBe true
-        RetryOnServerErrorsAndNetwork(RetryDecisionContext(HttpMethod.HEAD, 1, anyOutcome)) shouldBe true
-        RetryOnServerErrorsAndNetwork(RetryDecisionContext(HttpMethod.OPTIONS, 1, anyOutcome)) shouldBe true
-        RetryOnServerErrorsAndNetwork(RetryDecisionContext(HttpMethod.PUT, 1, anyOutcome)) shouldBe true
-        RetryOnServerErrorsAndNetwork(RetryDecisionContext(HttpMethod.DELETE, 1, anyOutcome)) shouldBe true
-        RetryOnServerErrorsAndNetwork(RetryDecisionContext(HttpMethod.POST, 1, anyOutcome)) shouldBe false
-        RetryOnServerErrorsAndNetwork(RetryDecisionContext(HttpMethod.PATCH, 1, anyOutcome)) shouldBe false
-    }
-
-    @Test
-    fun `isIdempotent dekker alle metoder`() {
-        HttpMethod.GET.isIdempotent() shouldBe true
-        HttpMethod.HEAD.isIdempotent() shouldBe true
-        HttpMethod.OPTIONS.isIdempotent() shouldBe true
-        HttpMethod.PUT.isIdempotent() shouldBe true
-        HttpMethod.DELETE.isIdempotent() shouldBe true
-        HttpMethod.POST.isIdempotent() shouldBe false
-        HttpMethod.PATCH.isIdempotent() shouldBe false
+    fun `erIdempotent dekker alle metoder`() {
+        HttpMethod.GET.erIdempotent() shouldBe true
+        HttpMethod.PUT.erIdempotent() shouldBe true
+        HttpMethod.POST.erIdempotent() shouldBe false
+        HttpMethod.PATCH.erIdempotent() shouldBe false
     }
 
     @Test
@@ -519,79 +356,22 @@ internal class HttpKlientRetryTest {
     }
 
     @Test
-    fun `loop retry-er ikke ikke-retryable utfall selv om predikatet sier ja`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/g")).willReturn(aResponse().withStatus(404)))
-            var predicateCalls = 0
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig(
-                    schedule = recursSchedule(5),
-                    retryOn = {
-                        predicateCalls++
-                        true
-                    },
-                ),
-            )
-
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/g")).swap().getOrNull()!!
-
-            error.metadata.attempts shouldBe 1
-            predicateCalls shouldBe 0
-        }
-    }
-
-    @Test
-    fun `Schedule fra Arrow kan brukes direkte uten faktorymetoder`() = runTest {
-        // Demonstrerer at konsumenter kan bygge sin egen Schedule.
-        val schedule: Schedule<AttemptOutcome, *> =
-            Schedule.spaced<AttemptOutcome>(1.milliseconds)
-                .zipLeft(Schedule.recurs(2L))
-
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/s")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig(schedule = schedule, retryOn = RetryOnServerErrorsAndNetwork),
-            )
-
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/s")).swap().getOrNull()!!
-            error.metadata.attempts shouldBe 3
-        }
-    }
-
-    @Test
     fun `per-forsøk varigheter måles monotont via TimeSource`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/tikk")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig(schedule = recursSchedule(1), retryOn = RetryOnServerErrorsAndNetwork),
-                timeSource = TikkendeTidskilde(),
-            )
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(503)
+        transport.leggIKøStatus(503)
+        val klient = fakeHttpKlient(
+            transport = transport,
+            retry = Retry.Fast(maksForsøk = 2, delay = ZERO),
+            timeSource = TikkendeTidskilde(),
+        )
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/tikk")).swap().getOrNull()!!
+        val error = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            // TikkendeTidskilde rykker den delte forløpte tiden 1 sekund per avlesning (elapsedNow); markNow rykker den ikke.
-            // RetryExecutor leser varighet én gang per forsøk pluss én gang for total-vinduet, så hvert forsøk «varer» 1 sekund.
-            // Total-vinduet spenner over alle tre avlesningene (to forsøk + total) og blir derfor 3 sekunder.
-            error.metadata.attemptDurations shouldContainExactly listOf(1.seconds, 1.seconds)
-            error.metadata.totalDuration shouldBe 3.seconds
-        }
-    }
-
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    @Test
-    fun `fixed backoff venter konfigurert tid mellom forsøk`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/backoff")).willReturn(aResponse().withStatus(503)))
-            val klient = testHttpKlient(
-                retryConfig = RetryConfig.fixed(maxRetries = 2, delay = 10.milliseconds, retryOn = RetryOnServerErrorsAndNetwork),
-            )
-
-            val før = testScheduler.currentTime
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/backoff")).swap().getOrNull()!!
-            val virtuellTidBrukt = testScheduler.currentTime - før
-
-            // 3 forsøk = 2 retries, hver med 10 ms backoff i virtuell tid (de faktiske HTTP-kallene bruker ikke virtuell tid).
-            virtuellTidBrukt shouldBe 20
-        }
+        // TikkendeTidskilde rykker den delte forløpte tiden 1 sekund per avlesning (elapsedNow); markNow rykker den ikke.
+        // RetryExecutor leser varighet én gang per forsøk pluss én gang for total-vinduet, så hvert forsøk «varer» 1 sekund.
+        // Total-vinduet spenner over alle tre avlesningene (to forsøk + total) og blir derfor 3 sekunder.
+        error.metadata.attemptDurations shouldContainExactly listOf(1.seconds, 1.seconds)
+        error.metadata.totalDuration shouldBe 3.seconds
     }
 }

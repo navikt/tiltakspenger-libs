@@ -2,72 +2,33 @@ package no.nav.tiltakspenger.libs.httpklient
 
 import no.nav.tiltakspenger.libs.common.AccessToken
 
-internal fun Map<String, List<String>>.withDefaultJsonContentTypeHeader(): Map<String, List<String>> {
-    return withDefaultHeaders("Content-Type" to "application/json")
-}
-
-internal fun Map<String, List<String>>.withDefaultJsonAcceptHeader(): Map<String, List<String>> {
-    return withDefaultHeaders("Accept" to "application/json")
-}
-
 /**
- * Setter `Authorization: Bearer <token>` hvis headeren ikke allerede er satt (case-insensitivt).
- * Hvis konsumenten har satt `Authorization` eksplisitt, beholdes deres verdi uendret.
+ * Materialiserer `Authorization: Bearer <token>` på headerne.
+ * Invariant: headeren kan aldri være satt fra før — [Header] avviser reserverte navn, så klienten er alene om å skrive den.
  */
-internal fun Map<String, List<String>>.withBearerToken(accessToken: AccessToken): Map<String, List<String>> {
-    return withDefaultHeaders("Authorization" to "Bearer ${accessToken.token}")
-}
-
-/**
- * Setter [defaults] hvis de mangler (case-insensitivt).
- * Allokerer maks ett nytt Map per kall, og _bare_ hvis minst én default mangler; ellers returneres opprinnelig Map uendret.
- * Bevarer iterasjonsrekkefølgen til opprinnelig Map, med nye headere lagt til til slutt.
- */
-private fun Map<String, List<String>>.withDefaultHeaders(
-    vararg defaults: Pair<String, String>,
-): Map<String, List<String>> {
-    val missing = defaults.filterNot { (name, _) -> containsHeaderIgnoreCase(name) }
-    if (missing.isEmpty()) return this
-    return buildMap(size + missing.size) {
-        putAll(this@withDefaultHeaders)
-        missing.forEach { (name, value) -> put(name, listOf(value)) }
+internal fun Map<String, List<String>>.withBearerToken(accessToken: AccessToken): Map<String, List<String>> =
+    buildMap(size + 1) {
+        putAll(this@withBearerToken)
+        put("Authorization", listOf("Bearer ${accessToken.token}"))
     }
-}
-
-private fun Map<String, List<String>>.containsHeaderIgnoreCase(name: String): Boolean =
-    keys.any { it.equals(name, ignoreCase = true) }
 
 /**
- * Sant hvis konsumenten allerede har satt en `Authorization`-header (case-insensitivt).
- * Brukes for å avgjøre om klientens `authTokenProvider` skal styre headeren eller la konsumentens verdi stå.
- */
-internal fun Map<String, List<String>>.containsAuthorizationHeader(): Boolean =
-    containsHeaderIgnoreCase("Authorization")
-
-/**
- * Headernavn (case-insensitivt) hvis verdier maskeres når headere gjengis i `rawRequestString` eller logges.
- * Dette gjelder kun tekstrepresentasjonen/loggingen; den faktiske HTTP-requesten sendes med ekte verdier.
+ * Headernavn (case-insensitivt) hvis verdier maskeres når headere gjengis i `rawRequestString`.
+ * Dette gjelder kun tekstrepresentasjonen; den faktiske HTTP-requesten sendes med ekte verdier.
  */
 private val sensitiveHeaderNames = setOf("authorization", "proxy-authorization", "cookie", "set-cookie")
 
 /**
- * Returnerer headerne med verdiene til sensitive headere (f.eks. `Authorization`) erstattet med `***`.
- * Brukes før headere puttes inn i [HttpKlientMetadata.rawRequestString] eller logges, slik at bearer-tokens og lignende ikke lekker til logger.
- * Eksponert (ikke `internal`) slik at `HttpKlientFake` i `test-common` kan gjenbruke nøyaktig samme redaksjonslogikk og ikke divergere fra produksjonsklienten.
+ * Returnerer headerne med verdiene til sensitive headere erstattet med `***`.
+ * Standardsettet (auth/cookie) utvides med [ekstraSensitive] — lowercase-navnene på konsument-headere markert [Header.sensitiv] (f.eks. en `ident`-header med fnr).
+ * Brukes før headere puttes inn i [HttpKlientMetadata.rawRequestString], slik at bearer-tokens og PII ikke lekker til logger.
  */
-fun Map<String, List<String>>.redactSensitiveHeaders(): Map<String, List<String>> {
-    if (keys.none { it.lowercase() in sensitiveHeaderNames }) return this
+internal fun Map<String, List<String>>.redactSensitiveHeaders(
+    ekstraSensitive: Set<String>,
+): Map<String, List<String>> {
+    val skalMaskeres = { navn: String -> navn.lowercase() in sensitiveHeaderNames || navn.lowercase() in ekstraSensitive }
+    if (keys.none(skalMaskeres)) return this
     return mapValues { (name, values) ->
-        if (name.lowercase() in sensitiveHeaderNames) values.map { "***" } else values
+        if (skalMaskeres(name)) values.map { "***" } else values
     }
-}
-
-/**
- * Returnerer headerne med _alle_ verdier erstattet med `***`, men med headernavnene bevart.
- * Brukes for den PII-trygge varianten som går til den vanlige loggen: en egendefinert header (f.eks. `X-Person-Ident`) kan inneholde PII, og [redactSensitiveHeaders] maskerer kun auth/cookie.
- * `Sikkerlogg`-varianten bruker fortsatt [redactSensitiveHeaders] slik at faktiske header-verdier (unntatt hemmeligheter) er synlige der PII er tillatt.
- */
-internal fun Map<String, List<String>>.maskAllHeaderValues(): Map<String, List<String>> {
-    if (isEmpty()) return this
-    return mapValues { (_, values) -> values.map { "***" } }
 }

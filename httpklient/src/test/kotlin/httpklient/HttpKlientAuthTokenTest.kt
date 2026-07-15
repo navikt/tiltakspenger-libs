@@ -1,323 +1,258 @@
 package no.nav.tiltakspenger.libs.httpklient
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.equalTo
-import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.mockk.verify
 import kotlinx.coroutines.test.runTest
-import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.getOrFail
-import no.nav.tiltakspenger.libs.common.withWireMockServer
 import org.junit.jupiter.api.Test
 import java.net.URI
 
+/**
+ * Auth-materialisering og skip-cache-retry testes over [FakeHttpTransport]: hele den reelle pipelinen kjører, og transporten viser nøyaktig hvilken `Authorization`-header som ville gått på wire.
+ */
 internal class HttpKlientAuthTokenTest {
+    private val uri = URI.create("http://auth.test/ressurs")
+    private val okJson = """{"status":"ok","antall":1}"""
+
+    private fun FakeHttpTransport.authorizationHeader(kallIndex: Int = 0): String? =
+        mottatteKall[kallIndex].request.headers().firstValue("Authorization").orElse(null)
+
     @Test
-    fun `bearer-token sendes ekte til serveren men maskeres i metadata`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/redaksjon")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = testHttpKlient()
+    fun `bearer-token sendes ekte til transporten men maskeres i metadata`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(transport)
 
-            val response = klient.get<String>(URI.create("${wiremock.baseUrl()}/redaksjon")) {
-                bearerToken(testAccessToken("hemmelig-token"))
-            }.getOrFail()
+        val response = klient.getJson<TestResponseDto>(uri, bearerToken = testAccessToken("hemmelig-token")).getOrFail()
 
-            // Serveren mottar det ekte tokenet.
-            wiremock.verify(getRequestedFor(urlEqualTo("/redaksjon")).withHeader("Authorization", equalTo("Bearer hemmelig-token")))
-            // Men rawRequestString (som ofte logges) maskerer det.
-            response.metadata.rawRequestString.shouldNotContain("hemmelig-token")
-            response.metadata.rawRequestString.shouldContain("Authorization: ***")
-        }
+        // Transporten (og dermed serveren) mottar det ekte tokenet.
+        transport.authorizationHeader() shouldBe "Bearer hemmelig-token"
+        // Men rawRequestString (som ofte logges) maskerer det.
+        response.metadata.rawRequestString.shouldNotContain("hemmelig-token")
+        response.metadata.rawRequestString.shouldContain("Authorization: ***")
     }
 
     @Test
-    fun `authTokenProvider gir Bearer-header på hver request`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/a")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            var calls = 0
-            val klient = HttpKlient(clock = fixedClock) {
-                authTokenProvider = authTokenProvider {
+    fun `KlientAuth System gir Bearer-header på hver request`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson(okJson)
+        transport.leggIKøJson(okJson)
+        var calls = 0
+        val klient = fakeHttpKlient(
+            transport = transport,
+            auth = KlientAuth.System(
+                authTokenProvider {
                     calls++
                     testAccessToken("tok-$calls")
-                }
-            }
+                },
+            ),
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/a")).getOrFail()
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/a")).getOrFail()
+        klient.getJson<TestResponseDto>(uri).getOrFail()
+        klient.getJson<TestResponseDto>(uri).getOrFail()
 
-            wiremock.verify(getRequestedFor(urlEqualTo("/a")).withHeader("Authorization", equalTo("Bearer tok-1")))
-            wiremock.verify(getRequestedFor(urlEqualTo("/a")).withHeader("Authorization", equalTo("Bearer tok-2")))
-            calls shouldBe 2
-        }
+        transport.authorizationHeader(0) shouldBe "Bearer tok-1"
+        transport.authorizationHeader(1) shouldBe "Bearer tok-2"
+        calls shouldBe 2
     }
 
     @Test
-    fun `per-request bearerToken overstyrer klient-default`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/b")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = HttpKlient(clock = fixedClock) {
-                authTokenProvider = authTokenProvider { error("provider skal ikke kalles når request setter token") }
-            }
+    fun `per-kall bearerToken overstyrer KlientAuth System`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(
+            transport = transport,
+            auth = KlientAuth.System(authTokenProvider { error("provider skal ikke kalles når kallet setter token") }),
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/b")) {
-                bearerToken(testAccessToken("override"))
-            }.getOrFail()
+        klient.getJson<TestResponseDto>(uri, bearerToken = testAccessToken("override")).getOrFail()
 
-            wiremock.verify(getRequestedFor(urlEqualTo("/b")).withHeader("Authorization", equalTo("Bearer override")))
-        }
+        transport.authorizationHeader() shouldBe "Bearer override"
     }
 
     @Test
-    fun `eksplisitt Authorization-header beholdes uendret`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/c")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = HttpKlient(clock = fixedClock) {
-                authTokenProvider = authTokenProvider { error("provider skal ikke kalles når Authorization er satt") }
-            }
+    fun `KlientAuth Ingen gir ingen Authorization-header`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson(okJson)
+        val klient = fakeHttpKlient(transport)
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/c")) {
-                header("Authorization", "Basic abc")
-            }.getOrFail()
+        klient.getJson<TestResponseDto>(uri).getOrFail()
 
-            wiremock.verify(getRequestedFor(urlEqualTo("/c")).withHeader("Authorization", equalTo("Basic abc")))
-        }
+        transport.authorizationHeader() shouldBe null
     }
 
     @Test
-    fun `ingen authTokenProvider gir ingen Authorization-header`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/d")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = testHttpKlient()
+    fun `provider som kaster gir AuthError uten HTTP-kall`() = runTest {
+        val transport = FakeHttpTransport()
+        val klient = fakeHttpKlient(
+            transport = transport,
+            auth = KlientAuth.System(authTokenProvider { throw IllegalStateException("token-endepunkt nede") }),
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/d")).getOrFail()
+        val error = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            // wiremock vil reportere request uten Authorization-header — sjekk at ingen var sendt.
-            wiremock.findAll(getRequestedFor(urlEqualTo("/d"))).single().header("Authorization").isPresent shouldBe false
-        }
-    }
-
-    @Test
-    fun `authTokenProvider som kaster gir AuthError uten HTTP-kall`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/e")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val klient = HttpKlient(clock = fixedClock) {
-                authTokenProvider = authTokenProvider { throw IllegalStateException("token-endepunkt nede") }
-            }
-
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/e")).swap().getOrNull()!!
-
-            val authError = error.shouldBeInstanceOf<HttpKlientError.AuthError>()
-            authError.throwable.message shouldBe "token-endepunkt nede"
-            authError.retryable shouldBe false
-            authError.metadata.attempts shouldBe 0
-            wiremock.findAll(getRequestedFor(urlEqualTo("/e"))).size shouldBe 0
-        }
+        val authError = error.shouldBeInstanceOf<HttpKlientError.AuthError>()
+        authError.throwable.message shouldBe "token-endepunkt nede"
+        authError.retryable shouldBe false
+        authError.metadata.attempts shouldBe 0
+        transport.mottatteKall shouldHaveSize 0
     }
 
     @Test
     fun `401 utløser ett nytt forsøk der provider kalles med skipCache=true`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/skipcache"))
-                    .inScenario("skip-cache")
-                    .whenScenarioStateIs(STARTED)
-                    .willReturn(aResponse().withStatus(401))
-                    .willSetStateTo("andre-forsok"),
-            )
-            wiremock.stubFor(
-                get(urlEqualTo("/skipcache"))
-                    .inScenario("skip-cache")
-                    .whenScenarioStateIs("andre-forsok")
-                    .willReturn(aResponse().withStatus(200).withBody("ok")),
-            )
-            val skipCacheArgs = mutableListOf<Boolean>()
-            val klient = HttpKlient(clock = fixedClock) {
-                authTokenProvider = authTokenProvider { skipCache ->
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(401)
+        transport.leggIKøJson(okJson)
+        val skipCacheArgs = mutableListOf<Boolean>()
+        val klient = fakeHttpKlient(
+            transport = transport,
+            auth = KlientAuth.System(
+                authTokenProvider { skipCache ->
                     skipCacheArgs.add(skipCache)
                     testAccessToken("tok-skip=$skipCache")
-                }
-            }
+                },
+            ),
+        )
 
-            val response = klient.get<String>(URI.create("${wiremock.baseUrl()}/skipcache")).getOrFail()
+        val response = klient.getJson<TestResponseDto>(uri).getOrFail()
 
-            response.body shouldBe "ok"
-            skipCacheArgs shouldBe listOf(false, true)
-            wiremock.verify(2, getRequestedFor(urlEqualTo("/skipcache")))
-            wiremock.verify(getRequestedFor(urlEqualTo("/skipcache")).withHeader("Authorization", equalTo("Bearer tok-skip=true")))
-        }
+        response.body shouldBe TestResponseDto(status = "ok", antall = 1)
+        skipCacheArgs shouldBe listOf(false, true)
+        transport.mottatteKall shouldHaveSize 2
+        transport.authorizationHeader(1) shouldBe "Bearer tok-skip=true"
     }
 
     @Test
     fun `403 er ikke med i default skipCacheRetryStatuses og gir ingen retry`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/forbidden")).willReturn(aResponse().withStatus(403)))
-            val skipCacheArgs = mutableListOf<Boolean>()
-            val klient = HttpKlient(clock = fixedClock) {
-                authTokenProvider = authTokenProvider { skipCache ->
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(403)
+        val skipCacheArgs = mutableListOf<Boolean>()
+        val klient = fakeHttpKlient(
+            transport = transport,
+            auth = KlientAuth.System(
+                authTokenProvider { skipCache ->
                     skipCacheArgs.add(skipCache)
                     testAccessToken("t")
-                }
-            }
+                },
+            ),
+        )
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/forbidden")).swap().getOrNull()!!
+        val error = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            error.shouldBeInstanceOf<HttpKlientError.UventetStatus>().statusCode shouldBe 403
-            skipCacheArgs shouldBe listOf(false)
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/forbidden")))
-        }
+        error.shouldBeInstanceOf<HttpKlientError.UventetStatus>().statusCode shouldBe 403
+        skipCacheArgs shouldBe listOf(false)
+        transport.mottatteKall shouldHaveSize 1
     }
 
     @Test
     fun `403 kan opt-es inn i skipCacheRetryStatuses`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/forbidden-opt-in"))
-                    .inScenario("forbidden")
-                    .whenScenarioStateIs(STARTED)
-                    .willReturn(aResponse().withStatus(403))
-                    .willSetStateTo("andre-forsok"),
-            )
-            wiremock.stubFor(
-                get(urlEqualTo("/forbidden-opt-in"))
-                    .inScenario("forbidden")
-                    .whenScenarioStateIs("andre-forsok")
-                    .willReturn(aResponse().withStatus(200).withBody("ok")),
-            )
-            val skipCacheArgs = mutableListOf<Boolean>()
-            val klient = HttpKlient(clock = fixedClock) {
-                skipCacheRetryStatuses = setOf(401, 403)
-                authTokenProvider = authTokenProvider { skipCache ->
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(403)
+        transport.leggIKøJson(okJson)
+        val skipCacheArgs = mutableListOf<Boolean>()
+        val klient = fakeHttpKlient(
+            transport = transport,
+            skipCacheRetryStatuses = setOf(401, 403),
+            auth = KlientAuth.System(
+                authTokenProvider { skipCache ->
                     skipCacheArgs.add(skipCache)
                     testAccessToken("t")
-                }
-            }
+                },
+            ),
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/forbidden-opt-in")).getOrFail().body shouldBe "ok"
-            skipCacheArgs shouldBe listOf(false, true)
-        }
+        klient.getJson<TestResponseDto>(uri).getOrFail().body shouldBe TestResponseDto(status = "ok", antall = 1)
+        skipCacheArgs shouldBe listOf(false, true)
     }
 
     @Test
     fun `tom skipCacheRetryStatuses slår av skip-cache-retry`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/av")).willReturn(aResponse().withStatus(401)))
-            val skipCacheArgs = mutableListOf<Boolean>()
-            val klient = HttpKlient(clock = fixedClock) {
-                skipCacheRetryStatuses = emptySet()
-                authTokenProvider = authTokenProvider { skipCache ->
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(401)
+        val skipCacheArgs = mutableListOf<Boolean>()
+        val klient = fakeHttpKlient(
+            transport = transport,
+            skipCacheRetryStatuses = emptySet(),
+            auth = KlientAuth.System(
+                authTokenProvider { skipCache ->
                     skipCacheArgs.add(skipCache)
                     testAccessToken("t")
-                }
-            }
+                },
+            ),
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/av")).swap().getOrNull()!!
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            skipCacheArgs shouldBe listOf(false)
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/av")))
-        }
+        skipCacheArgs shouldBe listOf(false)
+        transport.mottatteKall shouldHaveSize 1
     }
 
     @Test
     fun `suksess på første forsøk gir ingen skip-cache-retry`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/ok")).willReturn(aResponse().withStatus(200).withBody("ok")))
-            val skipCacheArgs = mutableListOf<Boolean>()
-            val klient = HttpKlient(clock = fixedClock) {
-                authTokenProvider = authTokenProvider { skipCache ->
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson(okJson)
+        val skipCacheArgs = mutableListOf<Boolean>()
+        val klient = fakeHttpKlient(
+            transport = transport,
+            auth = KlientAuth.System(
+                authTokenProvider { skipCache ->
                     skipCacheArgs.add(skipCache)
                     testAccessToken("t")
-                }
-            }
+                },
+            ),
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/ok")).getOrFail()
+        klient.getJson<TestResponseDto>(uri).getOrFail()
 
-            skipCacheArgs shouldBe listOf(false)
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/ok")))
-        }
+        skipCacheArgs shouldBe listOf(false)
+        transport.mottatteKall shouldHaveSize 1
     }
 
     @Test
     fun `vedvarende 401 gjør kun ett ekstra forsøk`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/alltid401")).willReturn(aResponse().withStatus(401)))
-            val skipCacheArgs = mutableListOf<Boolean>()
-            val klient = HttpKlient(clock = fixedClock) {
-                authTokenProvider = authTokenProvider { skipCache ->
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(401)
+        transport.leggIKøStatus(401)
+        val skipCacheArgs = mutableListOf<Boolean>()
+        val klient = fakeHttpKlient(
+            transport = transport,
+            auth = KlientAuth.System(
+                authTokenProvider { skipCache ->
                     skipCacheArgs.add(skipCache)
                     testAccessToken("t")
-                }
-            }
+                },
+            ),
+        )
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/alltid401")).swap().getOrNull()!!
+        val error = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
 
-            error.shouldBeInstanceOf<HttpKlientError.UventetStatus>().statusCode shouldBe 401
-            skipCacheArgs shouldBe listOf(false, true)
-            wiremock.verify(2, getRequestedFor(urlEqualTo("/alltid401")))
-        }
+        error.shouldBeInstanceOf<HttpKlientError.UventetStatus>().statusCode shouldBe 401
+        skipCacheArgs shouldBe listOf(false, true)
+        transport.mottatteKall shouldHaveSize 2
     }
 
     @Test
-    fun `custom successStatus som godtar 401 gir ingen skip-cache-retry`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/godtatt401")).willReturn(aResponse().withStatus(401).withBody("ok")))
-            val skipCacheArgs = mutableListOf<Boolean>()
-            val klient = HttpKlient(clock = fixedClock) {
-                successStatus = { it == 401 }
-                authTokenProvider = authTokenProvider { skipCache ->
+    fun `godta som aksepterer 401 gir ingen skip-cache-retry`() = runTest {
+        // Skip-cache-retryen leser kun status fra en Left: en konsument som med vilje godtar 401 som suksess skal ikke få et uventet ekstra HTTP-kall.
+        val transport = FakeHttpTransport()
+        transport.leggIKøBytes("ok".toByteArray(), contentType = "application/pdf", statusCode = 401)
+        val skipCacheArgs = mutableListOf<Boolean>()
+        val klient = fakeHttpKlient(
+            transport = transport,
+            auth = KlientAuth.System(
+                authTokenProvider { skipCache ->
                     skipCacheArgs.add(skipCache)
                     testAccessToken("t")
-                }
-            }
+                },
+            ),
+        )
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/godtatt401")).getOrFail().body shouldBe "ok"
+        val response = klient.getPdf(uri, godta = Statusregel.Eksakt(401)).getOrFail()
 
-            skipCacheArgs shouldBe listOf(false)
-            wiremock.verify(1, getRequestedFor(urlEqualTo("/godtatt401")))
-        }
-    }
-
-    @Test
-    fun `vedvarende 401 etter skip-cache-retry logges via loggingConfig (default WARN)`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/alltid401-logg")).willReturn(aResponse().withStatus(401)))
-            val logger = testLogger()
-            val klient = HttpKlient(clock = fixedClock) {
-                logging = HttpKlientLoggingConfig(logger = logger, loggTilSikkerlogg = true)
-                authTokenProvider = authTokenProvider { testAccessToken("t") }
-            }
-
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/alltid401-logg")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-
-            // Diagnostikkloggen for «ferskt token ble også avvist» går nå via loggingConfig, på skipCacheRetryNivå (default WARN).
-            val meldinger = mutableListOf<() -> Any?>()
-            verify(exactly = 1) { logger.warn(capture(meldinger)) }
-            meldinger.single()().toString().shouldContain("skip-cache-retry")
-        }
-    }
-
-    @Test
-    fun `skipCacheRetryNivå OFF slår av skip-cache-diagnostikkloggen uten å påvirke andre kategorier`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/alltid401-av")).willReturn(aResponse().withStatus(401)))
-            val logger = testLogger()
-            val klient = HttpKlient(clock = fixedClock) {
-                logging = HttpKlientLoggingConfig(logger = logger, skipCacheRetryNivå = HttpKlientLogNivå.OFF)
-                authTokenProvider = authTokenProvider { testAccessToken("t") }
-            }
-
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/alltid401-av")).swap().getOrNull()!!
-                .shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-
-            verify(exactly = 0) { logger.warn(any<() -> Any?>()) }
-            // Selve 401-responsen logges fortsatt via klientfeil-kategorien, én gang per forsøk (2 forsøk).
-            verify(exactly = 2) { logger.error(any<() -> Any?>()) }
-        }
+        response.statusCode shouldBe 401
+        skipCacheArgs shouldBe listOf(false)
+        transport.mottatteKall shouldHaveSize 1
     }
 }

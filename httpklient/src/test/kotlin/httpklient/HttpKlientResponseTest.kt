@@ -35,6 +35,27 @@ internal class HttpKlientResponseTest {
     }
 
     @Test
+    fun `rawResponseString er garantert non-null på suksess fra pipelinen`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson("""{"status":"ok","antall":1}""")
+        val klient = fakeHttpKlient(transport)
+
+        val response = klient.getJson<TestResponseDto>(URI.create("http://respons.test/ok")).getOrFail()
+
+        // Non-null aksessoren fjerner !!-mønsteret hos konsumenter som persisterer rå respons (Kabal, utbetaling).
+        response.rawResponseString shouldBe """{"status":"ok","antall":1}"""
+        response.rawRequestString shouldBe "GET http://respons.test/ok\nAccept: application/json"
+    }
+
+    @Test
+    fun `rawResponseString-aksessoren feiler høylytt hvis invarianten brytes i håndbygde responser`() {
+        // Kun relevant for håndbygde HttpKlientResponse-instanser i tester — pipelinen setter alltid rawResponseString.
+        val håndbygd = HttpKlientResponse(statusCode = 200, body = "x", metadata = tomMetadata(rawResponseString = null))
+
+        shouldThrow<IllegalStateException> { håndbygd.rawResponseString }
+    }
+
+    @Test
     fun `Java HttpClient returnerer tresifrede statuser som HttpKlientResponse aksepterer`() {
         listOf("200", "599", "600", "999").forEach { statusToken ->
             val response = javaHttpResponseForRawStatusToken(statusToken)
@@ -81,31 +102,7 @@ internal class HttpKlientResponseTest {
     }
 
     @Test
-    fun `Java HttpClient returnerer status 600 fra WireMock`() = runTest {
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/status-600")).willReturn(
-                    aResponse()
-                        .withStatus(600)
-                        .withBody("utenfor-standard-range"),
-                ),
-            )
-            val request = HttpRequest.newBuilder()
-                .uri(URI.create("${wiremock.baseUrl()}/status-600"))
-                .GET()
-                .build()
-
-            val response = HttpClient.newHttpClient()
-                .sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .get()
-
-            response.statusCode() shouldBe 600
-            response.body() shouldBe "utenfor-standard-range"
-        }
-    }
-
-    @Test
-    fun `HttpKlient returnerer UventetStatus for WireMock status 600 med default successStatus`() = runTest {
+    fun `HttpKlient returnerer UventetStatus for WireMock status 600 med default statusregel`() = runTest {
         withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/status-600")).willReturn(
@@ -116,19 +113,18 @@ internal class HttpKlientResponseTest {
             )
             val klient = testHttpKlient()
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/status-600")).swap().getOrNull()!!
+            val error = klient.getPdf(URI.create("${wiremock.baseUrl()}/status-600")).swap().getOrNull()!!
             val ikke2xx = error as HttpKlientError.UventetStatus
 
             ikke2xx.statusCode shouldBe 600
             ikke2xx.body shouldBe "utenfor-standard-range"
-            ikke2xx.metadata.rawRequestString shouldBe "GET ${wiremock.baseUrl()}/status-600"
             ikke2xx.metadata.rawResponseString shouldBe "utenfor-standard-range"
             ikke2xx.metadata.statusCode shouldBe 600
         }
     }
 
     @Test
-    fun `HttpKlient kan returnere status 600 hvis konsumenten eksplisitt definerer den som success`() = runTest {
+    fun `HttpKlient kan returnere status 600 hvis konsumenten eksplisitt godtar den`() = runTest {
         withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/status-600")).willReturn(
@@ -137,9 +133,9 @@ internal class HttpKlientResponseTest {
                         .withBody("utenfor-standard-range"),
                 ),
             )
-            val klient = testHttpKlient(successStatus = { it == 600 })
+            val klient = testHttpKlient()
 
-            klient.get<String>(URI.create("${wiremock.baseUrl()}/status-600")).getOrFail().statusCode shouldBe 600
+            klient.getPdf(URI.create("${wiremock.baseUrl()}/status-600"), godta = Statusregel.Eksakt(600)).getOrFail().statusCode shouldBe 600
         }
     }
 }

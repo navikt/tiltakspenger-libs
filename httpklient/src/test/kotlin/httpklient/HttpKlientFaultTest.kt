@@ -25,10 +25,10 @@ internal class HttpKlientFaultTest {
         val uri = stoppedServerUri("/stoppet")
         val klient = testHttpKlient()
 
-        val error = klient.get<String>(uri).swap().getOrNull()!!
+        val error = klient.getPdf(uri).swap().getOrNull()!!
 
         val networkError = error.shouldBeInstanceOf<HttpKlientError.NetworkError>()
-        networkError.metadata.rawRequestString shouldBe "GET $uri"
+        networkError.metadata.rawRequestString shouldBe "GET $uri\nAccept: application/pdf"
         networkError.metadata.statusCode shouldBe null
     }
 
@@ -64,7 +64,7 @@ internal class HttpKlientFaultTest {
                 val klient = testHttpKlient(timeout = 5.seconds)
 
                 val deferred = async(Dispatchers.IO) {
-                    klient.get<String>(URI.create("${wiremock.baseUrl()}/slow"))
+                    klient.getPdf(URI.create("${wiremock.baseUrl()}/slow"))
                 }
                 delay(100)
                 deferred.cancel(CancellationException("test"))
@@ -82,7 +82,7 @@ private suspend fun assertFaultGirNetworkError(fault: Fault, path: String) {
         wiremock.stubFor(get(urlEqualTo(path)).willReturn(aResponse().withFault(fault)))
         val klient = testHttpKlient(timeout = 1_000.milliseconds)
 
-        val error = klient.get<String>(URI.create("${wiremock.baseUrl()}$path")).swap().getOrNull()!!
+        val error = klient.getPdf(URI.create("${wiremock.baseUrl()}$path")).swap().getOrNull()!!
 
         error.shouldBeInstanceOf<HttpKlientError.NetworkError>()
     }

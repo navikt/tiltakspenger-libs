@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.http.UniformDistribution
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.withWireMockServer
@@ -13,40 +14,40 @@ import kotlin.time.Duration.Companion.milliseconds
 
 internal class HttpKlientErrorTest {
     @Test
-    fun `returnerer UventetStatus ved status som ikke godtas av successStatus`() = runTest {
-        // Java-trigger: HttpResponse med statusCode som default successStatus (is2xx) forkaster.
+    fun `returnerer UventetStatus ved status som ikke godtas av statusregelen`() = runTest {
         // Ingen exception — feilen utledes av selve statuskoden i finalize().
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/feil")).willReturn(aResponse().withStatus(500).withBody("feil")),
-            )
-            val klient = testHttpKlient()
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatus(500, "feil", contentType = "text/plain")
+        val klient = fakeHttpKlient(transport)
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/feil")) {
-                header("X-Trace-Id", "trace-feil")
-            }.swap().getOrNull()!!
+        val error = klient.getJson<TestResponseDto>(
+            uri = URI.create("http://feil.test/feil"),
+            headere = listOf(Header("X-Trace-Id", "trace-feil")),
+        ).swap().getOrNull()!!
 
-            val ikke2xx = error.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
-            ikke2xx.statusCode shouldBe 500
-            ikke2xx.body shouldBe "feil"
-            ikke2xx.metadata.requestHeaders["X-Trace-Id"] shouldBe listOf("trace-feil")
-            ikke2xx.metadata.statusCode shouldBe 500
-            ikke2xx.metadata.rawResponseString shouldBe "feil"
-            ikke2xx.metadata.rawRequestString shouldBe """GET ${wiremock.baseUrl()}/feil
-                |X-Trace-Id: trace-feil
-            """.trimMargin()
-        }
+        val ikke2xx = error.shouldBeInstanceOf<HttpKlientError.UventetStatus>()
+        ikke2xx.statusCode shouldBe 500
+        ikke2xx.body shouldBe "feil"
+        ikke2xx.metadata.requestHeaders["X-Trace-Id"] shouldBe listOf("trace-feil")
+        ikke2xx.metadata.statusCode shouldBe 500
+        ikke2xx.metadata.rawResponseString shouldBe "feil"
+        ikke2xx.metadata.rawRequestString shouldBe """GET http://feil.test/feil
+            |X-Trace-Id: trace-feil
+            |Accept: application/json
+        """.trimMargin()
     }
 
     @Test
     fun `returnerer SerializationError ved request-dto som ikke kan serialiseres`() = runTest {
-        // Java-trigger: Jackson kaster ved serialize() av en selvrefererende DTO (StackOverflow/InvalidDefinitionException), før noen HttpRequest bygges.
-        val klient = testHttpKlient()
+        // Jackson kaster ved serialize() av en selvrefererende DTO, før noen HttpRequest bygges og uten at transporten kalles.
+        val transport = FakeHttpTransport()
+        val klient = fakeHttpKlient(transport)
 
-        val error = klient.post<String>(URI.create("http://localhost/skal-ikke-kalles")) {
-            header("X-Test", "serialisering")
-            json(SelvRefererendeDto())
-        }.swap().getOrNull()!!
+        val error = klient.postJsonUtenSvar(
+            uri = URI.create("http://localhost/skal-ikke-kalles"),
+            body = SelvRefererendeDto(),
+            headere = listOf(Header("X-Test", "serialisering")),
+        ).swap().getOrNull()!!
 
         val serializationError = error.shouldBeInstanceOf<HttpKlientError.SerializationError>()
         serializationError.metadata.requestHeaders["X-Test"] shouldBe listOf("serialisering")
@@ -59,31 +60,24 @@ internal class HttpKlientErrorTest {
             |<json-serialisering feilet>
         """.trimMargin()
         serializationError.metadata.rawResponseString shouldBe null
+        transport.mottatteKall.size shouldBe 0
     }
 
     @Test
     fun `returnerer DeserializationError ved ugyldig json i vellykket respons`() = runTest {
-        // Java-trigger: 200-respons godtas av successStatus, men objectMapper.readValue kaster når body ikke kan parses til måltypen.
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(
-                get(urlEqualTo("/ugyldig-json")).willReturn(
-                    aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("ikke-json"),
-                ),
-            )
-            val klient = testHttpKlient()
+        // 200-respons godtas av statusregelen, men objectMapper.readValue kaster når body ikke kan parses til måltypen.
+        val transport = FakeHttpTransport()
+        transport.leggIKøJson("ikke-json")
+        val klient = fakeHttpKlient(transport)
 
-            val error = klient.get<TestResponseDto>(URI.create("${wiremock.baseUrl()}/ugyldig-json")).swap().getOrNull()!!
+        val error = klient.getJson<TestResponseDto>(URI.create("http://feil.test/ugyldig-json")).swap().getOrNull()!!
 
-            val deserializationError = error.shouldBeInstanceOf<HttpKlientError.DeserializationError>()
-            deserializationError.body shouldBe "ikke-json"
-            deserializationError.statusCode shouldBe 200
-            deserializationError.metadata.rawResponseString shouldBe "ikke-json"
-            deserializationError.metadata.statusCode shouldBe 200
-            deserializationError.metadata.requestHeaders["Accept"] shouldBe listOf("application/json")
-        }
+        val deserializationError = error.shouldBeInstanceOf<HttpKlientError.DeserializationError>()
+        deserializationError.body shouldBe "ikke-json"
+        deserializationError.statusCode shouldBe 200
+        deserializationError.metadata.rawResponseString shouldBe "ikke-json"
+        deserializationError.metadata.statusCode shouldBe 200
+        deserializationError.metadata.requestHeaders["Accept"] shouldBe listOf("application/json")
     }
 
     @Test
@@ -98,14 +92,14 @@ internal class HttpKlientErrorTest {
                         .withBody("ok"),
                 ),
             )
-            val klient = testHttpKlient()
+            val klient = testHttpKlient(timeout = 50.milliseconds)
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/treg")) {
-                timeout = 50.milliseconds
-            }.swap().getOrNull()!!
+            val error = klient.getJson<TestResponseDto>(URI.create("${wiremock.baseUrl()}/treg")).swap().getOrNull()!!
 
             val timeout = error.shouldBeInstanceOf<HttpKlientError.Timeout>()
-            timeout.metadata.rawRequestString shouldBe "GET ${wiremock.baseUrl()}/treg"
+            timeout.metadata.rawRequestString shouldBe """GET ${wiremock.baseUrl()}/treg
+                |Accept: application/json
+            """.trimMargin()
             timeout.metadata.rawResponseString shouldBe null
         }
     }
@@ -122,54 +116,54 @@ internal class HttpKlientErrorTest {
                         .withBody("ok"),
                 ),
             )
-            val klient = testHttpKlient()
+            val klient = testHttpKlient(timeout = 50.milliseconds)
 
-            val error = klient.get<String>(URI.create("${wiremock.baseUrl()}/jitter")) {
-                timeout = 50.milliseconds
-            }.swap().getOrNull()!!
+            val error = klient.getJson<TestResponseDto>(URI.create("${wiremock.baseUrl()}/jitter")).swap().getOrNull()!!
 
             error.shouldBeInstanceOf<HttpKlientError.Timeout>()
         }
     }
 
     @Test
-    fun `returnerer InvalidRequest ved ugyldig header`() = runTest {
-        // Java-trigger: HttpRequest.Builder.header(...) kaster IllegalArgumentException for et ulovlig headernavn, fanget i toJavaHttpRequest().
-        val klient = testHttpKlient()
+    fun `returnerer InvalidRequest ved header JDK avviser`() = runTest {
+        // Java-trigger: HttpRequest.Builder.header(...) kaster IllegalArgumentException for et ulovlig headernavn (mellomrom), fanget i toJavaHttpRequest().
+        val klient = fakeHttpKlient(FakeHttpTransport())
 
-        val error = klient.get<String>(URI.create("http://localhost/ugyldig")) {
-            header("Ugyldig Header", "verdi")
-        }.swap().getOrNull()!!
+        val error = klient.getJson<TestResponseDto>(
+            uri = URI.create("http://localhost/ugyldig"),
+            headere = listOf(Header("Ugyldig Header", "verdi")),
+        ).swap().getOrNull()!!
 
         val invalidRequest = error.shouldBeInstanceOf<HttpKlientError.InvalidRequest>()
         invalidRequest.metadata.requestHeaders["Ugyldig Header"] shouldBe listOf("verdi")
         invalidRequest.metadata.rawRequestString shouldBe """GET http://localhost/ugyldig
             |Ugyldig Header: verdi
+            |Accept: application/json
         """.trimMargin()
     }
 
     @Test
     fun `returnerer InvalidRequest ved ugyldig uri-scheme`() = runTest {
         // Java-trigger: JDK-klienten (HttpRequest.Builder.uri) avviser scheme som ikke er http/https med IllegalArgumentException, som mappes til InvalidRequest.
-        val klient = testHttpKlient()
+        val klient = fakeHttpKlient(FakeHttpTransport())
 
-        val error = klient.get<String>(URI.create("ftp://localhost/ugyldig")).swap().getOrNull()!!
+        val error = klient.getJson<TestResponseDto>(URI.create("ftp://localhost/ugyldig")).swap().getOrNull()!!
 
         error.shouldBeInstanceOf<HttpKlientError.InvalidRequest>()
     }
 
     @Test
-    fun `tom body med DTO-type gir DeserializationError`() = runTest {
-        // Java-trigger: 200 godtas av successStatus, men objectMapper.readValue kaster «No content to map» når bodyen er tom.
-        withWireMockServer { wiremock ->
-            wiremock.stubFor(get(urlEqualTo("/tom-body")).willReturn(aResponse().withStatus(200)))
-            val klient = testHttpKlient()
+    fun `tom body med DTO-type gir DeserializationError med pekepinn til EllerNull`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøTomRespons(statusCode = 200)
+        val klient = fakeHttpKlient(transport)
 
-            val error = klient.get<TestResponseDto>(URI.create("${wiremock.baseUrl()}/tom-body")).swap().getOrNull()!!
+        val error = klient.getJson<TestResponseDto>(URI.create("http://feil.test/tom-body")).swap().getOrNull()!!
 
-            val deserializationError = error.shouldBeInstanceOf<HttpKlientError.DeserializationError>()
-            deserializationError.statusCode shouldBe 200
-            deserializationError.body shouldBe ""
-        }
+        val deserializationError = error.shouldBeInstanceOf<HttpKlientError.DeserializationError>()
+        deserializationError.statusCode shouldBe 200
+        deserializationError.body shouldBe ""
+        // Feilen skal peke konsumenten mot riktig metode, siden tom body nesten alltid betyr en status uten body.
+        deserializationError.throwable.message shouldContain "getJsonEllerNull"
     }
 }

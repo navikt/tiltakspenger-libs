@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.personklient.pdl
 import arrow.core.Either
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.Fnr
+import java.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -16,6 +17,7 @@ interface FellesPersonklient {
     companion object {
         fun create(
             endepunkt: String,
+            clock: Clock,
             // Individstønad (det gamle navnet på tiltakspenger)
             tema: String = "IND",
             connectTimeout: Duration = 10.seconds,
@@ -25,6 +27,7 @@ interface FellesPersonklient {
             tema = tema,
             connectTimeout = connectTimeout,
             timeout = timeout,
+            clock = clock,
         )
     }
 }

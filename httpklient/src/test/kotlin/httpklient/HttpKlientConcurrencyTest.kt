@@ -24,7 +24,7 @@ internal class HttpKlientConcurrencyTest {
                 repeat(antallRequests) { i ->
                     wiremock.stubFor(
                         get(urlEqualTo("/parallell/$i")).willReturn(
-                            aResponse().withStatus(200).withBody("svar-$i"),
+                            aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody("""{"status":"svar","antall":$i}"""),
                         ),
                     )
                 }
@@ -34,14 +34,14 @@ internal class HttpKlientConcurrencyTest {
                 val resultater = withContext(Dispatchers.IO) {
                     (0 until antallRequests).map { i ->
                         async {
-                            klient.get<String>(URI.create("${wiremock.baseUrl()}/parallell/$i")).getOrFail().body
+                            klient.getJson<TestResponseDto>(URI.create("${wiremock.baseUrl()}/parallell/$i")).getOrFail().body.antall
                                 .also { antallFullfort.incrementAndGet() }
                         }
                     }.awaitAll()
                 }
 
                 antallFullfort.get() shouldBe antallRequests
-                resultater shouldBe (0 until antallRequests).map { "svar-$it" }
+                resultater shouldBe (0 until antallRequests).toList()
             }
         }
     }

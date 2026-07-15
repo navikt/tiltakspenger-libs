@@ -2,7 +2,6 @@ package no.nav.tiltakspenger.libs.httpklient
 
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
-import java.net.URI
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -30,6 +29,7 @@ internal class HttpKlientConvenienceAccessorsTest {
         error.attempts shouldBe metadata.attempts
         error.attemptDurations shouldBe metadata.attemptDurations
         error.totalDuration shouldBe metadata.totalDuration
+        error.tidsstempler shouldBe metadata.tidsstempler
     }
 
     @Test
@@ -62,15 +62,5 @@ internal class HttpKlientConvenienceAccessorsTest {
         val uventetStatus: HttpKlientError =
             HttpKlientError.UventetStatus(statusCode = 500, body = "body", metadata = metadata)
         uventetStatus.throwableOrNull() shouldBe null
-    }
-
-    @Test
-    fun `RequestBuilder eksponerer authToken som er satt`() {
-        val token = testAccessToken("token-123")
-        val builder = RequestBuilder(URI.create("https://example.com/api")).apply {
-            bearerToken(token)
-        }
-
-        builder.authToken shouldBe token
     }
 }

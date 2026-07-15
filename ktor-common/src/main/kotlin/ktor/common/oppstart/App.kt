@@ -71,6 +71,7 @@ fun Application.konfigurerOppstart(
                                 isNais = isNais,
                                 electorPath = oppsett.electorPath,
                                 readiness = readiness,
+                                clock = oppsett.clock,
                                 logger = log,
                             )
                         },

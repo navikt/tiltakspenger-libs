@@ -8,11 +8,11 @@ import kotlin.time.Duration
  * Hvordan en [TaskGruppe] forholder seg til de andre gruppene i en [GruppertTaskExecutor].
  *
  * Merk: dette styrer forholdet *mellom* grupper.
- * Tasks *innad* i en gruppe kjøres alltid seriellt i listerekkefølge (neste task starter først når forrige er ferdig), slik at vi ikke overbelaster databasen med samtidige spørringer.
+ * Tasks *innad* i en gruppe kjøres alltid serielt i listerekkefølge (neste task starter først når forrige er ferdig), slik at vi ikke overbelaster databasen med samtidige spørringer.
  */
 enum class Kjøremodus {
     /**
-     * Gruppen deler den ene scheduler-tråden med alle andre [SERIELT]-grupper og kjøres etter tur med dem.
+     * Gruppen deler den ene serielle scheduler-coroutinen med alle andre [SERIELT]-grupper og kjøres etter tur med dem.
      * To serielle grupper kjører aldri samtidig, uansett intervall, og det brukes ingen ekstra tråder/coroutines.
      * Dette er standard og passer jobber som er tunge på databasen.
      */
@@ -73,9 +73,9 @@ fun Iterable<TaskResultat>.tilSamletResultat(): TaskResultat = when {
  * @param navn Unikt navn i executoren; brukes i logging.
  * @param intervall Ventetid mellom kjøringer, målt fra *etter* at forrige kjøring av gruppen er ferdig (fixed-delay).
  *   Default [GruppertTaskExecutor.STANDARD_JOBB_INTERVALL].
- * @param tasks Tasks som kjøres seriellt i listerekkefølge hver gang gruppen kjører.
+ * @param tasks Tasks som kjøres serielt i listerekkefølge hver gang gruppen kjører.
  *   En feil i én task stopper ikke de øvrige.
- *   Returner [TaskResultat.IngenArbeid] når det ikke fantes noe å gjøre, [TaskResultat.Ferdig] når du utførte arbeid og er à jour, eller [TaskResultat.MerArbeid] for å utnytte [kjørKontinuerligTilTom].
+ *   Returner [TaskResultat.IngenArbeid] når det ikke fantes noe å gjøre, [TaskResultat.Ferdig] når du har utført arbeid og er à jour, eller [TaskResultat.MerArbeid] for å utnytte [kjørKontinuerligTilTom].
  * @param kjøremodus Se [Kjøremodus].
  *   Default [Kjøremodus.SERIELT].
  * @param initialDelay Ventetid før første kjøring.

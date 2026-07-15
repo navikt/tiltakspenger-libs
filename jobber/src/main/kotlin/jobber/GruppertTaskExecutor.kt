@@ -24,13 +24,13 @@ import kotlin.time.Duration.Companion.seconds
  * Garantier:
  *  1. To [Kjøremodus.SERIELT]-grupper kjører aldri samtidig.
  *     De drives av én felles seriell coroutine som våkner på neste due-tidspunkt og kjører due grupper én for én.
- *  2. Tasks innad i en gruppe kjøres seriellt i listerekkefølge.
+ *  2. Tasks innad i en gruppe kjøres serielt i listerekkefølge.
  *     En feil i én task stopper ikke de øvrige (hver wrappes i [Either.catch] og loggføres).
  *  3. Fixed-delay: neste kjøring av en seriell gruppe planlegges [TaskGruppe.intervall] etter at hele kjøringsrunden (alle due grupper) er ferdig; for en parallell gruppe etter at gruppen selv er ferdig.
  *     Serielle grupper med likt intervall holder seg dermed i samme runde, slik at «ingen arbeid»-logging kan samles per runde.
  *  4. Melder en task [TaskResultat.MerArbeid] og [TaskGruppe.kjørKontinuerligTilTom] er satt, kjøres gruppen på nytt umiddelbart til den er à jour, før den faller tilbake til [TaskGruppe.intervall].
  *     For en seriell gruppe drenerer den helt til tom i strekk; de andre serielle gruppene venter så lenge.
- *  5. Ved [stop] kjøres pågående gruppe-syklus ferdig (task-kjøringen er [NonCancellable]); kun ventingen mellom kjøringer avbrytes.
+ *  5. Ved [stop] kjøres pågående gruppesyklus ferdig (task-kjøringen er [NonCancellable]); kun ventingen mellom kjøringer avbrytes.
  *  6. Melder samtlige tasks i en kjøringsrunde [TaskResultat.IngenArbeid], logges maks én felles debuglinje for runden i stedet for at hver jobb logger sin egen tomme runde.
  *     En task som feiler (kaster eller melder [TaskResultat.Feilet]) eller melder [TaskResultat.Ferdig]/[TaskResultat.MerArbeid] regnes som at runden hadde arbeid, og da logger ikke executoren noe (jobbene logger selv arbeidet og feilene sine).
  *
@@ -62,7 +62,7 @@ class GruppertTaskExecutor private constructor(
 
     /**
      * Idempotent.
-     * Stopper å starte nye kjøringer; pågående gruppe-syklus kjøres ferdig.
+     * Stopper å starte nye kjøringer; pågående gruppesyklus kjøres ferdig.
      */
     fun stop() = scope.stop()
 
@@ -148,7 +148,7 @@ class GruppertTaskExecutor private constructor(
     private data class GruppeKjøring(val merArbeid: Boolean, val ingenArbeid: Boolean)
 
     /**
-     * Kjører tasksene i gruppen seriellt og returnerer utfallet som [GruppeKjøring].
+     * Kjører taskene i gruppen serielt og returnerer utfallet som [GruppeKjøring].
      * Task-kjøringen er [NonCancellable] slik at en pågående syklus alltid kjøres ferdig ved shutdown.
      * En task som feiler (kaster eller melder [TaskResultat.Feilet]) regnes ikke som [TaskResultat.IngenArbeid], slik at vi aldri melder «ingen arbeid» for en runde med feil.
      */

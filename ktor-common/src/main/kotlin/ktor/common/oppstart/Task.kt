@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.seconds
  * Default 1 minutt i NAIS (så appen rekker å starte) og 1 sekund lokalt (rask feedback).
  * @param utfør Selve jobben.
  * Wrappes i correlationId og feilhåndtering av [GruppertTaskExecutor].
- * Returner [TaskResultat.IngenArbeid] når det ikke fantes noe å gjøre (gir samlet «ingen arbeid»-logging per runde), [TaskResultat.Ferdig] når du utførte arbeid og er à jour, [TaskResultat.Feilet] når jobben feilet og selv har logget feilen, eller [TaskResultat.MerArbeid] for å utnytte kontinuerlig drenering.
+ * Returner [TaskResultat.IngenArbeid] når det ikke fantes noe å gjøre (gir samlet «ingen arbeid»-logging per runde), [TaskResultat.Ferdig] når du har utført arbeid og er à jour, [TaskResultat.Feilet] når jobben feilet og selv har logget feilen, eller [TaskResultat.MerArbeid] for å utnytte kontinuerlig drenering.
  */
 class Task(
     val navn: String,

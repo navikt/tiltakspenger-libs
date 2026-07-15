@@ -132,8 +132,7 @@ internal class GruppertTaskExecutorTest {
         // Vent i sanntid til den parallelle gruppen har overlappet den trege serielle.
         runBlocking {
             eventually(2.seconds) {
-                // Den parallelle gruppen skal ha kjørt flere ganger mens den serielle henger i sin lange task,
-                // og overlappet den (maxConcurrent >= 2 beviser at de kjørte samtidig).
+                // Den parallelle gruppen skal ha kjørt flere ganger mens den serielle henger i sin lange task, og ha overlappet den (maxConcurrent >= 2 beviser at de kjørte samtidig).
                 parallellKjørt.get() shouldBeGreaterThanOrEqualTo 3
                 maxConcurrent.get() shouldBeGreaterThanOrEqualTo 2
             }
@@ -177,7 +176,7 @@ internal class GruppertTaskExecutorTest {
     }
 
     @Test
-    fun `tasks i en gruppe kjører seriellt i listerekkefølge og en feil stopper ikke de øvrige`() {
+    fun `tasks i en gruppe kjører serielt i listerekkefølge og en feil stopper ikke de øvrige`() {
         val hendelser = ConcurrentLinkedQueue<String>()
         val ranB = AtomicInteger(0)
 
@@ -328,8 +327,7 @@ internal class GruppertTaskExecutorTest {
 
     @Test
     fun `stop midt i kontinuerlig drenering starter ingen ny batch selv om det er mer arbeid`() {
-        // Tasken melder alltid MerArbeid (uendelig backlog) og bruker litt tid per batch,
-        // slik at stop() garantert treffer mens en batch pågår.
+        // Tasken melder alltid MerArbeid (uendelig backlog) og bruker litt tid per batch, slik at stop() garantert treffer mens en batch pågår.
         val startet = AtomicInteger(0)
         val fullført = AtomicInteger(0)
         val task: suspend (CorrelationId) -> TaskResultat = { _ ->
@@ -398,7 +396,7 @@ internal class GruppertTaskExecutorTest {
     }
 
     @Test
-    fun `runde der en av gruppene hadde arbeid logger ikke ingen arbeid-linjen`() {
+    fun `runde der en av gruppene hadde arbeid logger ikke ingen-arbeid-linjen`() {
         val (logger, fanger) = loggerMedFanger("ingen-arbeid-blandet-test")
         val kjøringer = AtomicInteger(0)
         val medArbeid: suspend (CorrelationId) -> TaskResultat = { _ ->
@@ -427,7 +425,7 @@ internal class GruppertTaskExecutorTest {
     }
 
     @Test
-    fun `runde der en task feiler logger ikke ingen arbeid-linjen selv om resten melder IngenArbeid`() {
+    fun `runde der en task feiler logger ikke ingen-arbeid-linjen selv om resten melder IngenArbeid`() {
         val (logger, fanger) = loggerMedFanger("ingen-arbeid-feil-test")
         val kjøringer = AtomicInteger(0)
         val feiler: suspend (CorrelationId) -> TaskResultat = { _ ->
@@ -455,7 +453,7 @@ internal class GruppertTaskExecutorTest {
     }
 
     @Test
-    fun `runde der en task melder Feilet logger ikke ingen arbeid-linjen selv om resten melder IngenArbeid`() {
+    fun `runde der en task melder Feilet logger ikke ingen-arbeid-linjen selv om resten melder IngenArbeid`() {
         val (logger, fanger) = loggerMedFanger("ingen-arbeid-feilet-status-test")
         val kjøringer = AtomicInteger(0)
         val feilet: suspend (CorrelationId) -> TaskResultat = { _ ->

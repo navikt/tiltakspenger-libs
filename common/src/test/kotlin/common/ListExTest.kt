@@ -1,7 +1,6 @@
 package no.nav.tiltakspenger.libs.common
 
 import io.kotest.matchers.collections.shouldHaveSize
-import no.nav.tiltakspenger.libs.common.nonDistinctBy
 import org.junit.jupiter.api.Test
 
 internal class ListExTest {

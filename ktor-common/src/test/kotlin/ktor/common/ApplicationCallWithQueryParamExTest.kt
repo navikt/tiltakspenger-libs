@@ -7,9 +7,6 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.routing.get
 import io.ktor.server.testing.testApplication
-import no.nav.tiltakspenger.libs.ktor.common.respondJsonString
-import no.nav.tiltakspenger.libs.ktor.common.withOptionalQueryParam
-import no.nav.tiltakspenger.libs.ktor.common.withQueryParam
 import org.junit.jupiter.api.Test
 
 internal class ApplicationCallWithQueryParamExTest {

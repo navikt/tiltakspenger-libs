@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import no.nav.tiltakspenger.libs.kafka.ManagedKafkaConsumer.Companion.BACKOFF_STEP_MILLIS
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.KafkaConsumer
@@ -106,7 +107,7 @@ class ManagedKafkaConsumer<K, V>(
         val activeJob = consumerJob ?: return
         runBlocking {
             try {
-                withTimeout(shutdownTimeout.toMillis()) {
+                withTimeout(shutdownTimeout.toMillis().milliseconds) {
                     activeJob.join()
                 }
             } catch (_: TimeoutCancellationException) {

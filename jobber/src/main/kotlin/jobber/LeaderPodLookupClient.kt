@@ -7,11 +7,11 @@ import arrow.core.right
 import io.github.oshai.kotlinlogging.KLogger
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.runBlocking
-import no.nav.tiltakspenger.libs.httpklient.HttpKlient
-import no.nav.tiltakspenger.libs.httpklient.HttpKlientConfig
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
-import no.nav.tiltakspenger.libs.httpklient.HttpTransport
-import no.nav.tiltakspenger.libs.httpklient.JavaHttpTransport
+import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient
+import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlientConfig
+import no.nav.tiltakspenger.libs.httpklient.infra.transport.HttpTransport
+import no.nav.tiltakspenger.libs.httpklient.infra.transport.JavaHttpTransport
 import no.nav.tiltakspenger.libs.httpklient.throwableOrNull
 import java.net.URI
 import java.time.Clock
@@ -91,6 +91,7 @@ class LeaderPodLookupClient(
         return if (endpoint.startsWith("http")) {
             endpoint
         } else {
+            @Suppress("HttpUrlsUsage")
             "http://$endpoint"
         }
     }

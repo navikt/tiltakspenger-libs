@@ -26,9 +26,9 @@ enum class Kjøremodus {
 }
 
 /**
- * Resultatet en task returnerer for å styre kontinuerlig kjøring ([TaskGruppe.kjørKontinuerligTilTom]).
+ * Resultatet en task returnerer for å styre kontinuerlig kjøring ([TaskGruppe.kjørKontinuerligTilTom]) og samlet «ingen arbeid»-logging.
  *
- * Tasks som ikke bryr seg om drenering returnerer [Ferdig].
+ * Tasks som ikke bryr seg om noen av delene returnerer [Ferdig].
  */
 sealed interface TaskResultat {
     /**
@@ -37,8 +37,34 @@ sealed interface TaskResultat {
      */
     data object MerArbeid : TaskResultat
 
-    /** Ingenting mer å gjøre nå – gruppen kan vente til neste intervall. */
+    /** Utførte arbeid og er à jour – gruppen kan vente til neste intervall. */
     data object Ferdig : TaskResultat
+
+    /**
+     * Tasken fant ikke noe arbeid (typisk en polling-jobb som fant 0 rader).
+     * Brukes av [GruppertTaskExecutor] til å samle «ingen arbeid»-logging til maks én debuglinje per kjøringsrunde, i stedet for at hver jobb logger sin egen tomme runde.
+     * Meld [Ferdig] dersom tasken faktisk utførte arbeid.
+     */
+    data object IngenArbeid : TaskResultat
+
+    /**
+     * Tasken forsøkte å gjøre arbeid, men feilet, og har selv logget feilen.
+     * Regnes som at runden hadde arbeid, slik at det aldri logges «ingen arbeid» for en runde med feil.
+     * Tasks som heller lar exceptions boble opp får samme behandling ([GruppertTaskExecutor] fanger og logger dem selv).
+     */
+    data object Feilet : TaskResultat
+}
+
+/**
+ * Slår sammen resultatene fra flere del-jobber til ett [TaskResultat] for tasken som helhet.
+ * [TaskResultat.MerArbeid] vinner over [TaskResultat.Feilet], som vinner over [TaskResultat.Ferdig], som vinner over [TaskResultat.IngenArbeid].
+ * En tom samling regnes som [TaskResultat.IngenArbeid].
+ */
+fun Iterable<TaskResultat>.tilSamletResultat(): TaskResultat = when {
+    any { it == TaskResultat.MerArbeid } -> TaskResultat.MerArbeid
+    any { it == TaskResultat.Feilet } -> TaskResultat.Feilet
+    any { it == TaskResultat.Ferdig } -> TaskResultat.Ferdig
+    else -> TaskResultat.IngenArbeid
 }
 
 /**
@@ -49,7 +75,7 @@ sealed interface TaskResultat {
  *   Default [GruppertTaskExecutor.STANDARD_JOBB_INTERVALL].
  * @param tasks Tasks som kjøres seriellt i listerekkefølge hver gang gruppen kjører.
  *   En feil i én task stopper ikke de øvrige.
- *   Returner [TaskResultat.Ferdig] når det ikke er mer å gjøre, eller [TaskResultat.MerArbeid] for å utnytte [kjørKontinuerligTilTom].
+ *   Returner [TaskResultat.IngenArbeid] når det ikke fantes noe å gjøre, [TaskResultat.Ferdig] når du utførte arbeid og er à jour, eller [TaskResultat.MerArbeid] for å utnytte [kjørKontinuerligTilTom].
  * @param kjøremodus Se [Kjøremodus].
  *   Default [Kjøremodus.SERIELT].
  * @param initialDelay Ventetid før første kjøring.

@@ -3,6 +3,11 @@ package no.nav.tiltakspenger.libs.jobber
 import arrow.core.left
 import arrow.core.nonEmptyListOf
 import arrow.core.right
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.AppenderBase
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.assertions.nondeterministic.continually
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.throwables.shouldThrow
@@ -14,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
@@ -37,6 +43,26 @@ internal class GruppertTaskExecutorTest {
     )
 
     private val ferdig: suspend (CorrelationId) -> TaskResultat = { TaskResultat.Ferdig }
+
+    private val ingenArbeid: suspend (CorrelationId) -> TaskResultat = { TaskResultat.IngenArbeid }
+
+    /** Trådsikker logback-appender som samler opp loggmeldingene fra executoren. */
+    private class LoggFanger : AppenderBase<ILoggingEvent>() {
+        val meldinger = ConcurrentLinkedQueue<String>()
+
+        override fun append(hendelse: ILoggingEvent) {
+            meldinger.add(hendelse.formattedMessage)
+        }
+    }
+
+    /** Lager en [KLogger] med unikt [navn] hvor alt som logges på debug og over fanges av den returnerte [LoggFanger]. */
+    private fun loggerMedFanger(navn: String): Pair<KLogger, LoggFanger> {
+        val underliggende = LoggerFactory.getLogger(navn) as ch.qos.logback.classic.Logger
+        underliggende.level = Level.DEBUG
+        val fanger = LoggFanger().apply { start() }
+        underliggende.addAppender(fanger)
+        return KotlinLogging.logger(navn) to fanger
+    }
 
     @Test
     fun `to serielle grupper med ulike intervaller kjører aldri samtidig`() {
@@ -347,6 +373,134 @@ internal class GruppertTaskExecutorTest {
                 startet.get() shouldBe startedeVedStop
             }
         }
+    }
+
+    @Test
+    fun `serielle grupper med likt intervall der alle tasks melder IngenArbeid logger én samlet debuglinje per runde`() {
+        val (logger, fanger) = loggerMedFanger("ingen-arbeid-samlet-test")
+        val executor = GruppertTaskExecutor.startJob(
+            runCheckFactory = alltidLeder(),
+            mdcCallIdKey = "test",
+            clock = clock,
+            logger = logger,
+            grupper = nonEmptyListOf(
+                TaskGruppe(navn = "A", intervall = 25.milliseconds, tasks = nonEmptyListOf(ingenArbeid), initialDelay = 5.milliseconds),
+                TaskGruppe(navn = "B", intervall = 25.milliseconds, tasks = nonEmptyListOf(ingenArbeid), initialDelay = 5.milliseconds),
+            ),
+        )
+        // Vent i sanntid til en runde uten arbeid er logget; at begge gruppenavnene står i samme linje beviser at gruppene holder seg i samme runde.
+        runBlocking {
+            eventually(2.seconds) {
+                fanger.meldinger.any { it == "Ingen av jobbene hadde arbeid i denne runden: A, B" } shouldBe true
+            }
+        }
+        executor.stop()
+    }
+
+    @Test
+    fun `runde der en av gruppene hadde arbeid logger ikke ingen arbeid-linjen`() {
+        val (logger, fanger) = loggerMedFanger("ingen-arbeid-blandet-test")
+        val kjøringer = AtomicInteger(0)
+        val medArbeid: suspend (CorrelationId) -> TaskResultat = { _ ->
+            kjøringer.incrementAndGet()
+            TaskResultat.Ferdig
+        }
+        val executor = GruppertTaskExecutor.startJob(
+            runCheckFactory = alltidLeder(),
+            mdcCallIdKey = "test",
+            clock = clock,
+            logger = logger,
+            grupper = nonEmptyListOf(
+                TaskGruppe(navn = "medArbeid", intervall = 20.milliseconds, tasks = nonEmptyListOf(medArbeid), initialDelay = 5.milliseconds),
+                TaskGruppe(navn = "utenArbeid", intervall = 20.milliseconds, tasks = nonEmptyListOf(ingenArbeid), initialDelay = 5.milliseconds),
+            ),
+        )
+        // Vent i sanntid til flere runder har kjørt, slik at fraværet av linjen faktisk beviser noe.
+        runBlocking {
+            eventually(2.seconds) {
+                kjøringer.get() shouldBeGreaterThanOrEqualTo 3
+            }
+        }
+        executor.stop()
+
+        fanger.meldinger.any { it.startsWith("Ingen av jobbene hadde arbeid") } shouldBe false
+    }
+
+    @Test
+    fun `runde der en task feiler logger ikke ingen arbeid-linjen selv om resten melder IngenArbeid`() {
+        val (logger, fanger) = loggerMedFanger("ingen-arbeid-feil-test")
+        val kjøringer = AtomicInteger(0)
+        val feiler: suspend (CorrelationId) -> TaskResultat = { _ ->
+            kjøringer.incrementAndGet()
+            error("forventet feil")
+        }
+        val executor = GruppertTaskExecutor.startJob(
+            runCheckFactory = alltidLeder(),
+            mdcCallIdKey = "test",
+            clock = clock,
+            logger = logger,
+            grupper = nonEmptyListOf(
+                TaskGruppe(navn = "gruppe", intervall = 20.milliseconds, tasks = nonEmptyListOf(feiler, ingenArbeid), initialDelay = 5.milliseconds),
+            ),
+        )
+        // Vent i sanntid til flere runder har kjørt, slik at fraværet av linjen faktisk beviser noe.
+        runBlocking {
+            eventually(2.seconds) {
+                kjøringer.get() shouldBeGreaterThanOrEqualTo 3
+            }
+        }
+        executor.stop()
+
+        fanger.meldinger.any { it.startsWith("Ingen av jobbene hadde arbeid") } shouldBe false
+    }
+
+    @Test
+    fun `runde der en task melder Feilet logger ikke ingen arbeid-linjen selv om resten melder IngenArbeid`() {
+        val (logger, fanger) = loggerMedFanger("ingen-arbeid-feilet-status-test")
+        val kjøringer = AtomicInteger(0)
+        val feilet: suspend (CorrelationId) -> TaskResultat = { _ ->
+            kjøringer.incrementAndGet()
+            TaskResultat.Feilet
+        }
+        val executor = GruppertTaskExecutor.startJob(
+            runCheckFactory = alltidLeder(),
+            mdcCallIdKey = "test",
+            clock = clock,
+            logger = logger,
+            grupper = nonEmptyListOf(
+                TaskGruppe(navn = "gruppe", intervall = 20.milliseconds, tasks = nonEmptyListOf(feilet, ingenArbeid), initialDelay = 5.milliseconds),
+            ),
+        )
+        // Vent i sanntid til flere runder har kjørt, slik at fraværet av linjen faktisk beviser noe.
+        runBlocking {
+            eventually(2.seconds) {
+                kjøringer.get() shouldBeGreaterThanOrEqualTo 3
+            }
+        }
+        executor.stop()
+
+        fanger.meldinger.any { it.startsWith("Ingen av jobbene hadde arbeid") } shouldBe false
+    }
+
+    @Test
+    fun `parallell gruppe uten arbeid logger egen debuglinje`() {
+        val (logger, fanger) = loggerMedFanger("ingen-arbeid-parallell-test")
+        val executor = GruppertTaskExecutor.startJob(
+            runCheckFactory = alltidLeder(),
+            mdcCallIdKey = "test",
+            clock = clock,
+            logger = logger,
+            grupper = nonEmptyListOf(
+                TaskGruppe(navn = "p", intervall = 20.milliseconds, tasks = nonEmptyListOf(ingenArbeid), initialDelay = 5.milliseconds, kjøremodus = Kjøremodus.PARALLELT),
+            ),
+        )
+        // Vent i sanntid til en runde uten arbeid er logget for den parallelle gruppen.
+        runBlocking {
+            eventually(2.seconds) {
+                fanger.meldinger.any { it == "Jobben 'p' hadde ikke arbeid i denne runden." } shouldBe true
+            }
+        }
+        executor.stop()
     }
 
     @Test

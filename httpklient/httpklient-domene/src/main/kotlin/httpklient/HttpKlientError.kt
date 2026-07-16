@@ -73,7 +73,7 @@ sealed interface HttpKlientError {
 
     /**
      * Forsøket time-et ut.
-     * Trigges av `java.net.http.HttpTimeoutException` fra JDK-klienten — enten request-timeout (`HttpKlientConfig.timeout`) eller connect-timeout (`HttpKlientConfig.connectTimeout`).
+     * Trigges av `java.net.http.HttpTimeoutException` fra JDK-klienten — enten request-timeout (`HttpKlientConfig.timeout`) eller transportens connect-timeout (`JavaHttpTransport(connectTimeout = ...)`).
      * Forbigående, derfor `retryable = true`.
      */
     data class Timeout(

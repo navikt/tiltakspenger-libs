@@ -51,7 +51,6 @@ internal fun testHttpKlient(
     transport: HttpTransport? = null,
 ): HttpKlient {
     val config = HttpKlientConfig(
-        connectTimeout = connectTimeout,
         timeout = timeout,
         auth = auth,
         retry = retry,
@@ -59,8 +58,8 @@ internal fun testHttpKlient(
         skipCacheRetryStatuses = skipCacheRetryStatuses,
         timeSource = timeSource,
     )
-    // Uten transport-argument brukes konstruktørens default, slik at default-uttrykket (JavaHttpTransport) også utøves av testene.
-    return if (transport == null) HttpKlient(clock = clock, config = config) else HttpKlient(clock = clock, config = config, transport = transport)
+    // Uten transport-argument bygges produksjonstransporten med testens connect-timeout (connect-timeout bor på transporten, ikke i config).
+    return HttpKlient(clock = clock, config = config, transport = transport ?: JavaHttpTransport(connectTimeout = connectTimeout))
 }
 
 /** Test-klient over en [FakeHttpTransport] — hele den reelle pipelinen kjører, kun nettverket er byttet ut. */

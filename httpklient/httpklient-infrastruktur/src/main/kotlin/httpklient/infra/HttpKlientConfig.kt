@@ -16,12 +16,6 @@ import kotlin.time.TimeSource
  * Redirects følges aldri (ingen konsument bruker det); konsumenten ser eventuelle `3xx`-svar eksplisitt som [no.nav.tiltakspenger.libs.httpklient.HttpKlientError.UventetStatus].
  */
 data class HttpKlientConfig(
-    /**
-     * Connect-timeout for den underliggende `java.net.http.HttpClient`.
-     * Brukes kun ved opprettelse av selve transportens HttpClient-instans.
-     */
-    val connectTimeout: Duration = 10.seconds,
-
     /** Timeout per kall (request-timeout på `java.net.http.HttpRequest`). */
     val timeout: Duration = 30.seconds,
 

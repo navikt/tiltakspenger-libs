@@ -49,7 +49,7 @@ internal class FellesHttpPersonklient(
     transport: HttpTransport = JavaHttpTransport(connectTimeout = connectTimeout),
 ) : FellesPersonklient {
     private val httpKlient: HttpKlient =
-        HttpKlient(clock, HttpKlientConfig(connectTimeout = connectTimeout, timeout = timeout), transport)
+        HttpKlient(clock, HttpKlientConfig(timeout = timeout), transport)
 
     private val uri = URI.create(endepunkt)
 

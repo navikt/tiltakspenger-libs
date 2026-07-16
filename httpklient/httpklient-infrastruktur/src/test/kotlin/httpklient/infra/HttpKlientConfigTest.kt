@@ -12,7 +12,6 @@ internal class HttpKlientConfigTest {
     fun `HttpKlientConfig har trygge defaults`() {
         val config = HttpKlientConfig()
 
-        config.connectTimeout shouldBe 10.seconds
         config.timeout shouldBe 30.seconds
         config.auth shouldBe KlientAuth.Ingen
         config.retry shouldBe Retry.Ingen

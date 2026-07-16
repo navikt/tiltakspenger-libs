@@ -45,7 +45,7 @@ class LeaderPodLookupClient(
 
     private val httpKlient: HttpKlient = HttpKlient(
         clock = clock,
-        config = HttpKlientConfig(connectTimeout = connectTimeout, timeout = timeout),
+        config = HttpKlientConfig(timeout = timeout),
         transport = transport,
     )
 

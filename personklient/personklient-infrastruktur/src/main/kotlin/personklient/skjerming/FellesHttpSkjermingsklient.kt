@@ -14,6 +14,8 @@ import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlientConfig
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.AuthTokenProvider
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.KlientAuth
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.NavHeadere
+import no.nav.tiltakspenger.libs.httpklient.infra.transport.HttpTransport
+import no.nav.tiltakspenger.libs.httpklient.infra.transport.JavaHttpTransport
 import no.nav.tiltakspenger.libs.httpklient.rawRequestString
 import no.nav.tiltakspenger.libs.httpklient.tryMap
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
@@ -44,12 +46,13 @@ class FellesHttpSkjermingsklient(
     connectTimeout: Duration = 1.seconds,
     timeout: Duration = 1.seconds,
     private val logg: KLogger = KotlinLogging.logger {},
+    transport: HttpTransport = JavaHttpTransport(connectTimeout = connectTimeout),
 ) : FellesSkjermingsklient {
 
     private val httpKlient: HttpKlient = HttpKlient(
         clock = clock,
+        transport = transport,
         config = HttpKlientConfig(
-            connectTimeout = connectTimeout,
             timeout = timeout,
             auth = KlientAuth.System(
                 object : AuthTokenProvider {

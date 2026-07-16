@@ -53,7 +53,6 @@ class TexasHttpClient(
     private val httpKlient: HttpKlient = HttpKlient(
         clock = clock,
         config = HttpKlientConfig(
-            connectTimeout = timeoutSeconds.seconds,
             timeout = timeoutSeconds.seconds,
             auth = KlientAuth.Ingen,
         ),

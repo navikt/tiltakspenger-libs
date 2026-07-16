@@ -47,7 +47,7 @@ import kotlin.reflect.typeOf
 class HttpKlient(
     internal val clock: Clock,
     internal val config: HttpKlientConfig = HttpKlientConfig(),
-    internal val transport: HttpTransport = JavaHttpTransport(connectTimeout = config.connectTimeout),
+    internal val transport: HttpTransport = JavaHttpTransport(),
 ) {
     /** Bygget én gang per klientinstans; jitter-randomness lever i schedulen. */
     internal val retryConfig: RetryConfig = config.retry.toRetryConfig()

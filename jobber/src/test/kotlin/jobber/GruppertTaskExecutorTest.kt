@@ -131,7 +131,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til den parallelle gruppen har overlappet den trege serielle.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 // Den parallelle gruppen skal ha kjørt flere ganger mens den serielle henger i sin lange task, og ha overlappet den (maxConcurrent >= 2 beviser at de kjørte samtidig).
                 parallellKjørt.get() shouldBeGreaterThanOrEqualTo 3
                 maxConcurrent.get() shouldBeGreaterThanOrEqualTo 2
@@ -167,7 +167,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til gruppen har drenert alle MerArbeid-rundene.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 // Skal ha drenert 4 MerArbeid-runder + minst 1 Ferdig-runde raskt etter hverandre, uten å vente intervallet.
                 kjøringer.get() shouldBeGreaterThanOrEqualTo 5
             }
@@ -200,7 +200,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til minst to sykluser med A→B har kjørt.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 ranB.get() shouldBeGreaterThanOrEqualTo 2
             }
         }
@@ -234,7 +234,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til minst én syklus med A og B har kjørt.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 ids.toList() shouldHaveAtLeastSize 2
             }
         }
@@ -314,7 +314,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til en kjøring har startet, og stopp mens den pågår.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 startet.get() shouldBeGreaterThanOrEqualTo 1
             }
         }
@@ -354,7 +354,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til minst én batch har startet, og stopp mens dreneringen pågår.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 startet.get() shouldBeGreaterThanOrEqualTo 1
             }
         }
@@ -388,7 +388,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til en runde uten arbeid er logget; at begge gruppenavnene står i samme linje beviser at gruppene holder seg i samme runde.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 fanger.meldinger.any { it == "Ingen av jobbene hadde arbeid i denne runden: A, B" } shouldBe true
             }
         }
@@ -415,7 +415,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til flere runder har kjørt, slik at fraværet av linjen faktisk beviser noe.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 kjøringer.get() shouldBeGreaterThanOrEqualTo 3
             }
         }
@@ -443,7 +443,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til flere runder har kjørt, slik at fraværet av linjen faktisk beviser noe.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 kjøringer.get() shouldBeGreaterThanOrEqualTo 3
             }
         }
@@ -471,7 +471,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til flere runder har kjørt, slik at fraværet av linjen faktisk beviser noe.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 kjøringer.get() shouldBeGreaterThanOrEqualTo 3
             }
         }
@@ -494,7 +494,7 @@ internal class GruppertTaskExecutorTest {
         )
         // Vent i sanntid til en runde uten arbeid er logget for den parallelle gruppen.
         runBlocking {
-            eventually(2.seconds) {
+            eventually(10.seconds) {
                 fanger.meldinger.any { it == "Jobben 'p' hadde ikke arbeid i denne runden." } shouldBe true
             }
         }

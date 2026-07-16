@@ -49,6 +49,42 @@ internal class LibsArkitekturKonsistTest {
         EnSetningPerLinje.assertBrukneSetningerIMarkdown(repoRot())
     }
 
+    @Test
+    fun `domene-moduler importerer ikke infra`() {
+        InfraImport.assert(domeneModulScope(), infraSegmenter = setOf("infra", "infrastruktur"))
+    }
+
+    @Test
+    fun `domene-moduler importerer kun tillatte pakker`() {
+        DomeneImportWhitelist.assert(
+            scope = domeneModulScope(),
+            erDomenepakke = { true },
+            tillattePakker = listOf(
+                "arrow.core",
+                "arrow.resilience",
+                "io.github.oshai.kotlinlogging",
+                "java.time",
+                "java.util",
+                "kotlin",
+                "no.nav.tiltakspenger.libs.common",
+                "no.nav.tiltakspenger.libs.httpklient",
+                "no.nav.tiltakspenger.libs.logging",
+                "no.nav.tiltakspenger.libs.persistering.domene",
+                "no.nav.tiltakspenger.libs.person",
+                "no.nav.tiltakspenger.libs.personklient",
+                "no.nav.tiltakspenger.libs.tiltaksdeltakelse",
+            ),
+            infraSegmenter = setOf("infra", "infrastruktur"),
+        )
+    }
+
+    /**
+     * Produksjonskoden i domene-modulene (`*-domene`) — den skal være ren og uten infrastruktur-avhengigheter.
+     * Testkildene deres er utenfor: tester bruker legitimt kotest/mockk/JUnit.
+     * [BoundaryKlasser] kjøres bevisst ikke i dette repoet: `*-dtos`-modulene publiserer kontraktstyper som selve leveransen, så DTO-er utenfor infra-pakker er by design her.
+     */
+    private fun domeneModulScope() = Konsist.scopeFromProduction().slice { file -> "-domene/" in file.path }
+
     /** Testene kjører med arbeidskatalog i konsist-regler-modulen; repo-rota er katalogen over. */
     private fun repoRot(): Path = Path.of(System.getProperty("user.dir")).parent
 }

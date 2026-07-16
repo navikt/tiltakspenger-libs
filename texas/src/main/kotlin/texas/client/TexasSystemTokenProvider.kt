@@ -1,7 +1,7 @@
 package no.nav.tiltakspenger.libs.texas.client
 
 import no.nav.tiltakspenger.libs.common.AccessToken
-import no.nav.tiltakspenger.libs.httpklient.AuthTokenProvider
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.AuthTokenProvider
 import no.nav.tiltakspenger.libs.texas.IdentityProvider
 
 /**

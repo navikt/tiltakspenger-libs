@@ -2,12 +2,12 @@ package no.nav.tiltakspenger.libs.texas.client
 
 import arrow.core.getOrElse
 import no.nav.tiltakspenger.libs.common.AccessToken
-import no.nav.tiltakspenger.libs.httpklient.HttpKlient
-import no.nav.tiltakspenger.libs.httpklient.HttpKlientConfig
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
-import no.nav.tiltakspenger.libs.httpklient.HttpTransport
-import no.nav.tiltakspenger.libs.httpklient.JavaHttpTransport
-import no.nav.tiltakspenger.libs.httpklient.KlientAuth
+import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient
+import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlientConfig
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.KlientAuth
+import no.nav.tiltakspenger.libs.httpklient.infra.transport.HttpTransport
+import no.nav.tiltakspenger.libs.httpklient.infra.transport.JavaHttpTransport
 import no.nav.tiltakspenger.libs.httpklient.rawResponseString
 import no.nav.tiltakspenger.libs.httpklient.throwableOrNull
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
@@ -30,7 +30,7 @@ import kotlin.time.Duration.Companion.seconds
  * Alle Texas-endepunktene snakker JSON begge veier; ikke-2xx eller udeserialiserbar respons logges (med responskode, som før) og kastes videre — underliggende exception der én finnes, ellers en [RuntimeException] med responskoden.
  * Denne klienten kan ikke selv bruke token-basert auth ([KlientAuth.Ingen]) — det er den som lager tokens.
  *
- * ## Caching og `skip_cache` ([skipCache])
+ * ## Caching og `skip_cache` (skipCache)
  * Texas cacher tokens: endepunktet returnerer alltid et cachet token hvis det finnes, og aldri et utløpt token.
  * `skipCache = true` setter `skip_cache` i requesten og tvinger Texas til å gå forbi cachen og hente et ferskt token fra identity provideren (f.eks. Entra ID).
  * Per NAIS-docs er dette kun nødvendig når target-API-et avviser tokenet, f.eks. fordi tilganger har endret seg siden tokenet ble utstedt — se [Consume internal API as an application](https://doc.nais.io/auth/entra-id/how-to/consume-m2m/#acquire-token).

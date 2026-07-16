@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     // httpklient er api: TexasHttpClient tar HttpTransport i konstruktøren og TexasSystemTokenProvider implementerer AuthTokenProvider.
-    api(project(":httpklient"))
+    api(project(":httpklient:httpklient-infrastruktur"))
 
     implementation(libs.jackson.annotations)
     implementation(libs.ktor.server.auth)
@@ -18,7 +18,7 @@ dependencies {
     testImplementation(project(":test-common"))
     testImplementation(project(":ktor-test-common"))
     testImplementation(project(":auth-test-core"))
-    testImplementation(testFixtures(project(":httpklient")))
+    testImplementation(testFixtures(project(":httpklient:httpklient-infrastruktur")))
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.server.content.negotiation)
     // Kun for TexasAuthenticationProviderTest sin ktor-testserver; produksjonskoden bruker httpklient/libs-json.

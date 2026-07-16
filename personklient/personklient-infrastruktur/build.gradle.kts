@@ -8,7 +8,7 @@ dependencies {
     implementation(project(":logging"))
     implementation(project(":json"))
     implementation(project(":common"))
-    implementation(project(":httpklient"))
+    implementation(project(":httpklient:httpklient-infrastruktur"))
     implementation(project(":personklient:personklient-domene"))
 
     implementation(libs.arrow.core)
@@ -18,7 +18,7 @@ dependencies {
     implementation(libs.caffeine)
 
     testImplementation(project(":test-common"))
-    testImplementation(testFixtures(project(":httpklient")))
+    testImplementation(testFixtures(project(":httpklient:httpklient-infrastruktur")))
 }
 
 tasks.withType<Jar> {

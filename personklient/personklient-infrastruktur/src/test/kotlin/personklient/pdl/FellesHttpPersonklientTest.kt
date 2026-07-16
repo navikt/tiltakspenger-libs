@@ -11,7 +11,7 @@ import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.withWireMockServer
-import no.nav.tiltakspenger.libs.httpklient.FakeHttpTransport
+import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.DeserializationException
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.UkjentFeil
 import org.junit.jupiter.api.Test

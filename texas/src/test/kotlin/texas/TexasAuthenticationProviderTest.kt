@@ -2,11 +2,12 @@ package no.nav.tiltakspenger.libs.texas
 
 import io.kotest.matchers.shouldBe
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.path
-import io.ktor.serialization.jackson3.jackson
+import io.ktor.serialization.jackson3.JacksonConverter
 import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
@@ -31,7 +32,6 @@ import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequest
 import no.nav.tiltakspenger.libs.texas.client.TexasClient
 import no.nav.tiltakspenger.libs.texas.client.TexasIntrospectionResponse
 import org.junit.jupiter.api.Test
-import tools.jackson.module.kotlin.kotlinModule
 
 class TexasAuthenticationProviderTest {
     val clock = fixedClock
@@ -57,9 +57,7 @@ class TexasAuthenticationProviderTest {
             testApplication {
                 application {
                     install(ContentNegotiation) {
-                        jackson {
-                            addModule(kotlinModule())
-                        }
+                        register(ContentType.Application.Json, JacksonConverter(objectMapper))
                     }
                     authentication {
                         register(
@@ -121,9 +119,7 @@ class TexasAuthenticationProviderTest {
             testApplication {
                 application {
                     install(ContentNegotiation) {
-                        jackson {
-                            addModule(kotlinModule())
-                        }
+                        register(ContentType.Application.Json, JacksonConverter(objectMapper))
                     }
                     authentication {
                         register(
@@ -178,9 +174,7 @@ class TexasAuthenticationProviderTest {
             testApplication {
                 application {
                     install(ContentNegotiation) {
-                        jackson {
-                            addModule(kotlinModule())
-                        }
+                        register(ContentType.Application.Json, JacksonConverter(objectMapper))
                     }
                     authentication {
                         register(
@@ -234,9 +228,7 @@ class TexasAuthenticationProviderTest {
             testApplication {
                 application {
                     install(ContentNegotiation) {
-                        jackson {
-                            addModule(kotlinModule())
-                        }
+                        register(ContentType.Application.Json, JacksonConverter(objectMapper))
                     }
                     authentication {
                         register(

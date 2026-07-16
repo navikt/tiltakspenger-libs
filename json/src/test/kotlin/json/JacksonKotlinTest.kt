@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test
 import tools.jackson.core.exc.InputCoercionException
 import tools.jackson.databind.DatabindException
 import tools.jackson.databind.exc.InvalidFormatException
+import java.math.BigDecimal
+import java.time.YearMonth
 
 /**
  * SerDes-kontrakt for Kotlin-språkfeatures via Jackson Kotlin-modulen:
@@ -72,6 +74,17 @@ internal class JacksonKotlinTest {
         roundTrip(
             MedSærnorsk(id = "12345", kanIverksette = false, årsak = "test"),
             """{"id":"12345","kanIverksette":false,"årsak":"test"}""",
+        )
+    }
+
+    @Test
+    fun `ledende æøå i property-navn serialiseres — Jackson 3 dropper slike felt stille uten KotlinPropertyNameAsImplicitName`() {
+        // Jackson 3 strammet inn getter-valideringen: Kotlin genererer `getårMåned()` for `årMåned`, og default accessor naming-strategi godtar ikke liten forbokstav etter `get`.
+        // Uten KotlinPropertyNameAsImplicitName forsvinner feltet stille fra output ({"beløp":650000.00}) — ingen feil, ingen advarsel.
+        // Speiler det rapporterte tilfellet 1:1 (YearMonth + BigDecimal) og låser at vår mapper-konfig beskytter mot det.
+        roundTrip(
+            Inntekt(årMåned = YearMonth.of(2026, 7), beløp = BigDecimal("650000.00")),
+            """{"årMåned":"2026-07","beløp":650000.00}""",
         )
     }
 
@@ -202,6 +215,11 @@ internal class JacksonKotlinTest {
 private data class MedNullable(
     val navn: String,
     val antall: Int?,
+)
+
+private data class Inntekt(
+    val årMåned: YearMonth,
+    val beløp: BigDecimal,
 )
 
 private data class MedSærnorsk(

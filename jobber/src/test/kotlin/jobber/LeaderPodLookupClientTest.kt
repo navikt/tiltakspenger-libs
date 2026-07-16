@@ -5,13 +5,13 @@ import arrow.core.right
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.common.fixedClock
-import no.nav.tiltakspenger.libs.httpklient.FakeHttpTransport
+import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
 import org.junit.jupiter.api.Test
 import java.io.IOException
 import java.net.URI
 
 /**
- * Testene bytter kun transporten ([FakeHttpTransport]), slik at hele den reelle [no.nav.tiltakspenger.libs.httpklient.HttpKlient]-pipelinen kjører — inkludert statusregel, Jackson-deserialisering og feilmapping.
+ * Testene bytter kun transporten ([FakeHttpTransport]), slik at hele den reelle [no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient]-pipelinen kjører — inkludert statusregel, Jackson-deserialisering og feilmapping.
  */
 internal class LeaderPodLookupClientTest {
     private val logger = KotlinLogging.logger { }
@@ -98,6 +98,7 @@ internal class LeaderPodLookupClientTest {
     fun `returnerer kunne ikke kontakte ved ugyldig elector path`() {
         val transport = FakeHttpTransport()
 
+        @Suppress("HttpUrlsUsage")
         klient("http://[", transport).amITheLeader("pod-1") shouldBe LeaderPodLookupFeil.KunneIkkeKontakteLeaderElectorContainer.left()
 
         transport.mottatteKall shouldBe emptyList()

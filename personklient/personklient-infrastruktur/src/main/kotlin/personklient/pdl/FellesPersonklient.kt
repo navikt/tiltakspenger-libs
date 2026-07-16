@@ -2,7 +2,6 @@ package no.nav.tiltakspenger.libs.personklient.pdl
 
 import arrow.core.Either
 import no.nav.tiltakspenger.libs.common.AccessToken
-import no.nav.tiltakspenger.libs.common.Fnr
 import java.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds

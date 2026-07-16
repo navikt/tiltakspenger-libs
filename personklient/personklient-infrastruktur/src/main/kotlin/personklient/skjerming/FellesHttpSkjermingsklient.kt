@@ -3,20 +3,19 @@ package no.nav.tiltakspenger.libs.personklient.skjerming
 import arrow.core.Either
 import arrow.core.NonEmptyList
 import arrow.core.flatMap
-import arrow.core.left
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr
-import no.nav.tiltakspenger.libs.httpklient.AuthTokenProvider
-import no.nav.tiltakspenger.libs.httpklient.HttpKlient
-import no.nav.tiltakspenger.libs.httpklient.HttpKlientConfig
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
-import no.nav.tiltakspenger.libs.httpklient.KlientAuth
-import no.nav.tiltakspenger.libs.httpklient.NavHeadere
+import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient
+import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlientConfig
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.AuthTokenProvider
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.KlientAuth
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.NavHeadere
 import no.nav.tiltakspenger.libs.httpklient.rawRequestString
-import no.nav.tiltakspenger.libs.httpklient.tilDomene
+import no.nav.tiltakspenger.libs.httpklient.tryMap
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesSkjermingError
 import java.net.URI
@@ -66,6 +65,7 @@ class FellesHttpSkjermingsklient(
     private val uriSkjermetBulk = URI.create("$endepunkt/skjermetBulk")
 
     companion object {
+        @Suppress("unused")
         const val NAV_CALL_ID_HEADER = "Nav-Call-Id"
     }
 
@@ -93,7 +93,7 @@ class FellesHttpSkjermingsklient(
             feil.tilFellesSkjermingErrorOgLogg(sikkerloggKontekstVedUkjentFeil = "")
         }.flatMap { respons ->
             // Fnr-mapping som feiler skal gi samme utfall som før: en DeserializationException med body og status.
-            respons.tilDomene { bolk -> bolk.mapKeys { (personident, _) -> Fnr.fromString(personident) } }
+            respons.tryMap { bolk -> bolk.mapKeys { (personident, _) -> Fnr.fromString(personident) } }
                 .mapLeft { feil -> feil.tilFellesSkjermingErrorOgLogg(sikkerloggKontekstVedUkjentFeil = "") }
         }
     }
@@ -112,34 +112,38 @@ class FellesHttpSkjermingsklient(
      * Mapper [HttpKlientError] til [FellesSkjermingError] og logger med samme meldinger og logg/sikkerlogg-splitt som før migreringen.
      * [sikkerloggKontekstVedUkjentFeil] bevarer forskjellen i dagens sikkerlogg-meldinger mellom enkelt- og bulk-oppslag ved ukjente feil.
      */
-    private fun HttpKlientError.tilFellesSkjermingErrorOgLogg(sikkerloggKontekstVedUkjentFeil: String): FellesSkjermingError = when (this) {
-        is HttpKlientError.ResponsMottatt -> when (this) {
-            is HttpKlientError.DeserializationError -> {
-                logg.error(RuntimeException("Trigger stacktrace for debug.")) {
-                    "Kunne ikke parse skjermingssvar. status=$statusCode. Se sikkerlogg for mer kontekst."
+    private fun HttpKlientError.tilFellesSkjermingErrorOgLogg(sikkerloggKontekstVedUkjentFeil: String): FellesSkjermingError =
+        when (this) {
+            is HttpKlientError.ResponsMottatt -> when (this) {
+                is HttpKlientError.DeserializationError -> {
+                    logg.error(RuntimeException("Trigger stacktrace for debug.")) {
+                        "Kunne ikke parse skjermingssvar. status=$statusCode. Se sikkerlogg for mer kontekst."
+                    }
+                    Sikkerlogg.error(throwable) {
+                        "Kunne ikke parse skjermingssvar. status=$statusCode. response=$body. request=$rawRequestString"
+                    }
+                    FellesSkjermingError.DeserializationException(throwable, body, statusCode)
                 }
-                Sikkerlogg.error(throwable) {
-                    "Kunne ikke parse skjermingssvar. status=$statusCode. response=$body. request=$rawRequestString"
+
+                is HttpKlientError.UventetStatus -> {
+                    logg.error(RuntimeException("Trigger stacktrace for debug.")) {
+                        "Uforventet http-status ved henting av skjerming. status=$statusCode. Se sikkerlogg for mer kontekst."
+                    }
+                    Sikkerlogg.error { "Uforventet http-status ved henting av skjerming. status=$statusCode. response=$body. request=$rawRequestString" }
+                    FellesSkjermingError.Ikke2xx(status = statusCode, body = body)
                 }
-                FellesSkjermingError.DeserializationException(throwable, body, statusCode)
             }
 
-            is HttpKlientError.UventetStatus -> {
-                logg.error(RuntimeException("Trigger stacktrace for debug.")) {
-                    "Uforventet http-status ved henting av skjerming. status=$statusCode. Se sikkerlogg for mer kontekst."
-                }
-                Sikkerlogg.error { "Uforventet http-status ved henting av skjerming. status=$statusCode. response=$body. request=$rawRequestString" }
-                FellesSkjermingError.Ikke2xx(status = statusCode, body = body)
-            }
+            // Nettverk/timeout og feil før noe ble sendt (inkl. at getToken kaster) behandles likt som før: NetworkError.
+            is HttpKlientError.IngenRespons -> nettverksfeilOgLogg(throwable, sikkerloggKontekstVedUkjentFeil)
+
+            is HttpKlientError.RequestIkkeSendt -> nettverksfeilOgLogg(throwable, sikkerloggKontekstVedUkjentFeil)
         }
 
-        // Nettverk/timeout og feil før noe ble sendt (inkl. at getToken kaster) behandles likt som før: NetworkError.
-        is HttpKlientError.IngenRespons -> nettverksfeilOgLogg(throwable, sikkerloggKontekstVedUkjentFeil)
-
-        is HttpKlientError.RequestIkkeSendt -> nettverksfeilOgLogg(throwable, sikkerloggKontekstVedUkjentFeil)
-    }
-
-    private fun nettverksfeilOgLogg(throwable: Throwable, sikkerloggKontekst: String): FellesSkjermingError.NetworkError {
+    private fun nettverksfeilOgLogg(
+        throwable: Throwable,
+        sikkerloggKontekst: String,
+    ): FellesSkjermingError.NetworkError {
         logg.error(RuntimeException("Trigger stacktrace for debug.")) {
             "Ukjent feil ved henting av skjerming. Se sikkerlogg for mer kontekst."
         }

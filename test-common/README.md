@@ -6,7 +6,8 @@ Eksempel på generelle avhengigheter på tvers av alle prosjekter: arrow, slf4j,
 
 `no.nav.tiltakspenger.libs.common` (i `common/WiremockEx.kt`) er den ene felles kilden til WireMock-oppsett for alle tiltakspenger-repoer:
 
-- `withWireMockServer { server -> ... }` — starter en IPv4-trygg server, kjører blokka, og stopper serveren uansett om blokka kaster. Funksjonen er `inline`, så den fungerer både i synkrone tester og i `suspend`-tester.
+- `withWireMockServer { server -> ... }` — starter en IPv4-trygg server, kjører blokka, og stopper serveren uansett om blokka kaster.
+  Funksjonen er `inline`, så den fungerer både i synkrone tester og i `suspend`-tester.
 - `stoppedServerUri(path)` — returnerer en URI mot en port der ingen lytter (for å teste nettverksfeil / "server ikke kontaktbar").
 - `ipv4WireMockServer()` — rå factory dersom du må styre livssyklusen selv.
 

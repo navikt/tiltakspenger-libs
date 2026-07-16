@@ -1,6 +1,7 @@
 # AGENTS.md — tiltakspenger-libs
 
-Dette repoet følger monorepo-konvensjonene i [`../AGENTS.md`](../AGENTS.md) og Kotlin/JVM-backendkonvensjonene i [`../AGENTS-backend.md`](../AGENTS-backend.md). Les disse først.
+Dette repoet følger monorepo-konvensjonene i [`../AGENTS.md`](../AGENTS.md) og Kotlin/JVM-backendkonvensjonene i [`../AGENTS-backend.md`](../AGENTS-backend.md).
+Les disse først.
 
 
 ## Oversikt
@@ -12,11 +13,20 @@ Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tilta
 
 ## Arkitektur
 
-- **Gradle-submoduler** — se `settings.gradle.kts`. Hver submodul er et fokusert bibliotek (ID-er, DTO-er, klienter, hjelpere).
-- **Convention-plugin**: Delt build-logikk ligger i `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts`. Alle submoduler tar den i bruk via `plugins { id("tiltakspenger-lib-conventions") }`. Den konfigurerer Kotlin/JVM-target, Spotless med pinnet ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5, publisering og ekskludering av JUnit 4. Plugin- og bibliotekversjoner er sentralisert i `gradle/libs.versions.toml`. Enkeltmoduler kan slå på JetBrains Kover for coverage (nå: `jobber` og `arenatiltak-dtos`).
-- **Kildelayout**: standard Kotlin/Gradle-layout. Per [Kotlins kodekonvensjoner](https://kotlinlang.org/docs/coding-conventions.html#directory-structure) utelates den felles rotpakka `no.nav.tiltakspenger.libs` fra mappestrukturen (f.eks. `common/src/main/kotlin/common/SakId.kt` for pakka `no.nav.tiltakspenger.libs.common`).
-- **Domene/infrastruktur-splitt**: Moduler med eksterne avhengigheter (HTTP-klienter, DB) deles i `*-domene` (rent domene, ingen eksterne deps) og `*-infrastruktur` (eksterne deps tillatt). Se `personklient/` og `persistering/`. Foreldre-/aggregator-prosjekter (`persistering/build.gradle.kts`, `personklient/build.gradle.kts`) disabler kun jar-taskene.
-- **Kjerne-avhengighetskjede**: de fleste moduler avhenger av `common` → `logging`. Tester avhenger av `test-common`, som re-eksporterer `common`, kotest, mockk, wiremock og JUnit 5.
+- **Gradle-submoduler** — se `settings.gradle.kts`.
+  Hver submodul er et fokusert bibliotek (ID-er, DTO-er, klienter, hjelpere).
+- **Convention-plugin**: Delt build-logikk ligger i `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts`.
+  Alle submoduler tar den i bruk via `plugins { id("tiltakspenger-lib-conventions") }`.
+  Den konfigurerer Kotlin/JVM-target, Spotless med pinnet ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5, publisering og ekskludering av JUnit 4.
+  Plugin- og bibliotekversjoner er sentralisert i `gradle/libs.versions.toml`.
+  Enkeltmoduler kan slå på JetBrains Kover for coverage (nå: `jobber` og `arenatiltak-dtos`).
+- **Kildelayout**: standard Kotlin/Gradle-layout.
+  Per [Kotlins kodekonvensjoner](https://kotlinlang.org/docs/coding-conventions.html#directory-structure) utelates den felles rotpakka `no.nav.tiltakspenger.libs` fra mappestrukturen (f.eks. `common/src/main/kotlin/common/SakId.kt` for pakka `no.nav.tiltakspenger.libs.common`).
+- **Domene/infrastruktur-splitt**: Moduler med eksterne avhengigheter (HTTP-klienter, DB) deles i `*-domene` (rent domene, ingen eksterne deps) og `*-infrastruktur` (eksterne deps tillatt).
+  Se `personklient/` og `persistering/`.
+  Foreldre-/aggregator-prosjekter (`persistering/build.gradle.kts`, `personklient/build.gradle.kts`) disabler kun jar-taskene.
+- **Kjerne-avhengighetskjede**: de fleste moduler avhenger av `common` → `logging`.
+  Tester avhenger av `test-common`, som re-eksporterer `common`, kotest, mockk, wiremock og JUnit 5.
 
 ## Sentrale moduler
 
@@ -74,8 +84,11 @@ Circuit breaker-beskyttelse omslutter hele retry-kjøringen, slik at kun det end
 Standardverdier hører hjemme i **konfig-/builder-objekter** (f.eks. `HttpKlientConfig`, `Retry`), **ikke** i databærere, domenemodeller eller konstruktørparametere som beskriver hva som faktisk skjedde eller hvem kalleren er.
 Konkret:
 
-- **Dataoppføringer som beskriver en hendelse/et resultat** (f.eks. `HttpKlientMetadata` — request/respons, antall forsøk, tidsbruk) må kreve alle felt eksplisitt. Standardverdier som `attempts = 1` eller `attemptDurations = emptyList()` skjuler feil der produsenten glemte å fylle ut feltet.
-- **`Clock`-parametere** må være påkrevd i produksjonskode. Bruk aldri `Clock.systemUTC()` som standard i `main/`. Tester kan som regel bruke `fixedClock` eller `TikkendeKlokke` fra `test-common` som standard — nesten aldri `Clock.systemUTC()`.
+- **Dataoppføringer som beskriver en hendelse/et resultat** (f.eks. `HttpKlientMetadata` — request/respons, antall forsøk, tidsbruk) må kreve alle felt eksplisitt.
+  Standardverdier som `attempts = 1` eller `attemptDurations = emptyList()` skjuler feil der produsenten glemte å fylle ut feltet.
+- **`Clock`-parametere** må være påkrevd i produksjonskode.
+  Bruk aldri `Clock.systemUTC()` som standard i `main/`.
+  Tester kan som regel bruke `fixedClock` eller `TikkendeKlokke` fra `test-common` som standard — nesten aldri `Clock.systemUTC()`.
 - **Andre «ambient»-tjenester** (loggere, ID-generatorer, tilfeldighetskilder osv.) følger samme regel: påkrevd i produksjon, fornuftig teststandard i `test-common`.
 - **Testhjelpere** som lager domene-verdier (f.eks. `tomMetadata()` i `httpklient`-testene) må fylle alle felt eksplisitt slik at testflaten er søkbar når typen endres.
 
@@ -91,10 +104,12 @@ Hvis du finner deg selv i å legge til en standardverdi for å få ødelagte/man
 ./gradlew :arenatiltak-dtos:koverXmlReport   # coverage-rapport for arenatiltak-dtos
 ```
 
-- `spotlessApply` kjøres med `--no-parallel --max-workers=1` fra hjelpeskriptene, fordi Spotless + ktlint kan kaste en flaky `InvocationTargetException` når flere `spotlessKotlin`-tasks initialiserer ktlint parallelt. **Foretrekk hjelpeskriptene** fremfor `./gradlew clean spotlessApply build`.
+- `spotlessApply` kjøres med `--no-parallel --max-workers=1` fra hjelpeskriptene, fordi Spotless + ktlint kan kaste en flaky `InvocationTargetException` når flere `spotlessKotlin`-tasks initialiserer ktlint parallelt.
+  **Foretrekk hjelpeskriptene** fremfor `./gradlew clean spotlessApply build`.
 - En slik `InvocationTargetException` kan fossilere seg i modulens `build/spotless/`-intermediater og replaye deterministisk på senere kjøringer.
   Kuren er `./gradlew :<modul>:clean` og ny kjøring.
-- Configuration cache er aktivert. Unngå `System.getenv()` i build-skript — bruk `providers.environmentVariable()` i stedet.
+- Configuration cache er aktivert.
+  Unngå `System.getenv()` i build-skript — bruk `providers.environmentVariable()` i stedet.
 
 ### Stale coverage-data (kover) og cache-invalidering
 
@@ -110,5 +125,9 @@ for id in $(gh cache list --limit 100 --json id,key -q '.[] | select(.key | cont
 
 ## Avhengigheter
 
-Minimér eksterne avhengigheter. Bruk test-/compile-only-deps der det er mulig (`compileOnly` for ktor i `ktor-common`). Se `gradle/libs.versions.toml` for version catalog og tillatte biblioteker.
+Minimér eksterne avhengigheter.
+Bruk test-/compile-only-deps der det er mulig (`compileOnly` for ktor i `ktor-common`).
+Se `gradle/libs.versions.toml` for version catalog og tillatte biblioteker.
+Bruk de interne modulene `json` og `logging`, ikke tredjeparts-ekvivalenter.
+Arrow er akseptert overalt.
 

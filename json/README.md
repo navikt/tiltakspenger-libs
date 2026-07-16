@@ -1,25 +1,22 @@
 # json
 
-Felles Jackson-konfigurasjon og hjelpefunksjoner for serialisering/deserialisering av JSON
-i tiltakspenger-prosjektene. Bruk denne modulen, ikke en egen `ObjectMapper`.
+Felles Jackson-konfigurasjon og hjelpefunksjoner for serialisering/deserialisering av JSON i tiltakspenger-prosjektene.
+Bruk denne modulen, ikke en egen `ObjectMapper`.
 
 ## Hovedinnhold
 
-- `objectMapper` — standard `JsonMapper` som håndhever [`BANLIST`](src/main/kotlin/json/Banlist.kt)
-  for både serialisering og deserialisering. Bruk denne overalt med mindre du har en eksplisitt grunn til noe annet.
-- `objectMapperUtenBanlist` — rømningsluke uten banlist. Bruk kun bevisst (testing/migrering).
-- `serialize` / `deserialize` / `deserializeList` / `deserializeMap` (+ `*Nullable`-varianter)
-  — typesikre topp-nivå-helpere.
+- `objectMapper` — standard `JsonMapper` som håndhever [`BANLIST`](src/main/kotlin/json/Banlist.kt) for både serialisering og deserialisering.
+  Bruk denne overalt med mindre du har en eksplisitt grunn til noe annet.
+- `objectMapperUtenBanlist` — rømningsluke uten banlist.
+  Bruk kun bevisst (testing/migrering).
+- `serialize` / `deserialize` / `deserializeList` / `deserializeMap` (+ `*Nullable`-varianter) — typesikre topp-nivå-helpere.
 - `lesTre` — parser JSON til `JsonNode` uten å binde til konkrete typer.
 
 ## Banlist
 
-`objectMapper` nekter å (de)serialisere visse typer — de kaster `IllegalArgumentException`
-(eller en Jackson-wrapper rundt den) på **rot-nivå og alle under-nivåer** (felt i DTO,
-element i List/Set, verdi/nøkkel i Map, vilkårlig dypt nestet).
+`objectMapper` nekter å (de)serialisere visse typer — de kaster `IllegalArgumentException` (eller en Jackson-wrapper rundt den) på **rot-nivå og alle under-nivåer** (felt i DTO, element i List/Set, verdi/nøkkel i Map, vilkårlig dypt nestet).
 
-Banlisten finnes i `BANLIST` i [`Banlist.kt`](src/main/kotlin/json/Banlist.kt) og er
-sannheten — denne lista er en informativ kopi:
+Banlisten finnes i `BANLIST` i [`Banlist.kt`](src/main/kotlin/json/Banlist.kt) og er sannheten — denne lista er en informativ kopi:
 
 | Type | Hvorfor |
 |---|---|
@@ -40,16 +37,12 @@ sannheten — denne lista er en informativ kopi:
 
 Banlistmeldingen skal forklare *hva man bør gjøre i stedet* — ikke bare at typen er bannlyst.
 
-Hvis du legger til, fjerner eller endrer en entry i `BANLIST`: oppdater tabellen over i
-samme commit.
+Hvis du legger til, fjerner eller endrer en entry i `BANLIST`: oppdater tabellen over i samme commit.
 
 ## JSON-feltnavn med æøå
 
-Generelle navnekonvensjoner for repoet ligger i [rot-README](../README.md). Det som er
-spesifikt for `json`-modulen: Jackson Kotlin-modulen er konfigurert med
-`KotlinPropertyNameAsImplicitName` slik at Kotlin property-navn (inkludert æøå og
-backtick-navn) bevares som JSON-feltnavn — ingen ekstra `@JsonProperty`-annotering trengs
-for `"beløp"`, `"årsak"` osv.
+Generelle navnekonvensjoner for repoet ligger i [rot-README](../README.md).
+Det som er spesifikt for `json`-modulen: Jackson Kotlin-modulen er konfigurert med `KotlinPropertyNameAsImplicitName` slik at Kotlin property-navn (inkludert æøå og backtick-navn) bevares som JSON-feltnavn — ingen ekstra `@JsonProperty`-annotering trengs for `"beløp"`, `"årsak"` osv.
 
 ## Eksempler
 

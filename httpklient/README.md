@@ -75,7 +75,8 @@ val response = klient.post<String>(URI.create("https://example.com/token")) {
 Response-typen `T` i `request<T>` / verb-hjelperne styrer hvordan bodyen tolkes:
 
 - `String` — rå body uten deserialisering.
-- `Unit` — bodyen ignoreres. Bruk denne for `204 No Content`, `HEAD` og andre svar uten body.
+- `Unit` — bodyen ignoreres.
+  Bruk denne for `204 No Content`, `HEAD` og andre svar uten body.
 - En DTO — bodyen deserialiseres med `tiltakspenger-libs/json`.
 
 Merk at en tom body _ikke_ kan deserialiseres til en DTO.
@@ -84,8 +85,7 @@ Bruk `Unit` (eller `String`) som response-type for endepunkter som kan svare ute
 
 ## Testing
 
-`test-common` eksponerer `HttpKlientFake`, en enkel fake som implementerer `HttpKlient`,
-tar opp alle requests som `HttpKlientRequest`, og svarer med køede responser/feil:
+`test-common` eksponerer `HttpKlientFake`, en enkel fake som implementerer `HttpKlient`, tar opp alle requests som `HttpKlientRequest`, og svarer med køede responser/feil:
 
 ```kotlin
 val httpKlient = HttpKlientFake().apply {
@@ -116,11 +116,13 @@ val metadata: HttpKlientMetadata = response.metadata
 
 - `rawRequestString` — klientens tekstrepresentasjon av requesten (ikke garantert byte-for-byte wire-format fra Java `HttpClient`).
 - `rawResponseString` — rå response-body når en response finnes.
-- `requestHeaders` — effektive request-headere, med _uredigerte_ verdier (en bearer-token ligger her i klartekst). Logg derfor `rawRequestString` framfor `requestHeaders` direkte.
+- `requestHeaders` — effektive request-headere, med _uredigerte_ verdier (en bearer-token ligger her i klartekst).
+  Logg derfor `rawRequestString` framfor `requestHeaders` direkte.
 - `responseHeaders` — response-headere når en response finnes.
 - `statusCode` — HTTP-status når en response finnes.
 - `attempts` — antall forsøk som ble utført, inkludert det første. `1` betyr at det ikke ble retry-et, og `0` at det aldri ble gjort et HTTP-forsøk (pre-flight-feil eller åpen circuit breaker).
-- `attemptDurations` — varighet per forsøk i den rekkefølgen de ble kjørt. Måles monotont via `timeSource` (default `TimeSource.Monotonic`), ikke mot veggklokka, så de er immune mot klokkejustering (NTP-hopp).
+- `attemptDurations` — varighet per forsøk i den rekkefølgen de ble kjørt.
+  Måles monotont via `timeSource` (default `TimeSource.Monotonic`), ikke mot veggklokka, så de er immune mot klokkejustering (NTP-hopp).
 - `totalDuration` — total tid for hele kallet (inkludert backoff mellom forsøk), også målt monotont via `timeSource`.
 - `tidsstempler` — absolutte veggklokke-`LocalDateTime`-er (samme semantikk som `nå(clock)`) for nøkkelpunktene i kallet, se under.
 
@@ -130,7 +132,8 @@ val metadata: HttpKlientMetadata = response.metadata
 
 - `authStartet` / `authFullført` — rett før/etter `AuthTokenProvider.hentToken`. `null` når ingen provider faktisk ble kalt (per-request `bearerToken`, eksplisitt `Authorization`-header, eller ingen provider konfigurert).
 - `requestSendt` — start på det _første_ HTTP-forsøket. `null` når det aldri ble gjort et reelt forsøk (pre-flight-feil eller åpen circuit breaker).
-- `responsMottatt` — slutt på det _siste_ HTTP-forsøket, men bare når det forsøket faktisk ga en respons. `null` når det _endelige_ utfallet ikke ga en respons (timeout/nettverksfeil på siste forsøk), eller når det aldri ble gjort et forsøk. Metadata reflekterer alltid det endelige utfallet: fikk et _tidligere_ forsøk en respons, men siste forsøk timet ut, er `responsMottatt` likevel `null` (på linje med at `statusCode` og `rawResponseString` også er `null` for et slikt utfall).
+- `responsMottatt` — slutt på det _siste_ HTTP-forsøket, men bare når det forsøket faktisk ga en respons. `null` når det _endelige_ utfallet ikke ga en respons (timeout/nettverksfeil på siste forsøk), eller når det aldri ble gjort et forsøk.
+  Metadata reflekterer alltid det endelige utfallet: fikk et _tidligere_ forsøk en respons, men siste forsøk timet ut, er `responsMottatt` likevel `null` (på linje med at `statusCode` og `rawResponseString` også er `null` for et slikt utfall).
 
 Tidsstemplene er også tilgjengelige via convenience-aksessoren `error.tidsstempler` på `HttpKlientError` (på lik linje med `error.attempts` osv.).
 
@@ -139,9 +142,12 @@ val oversendtTidspunkt: LocalDateTime? = response.metadata.tidsstempler.requestS
 ```
 
 
-Left-verdier fyller inn så mye metadata som finnes for feilsituasjonen. For eksempel har `SerializationError` request-informasjon, men ingen response, mens `UventetStatus` har både request, response-body, response-headere og status.
+Left-verdier fyller inn så mye metadata som finnes for feilsituasjonen.
+For eksempel har `SerializationError` request-informasjon, men ingen response, mens `UventetStatus` har både request, response-body, response-headere og status.
 
-Sensitive headere (`Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`) maskeres til `***` i `rawRequestString`, slik at bearer-tokens ikke lekker. Selve HTTP-requesten sendes med de ekte verdiene, og det strukturerte `requestHeaders`-mappet beholder også de uredigerte verdiene (bruk `rawRequestString` hvis du skal logge). For hva som maskeres i selve loggingen, se [Vanlig logg vs. Sikkerlogg (PII)](#vanlig-logg-vs-sikkerlogg-pii).
+Sensitive headere (`Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`) maskeres til `***` i `rawRequestString`, slik at bearer-tokens ikke lekker.
+Selve HTTP-requesten sendes med de ekte verdiene, og det strukturerte `requestHeaders`-mappet beholder også de uredigerte verdiene (bruk `rawRequestString` hvis du skal logge).
+For hva som maskeres i selve loggingen, se [Vanlig logg vs. Sikkerlogg (PII)](#vanlig-logg-vs-sikkerlogg-pii).
 
 HTTP-headere er case-insensitive, så bruk hjelperne `responseHeader(name)` / `responseHeaderValues(name)` (og `requestHeader` / `requestHeaderValues`) på `HttpKlientMetadata` i stedet for å slå opp direkte i mappet:
 
@@ -152,7 +158,8 @@ val cookies: List<String> = response.metadata.responseHeaderValues("Set-Cookie")
 
 ### Feilgruppering
 
-`HttpKlientError`-variantene er delt i tre under-grensesnitt etter spørsmålet «så serveren requesten min?». Det er denne aksen som faktisk styrer hvor trygt det er å retry-e og om kallet kan ha hatt sideeffekter:
+`HttpKlientError`-variantene er delt i tre under-grensesnitt etter spørsmålet «så serveren requesten min?».
+Det er denne aksen som faktisk styrer hvor trygt det er å retry-e og om kallet kan ha hatt sideeffekter:
 
 | Gruppe | Betydning | Varianter |
 |---|---|---|
@@ -162,7 +169,8 @@ val cookies: List<String> = response.metadata.responseHeaderValues("Set-Cookie")
 
 Du kan matche enten på den konkrete varianten eller på gruppen. `UventetStatus` het tidligere `Ikke2xx`; navnet er endret fordi feilen egentlig betyr «status ble ikke godtatt av det konfigurerte `successStatus`-predikatet», ikke bokstavelig «utenfor 2xx».
 
-Logging er av som standard. Den kan skrus på globalt:
+Logging er av som standard.
+Den kan skrus på globalt:
 
 ```kotlin
 val klient = HttpKlient(clock = clock) {
@@ -198,11 +206,14 @@ Loggnivået styres per kategori av kall, slik at du kan skru ned støy uten å m
 | `feilNivå` | Feil uten godtatt respons (transport, timeout, serialisering, deserialisering, auth, circuit breaker) | `ERROR` |
 | `skipCacheRetryNivå` | Diagnostikk når en skip-cache-retry ikke hjalp: et ferskt token ble også avvist (typisk persistent `401`/`403`) | `WARN` |
 
-Hver kategori settes til et `HttpKlientLogNivå` (`OFF`, `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`). `OFF` slår kategorien helt av. Nivået gjelder både `logger` og — når `loggTilSikkerlogg = true` — `Sikkerlogg` (`Sikkerlogg` har ikke `trace`, så `TRACE` mappes til `debug` der).
+Hver kategori settes til et `HttpKlientLogNivå` (`OFF`, `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`).
+`OFF` slår kategorien helt av.
+Nivået gjelder både `logger` og — når `loggTilSikkerlogg = true` — `Sikkerlogg` (`Sikkerlogg` har ikke `trace`, så `TRACE` mappes til `debug` der).
 
 ### Vanlig logg vs. Sikkerlogg (PII)
 
-Vanlig `logger` skal aldri inneholde PII, mens `Sikkerlogg` kan. Modulen håndhever dette i alle loggkategorier:
+Vanlig `logger` skal aldri inneholde PII, mens `Sikkerlogg` kan.
+Modulen håndhever dette i alle loggkategorier:
 
 - **URI**: Til vanlig `logger` logges kun `scheme://host:port/path` — query-parametre, fragment og eventuell user-info (potensiell PII, f.eks. `?fnr=…`) strippes bort. `Sikkerlogg` får hele URI-en.
 - **Headere** (`inkluderHeadere = true`): Til vanlig `logger` vises headernavn, men *alle* verdier maskeres til `***` (en egendefinert header kan inneholde PII). `Sikkerlogg` får de ekte verdiene, med unntak av de faste sensitive headerne (`Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`) som er hemmeligheter og alltid maskeres.
@@ -223,7 +234,8 @@ val klient = HttpKlient(clock = clock) {
 
 ## Suksess-statuser
 
-Som standard er `2xx` suksess (`HttpStatusSuccess.is2xx`). Dette kan overstyres globalt, enten med et eget predikat eller med en av hjelperne i `HttpStatusSuccess`:
+Som standard er `2xx` suksess (`HttpStatusSuccess.is2xx`).
+Dette kan overstyres globalt, enten med et eget predikat eller med en av hjelperne i `HttpStatusSuccess`:
 
 ```kotlin
 val klient = HttpKlient(clock = clock) {
@@ -254,8 +266,8 @@ klient.get<String>(URI.create("https://example.com/api/cache")) {
 
 ## Retry
 
-`HttpKlient` har valgfri retry-støtte basert på Arrow Resilience `Schedule`. Default er
-`RetryConfig.None`, dvs. ingen retries.
+`HttpKlient` har valgfri retry-støtte basert på Arrow Resilience `Schedule`.
+Default er `RetryConfig.None`, dvs. ingen retries.
 
 Eksponentiell backoff og enkelt predikat via fabrikkmetode:
 
@@ -275,7 +287,10 @@ val klient = HttpKlient(clock = clock) {
 Hvilke utfall som i det hele tatt er retry-bare (`408`/`425`/`429`/`500`/`502`/`503`/`504` / `Timeout` / `NetworkError`) styres av `AttemptOutcome.retryable` som en hard gate før predikatet.
 En respons som allerede regnes som suksess av det konfigurerte `successStatus`-predikatet retry-es aldri, selv om statuskoden er i den retryable mengden (f.eks. hvis en konsument bevisst godtar `503` som suksess).
 
-For konstant backoff finnes `RetryConfig.fixed(maxRetries, delay)`. Konsumenter kan også sende inn en Arrow `Schedule<AttemptOutcome, *>` direkte. På den bare `RetryConfig(schedule = ...)`-konstruktøren defaulter `retryOn` til `NeverRetry`, så den retry-er ikke før du eksplisitt opt-iner (f.eks. `retryOn = RetryOnServerErrorsAndNetwork` eller `withRetryOn(...)`). Fabrikkene `exponential`/`fixed` defaulter derimot til `RetryOnServerErrorsAndNetwork`, siden det å velge en av dem allerede uttrykker eksplisitt retry-intensjon:
+For konstant backoff finnes `RetryConfig.fixed(maxRetries, delay)`.
+Konsumenter kan også sende inn en Arrow `Schedule<AttemptOutcome, *>` direkte.
+På den bare `RetryConfig(schedule = ...)`-konstruktøren defaulter `retryOn` til `NeverRetry`, så den retry-er ikke før du eksplisitt opt-iner (f.eks. `retryOn = RetryOnServerErrorsAndNetwork` eller `withRetryOn(...)`).
+Fabrikkene `exponential`/`fixed` defaulter derimot til `RetryOnServerErrorsAndNetwork`, siden det å velge en av dem allerede uttrykker eksplisitt retry-intensjon:
 
 ```kotlin
 val retryConfig = RetryConfig(
@@ -294,13 +309,18 @@ val response = klient.post<String>(URI.create("https://example.com/api/idempoten
 }
 ```
 
-`HttpKlientMetadata` får alltid med `attempts`, `attemptDurations` og `totalDuration`, både på vellykkede svar og på alle `HttpKlientError`-varianter. Disse kan brukes til å få et bilde av hvor mye tid og hvor mange retries et kall faktisk forbrukte.
+`HttpKlientMetadata` får alltid med `attempts`, `attemptDurations` og `totalDuration`, både på vellykkede svar og på alle `HttpKlientError`-varianter.
+Disse kan brukes til å få et bilde av hvor mye tid og hvor mange retries et kall faktisk forbrukte.
 
-`onExcessiveRetries` kalles når antall retries (`attempts - 1`) er minst `excessiveRetriesThreshold`. Uten en egen hook logges et default-varsel via klientens `HttpKlientLoggingConfig` på `excessiveRetriesNivå` (default `WARN`) — skrur du av logging (eller setter kategorien til `OFF`), er også dette varselet stille. Setter du en egen hook med `notifyOnExcessiveRetries(threshold) { ... }`, får den hele `RetryOutcome` (samme data som default-loggingen) og tar over ansvaret, f.eks. for å eksponere som metrikk. Bruk `withoutExcessiveRetriesNotification()` for å skru av varslingen helt.
+`onExcessiveRetries` kalles når antall retries (`attempts - 1`) er minst `excessiveRetriesThreshold`.
+Uten en egen hook logges et default-varsel via klientens `HttpKlientLoggingConfig` på `excessiveRetriesNivå` (default `WARN`) — skrur du av logging (eller setter kategorien til `OFF`), er også dette varselet stille.
+Setter du en egen hook med `notifyOnExcessiveRetries(threshold) { ... }`, får den hele `RetryOutcome` (samme data som default-loggingen) og tar over ansvaret, f.eks. for å eksponere som metrikk.
+Bruk `withoutExcessiveRetriesNotification()` for å skru av varslingen helt.
 
 ### Retryable-flagg
 
-Hver `HttpKlientError` (og `AttemptOutcome` internt) eksponerer `retryable: Boolean`. Retry-loopen bruker dette som en **hard gate** — den vil aldri forsøke på nytt for utfall som regnes som permanente, uansett hva [RetryConfig.retryOn] returnerer:
+Hver `HttpKlientError` (og `AttemptOutcome` internt) eksponerer `retryable: Boolean`.
+Retry-loopen bruker dette som en **hard gate** — den vil aldri forsøke på nytt for utfall som regnes som permanente, uansett hva [RetryConfig.retryOn] returnerer:
 
 | Variant | `retryable` |
 |---|---|
@@ -382,7 +402,8 @@ Et kall som lykkes etter retry teller derfor ikke som circuit breaker-feil, mens
 
 ## Auth-token
 
-`HttpKlient` støtter både klient-nivå og per-request bearer-token basert på `AccessToken` fra `common`. Klienten setter `Authorization: Bearer <token>` automatisk hvis ikke konsumenten allerede har satt `Authorization`-headeren eksplisitt.
+`HttpKlient` støtter både klient-nivå og per-request bearer-token basert på `AccessToken` fra `common`.
+Klienten setter `Authorization: Bearer <token>` automatisk hvis ikke konsumenten allerede har satt `Authorization`-headeren eksplisitt.
 
 Klient-nivå (kalles foran hver request — egnet for `texas`/Token-X-flyter):
 
@@ -397,7 +418,10 @@ val klient: HttpKlient = HttpKlient(clock = clock) {
 
 `AuthTokenProvider` er bevisst et vanlig interface (ikke en typealias eller `fun interface`) slik at eksisterende wiring må implementere `hentToken` og navngi `skipCache` når `libs` bumpes — i stedet for at en gammel parameterløs lambda stille kompilerer videre med en ignorert `it`.
 
-`hentToken` kalles med `skipCache = false` på det første forsøket. Hvis serveren svarer med en status i `skipCacheRetryStatuses` (default kun `401`), gjør klienten _ett_ nytt forsøk der `hentToken` kalles med `skipCache = true`, slik at et cachet, men avvist, token kan byttes ut med et ferskt. `403` er bevisst ikke med i default (ofte et persistent tilgangsavslag som ville doblet trafikken uten å hjelpe) — sett `skipCacheRetryStatuses = setOf(401, 403)` for å opt-e inn, eller `emptySet()` for å slå retryen av. Feiler også det andre forsøket, logges en diagnostikkmelding via `loggingConfig` på `skipCacheRetryNivå` (default `WARN`) slik at klienter der dette skjer i loop-aktig volum kan oppdages — konsekvent styrt av samme logging-config som resten av modulen (sett `skipCacheRetryNivå = HttpKlientLogNivå.OFF` for å slå den av).
+`hentToken` kalles med `skipCache = false` på det første forsøket.
+Hvis serveren svarer med en status i `skipCacheRetryStatuses` (default kun `401`), gjør klienten _ett_ nytt forsøk der `hentToken` kalles med `skipCache = true`, slik at et cachet, men avvist, token kan byttes ut med et ferskt.
+`403` er bevisst ikke med i default (ofte et persistent tilgangsavslag som ville doblet trafikken uten å hjelpe) — sett `skipCacheRetryStatuses = setOf(401, 403)` for å opt-e inn, eller `emptySet()` for å slå retryen av.
+Feiler også det andre forsøket, logges en diagnostikkmelding via `loggingConfig` på `skipCacheRetryNivå` (default `WARN`) slik at klienter der dette skjer i loop-aktig volum kan oppdages — konsekvent styrt av samme logging-config som resten av modulen (sett `skipCacheRetryNivå = HttpKlientLogNivå.OFF` for å slå den av).
 
 Per-request (overstyrer klient-default):
 

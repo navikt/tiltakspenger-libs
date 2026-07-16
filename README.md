@@ -1,19 +1,19 @@
 # tiltakspenger-libs
 
 Felles Kotlin-bibliotek for tiltakspenger-tjenestene i Nav.
-Publiseres til GitHub Packages og konsumeres av flere tjenester (bl.a. `tiltakspenger-saksbehandling-api`,
-`tiltakspenger-soknad-api`, `tiltakspenger-meldekort-api`, `tiltakspenger-datadeling`, `tiltakspenger-tiltak`).
+Publiseres til GitHub Packages og konsumeres av flere tjenester (bl.a. `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tiltakspenger-meldekort-api`, `tiltakspenger-datadeling`, `tiltakspenger-tiltak`).
 
-> **Kun for Kotlin-konsumenter.** Hele biblioteket — inkludert alle moduler — er designet for og
-> testet med Kotlin. Vi bruker `inline`/`reified`, default-parametere, value classes, extension
-> functions og andre Kotlin-features fritt i det offentlige API-et. Java-interop er hverken
-> testet eller støttet; ikke regn med at signaturer er stabile fra Java.
+> **Kun for Kotlin-konsumenter.**
+> Hele biblioteket — inkludert alle moduler — er designet for og testet med Kotlin.
+> Vi bruker `inline`/`reified`, default-parametere, value classes, extension functions og andre Kotlin-features fritt i det offentlige API-et.
+> Java-interop er hverken testet eller støttet; ikke regn med at signaturer er stabile fra Java.
 
 Se [AGENTS.md](AGENTS.md) for en grundig gjennomgang av arkitektur, moduler og konvensjoner.
 
 ## Bruk
 
-Bibliotekene publiseres til GitHub Packages via CI. Konsumenter henter typisk via NAVs maven-mirror:
+Bibliotekene publiseres til GitHub Packages via CI.
+Konsumenter henter typisk via NAVs maven-mirror:
 
 ```kotlin
 repositories {
@@ -40,29 +40,39 @@ dependencies {
 - Felles byggekonfig i `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts`.
 - Versjoner sentralisert i `gradle/libs.versions.toml`.
 - Moduler med eksterne avhengigheter splittes i `*-domene` (ren domene) og `*-infrastruktur`.
-- Standard layout: `src/main/kotlin/`, `src/test/kotlin/`. Felles rotpakke `no.nav.tiltakspenger.libs` utelates fra mappestrukturen.
+- Standard layout: `src/main/kotlin/`, `src/test/kotlin/`.
+  Felles rotpakke `no.nav.tiltakspenger.libs` utelates fra mappestrukturen.
 
 ## Kodekonvensjoner
 
-- **Feilhåndtering:** Bruk Arrow `Either<Error, Success>` framfor exceptions. Ikke bruk `Option` — bruk nullable eller `Either`.
+- **Feilhåndtering:** Bruk Arrow `Either<Error, Success>` framfor exceptions.
+  Ikke bruk `Option` — bruk nullable eller `Either`.
 - **Typed IDs:** Følg eksisterende mønster i `common/` (privat konstruktør, `UlidBase`, `random()`/`fromString()`, `init`-blokker for invarianter).
-- **Clock:** Bruk `java.time.Clock` som parameter. Aldri `now()` uten clock. Tester bruker `fixedClock`/`TikkendeKlokke` fra `test-common`.
+- **Clock:** Bruk `java.time.Clock` som parameter.
+  Aldri `now()` uten clock.
+  Tester bruker `fixedClock`/`TikkendeKlokke` fra `test-common`.
 - **JSON:** Bruk delt `objectMapper` fra `json`-modulen — ikke lag egne.
 - **Logging:** Bruk `Sikkerlogg` fra `logging` for sensitive data, ellers `kotlin-logging`.
 - **Imports:** Ingen star imports.
-- **Kommentarer og KDoc:** Én setning per linje. Start hver setning på ny linje i stedet for å samle flere setninger i samme linje, slik at diff-er blir små og setninger er lette å flytte/endre.
+- **Kommentarer og KDoc:** Én setning per linje.
+  Start hver setning på ny linje i stedet for å samle flere setninger i samme linje, slik at diff-er blir små og setninger er lette å flytte/endre.
 - **Stil:** Funksjonell stil, immutability, DDD — logikk på domeneobjektet nærmest dataene.
-- **Tester:** Kotest assertions (`shouldBe`), ikke JUnit-assertions. JUnit 5 som runner.
-- **Avhengigheter:** Hold minimalt. Bruk `compileOnly`/`testImplementation` der det passer.
+- **Tester:** Kotest assertions (`shouldBe`), ikke JUnit-assertions.
+  JUnit 5 som runner.
+- **Avhengigheter:** Hold minimalt.
+  Bruk `compileOnly`/`testImplementation` der det passer.
 
 ## Språk- og navnekonvensjoner
 
-Vi skriver norsk i kode og kommentarer. Tekniske termer brukes på engelsk når det er
-bransjestandard (f.eks. `serialize`, `round-trip`, `nullable`, `top-level`).
+Vi skriver norsk i kode og kommentarer.
+Tekniske termer brukes på engelsk når det er bransjestandard (f.eks. `serialize`, `round-trip`, `nullable`, `top-level`).
 
 - **Norsk i kode:** vi bruker æøå i filnavn, klassenavn, testnavn, variabelnavn, funksjonsnavn og kommentarer.
 - **JSON-feltnavn (internt):** vi bruker æøå i feltnavn (f.eks. `"beløp"`, `"årsak"`).
   I `json`-modulen er Jackson Kotlin-modulen konfigurert med `KotlinPropertyNameAsImplicitName` slik at property-navnet bevares.
-- **HTTP-endepunkter:** vi bruker *ikke* æøå i URL-stier — bruk ASCII (f.eks. `/soknad`, ikke `/søknad`). Dette gjelder paths, ikke request/response-bodyer.
-- **Flyway-migreringer:** vi bruker *ikke* æøå i SQL-filnavn eller identifikatorer i migreringsskript (kolonnenavn, tabellnavn, indekser etc.). Bruk ASCII.
-- **PostgresRepo-parametere:** vi bruker *ikke* æøå i navngitte parametere som sendes til databasen (`:soknadId`, ikke `:søknadId`). Verdier som lagres som JSONB kan inneholde æøå — det er bare parameternavn og kolonnenavn som må være ASCII.
+- **HTTP-endepunkter:** vi bruker *ikke* æøå i URL-stier — bruk ASCII (f.eks. `/soknad`, ikke `/søknad`).
+  Dette gjelder paths, ikke request/response-bodyer.
+- **Flyway-migreringer:** vi bruker *ikke* æøå i SQL-filnavn eller identifikatorer i migreringsskript (kolonnenavn, tabellnavn, indekser etc.).
+  Bruk ASCII.
+- **PostgresRepo-parametere:** vi bruker *ikke* æøå i navngitte parametere som sendes til databasen (`:soknadId`, ikke `:søknadId`).
+  Verdier som lagres som JSONB kan inneholde æøå — det er bare parameternavn og kolonnenavn som må være ASCII.

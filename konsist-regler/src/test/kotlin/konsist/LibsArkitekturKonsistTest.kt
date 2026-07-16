@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.konsist
 
 import com.lemonappdev.konsist.api.Konsist
 import org.junit.jupiter.api.Test
+import java.nio.file.Path
 
 /**
  * Kjører de delte reglene på hele tiltakspenger-libs.
@@ -37,4 +38,17 @@ internal class LibsArkitekturKonsistTest {
     fun `kdoc og kommentarer brekker ikke en setning over flere linjer`() {
         EnSetningPerLinje.assertBrukneSetningerIKommentarer(Konsist.scopeFromProject())
     }
+
+    @Test
+    fun `markdown-filer har maks en setning per linje`() {
+        EnSetningPerLinje.assertFlereSetningerIMarkdown(repoRot())
+    }
+
+    @Test
+    fun `markdown-filer brekker ikke en setning over flere linjer`() {
+        EnSetningPerLinje.assertBrukneSetningerIMarkdown(repoRot())
+    }
+
+    /** Testene kjører med arbeidskatalog i konsist-regler-modulen; repo-rota er katalogen over. */
+    private fun repoRot(): Path = Path.of(System.getProperty("user.dir")).parent
 }

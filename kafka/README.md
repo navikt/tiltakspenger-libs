@@ -16,8 +16,8 @@ Målet er å lage en consumer som kan lese meldinger fra et Kafka-topic og deser
 - Klassen bør ta inn parameterne som trengs for å initialisere consumeren, f.eks.:
     - `topic`: Kafka-topic som skal leses
     - `groupId`: Kafka consumer group
-    - `kafkaConfig`: Konfigurasjon for consumeren. Her benytter vi at forskjellige configs basert på om vi kjører i nais
-      eller lokalt.
+    - `kafkaConfig`: Konfigurasjon for consumeren.
+      Her benytter vi at forskjellige configs basert på om vi kjører i nais eller lokalt.
 
 Eksempel:
 
@@ -35,8 +35,8 @@ class JournalposthendelseConsumer(
 
 - Lag en instans av consumeren ved å bruke `ManagedKafkaConsumer`.
 - Hvis du bruker Avro, må du bruke `avroConsumerConfig`, ellers `consumerConfig`
-    - `valueDeserializer` bør settes til `KafkaAvroDeserializer()` for Avro-meldinger. Ellers kan du bruke
-      `StringDeserializer()`.
+    - `valueDeserializer` bør settes til `KafkaAvroDeserializer()` for Avro-meldinger.
+      Ellers kan du bruke `StringDeserializer()`.
 
 Eksempel:
 
@@ -98,18 +98,19 @@ if (Configuration.isNais()) {
 Når du setter opp en ny Kafka-consumer, er det noen viktige regler og praksiser du alltid bør følge:
 
 **Tilgang til lesing av meldingene**
-- Ofte krever de ulike produsentene av meldinger at du har tilgang til å lese fra topicet. Som oftest må du lage en PR i det respektive
-  teamets repo for å få dette til.
+- Ofte krever de ulike produsentene av meldinger at du har tilgang til å lese fra topicet.
+  Som oftest må du lage en PR i det respektive teamets repo for å få dette til.
 
 **Legge til topics i miljøvariabler**
 
 - Sørg for at Kafka-topic som consumeren skal lese er definert i konfigurasjonen for miljøet.
-- Disse blir gjort på litt forskjellige måter i appene våre. Følg appens konvensjon.
+- Disse blir gjort på litt forskjellige måter i appene våre.
+  Følg appens konvensjon.
 
 **Hente ut Avro-skjemaer**
 
-- For Avro-deserialisering må du ha de riktige `.avsc/.avdl`-filene (schema-definitionene). Disse finner man sikkert
-  rundt omkring på dokumentasjonssidene til teamet som produserer meldinger.
+- For Avro-deserialisering må du ha de riktige `.avsc/.avdl`-filene (schema-definitionene).
+  Disse finner man sikkert rundt omkring på dokumentasjonssidene til teamet som produserer meldinger.
 
 **Plassering av Avro-filer**
 
@@ -125,6 +126,7 @@ eksempel struktur:
 
 ## Nyttige tips
 
-- `autoOffsetReset` i `KafkaConfig` bør settes til `"latest"`når man kjører konsumenten for første gang. Dette er fordi
-den må 'initalisere' en offsett for første gang. Vi har i visse tilfeller endret til `none` etterpå.
+- `autoOffsetReset` i `KafkaConfig` bør settes til `"latest"`når man kjører konsumenten for første gang.
+  Dette er fordi den må 'initalisere' en offsett for første gang.
+  Vi har i visse tilfeller endret til `none` etterpå.
 - `AvroSchemaSupport`-pluginen som finnes for Intellij gir deg kule snacks når du jobber med Avro-filer.

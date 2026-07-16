@@ -28,6 +28,7 @@ include(
     "meldekort",
     "kafka",
     "kafka-test",
+    "konsist-regler",
     "texas",
     "satser"
 )

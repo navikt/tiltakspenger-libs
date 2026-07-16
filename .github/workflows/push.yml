@@ -38,19 +38,25 @@ jobs:
       checks: write
       contents: write
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          fetch-depth: 0 # include git tags
-      - uses: paulhatch/semantic-version@v6.0.2
+          # Ikke la tokenet ligge igjen i .git/config - publish-steget kjører avhengigheters kode.
+          persist-credentials: false
+      # Versjonen er et rent UTC-tidsstempel og gjenbrukes aldri på tvers av kjøringer.
+      # GitHub Packages er immutable (409 ved republisering), så gjenbruk av versjonsnummer
+      # etter en delvis feilet publisering låste tidligere bygget permanent fast (0.0.849, juni 2026).
+      # Feiler publiseringen delvis nå, lages ingen tag/release, og neste kjøring får en ny versjon.
+      # Foreldreløse modulversjoner fra en feilet kjøring er harmløse - ingen tag/release peker på dem.
+      # Tag/release lages til slutt og peker på commiten, så komplett versjon <-> commit er alltid entydig.
+      # Monotont økende (og dermed Dependabot-vennlig) fordi concurrency-gruppa over kjører serielt.
+      - name: Sett versjon fra UTC-tidsstempel
         id: tag
-        with:
-          bump_each_commit: true
-          tag_prefix: ""
-      - uses: actions/setup-java@v5.5.0
+        run: echo "version=0.0.$(date -u +%Y%m%d%H%M%S)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           java-version: 25
           distribution: 'temurin'
-      - uses: gradle/actions/setup-gradle@v6.2.0
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           gradle-version: wrapper
       - name: Build, test, and publish
@@ -58,7 +64,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
-        uses: softprops/action-gh-release@v3.0.1
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

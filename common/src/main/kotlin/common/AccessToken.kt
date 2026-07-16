@@ -5,7 +5,9 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * @param token The access token. Typically used as a http-header. Authorization: Bearer <token>
+ * @param token The access token.
+ * Typically used as a http-header.
+ * Authorization: Bearer <token>
  * @param expiresAt The time when the token expires.
  */
 data class AccessToken(

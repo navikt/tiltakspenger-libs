@@ -32,12 +32,9 @@ internal inline fun <reified K, reified V> roundTripMap(value: Map<K, V>, expect
 }
 
 /**
- * Asserterer at [blokk] kaster en exception hvor [forventetIMelding] forekommer som substring
- * i meldingen til en exception i cause-kjeden.
+ * Asserterer at [blokk] kaster en exception hvor [forventetIMelding] forekommer som substring i meldingen til en exception i cause-kjeden.
  *
- * Brukes til banlist-tester der Jackson ofte pakker `IllegalArgumentException` inn i sin
- * egen `DatabindException`/`InvalidDefinitionException`, slik at den faktiske banlist-meldingen
- * må letes etter via `cause`-kjeden.
+ * Brukes til banlist-tester der Jackson ofte pakker `IllegalArgumentException` inn i sin egen `DatabindException`/`InvalidDefinitionException`, slik at den faktiske banlist-meldingen må letes etter via `cause`-kjeden.
  */
 internal inline fun assertKasterMedÅrsak(forventetIMelding: String, blokk: () -> Any?) {
     val ex = shouldThrow<Throwable>(blokk)

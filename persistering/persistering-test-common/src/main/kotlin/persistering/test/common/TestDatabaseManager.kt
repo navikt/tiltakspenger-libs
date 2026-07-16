@@ -28,7 +28,10 @@ data class TestDatabaseConfig(
     val flywayTable: String = "flyway_schema_history",
     val flywayLoggers: List<String> = listOf("slf4j"),
     val flywayEncoding: String = "UTF-8",
-    /** Override the default clean strategy. If null, all tables except [flywayTable] are truncated. */
+    /**
+     * Override the default clean strategy.
+     * If null, all tables except [flywayTable] are truncated.
+     */
     val cleanStrategy: ((DataSource) -> Unit)? = null,
 )
 

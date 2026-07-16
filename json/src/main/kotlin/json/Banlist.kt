@@ -136,8 +136,7 @@ private class BannedKeyDeserializer(private val grunn: String) : KeyDeserializer
  *
  * `addSerializer(Class, serializer)` per type slår ikke alltid til for interface-typer; en modifier sjekker alle typer Jackson velger serializer for.
  *
- * Map-nøkler går via en separat key-serializer-sti i Jackson — uten [modifyKeySerializer]
- * kunne en bannlyst type lekket gjennom som `toString()` når den brukes som Map-nøkkel.
+ * Map-nøkler går via en separat key-serializer-sti i Jackson — uten [modifyKeySerializer] kunne en bannlyst type lekket gjennom som `toString()` når den brukes som Map-nøkkel.
  */
 private class BanlistSerializerModifier : ValueSerializerModifier() {
     private fun erstatning(rawClass: Class<*>): ValueSerializer<*>? {
@@ -176,10 +175,8 @@ private class BanlistSerializerModifier : ValueSerializerModifier() {
 /**
  * Speilbilde av [BanlistSerializerModifier] på deserialiseringsstien.
  *
- * `addDeserializer(Class, ...)` registrerer på *eksakt* type, så subklasser av f.eks.
- * [Throwable] ville sluppet gjennom uten denne — Jackson velger en bean-deserializer for
- * subklassen og banlist-treffet uteblir. Modifieren sjekker alle typer Jackson bygger
- * deserializere for og bytter ut dem som er assignable til en bannlyst type.
+ * `addDeserializer(Class, ...)` registrerer på *eksakt* type, så subklasser av f.eks. [Throwable] ville sluppet gjennom uten denne — Jackson velger en bean-deserializer for subklassen og banlist-treffet uteblir.
+ * Modifieren sjekker alle typer Jackson bygger deserializere for og bytter ut dem som er assignable til en bannlyst type.
  */
 private class BanlistDeserializerModifier : ValueDeserializerModifier() {
     private fun erstatning(rawClass: Class<*>): ValueDeserializer<*>? {
@@ -224,8 +221,8 @@ internal fun banlistModule(): SimpleModule {
         val klass = entry.type.java as Class<Any>
         module.addSerializer(klass, BannedTypeSerializer(entry.grunn))
         module.addDeserializer(klass, BannedTypeDeserializer(entry.grunn))
-        // Map-nøkler: separat (de)serializer-sti i Jackson. Uten disse ville bannlyste typer
-        // kunne slippe gjennom som nøkler via toString()/KeyDeserializer-fallback.
+        // Map-nøkler: separat (de)serializer-sti i Jackson.
+        // Uten disse ville bannlyste typer kunne slippe gjennom som nøkler via toString()/KeyDeserializer-fallback.
         module.addKeySerializer(klass, BannedTypeSerializer(entry.grunn))
         module.addKeyDeserializer(klass, BannedKeyDeserializer(entry.grunn))
     }

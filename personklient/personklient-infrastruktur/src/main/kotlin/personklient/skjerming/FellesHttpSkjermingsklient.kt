@@ -34,7 +34,8 @@ import kotlin.time.Duration.Companion.seconds
  *
  * Requesten bærer fnr, så selve requesten logges aldri til vanlig logg — kun til sikkerlogg (samme regel som før migreringen til [HttpKlient]).
  *
- * @param clock Klokken til metadata-tidsstempler i [HttpKlient]. Påkrevd; ingen default i produksjonskode (se AGENTS.md).
+ * @param clock Klokken til metadata-tidsstempler i [HttpKlient].
+ * Påkrevd; ingen default i produksjonskode (se AGENTS.md).
  */
 class FellesHttpSkjermingsklient(
     endepunkt: String,
@@ -98,12 +99,18 @@ class FellesHttpSkjermingsklient(
         }
     }
 
-    /** Request-body til `/skjermet`. Bærer fnr og skal derfor aldri i vanlig logg. */
+    /**
+     * Request-body til `/skjermet`.
+     * Bærer fnr og skal derfor aldri i vanlig logg.
+     */
     private data class SkjermetDataRequestDTO(
         val personident: String,
     )
 
-    /** Request-body til `/skjermetBulk`. Bærer fnr og skal derfor aldri i vanlig logg. */
+    /**
+     * Request-body til `/skjermetBulk`.
+     * Bærer fnr og skal derfor aldri i vanlig logg.
+     */
     private data class SkjermetDataBolkRequestDTO(
         val personidenter: List<String>,
     )

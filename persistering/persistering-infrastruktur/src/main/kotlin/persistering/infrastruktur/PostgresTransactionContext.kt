@@ -46,7 +46,8 @@ class PostgresTransactionContext(
          * Første kall lager en ny transaksjonell sesjon og lukkes automatisk sammen med funksjonsblokka..
          * Påfølgende kall gjenbruker samme transaksjon.
          *
-         * @param disableSessionCounter Lagt til for at SimuleringStub ikke skal trigge 'Sessions per thread over threshold'. Kan fjernes dersom man finner en bedre løsning.
+         * @param disableSessionCounter Lagt til for at SimuleringStub ikke skal trigge 'Sessions per thread over threshold'.
+         * Kan fjernes dersom man finner en bedre løsning.
          * @throws IllegalStateException dersom den transaksjonelle sesjonen er lukket.
          */
         // Dette er en extension function og ikke en funksjon i interfacet siden vi ikke ønsker en referanse til Session, som er infrastrukturspesifikt, i domenelaget.

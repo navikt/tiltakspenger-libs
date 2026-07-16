@@ -7,7 +7,8 @@ import java.time.LocalDateTime
  * Representerer et meldekort som bruker har fylt ut.
  * Dette lagres først i meldekort-api og sendes til saksbehandling-api for videre behandling.
  * @param id Unik id (ULID/UUID) for dette meldekortet
- * @param meldeperiodeId En unik versjon av meldeperioden. Alternativ til å sende meldeperiodeKjedeId+versjon.
+ * @param meldeperiodeId En unik versjon av meldeperioden.
+ * Alternativ til å sende meldeperiodeKjedeId+versjon.
  */
 @Suppress("unused")
 data class BrukerutfyltMeldekortDTO(

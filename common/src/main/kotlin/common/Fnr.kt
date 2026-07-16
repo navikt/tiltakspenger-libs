@@ -17,7 +17,8 @@ data class Fnr private constructor(
         }
 
         /**
-         * @return null hvis fnr er ugyldig. Regel: [FNR_PATTERN]
+         * @return null hvis fnr er ugyldig.
+         * Regel: [FNR_PATTERN]
          */
         @Suppress("unused")
         fun tryFromString(fnr: String): Fnr? {
@@ -29,7 +30,8 @@ data class Fnr private constructor(
         }
 
         /**
-         * @throws UgyldigFnrException hvis fnr er ugyldig. Regel: [FNR_PATTERN]
+         * @throws UgyldigFnrException hvis fnr er ugyldig.
+         * Regel: [FNR_PATTERN]
          */
         fun fromString(fnr: String): Fnr {
             return Fnr(fnr)

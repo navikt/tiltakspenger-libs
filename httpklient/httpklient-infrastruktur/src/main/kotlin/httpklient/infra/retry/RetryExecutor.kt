@@ -17,7 +17,10 @@ import kotlin.time.TimeSource
 
 internal data class RetryExecutionResult(
     val lastResult: AttemptResult,
-    /** Ett [Forsøk] per faktisk utført HTTP-forsøk, i den rekkefølgen de ble kjørt. En [NonEmptyList] fordi [RetryExecutor.execute] alltid kjører minst ett forsøk. */
+    /**
+     * Ett [Forsøk] per faktisk utført HTTP-forsøk, i den rekkefølgen de ble kjørt.
+     * En [NonEmptyList] fordi [RetryExecutor.execute] alltid kjører minst ett forsøk.
+     */
     val forsøk: NonEmptyList<Forsøk>,
     val totalDuration: Duration,
 ) {
@@ -68,7 +71,8 @@ internal class RetryExecutor(
      *
      * Løkka er skrevet som en `while(true)`-driver som steg for steg konsulterer Arrow-schedulens [Schedule.Decision]-API — samme mønster som Arrows egne drivere (`retryOrElseEither`), slik at policy-algebraen (exponential/jittered/`and`/`or`) fortsatt eies av [RetryConfig.schedule] mens vi eier selve løkka.
      * `currentCoroutineContext().ensureActive()` kjøres rett før hvert forsøk (i `kjørForsøk`) og gir prompt kansellering også ved zero-delay-retries, der [delay] aldri nås.
-     * Første forsøk kjøres før løkka og seeder en [NonEmptyList] av [Forsøk]; påfølgende forsøk legges til. Dermed er [RetryExecutionResult.forsøk] aldri tom per type, uten defensive null-sjekker.
+     * Første forsøk kjøres før løkka og seeder en [NonEmptyList] av [Forsøk]; påfølgende forsøk legges til.
+     * Dermed er [RetryExecutionResult.forsøk] aldri tom per type, uten defensive null-sjekker.
      *
      * Veggklokke-tidsstempler ([Forsøk.start]/[Forsøk.slutt]) måles via `nå(clock)`, mens varigheter måles monotont via [timeSource] slik at de er immune mot klokkejustering.
      */

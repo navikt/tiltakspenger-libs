@@ -47,8 +47,8 @@ class ManagedKafkaConsumer<K, V>(
     private var consumerJob: Job? = null
 
     /**
-     * Referanse til den kjørende consumeren slik at [stop] kan kalle [KafkaConsumer.wakeup] for å
-     * avbryte en blokkerende poll/commit. wakeup() er den eneste trådsikre metoden på KafkaConsumer.
+     * Referanse til den kjørende consumeren slik at [stop] kan kalle [KafkaConsumer.wakeup] for å avbryte en blokkerende poll/commit.
+     * wakeup() er den eneste trådsikre metoden på KafkaConsumer.
      */
     @Volatile
     private var consumer: KafkaConsumer<K, V>? = null
@@ -69,8 +69,8 @@ class ManagedKafkaConsumer<K, V>(
             log?.error { "Consumer for topic $topic er allerede startet; ignorerer nytt kall til run()." }
             return consumerJob ?: job
         }
-        // Sett running=true _før_ vi starter coroutinen. Ellers er det en race der stop() kan sette
-        // running=false før coroutinen rekker å sette den til true, slik at consumeren kjører videre.
+        // Sett running=true _før_ vi starter coroutinen.
+        // Ellers er det en race der stop() kan sette running=false før coroutinen rekker å sette den til true, slik at consumeren kjører videre.
         running = true
 
         return scope.launch {
@@ -95,15 +95,14 @@ class ManagedKafkaConsumer<K, V>(
     fun stop() {
         log?.info { "Stopping consumer for topic: $topic" }
         running = false
-        // Avbryt en eventuell blokkerende poll/commit slik at consumeren avslutter raskt,
-        // i stedet for å vente ut pollDuration eller en pågående backoff.
+        // Avbryt en eventuell blokkerende poll/commit slik at consumeren avslutter raskt, i stedet for å vente ut pollDuration eller en pågående backoff.
         try {
             consumer?.wakeup()
         } catch (t: Throwable) {
             log?.warn(t) { "Klarte ikke å vekke consumer for topic $topic ved stopp" }
         }
-        // Vent på at konsument-loopen fullfører pågående prosessering + commit, slik at vi ikke
-        // avbryter midt i en batch. Da unngår vi unødvendig reprosessering (at-least-once) ved oppstart.
+        // Vent på at konsument-loopen fullfører pågående prosessering + commit, slik at vi ikke avbryter midt i en batch.
+        // Da unngår vi unødvendig reprosessering (at-least-once) ved oppstart.
         val activeJob = consumerJob ?: return
         runBlocking {
             try {
@@ -123,8 +122,8 @@ class ManagedKafkaConsumer<K, V>(
         try {
             consumer.subscribe(listOf(topic))
             while (running) {
-                // Én enkelt backoff per feil (ikke dobbel). Backoffen er avbruddsbar slik at stop()
-                // ikke blokkerer i opptil flere minutter.
+                // Én enkelt backoff per feil (ikke dobbel).
+                // Backoffen er avbruddsbar slik at stop() ikke blokkerer i opptil flere minutter.
                 if (status.isFailure) {
                     log?.info {
                         "Consumer status for topic $topic is failure, " +
@@ -150,8 +149,8 @@ class ManagedKafkaConsumer<K, V>(
         } catch (e: WakeupException) {
             throw e
         } catch (t: Throwable) {
-            // Feil ved selve pollingen (typisk broker-/tilkoblingsfeil). Vi forblir abonnert og lar
-            // backoffen styre forsinkelsen før neste forsøk.
+            // Feil ved selve pollingen (typisk broker-/tilkoblingsfeil).
+            // Vi forblir abonnert og lar backoffen styre forsinkelsen før neste forsøk.
             log?.error(t) { t.message }
             status.failure()
             return
@@ -169,9 +168,7 @@ class ManagedKafkaConsumer<K, V>(
 
         try {
             records.forEach { record -> process(record) }
-            // det er viktig at committing av offset først skjer når alle records er behandlet ok, hvis ikke
-            // risikerer vi at records som har feilet ikke blir forsøkt på nytt hvis vi har lest flere
-            // records i en poll
+            // det er viktig at committing av offset først skjer når alle records er behandlet ok, hvis ikke risikerer vi at records som har feilet ikke blir forsøkt på nytt hvis vi har lest flere records i en poll
             consumer.commitSync()
             status.success()
         } catch (e: WakeupException) {
@@ -181,16 +178,13 @@ class ManagedKafkaConsumer<K, V>(
         } catch (t: Throwable) {
             log?.error(t) { t.message }
             status.failure()
-            // Spol tilbake til starten av batchen slik at de samme recordene leses på nytt, uten å
-            // måtte unsubscribe og utløse en full (kostbar) rebalance.
+            // Spol tilbake til starten av batchen slik at de samme recordene leses på nytt, uten å måtte unsubscribe og utløse en full (kostbar) rebalance.
             seekToBatchStart(consumer, records)
         }
     }
 
     /**
-     * Avbruddsbar backoff: deler ventetiden opp i korte intervaller slik at [stop] (running=false)
-     * fører til at vi avslutter innen [BACKOFF_STEP_MILLIS] i stedet for å vente ut hele backoff-perioden
-     * (som kan være opptil flere minutter).
+     * Avbruddsbar backoff: deler ventetiden opp i korte intervaller slik at [stop] (running=false) fører til at vi avslutter innen [BACKOFF_STEP_MILLIS] i stedet for å vente ut hele backoff-perioden (som kan være opptil flere minutter).
      */
     private suspend fun backoff() {
         var remaining = status.backoffDuration

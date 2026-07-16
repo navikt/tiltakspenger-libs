@@ -60,8 +60,7 @@ class KafkaConfigImpl(
     /**
      * Consumer med avro-støtte.
      * useSpecificAvroReader: Settes til false hvis du vil tolke alt som GenericRecord i stedet for å bruke skjemaet
-     * De hardkodede propertyene kommer fra io.confluent:kafka-avro-serializer, men de er hardkodet for å slippe
-     * å trekke inn et bibliotek som ofte har en del sårbarheter kun for disse property-navnene.
+     * De hardkodede propertyene kommer fra io.confluent:kafka-avro-serializer, men de er hardkodet for å slippe å trekke inn et bibliotek som ofte har en del sårbarheter kun for disse property-navnene.
      */
     override fun <K, V> avroConsumerConfig(
         keyDeserializer: Deserializer<K>,

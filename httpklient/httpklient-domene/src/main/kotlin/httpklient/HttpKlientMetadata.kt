@@ -18,7 +18,8 @@ import kotlin.time.Duration
  *   Disse settes i JDK-ens ikke-offentlige connection-lag og eksponeres ikke via `HttpRequest.headers()` (verifisert), så vi kan verken lese dem tilbake fra klienten eller speile dem her uten å reimplementere JDK-intern oppførsel — som ville bundet oss til Java-versjonen.
  * @property responseHeaders Headere fra HTTP-responsen.
  *   Rekkefølgen kommer fra JDK `HttpHeaders.map()` og er typisk alfabetisk (case-insensitiv) — ikke wire-rekkefølgen.
- * @property tidsstempler Absolutte veggklokke-tidsstempler for nøkkelpunktene i kallet (auth og request/respons). Se [HttpKlientTidsstempler].
+ * @property tidsstempler Absolutte veggklokke-tidsstempler for nøkkelpunktene i kallet (auth og request/respons).
+ *   Se [HttpKlientTidsstempler].
  */
 data class HttpKlientMetadata(
     val rawRequestString: String,
@@ -35,7 +36,10 @@ data class HttpKlientMetadata(
     val attemptDurations: List<Duration>,
     /** Total tid for hele kallet, inkludert backoff mellom forsøk, målt monotont via klientens `timeSource` (immun mot klokkejustering). */
     val totalDuration: Duration,
-    /** Absolutte veggklokke-tidsstempler for auth og request/respons. Se [HttpKlientTidsstempler]. */
+    /**
+     * Absolutte veggklokke-tidsstempler for auth og request/respons.
+     * Se [HttpKlientTidsstempler].
+     */
     val tidsstempler: HttpKlientTidsstempler,
 ) {
     init {

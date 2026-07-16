@@ -66,7 +66,8 @@ interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
         perioderMedVerdi.overlappendePeriode(periode).tilPeriodisering()
 
     /**
-     * Støtter at den nye perioden er helt eller delvis utenfor. Da vil man få en [TomPeriodisering] eller [IkkesammenhengendePeriodisering]
+     * Støtter at den nye perioden er helt eller delvis utenfor.
+     * Da vil man få en [TomPeriodisering] eller [IkkesammenhengendePeriodisering]
      */
     fun krymp(nyPeriode: Periode): Periodisering<T> {
         if (nyPeriode == totalPeriode) return this
@@ -90,7 +91,8 @@ interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
     }
 
     /**
-     * Utvider en periodisering. Dersom periodiseringen har hull, vil disse fylles inn.
+     * Utvider en periodisering.
+     * Dersom periodiseringen har hull, vil disse fylles inn.
      * Merk at hvis Periodiseringen er en [IkkesammenhengendePeriodisering], så blir det en [SammenhengendePeriodisering] etter denne operasjonen - bruk [utvid] hvis du ønsker å beholde hullene i den originale periodiseringen
      */
     fun utvidOgFyllInnAlleTommePerioder(verdi: T, nyTotalPeriode: Periode): SammenhengendePeriodisering<T> {
@@ -133,7 +135,8 @@ interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
      * Tenkt at denne erstatter kombinasjonsbruk av utvid + krymp.
      * Dersom det ikke gir mening og sende inn en default-verdi (i de tilfellene periodiseringen vil overlappe den nye perioden), kan man heller bruke [krymp]
      *
-     * @return En ny periodisering med perioden til den innsendte [periode]. Dersom verdien finnes i nåværende periodisering beholdes den, hvis den ikke finnes får dagen den innsendte [defaultVerdiDersomDenMangler]
+     * @return En ny periodisering med perioden til den innsendte [periode].
+     * Dersom verdien finnes i nåværende periodisering beholdes den, hvis den ikke finnes får dagen den innsendte [defaultVerdiDersomDenMangler]
      */
     fun nyPeriode(periode: Periode, defaultVerdiDersomDenMangler: T): SammenhengendePeriodisering<T> {
         return periode.tilDager().map { dag ->

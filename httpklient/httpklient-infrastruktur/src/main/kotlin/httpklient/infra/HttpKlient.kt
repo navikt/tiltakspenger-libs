@@ -37,9 +37,12 @@ import kotlin.reflect.typeOf
  * Trenger du en metode eller hjelper som andre konsumenter også vil ha nytte av (nytt bodyformat, hjelpere rundt [HttpKlientError] osv.), legg det til her i libs i stedet for å bygge det lokalt i din egen app.
  * Poenget med modulen er at klientene konvergerer mot samme oppførsel i stedet for at hver app dupliserer sin egen variant.
  *
- * @param clock Klokken som brukes til veggklokke-tidsstempler ([no.nav.tiltakspenger.libs.httpklient.HttpKlientMetadata.tidsstempler]). Påkrevd; ingen default i produksjonskode (se AGENTS.md).
- * @param config Klientens oppførsel som ren data. Per-kall-overstyringer finnes ikke; avvikende behov får en egen klientinstans.
- * @param transport Den eneste nettverks-sømmen. Default er produksjonstransporten på `java.net.http.HttpClient`; tester sender inn en `FakeHttpTransport`.
+ * @param clock Klokken som brukes til veggklokke-tidsstempler ([no.nav.tiltakspenger.libs.httpklient.HttpKlientMetadata.tidsstempler]).
+ * Påkrevd; ingen default i produksjonskode (se AGENTS.md).
+ * @param config Klientens oppførsel som ren data.
+ * Per-kall-overstyringer finnes ikke; avvikende behov får en egen klientinstans.
+ * @param transport Den eneste nettverks-sømmen.
+ * Default er produksjonstransporten på `java.net.http.HttpClient`; tester sender inn en `FakeHttpTransport`.
  */
 class HttpKlient(
     internal val clock: Clock,
@@ -57,7 +60,10 @@ class HttpKlient(
 
     // ---------- JSON inn/ut (det dominerende behovet) ----------
 
-    /** GET → JSON deserialisert til [Res]. Setter `Accept: application/json`. */
+    /**
+     * GET → JSON deserialisert til [Res].
+     * Setter `Accept: application/json`.
+     */
     suspend inline fun <reified Res : Any> getJson(
         uri: URI,
         headere: List<Header> = emptyList(),
@@ -90,7 +96,10 @@ class HttpKlient(
     ): Either<HttpKlientError, HttpKlientResponse<Res>> =
         postJsonIntern(typeOf<Res>(), uri, body, headere, bearerToken, godta)
 
-    /** POST ferdigserialisert JSON (sendes verbatim) → JSON. Se [SerialisertJson]. */
+    /**
+     * POST ferdigserialisert JSON (sendes verbatim) → JSON.
+     * Se [SerialisertJson].
+     */
     suspend inline fun <reified Res : Any> postJson(
         uri: URI,
         body: SerialisertJson,
@@ -166,7 +175,8 @@ class HttpKlient(
         utfør(HttpMethod.PATCH, uri, headere, bearerToken, godta, jsonBody(body), ResponsFormat.IngenBody)
 
     // ---------- PDF / binært (pdfgen, SAF hentdokument) ----------
-    // Setter Accept: application/pdf. Responsen dekodes aldri som tekst; metadata får placeholderen «<binær respons, N bytes>» — sikkerlogg-trygt.
+    // Setter Accept: application/pdf.
+    // Responsen dekodes aldri som tekst; metadata får placeholderen «<binær respons, N bytes>» — sikkerlogg-trygt.
 
     /** POST JSON-DTO → PDF som rå bytes. */
     suspend fun postJsonMotPdf(

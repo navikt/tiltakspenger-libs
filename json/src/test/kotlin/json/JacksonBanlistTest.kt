@@ -254,7 +254,8 @@ internal class JacksonBanlistTest {
 
     @Test
     fun `Optional, Option og Result kaster også ved deserialisering`() {
-        // addDeserializer-registreringene treffer på exact type. For Either dekkes alt i JacksonArrowTest; her sjekker vi at de andre er linja ut.
+        // addDeserializer-registreringene treffer på exact type.
+        // For Either dekkes alt i JacksonArrowTest; her sjekker vi at de andre er linja ut.
         assertKaster("java.util.Optional") { deserialize<Optional<String>>(""""a"""") }
         assertKaster("arrow.core.Option") { deserialize<Option<String>>(""""a"""") }
         assertKaster("kotlin.Result") { deserialize<Result<Int>>("42") }
@@ -376,9 +377,7 @@ internal class JacksonBanlistTest {
 
     @Test
     fun `subklasse av Throwable kaster ved deserialisering`() {
-        // addDeserializer registrerer kun eksakt type, så uten en deserializer-modifier som
-        // sjekker isAssignableFrom ville f.eks. IllegalArgumentException sluppet gjennom og
-        // forsøkt vanlig bean-deserialisering — banlist-kontrakten må gjelde subtyper også.
+        // addDeserializer registrerer kun eksakt type, så uten en deserializer-modifier som sjekker isAssignableFrom ville f.eks. IllegalArgumentException sluppet gjennom og forsøkt vanlig bean-deserialisering — banlist-kontrakten må gjelde subtyper også.
         assertKaster("Throwable") {
             deserialize<IllegalArgumentException>("""{"message":"oops"}""")
         }
@@ -399,8 +398,7 @@ internal class JacksonBanlistTest {
 
     @Test
     fun `subklasse av bannlyst type som Map-nøkkel kaster ved deserialisering`() {
-        // Subtype + key-stien: dobbelt-spesielt — uten modifyKeyDeserializer ville en
-        // konkret File-subklasse ikke truffet eksakt-type-registreringen.
+        // Subtype + key-stien: dobbelt-spesielt — uten modifyKeyDeserializer ville en konkret File-subklasse ikke truffet eksakt-type-registreringen.
         assertKaster("Throwable") {
             deserialize<Map<IllegalArgumentException, String>>("""{"x":"v"}""")
         }

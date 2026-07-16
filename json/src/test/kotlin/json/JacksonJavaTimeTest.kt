@@ -80,7 +80,8 @@ internal class JacksonJavaTimeTest {
     @Test
     fun `java time Period — alle enheter`() {
         // Period bruker P-format med Y/M/D — IKKE H/M/S.
-        // Merk: "M" i Period betyr måneder; "M" i Duration betyr minutter. T-prefikset i Duration ("PT...") disambiguerer.
+        // Merk: "M" i Period betyr måneder; "M" i Duration betyr minutter.
+        // T-prefikset i Duration ("PT...") disambiguerer.
         roundTrip(java.time.Period.ofDays(1), """"P1D"""")
         roundTrip(java.time.Period.ofMonths(1), """"P1M"""")
         roundTrip(java.time.Period.ofYears(1), """"P1Y"""")

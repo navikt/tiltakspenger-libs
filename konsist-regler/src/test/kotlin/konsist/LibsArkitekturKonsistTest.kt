@@ -27,4 +27,14 @@ internal class LibsArkitekturKonsistTest {
     fun `ingen lokale Jackson-mappere utenfor json-modulen`() {
         IngenLokaleJacksonMappere.assert(Konsist.scopeFromProject())
     }
+
+    @Test
+    fun `kdoc og kommentarer har maks en setning per linje`() {
+        EnSetningPerLinje.assertFlereSetningerIKommentarer(Konsist.scopeFromProject())
+    }
+
+    @Test
+    fun `kdoc og kommentarer brekker ikke en setning over flere linjer`() {
+        EnSetningPerLinje.assertBrukneSetningerIKommentarer(Konsist.scopeFromProject())
+    }
 }

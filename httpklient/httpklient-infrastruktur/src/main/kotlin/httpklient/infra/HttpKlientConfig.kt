@@ -25,10 +25,16 @@ data class HttpKlientConfig(
     /** Timeout per kall (request-timeout på `java.net.http.HttpRequest`). */
     val timeout: Duration = 30.seconds,
 
-    /** Hvordan `Authorization`-headeren settes. Se [KlientAuth]. */
+    /**
+     * Hvordan `Authorization`-headeren settes.
+     * Se [KlientAuth].
+     */
     val auth: KlientAuth = KlientAuth.Ingen,
 
-    /** Retry-oppførsel. Default [Retry.Ingen] — retry er en aktiv beslutning per klient. */
+    /**
+     * Retry-oppførsel.
+     * Default [Retry.Ingen] — retry er en aktiv beslutning per klient.
+     */
     val retry: Retry = Retry.Ingen,
 
     /**

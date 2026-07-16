@@ -46,6 +46,9 @@ object NavHeadere {
     /** PDL. */
     fun behandlingsnummer(verdi: String) = Header("behandlingsnummer", verdi)
 
-    /** Meldekortservice. Fnr i klartekst, derfor sensitiv (maskeres i rawRequestString). */
+    /**
+     * Meldekortservice.
+     * Fnr i klartekst, derfor sensitiv (maskeres i rawRequestString).
+     */
     fun ident(fnr: String) = Header("ident", fnr, sensitiv = true)
 }

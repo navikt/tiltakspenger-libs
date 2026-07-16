@@ -8,7 +8,8 @@ import io.ktor.server.response.respondText
 import no.nav.tiltakspenger.libs.json.serialize
 
 /**
- * @param json ferdigserialisert JSON-string. Obs: Det gjøres ingen validering på om dette er gyldig JSON.
+ * @param json ferdigserialisert JSON-string.
+ * Obs: Det gjøres ingen validering på om dette er gyldig JSON.
  *
  * Defaulter til 200 OK og Content-Type: application/json; charset=UTF-8
  */
@@ -25,7 +26,8 @@ suspend inline fun ApplicationCall.respondJsonString(
 
 /**
  * Defaulter til 200 OK og Content-Type: application/json; charset=UTF-8
- * @throws IllegalArgumentException hvis T er String. Bruk respondJsonString(json = ...) for ferdigserialiserte strenger
+ * @throws IllegalArgumentException hvis T er String.
+ * Bruk respondJsonString(json = ...) for ferdigserialiserte strenger
  */
 suspend inline fun <reified T : Any> ApplicationCall.respondJson(
     value: T,

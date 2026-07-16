@@ -65,8 +65,7 @@ class PostgresSessionFactory(
     /**
      * Lager en ny context - starter ikke sesjonen.
      *
-     * Merk: Man må kalle withTransaction {...} før man kaller withSession {...} hvis ikke får man en [IllegalStateException]
-     * withSession {...} vil kjøre inne i den samme transaksjonen.
+     * Merk: Man må kalle withTransaction {...} før man kaller withSession {...} hvis ikke får man en [IllegalStateException] withSession {...} vil kjøre inne i den samme transaksjonen.
      * */
     private fun newTransactionContext(): PostgresTransactionContext {
         return PostgresTransactionContext(dataSource, sessionCounter)

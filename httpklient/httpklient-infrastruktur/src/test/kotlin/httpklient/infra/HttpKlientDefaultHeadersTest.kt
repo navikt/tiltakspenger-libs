@@ -60,7 +60,8 @@ internal class HttpKlientDefaultHeadersTest {
             // Headerne vi selv setter (konsument + klient-defaults) er med.
             metadata.requestHeader("X-Consumer") shouldBe "satt-av-oss"
             metadata.requestHeader("Content-Type") shouldBe "application/json"
-            // JDK-ens transport-headere er bevisst fraværende: de eksponeres ikke av java.net.http, så vi kan ikke speile dem uten å reimplementere JDK-intern oppførsel. Dokumentert på HttpKlientMetadata.requestHeaders.
+            // JDK-ens transport-headere er bevisst fraværende: de eksponeres ikke av java.net.http, så vi kan ikke speile dem uten å reimplementere JDK-intern oppførsel.
+            // Dokumentert på HttpKlientMetadata.requestHeaders.
             metadata.requestHeader("Host") shouldBe null
             metadata.requestHeader("User-Agent") shouldBe null
             metadata.requestHeader("Content-Length") shouldBe null

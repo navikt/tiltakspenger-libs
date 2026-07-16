@@ -265,14 +265,22 @@ object EnSetningPerLinje {
 
     private fun String.harOddetallRåstrengmarkører(): Boolean = råstrengRegex.findAll(this).count() % 2 == 1
 
+    /**
+     * Markdown-filene under rota, minus ekskluderte kataloger og resources.
+     * Ekskluderingen er segmentbasert slik at også nestede kataloger treffes (f.eks. `<modul>/build/` når rota er repo-rota, ikke bare `build/` på toppnivå).
+     * Filer under `src/<sourceSet>/resources` er data (f.eks. testfixtures), ikke dokumentasjon, og hoppes alltid over — samme prinsipp som [kildefiler].
+     */
     private fun Path.markdownFiler(ekskluderteKataloger: Set<String>): Sequence<Path> =
         Files
             .walk(this)
             .asSequence()
             .filter { path -> path.extension == "md" }
             .filterNot { path ->
-                val relativePath = relativize(path).toString()
-                ekskluderteKataloger.any { katalog -> relativePath == katalog || relativePath.startsWith("$katalog/") }
+                val relativ = relativize(path)
+                val relativStreng = relativ.toString()
+                relativ.any { segment -> segment.toString() in ekskluderteKataloger } ||
+                    "src/main/resources/" in relativStreng ||
+                    "src/test/resources/" in relativStreng
             }
 
     /** Setningsavslutter, eventuelle avsluttende tegn (sitat/parentes/utheving), mellomrom, eventuelle innledende tegn og stor forbokstav. */

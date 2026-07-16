@@ -10,7 +10,8 @@ import java.time.LocalDate
  * En sekundærnøkkel, sammen med sakId/saksnummer for meldekort.
  * Denne er unik for en sak og en meldeperiode.
  * Kan brukes for å identifisere en meldeperiode i en sak, uavhengig om den har blitt korrigert.
- * En [no.nav.tiltakspenger.libs.common.MeldekortId] er unik på tvers av saker og brukes til å identifisere en enkelt meldekorthendelse (utfylling). Uavhengig om det er en førstegangsutfylling eller korrigering.
+ * En [no.nav.tiltakspenger.libs.common.MeldekortId] er unik på tvers av saker og brukes til å identifisere en enkelt meldekorthendelse (utfylling).
+ * Uavhengig om det er en førstegangsutfylling eller korrigering.
  */
 data class MeldeperiodeKjedeId(val verdi: String) {
 
@@ -22,7 +23,8 @@ data class MeldeperiodeKjedeId(val verdi: String) {
     val tilOgMed: LocalDate = periode.tilOgMed
 
     init {
-        // Kommentar jah: Foreløpig har vi disse begrensningene. Beroende hva vi blir enig med Dagpenger og AAP, kan vi vurdere om vi skal akseptere meldeperioder på en uke for spesialtilfeller som uke 53.
+        // Kommentar jah: Foreløpig har vi disse begrensningene.
+        // Beroende hva vi blir enig med Dagpenger og AAP, kan vi vurdere om vi skal akseptere meldeperioder på en uke for spesialtilfeller som uke 53.
         require(periode.antallDager == 14L) {
             "En meldeperiode må være 14 dager. Var ${periode.antallDager} dager."
         }

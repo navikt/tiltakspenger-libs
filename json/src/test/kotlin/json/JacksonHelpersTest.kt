@@ -113,8 +113,7 @@ internal class JacksonHelpersTest {
     @Test
     fun `deserializeMap bevarer nestet generic-type-info for domeneklasse`() {
         // Regresjon: Map-konstruksjonen må føre videre den fulle generiske typen til Jackson.
-        // Brukes constructMapType(HashMap, K, V) i stedet for constructType(typeOf<Map<K,V>>()),
-        // mistes List<Punkt> sin elementtype, og verdiene materialiseres som List<LinkedHashMap>.
+        // Brukes constructMapType(HashMap, K, V) i stedet for constructType(typeOf<Map<K,V>>()), mistes List<Punkt> sin elementtype, og verdiene materialiseres som List<LinkedHashMap>.
         deserializeMap<String, List<Punkt>>(
             """{"a":[{"x":1,"y":2}],"b":[{"x":3,"y":4}]}""",
         ) shouldBe mapOf("a" to listOf(Punkt(1, 2)), "b" to listOf(Punkt(3, 4)))
@@ -122,10 +121,8 @@ internal class JacksonHelpersTest {
 
     @Test
     fun `deserializeMap bevarer JSON-rekkefølge på nøkler`() {
-        // Regresjon: konsumenter forventer at iterasjonsrekkefølgen til den deserialiserte map-en
-        // matcher rekkefølgen i JSON-en (insertion order). Det krever en LinkedHashMap-basert
-        // implementasjon — Jacksons default er LinkedHashMap, men bytter vi til
-        // constructMapType(HashMap, ...) ville rekkefølgen blitt udefinert.
+        // Regresjon: konsumenter forventer at iterasjonsrekkefølgen til den deserialiserte map-en matcher rekkefølgen i JSON-en (insertion order).
+        // Det krever en LinkedHashMap-basert implementasjon — Jacksons default er LinkedHashMap, men bytter vi til constructMapType(HashMap, ...) ville rekkefølgen blitt udefinert.
         val resultat = deserializeMap<String, Int>("""{"c":3,"a":1,"b":2}""")
         resultat.keys.toList() shouldBe listOf("c", "a", "b")
         resultat.values.toList() shouldBe listOf(3, 1, 2)

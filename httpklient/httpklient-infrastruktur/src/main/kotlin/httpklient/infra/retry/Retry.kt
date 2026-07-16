@@ -15,7 +15,10 @@ import kotlin.time.Duration.Companion.seconds
  * Default på [no.nav.tiltakspenger.libs.httpklient.infra.HttpKlientConfig] er [Ingen] — retry er en aktiv beslutning per klient, ikke noe man får stille.
  */
 sealed interface Retry {
-    /** Ingen retries — default. Riktig for kall der konsumenten selv eier feilhåndteringen (f.eks. utbetaling). */
+    /**
+     * Ingen retries — default.
+     * Riktig for kall der konsumenten selv eier feilhåndteringen (f.eks. utbetaling).
+     */
     data object Ingen : Retry
 
     /**

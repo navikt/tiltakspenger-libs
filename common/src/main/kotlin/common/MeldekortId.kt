@@ -4,7 +4,8 @@ import ulid.ULID
 import java.util.UUID
 
 /**
- * Brukes for meldekortbehandlinger. For rammebehandling, se [RammebehandlingId].
+ * Brukes for meldekortbehandlinger.
+ * For rammebehandling, se [RammebehandlingId].
  * Brukes på tvers av tiltakspenger sine egne tjenester.
  */
 data class MeldekortId private constructor(private val ulid: UlidBase) :

@@ -22,7 +22,8 @@ import kotlin.time.Duration.Companion.seconds
 internal class HttpKlientGetTest {
     @Test
     fun `uri-scheme er case-insensitivt (RFC 3986) og store bokstaver godtas`() = runTest {
-        // RFC 3986 §3.1: scheme er case-insensitivt. JDK-klienten lowercaser scheme selv, så HTTP:// skal fungere som http://.
+        // RFC 3986 §3.1: scheme er case-insensitivt.
+        // JDK-klienten lowercaser scheme selv, så HTTP:// skal fungere som http://.
         withWireMockServer { wiremock ->
             wiremock.stubFor(
                 get(urlEqualTo("/store-scheme")).willReturn(

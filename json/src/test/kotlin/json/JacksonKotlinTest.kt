@@ -115,10 +115,9 @@ internal class JacksonKotlinTest {
 
     // --- Numerisk overflow og presisjonstap ------------------------------------------------
     //
-    // Jackson håndhever range-grensene for `Int` og `Long` ved deserialisering — verdier utenfor
-    // intervallet kaster [InputCoercionException] (fail-loud, ikke silent wrap-around).
-    // MEN: desimaler trunkeres stille til heltall (1.5 → 1). Det er forward-compat-vennlig
-    // (gammel klient kan sende "5.0"), men maskerer reelle bugs hvis avsender mente å sende et heltall.
+    // Jackson håndhever range-grensene for `Int` og `Long` ved deserialisering — verdier utenfor intervallet kaster [InputCoercionException] (fail-loud, ikke silent wrap-around).
+    // MEN: desimaler trunkeres stille til heltall (1.5 → 1).
+    // Det er forward-compat-vennlig (gammel klient kan sende "5.0"), men maskerer reelle bugs hvis avsender mente å sende et heltall.
 
     @Test
     fun `Int — verdi over Int MAX_VALUE kaster`() {

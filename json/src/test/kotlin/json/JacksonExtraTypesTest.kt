@@ -19,10 +19,8 @@ internal class JacksonExtraTypesTest {
 
     // --- Inline value class -----------------------------------------------------------------
     //
-    // Følger samme mønster som typed IDs (`SakId`, `BehandlingId`, ...) i `common`-modulen:
-    // én underliggende verdi (her String). Jackson Kotlin-modulen "unwrapper" inline value classes
-    // automatisk, slik at de serialiseres som sin underliggende primitiv — uten behov for
-    // @JsonValue/@JsonCreator-annotasjoner.
+    // Følger samme mønster som typed IDs (`SakId`, `BehandlingId`, ...) i `common`-modulen: én underliggende verdi (her String).
+    // Jackson Kotlin-modulen "unwrapper" inline value classes automatisk, slik at de serialiseres som sin underliggende primitiv — uten behov for @JsonValue/@JsonCreator-annotasjoner.
 
     @Test
     fun `value class round-tripper som streng-primitiv via Jackson Kotlin-modulens value class-støtte`() {
@@ -69,7 +67,8 @@ internal class JacksonExtraTypesTest {
 
     // --- Arrays ------------------------------------------------------------------------------
     //
-    // Arrays serialiseres som JSON-array. Equality på Array<T> er referanse-basert, så vi sammenligner via toList().
+    // Arrays serialiseres som JSON-array.
+    // Equality på Array<T> er referanse-basert, så vi sammenligner via toList().
     // Det gjør round-trip via [roundTrip] upraktisk; vi gjør serialize + deserialize separat.
 
     @Test

@@ -31,9 +31,12 @@ import kotlin.time.Duration.Companion.seconds
  *
  * Requesten bærer fnr i GraphQL-payloaden, så selve requesten logges aldri til vanlig logg — kun til sikkerlogg (samme regel som før migreringen til [HttpKlient]).
  *
- * @param endepunkt Hele URLen til PDL-tjenesten. F.eks https://pdl-api.prod-fss-pub.nais.io/graphql
- * @param tema Tema for henvendelsen. F.eks "IND" for individstønad (det gamle navnet på tiltakspenger)
- * @param clock Klokken til metadata-tidsstempler i [HttpKlient]. Påkrevd; ingen default i produksjonskode (se AGENTS.md).
+ * @param endepunkt Hele URLen til PDL-tjenesten.
+ * F.eks https://pdl-api.prod-fss-pub.nais.io/graphql
+ * @param tema Tema for henvendelsen.
+ * F.eks "IND" for individstønad (det gamle navnet på tiltakspenger)
+ * @param clock Klokken til metadata-tidsstempler i [HttpKlient].
+ * Påkrevd; ingen default i produksjonskode (se AGENTS.md).
  * @param transport Nettverks-sømmen til [HttpKlient]; default er produksjonstransporten, tester sender inn `FakeHttpTransport`.
  */
 internal class FellesHttpPersonklient(

@@ -264,7 +264,9 @@ fun List<Periode>.inneholderOverlapp(): Boolean {
 }
 
 /**
- * Sjekker at for hver til og med er dagen før neste fra og med. Brukes gjerne i sammenhenger der man periodiserer en vedtaksperiode. Dette skal tilsvare logikken i [no.nav.tiltakspenger.libs.periodisering.ikkesammenhengende.IkkesammenhengendePeriodisering]
+ * Sjekker at for hver til og med er dagen før neste fra og med.
+ * Brukes gjerne i sammenhenger der man periodiserer en vedtaksperiode.
+ * Dette skal tilsvare logikken i [no.nav.tiltakspenger.libs.periodisering.ikkesammenhengende.IkkesammenhengendePeriodisering]
  *
  * Vil returnere false dersom listen ikke er sortert, har hull eller overlapp.
  * @return true dersom listen har mindre enn to elementer, eller alle periodene tilstøter hverandre.

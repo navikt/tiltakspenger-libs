@@ -8,7 +8,8 @@ import java.time.LocalDateTime
 /**
  *  Sak med meldeperioder og meldekortvedtak som sendes fra saksbehandling-api til meldekort-api når det fattes et nytt vedtak på saken eller det er en søknad under behandling.
  *  @param meldeperioder Gjeldende versjon av alle meldeperioder på saken
- *  @param meldekortvedtak Alle meldekortvedtak på saken. Brukes til visning og varsling i meldekort-api.
+ *  @param meldekortvedtak Alle meldekortvedtak på saken.
+ *      Brukes til visning og varsling i meldekort-api.
  *      Default `emptyList()` for å være bakoverkompatibel med eldre saksbehandling-api-versjoner.
  * */
 data class SakTilMeldekortApiDTO(
@@ -30,8 +31,8 @@ data class SakTilMeldekortApiDTO(
         val girRett: Map<LocalDate, Boolean>,
     ) {
         /**
-         * Bakoverkompatibilitet: meldekort-api / andre konsumenter som ikke er oppgradert
-         * leser fortsatt `fraOgMed`/`tilOgMed` flatt. Slik unngår vi koordinerte deploys.
+         * Bakoverkompatibilitet: meldekort-api / andre konsumenter som ikke er oppgradert leser fortsatt `fraOgMed`/`tilOgMed` flatt.
+         * Slik unngår vi koordinerte deploys.
          * Fjernes når alle konsumenter har gått over til [periodeDTO].
          */
         @Deprecated("Bruk periodeDTO.fraOgMed", ReplaceWith("periodeDTO.fraOgMed"))
@@ -50,13 +51,12 @@ data class SakTilMeldekortApiDTO(
     }
 
     /**
-     * Et iverksatt meldekortvedtak. Meldekortvedtak er immutable etter iverksettelse,
-     * så meldekort-api kan trygt deduplisere på [id].
+     * Et iverksatt meldekortvedtak.
+     * Meldekortvedtak er immutable etter iverksettelse, så meldekort-api kan trygt deduplisere på [id].
      *
-     * Et vedtak gjelder én underliggende meldekortbehandling som kan omfatte én eller flere
-     * sammenhengende [MeldeperiodebehandlingDTO]. Felter fra selve meldekortbehandlingen er lagt
-     * flatt på vedtaket. Beløp og total-periode utelates — meldekort-api kan regne dem ut fra
-     * meldeperiodebehandlingene ved behov.
+     * Et vedtak gjelder én underliggende meldekortbehandling som kan omfatte én eller flere sammenhengende [MeldeperiodebehandlingDTO].
+     * Felter fra selve meldekortbehandlingen er lagt flatt på vedtaket.
+     * Beløp og total-periode utelates — meldekort-api kan regne dem ut fra meldeperiodebehandlingene ved behov.
      *
      * @param id VedtakId (ULID).
      * @param meldeperiodebehandlinger Sammenhengende og sortert ikke-tom liste av meldeperiodebehandlinger som inngår i vedtaket.
@@ -82,12 +82,10 @@ data class SakTilMeldekortApiDTO(
         }
 
         /**
-         * Én meldeperiodebehandling inne i et meldekortvedtak. Hver meldeperiodebehandling
-         * gjelder nøyaktig én meldeperiode (mandag-søndag, 14 dager).
+         * Én meldeperiodebehandling inne i et meldekortvedtak.
+         * Hver meldeperiodebehandling gjelder nøyaktig én meldeperiode (mandag-søndag, 14 dager).
          *
-         * @param brukersMeldekortId Id-en til brukers innsendte meldekort som denne behandlingen
-         *      tok utgangspunkt i, eller `null` dersom behandlingen ikke er knyttet til et brukers meldekort
-         *      (f.eks. ved automatisk behandling uten innsendt meldekort, eller manuell behandling før bruker har sendt inn).
+         * @param brukersMeldekortId Id-en til brukers innsendte meldekort som denne behandlingen tok utgangspunkt i, eller `null` dersom behandlingen ikke er knyttet til et brukers meldekort (f.eks. ved automatisk behandling uten innsendt meldekort, eller manuell behandling før bruker har sendt inn).
          *      Lar meldekort-api vise hvilke overstyringer saksbehandler har gjort sammenliknet med brukers innsendte verdier.
          */
         data class MeldeperiodebehandlingDTO(

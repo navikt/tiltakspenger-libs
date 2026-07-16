@@ -83,8 +83,7 @@ sealed interface InternalPrincipalMappingfeil {
     data object IngenRoller : InternalPrincipalMappingfeil
 }
 
-// Brukes for mapping av saksbehandler for å slippe å sende inn systembrukermapper for saksbehandler
-// siden saksbehandler uansett ikke har noen systembruker-roller
+// Brukes for mapping av saksbehandler for å slippe å sende inn systembrukermapper for saksbehandler siden saksbehandler uansett ikke har noen systembruker-roller
 private data class IngenSystembrukerroller(
     override val value: Set<GenerellSystembrukerrolle>,
 ) : GenerellSystembrukerroller<GenerellSystembrukerrolle>,

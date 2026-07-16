@@ -23,10 +23,13 @@ import kotlin.time.Duration.Companion.seconds
  * Dersom en pod har blitt valgt som leder, vil den være det til podden er slettet fra kubernetes-clusteret.
  * Kallet gjøres med felles [HttpKlient] uten auth — sidecaren er lokal og uautentisert.
  *
- * @param electorPath Full URL til leader-elector sidecar, med eller uten `http://`-prefiks. Dokumentasjonen sier den skal ligge i environment-variabelen `$ELECTOR_PATH`.
- * @param clock Klokke til tidsstempler i [HttpKlient]-metadata. Påkrevd; ingen default i produksjonskode (se AGENTS.md).
+ * @param electorPath Full URL til leader-elector sidecar, med eller uten `http://`-prefiks.
+ * Dokumentasjonen sier den skal ligge i environment-variabelen `$ELECTOR_PATH`.
+ * @param clock Klokke til tidsstempler i [HttpKlient]-metadata.
+ * Påkrevd; ingen default i produksjonskode (se AGENTS.md).
  * @param connectTimeout Connect-timeout mot sidecaren; den er lokal, så default er stram.
- * @param timeout Request-timeout per kall. Den gamle klienten hadde ingen request-timeout (kunne henge for alltid); et lite tak er strengt bedre for en lokal sidecar.
+ * @param timeout Request-timeout per kall.
+ * Den gamle klienten hadde ingen request-timeout (kunne henge for alltid); et lite tak er strengt bedre for en lokal sidecar.
  * @param transport Nettverks-sømmen til [HttpKlient]; default er produksjonstransporten, tester sender inn `FakeHttpTransport` slik at hele den reelle pipelinen kjører.
  *
  * Docs: https://doc.nais.io/services/leader-election/
@@ -46,8 +49,8 @@ class LeaderPodLookupClient(
         transport = transport,
     )
 
-    // Once we become leader, we cache it. Per NAIS docs, a leader keeps its role until the pod is deleted
-    // from the kubernetes cluster, so this short-circuit is safe.
+    // Once we become leader, we cache it.
+    // Per NAIS docs, a leader keeps its role until the pod is deleted from the kubernetes cluster, so this short-circuit is safe.
     private val amITheLeader = atomic(false)
 
     override fun amITheLeader(localHostName: String): Either<LeaderPodLookupFeil, Boolean> {

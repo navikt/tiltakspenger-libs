@@ -184,8 +184,8 @@ class ManagedKafkaConsumerTest {
         try {
             runBlocking {
                 eventually(10.seconds) {
-                    // hvis vi leser flere meldinger av gangen vil antall konsumerte meldinger være større enn antall
-                    // produserte meldinger. Så lenge MAX_POLL_RECORDS=1 i consumerconfig skal disse være like.
+                    // hvis vi leser flere meldinger av gangen vil antall konsumerte meldinger være større enn antall produserte meldinger.
+                    // Så lenge MAX_POLL_RECORDS=1 i consumerconfig skal disse være like.
                     consumed.size shouldBe data.size
                     consumed.toSet().size shouldBe data.size
                 }

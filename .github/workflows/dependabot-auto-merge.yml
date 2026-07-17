@@ -7,6 +7,13 @@ on:
 # Minste privilegium: toppnivået nullstiller alle token-rettigheter, hver jobb deklarerer eksplisitt det den trenger.
 permissions: {}
 
+# Rebaser Dependabot mens en tidligere kjøring fortsatt bygger, feiler den gamle kjøringen på --match-head-commit og gir falskt feilvarsel.
+# Kansellering løser det: ny kjøring på samme PR avbryter den gamle, og kansellerte kjøringer regnes ikke som failure().
+# Må stå i calleren - en delt workflow lager ingen egen run, så concurrency på toppnivå der ignoreres.
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   dependabot:
     # Selve logikken bor i den delte workflowen i metarepoet, se navikt/tiltakspenger#31.

@@ -4,13 +4,16 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-  pull-requests: write
+# Minste privilegium: toppnivået nullstiller alle token-rettigheter, hver jobb deklarerer eksplisitt det den trenger.
+permissions: {}
 
 jobs:
   dependabot:
     runs-on: ubuntu-latest
+    # contents: write for å merge PR-en, pull-requests: write for gh pr merge.
+    permissions:
+      contents: write
+      pull-requests: write
     if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
     env:
       PR_SHA: ${{ github.event.pull_request.head.sha }}

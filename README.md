@@ -26,6 +26,22 @@ dependencies {
 }
 ```
 
+## Forsyningskjede: attestering og SBOM
+
+Hver publisering attesteres med [SLSA-provenance](https://slsa.dev/spec/v1.0/provenance) via [GitHubs artifact attestations](https://docs.github.com/en/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds) (`actions/attest`-steget i `.github/workflows/push.yml`).
+Attestasjonen binder hver jar kryptografisk til commit og workflow-kjøring, og kan ses under [attestations](https://github.com/navikt/tiltakspenger-libs/attestations).
+Konsumenter kan verifisere at en jar faktisk ble bygget av CI i dette repoet:
+
+```bash
+gh attestation verify <sti-til-jar> --repo navikt/tiltakspenger-libs
+```
+
+Vi genererer bevisst **ikke** egen SBOM per jar:
+
+- [Nais' SBOM-løp](https://docs.nais.io/services/vulnerabilities/how-to/sbom/) (`nais/docker-build-push` med `salsa: true`) gjelder kun container-images som deployes til Nais — dette repoet publiserer jar-er og deployes aldri.
+- Konsument-appenes image-SBOM-er inkluderer allerede libs-jar-ene og deres transitive avhengigheter, så sårbarheter spores i Nais' sårbarhetsoversikt der koden faktisk kjører.
+- Repoets egne avhengigheter overvåkes av Dependabot.
+
 ## Kom i gang (utvikling)
 
 ```bash
@@ -76,3 +92,15 @@ Tekniske termer brukes på engelsk når det er bransjestandard (f.eks. `serializ
   Bruk ASCII.
 - **PostgresRepo-parametere:** vi bruker *ikke* æøå i navngitte parametere som sendes til databasen (`:soknadId`, ikke `:søknadId`).
   Verdier som lagres som JSONB kan inneholde æøå — det er bare parameternavn og kolonnenavn som må være ASCII.
+
+## Hvordan andre team i Nav gjør det
+
+Andre teams libs-oppsett er nyttige å skjele til når vi endrer publisering, CI eller struktur (kartlagt 2026-07-17):
+
+- [`navikt/dp-biblioteker`](https://github.com/navikt/dp-biblioteker) (Dagpenger) — Gradle multi-modul som oss, datobasert versjon med commit-sha (`YYYY.MM.dd-HH.mm.<sha12>`).
+- [`navikt/tilleggsstonader-libs`](https://github.com/navikt/tilleggsstonader-libs) og [`-kontrakter`](https://github.com/navikt/tilleggsstonader-kontrakter) — deler én [reusable workflow i metarepoet](https://github.com/navikt/tilleggsstonader/blob/main/.github/workflows/java-build-and-publish-release.yml), bruker `dependency-graph: generate-and-submit`, publiserer `-dev`-versjoner fra brancher.
+- [`navikt/familie-felles`](https://github.com/navikt/familie-felles) og [`familie-kontrakter`](https://github.com/navikt/familie-kontrakter) — Maven, publiserer ved PR-merge, Slack-varsel ved feilet bygg.
+- [`navikt/pensjon-etterlatte-felles`](https://github.com/navikt/pensjon-etterlatte-felles) (Etterlatte) — monorepo der brancher publiserer prerelease-versjoner (`dev.<sha>.dev`) så konsumenter kan teste før merge.
+- AAP/Kelvin har ikke eget libs-repo, men publiserer kontrakt-jar-er fra app-repoene (f.eks. [`aap-tilgang`](https://github.com/navikt/aap-tilgang), [`aap-behandlingsflyt`](https://github.com/navikt/aap-behandlingsflyt)); behandlingsflyt publiserer i tillegg en CycloneDX-SBOM som eget maven-artefakt.
+
+Ingen av teamene attesterer maven-artefaktene sine (per kartleggingen) — se seksjonen om forsyningskjede over for hvordan vi gjør det.

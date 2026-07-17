@@ -8,8 +8,8 @@ concurrency:
   group: codeql-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
+# Minste privilegium: toppnivået nullstiller alle token-rettigheter, hver jobb deklarerer eksplisitt det den trenger.
+permissions: {}
 
 jobs:
   analyze:

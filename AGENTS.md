@@ -123,6 +123,12 @@ for id in $(gh cache list --limit 100 --json id,key -q '.[] | select(.key | cont
 ```
 - Delt build-konfig (Kotlin/JVM-versjon, spotless-konfig, compiler-flagg, JUnit 4-ekskludering, `per_class`-testlivssyklus) ligger i `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts` — sjekk der før du endrer build-oppførsel i enkeltmoduler.
 
+## CI og publisering
+
+Publisering skjer fra `.github/workflows/push.yml`: tidsstempel-versjon (`0.0.<UTC-tidsstempel>`), GitHub Packages, SLSA-provenance-attestering av jar-ene og dependency graph-innsending.
+Alle workflows nullstiller token-rettigheter på toppnivå (`permissions: {}`) og deklarerer eksplisitt per jobb — behold det mønsteret ved nye workflows/jobber.
+Endrer du publisering eller CI-struktur, se README-seksjonen «Hvordan andre team i Nav gjør det» for sammenlignbare oppsett (dagpenger, tilleggsstønader, familie, etterlatte, aap).
+
 ## Avhengigheter
 
 Minimér eksterne avhengigheter.

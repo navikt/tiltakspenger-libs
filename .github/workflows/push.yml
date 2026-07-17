@@ -5,6 +5,9 @@ name: Build and deploy
 # (GitHub starter ikke workflows fra pushes gjort med GITHUB_TOKEN).
 # Dependabot-merger publiseres og releases derfor først ved neste vanlige push til main.
 
+# Minste privilegium: toppnivået nullstiller alle token-rettigheter, hver jobb deklarerer eksplisitt det den trenger.
+permissions: {}
+
 # Raske påfølgende pushes ga overlappende kjøringer.
 # Kjør publisering og release serielt; ved flere ventende kjøringer vinner den nyeste.
 concurrency:
@@ -37,6 +40,9 @@ jobs:
       packages: write
       checks: write
       contents: write
+      # Attestering av publiserte jar-er (actions/attest) krever OIDC-token og skrivetilgang til attestations-API-et.
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -59,10 +65,24 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           gradle-version: wrapper
+          # Send den resolvede avhengighetsgrafen til GitHubs dependency submission-API (krever contents: write).
+          # Gir Dependabot-alerts også for transitive avhengigheter, ikke bare de deklarerte.
+          dependency-graph: generate-and-submit
       - name: Build, test, and publish
         run: ./gradlew --console=plain -Pversion=${{ steps.tag.outputs.version }} build publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # SLSA-provenance for de publiserte jar-ene, se navikt/tiltakspenger-libs#528.
+      # Attestasjonen binder hver jar (inkl. sources- og testFixtures-jar-er) kryptografisk til commit og workflow-kjøring via GitHubs artifact attestations.
+      # Konsumenter verifiserer med `gh attestation verify <jar> --repo navikt/tiltakspenger-libs` - se README.
+      # buildSrc-jaren er et internt byggeprodukt som aldri publiseres, så den ekskluderes.
+      # Feiler attesteringen, lages ingen tag/release - samme delvis-feilet-historie som ved feilet publisering over, og neste kjøring får ny versjon.
+      - name: Attester publiserte jar-er (SLSA-provenance)
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-path: |
+            **/build/libs/*.jar
+            !buildSrc/**
       - name: Create release
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
         env:

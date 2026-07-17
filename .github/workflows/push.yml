@@ -65,6 +65,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           gradle-version: wrapper
+          # Ingen gradle-cache i publiserings-workflowen: artefaktene vi attesterer skal bygges fra friske avhengigheter, ikke fra en cache som kan forgiftes (zizmor: cache-poisoning).
+          # Publiseringene er serialiserte og relativt sjeldne, så tregere bygg er akseptabelt.
+          cache-disabled: true
           # Send den resolvede avhengighetsgrafen til GitHubs dependency submission-API (krever contents: write).
           # Gir Dependabot-alerts også for transitive avhengigheter, ikke bare de deklarerte.
           dependency-graph: generate-and-submit

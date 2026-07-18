@@ -15,11 +15,8 @@ import com.lemonappdev.konsist.api.container.KoScope
 object IngenNowUtenClock {
 
     fun brudd(scope: KoScope): List<String> = scope.kildefiler().flatMap { file ->
-        file.text.lines().mapIndexedNotNull { index, linje ->
-            val trimmet = linje.trim()
-            if (trimmet.startsWith("//") || trimmet.startsWith("*") || trimmet.startsWith("/*")) return@mapIndexedNotNull null
-            val kode = linje.utenTrailingKommentar()
-            nowUtenClockRegex.find(kode)?.let { match -> "${file.path}:${index + 1}: ${match.value}" }
+        file.kodelinjer().mapNotNull { (linjenummer, kode) ->
+            nowUtenClockRegex.find(kode)?.let { match -> "${file.path}:$linjenummer: ${match.value}" }
         }
     }
 
@@ -27,22 +24,6 @@ object IngenNowUtenClock {
         brudd(scope),
         "Hent aldri nåtid uten Clock — bruk now(clock) eller nå(clock) fra libs-common (se «Clock og tid» i AGENTS-backend.md).",
     )
-
-    /**
-     * Kutter linjen ved første `//` som starter en trailing-kommentar.
-     * `//` inne i strengliteraler (typisk URL-er) beholdes med samme heuristikk som i [EnSetningPerLinje]: oddetall anførselstegn foran, eller `:` rett foran.
-     */
-    private fun String.utenTrailingKommentar(): String {
-        var searchFrom = 0
-        while (true) {
-            val index = indexOf("//", searchFrom)
-            if (index == -1) return this
-            val insideString = take(index).count { char -> char == '"' } % 2 == 1
-            val partOfUrl = index > 0 && this[index - 1] == ':'
-            if (!insideString && !partOfUrl) return take(index)
-            searchFrom = index + 2
-        }
-    }
 
     /** No-arg `now()` på java.time-typene. */
     private val nowUtenClockRegex =

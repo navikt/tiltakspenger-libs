@@ -35,6 +35,23 @@ internal class LibsArkitekturKonsistTest {
     }
 
     @Test
+    fun `bruk nå fra libs-common, ikke LocalDateTime-now`() {
+        IngenLocalDateTimeNow.assert(
+            scope = Konsist.scopeFromProject(),
+            unntatteFilstier = setOf("common/src/main/kotlin/common/LocalDateTimeEx.kt"),
+        )
+    }
+
+    /**
+     * Test-hjelpemodulene (`test-common`, `ktor-test-common`, `persistering-test-common`) er unntatt:
+     * de skal per AGENTS-regelen «Ingen standardverdier» nettopp tilby `fixedClock`/`TikkendeKlokke` som teststandard.
+     */
+    @Test
+    fun `Clock-parametre har ikke default-verdi i produksjonskode`() {
+        IngenClockDefault.assert(Konsist.scopeFromProduction().slice { file -> "test-common" !in file.path })
+    }
+
+    @Test
     fun `kdoc og kommentarer har maks en setning per linje`() {
         EnSetningPerLinje.assertFlereSetningerIKommentarer(Konsist.scopeFromProject())
     }

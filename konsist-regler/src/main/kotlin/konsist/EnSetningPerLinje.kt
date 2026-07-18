@@ -17,7 +17,7 @@ import kotlin.streams.asSequence
  * Deteksjonen er heuristikker.
  * Flere setninger på én linje flagges når en setningsavslutter (`.`, `!`, `?`) etterfølges av mellomrom og stor forbokstav.
  * Brukket setning flagges når en fortsettelseslinje starter med liten bokstav og forrige linje i samme avsnitt ikke er avsluttet.
- * Unntatt fra sjekkene er forkortelser, interjeksjoner, tall (listepunkter, datoer), sitater, innhold i backticks/kodeblokker/rå strenger og linjer som ser ut som kode.
+ * Unntatt fra sjekkene er forkortelser, interjeksjoner, tall (listepunkter, datoer), sitater, innhold i backticks/kodeblokker/rå strenger, linjer som ser ut som kode, frittstående URL-linjer og language-injection-direktiver.
  *
  * Kildekodesjekkene tar et Konsist-scope, markdownsjekkene tar en rotkatalog (typisk `Path.of(System.getProperty("user.dir"))` fra testen).
  */
@@ -243,6 +243,7 @@ object EnSetningPerLinje {
      * Flagger en fortsettelseslinje som starter med liten bokstav når forrige linje i samme avsnitt ikke er avsluttet.
      * Markørlinjer (listepunkter, KDoc-tags, overskrifter) starter aldri med liten bokstav og er dermed automatisk unntatt.
      * Linjer som ser ut som kode (utkommentert kode eller kodeeksempler uten gjerder) unntas også.
+     * Det samme gjelder frittstående referanselinjer: linjer som kun består av en URL, og language-injection-direktiver (f.eks. `language=json`).
      */
     private fun List<Tekstlinje>.finnBrukneSetninger(): List<Tekstlinje> =
         zipWithNext().mapNotNull { (forrige, denne) ->
@@ -251,7 +252,8 @@ object EnSetningPerLinje {
                     denne.tekst.first().isLowerCase() &&
                     forrige.tekst.erUavsluttet() &&
                     !forrige.tekst.erKodeaktig() &&
-                    !denne.tekst.erKodeaktig()
+                    !denne.tekst.erKodeaktig() &&
+                    !denne.tekst.erFrittståendeReferanse()
             }
         }
 
@@ -262,6 +264,12 @@ object EnSetningPerLinje {
     }
 
     private fun String.erKodeaktig(): Boolean = kodeaktigRegex.containsMatchIn(this)
+
+    /**
+     * Frittstående referanselinjer er ikke setningsfortsettelser selv om de starter med liten bokstav.
+     * Dekker linjer som kun består av en URL (typisk referanselister i KDoc) og IntelliJ language-injection-direktiver som `language=json`.
+     */
+    private fun String.erFrittståendeReferanse(): Boolean = frittståendeReferanseRegex.matches(this)
 
     private fun String.harOddetallRåstrengmarkører(): Boolean = råstrengRegex.findAll(this).count() % 2 == 1
 
@@ -299,6 +307,9 @@ object EnSetningPerLinje {
 
     /** Utkommentert kode og kodeeksempler: Kotlin-nøkkelord, kall-uttrykk eller tilordning. */
     private val kodeaktigRegex = Regex("""^(val|var|fun|if|when|for|while|return|import)\b|^[\w.]+\(.*\)$|\s=\s""")
+
+    /** Hele linjen er en URL, eller et language-injection-direktiv. */
+    private val frittståendeReferanseRegex = Regex("""^(https?://\S+|language=\w+)$""")
 
     private val forkortelser =
         setOf(

@@ -30,6 +30,11 @@ internal class LibsArkitekturKonsistTest {
     }
 
     @Test
+    fun `produksjonskode henter aldri nåtid uten Clock`() {
+        IngenNowUtenClock.assert(Konsist.scopeFromProduction())
+    }
+
+    @Test
     fun `kdoc og kommentarer har maks en setning per linje`() {
         EnSetningPerLinje.assertFlereSetningerIKommentarer(Konsist.scopeFromProject())
     }

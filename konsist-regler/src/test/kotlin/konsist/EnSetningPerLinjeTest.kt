@@ -21,8 +21,16 @@ internal class EnSetningPerLinjeTest {
     fun `flagger setning brukket over to kommentarlinjer`() {
         val brudd = EnSetningPerLinje.brukneSetningerIKommentarer(scope)
 
-        brudd shouldHaveSize 1
-        brudd.single() shouldContain "fortsetter på neste linje"
+        brudd shouldHaveSize 2
+        brudd.first() shouldContain "fortsetter på neste linje"
+        brudd.last() shouldContain "og fortsetter med prosa her etterpå"
+    }
+
+    @Test
+    fun `frittstående URL-linjer og language-injection-direktiver flagges ikke som brukne setninger`() {
+        val brukne = EnSetningPerLinje.brukneSetningerIKommentarer(scope)
+
+        brukne.filter { it.contains("example.com/docs") || it.contains("language=") }.shouldBeEmpty()
     }
 
     @Test

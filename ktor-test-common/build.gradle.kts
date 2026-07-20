@@ -1,5 +1,6 @@
 plugins {
     id("tiltakspenger-lib-conventions")
+    alias(libs.plugins.kover)
 }
 
 dependencies {
@@ -9,6 +10,8 @@ dependencies {
     implementation(project(":auth-test-core"))
 
     implementation(libs.arrow.core)
+    implementation(libs.kotest.assertions.core)
+    implementation(libs.kotest.assertions.json)
 
     // Vi ønsker at konsumentene bruker sine egne versjoner av ktor
     compileOnly(libs.ktor.server.core)
@@ -17,4 +20,19 @@ dependencies {
     compileOnly(libs.ktor.server.test.host.jvm)
 
     testImplementation(project(":test-common"))
+    testImplementation(libs.ktor.server.test.host)
+}
+
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(100)
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(tasks.koverVerify)
 }

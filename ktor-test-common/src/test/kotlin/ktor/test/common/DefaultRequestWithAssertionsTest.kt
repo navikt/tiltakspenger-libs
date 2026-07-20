@@ -28,6 +28,9 @@ internal class DefaultRequestWithAssertionsTest {
             get("/tom") {
                 call.respond(HttpStatusCode.OK)
             }
+            get("/feil") {
+                call.respondText("noe gikk galt", status = HttpStatusCode.InternalServerError)
+            }
             get("/headere") {
                 call.respondText(
                     "harAuth=${call.request.headers[HttpHeaders.Authorization] != null}, callId=${call.request.headers[HttpHeaders.XCorrelationId]}",
@@ -47,61 +50,64 @@ internal class DefaultRequestWithAssertionsTest {
                 method = HttpMethod.Get,
                 uri = "/json",
                 jwt = "jwt-for-test",
-                forventetStatus = HttpStatusCode.OK,
-                forventetBody = """{"a":1,"b":"tekst"}""",
-                forventetContentType = ContentType.Application.Json,
+                forventet = ForventetRespons(
+                    status = HttpStatusCode.OK,
+                    body = ForventetBody.Eksakt("""{"a":1,"b":"tekst"}"""),
+                    contentType = ContentType.Application.Json,
+                ),
             )
             response.status shouldBe HttpStatusCode.OK
         }
     }
 
     @Test
-    fun `forventetJsonBody asserter json-likhet uavhengig av nøkkelrekkefølge`() {
+    fun `Json asserter json-likhet uavhengig av nøkkelrekkefølge`() {
         testApplication {
             testRoutes()
             defaultRequestWithAssertions(
                 method = HttpMethod.Get,
                 uri = "/json",
                 jwt = "jwt-for-test",
-                forventetStatus = HttpStatusCode.OK,
-                forventetJsonBody = """{"b":"tekst","a":1}""",
+                forventet = ForventetRespons(
+                    status = HttpStatusCode.OK,
+                    body = ForventetBody.Json("""{"b":"tekst","a":1}"""),
+                ),
             )
         }
     }
 
     @Test
-    fun `kaster når både forventetBody og forventetJsonBody er satt`() {
+    fun `forventet satt til null gjør ingen assertions`() {
         testApplication {
             testRoutes()
-            shouldThrow<IllegalArgumentException> {
-                defaultRequestWithAssertions(
-                    method = HttpMethod.Get,
-                    uri = "/json",
-                    jwt = "jwt-for-test",
-                    forventetStatus = HttpStatusCode.OK,
-                    forventetBody = """{"a":1,"b":"tekst"}""",
-                    forventetJsonBody = """{"a":1,"b":"tekst"}""",
-                )
-            }.message shouldBe "Sett maks én av forventetBody og forventetJsonBody"
+            val response = defaultRequestWithAssertions(
+                method = HttpMethod.Get,
+                uri = "/feil",
+                jwt = "jwt-for-test",
+                forventet = null,
+            )
+            response.status shouldBe HttpStatusCode.InternalServerError
         }
     }
 
     @Test
-    fun `godtar tom body uten content type`() {
+    fun `Tom godtar tom body uten content type`() {
         testApplication {
             testRoutes()
             defaultRequestWithAssertions(
                 method = HttpMethod.Get,
                 uri = "/tom",
                 jwt = "jwt-for-test",
-                forventetStatus = HttpStatusCode.OK,
-                forventetBody = "",
+                forventet = ForventetRespons(
+                    status = HttpStatusCode.OK,
+                    body = ForventetBody.Tom,
+                ),
             )
         }
     }
 
     @Test
-    fun `tom forventet body krever at responsen ikke har content type`() {
+    fun `Tom feiler når responsen har body og content type`() {
         testApplication {
             testRoutes()
             shouldThrow<AssertionError> {
@@ -109,11 +115,24 @@ internal class DefaultRequestWithAssertionsTest {
                     method = HttpMethod.Get,
                     uri = "/json",
                     jwt = "jwt-for-test",
-                    forventetStatus = HttpStatusCode.OK,
-                    forventetBody = "",
+                    forventet = ForventetRespons(
+                        status = HttpStatusCode.OK,
+                        body = ForventetBody.Tom,
+                    ),
                 )
             }.message shouldContain "Response details:"
         }
+    }
+
+    @Test
+    fun `Tom kan ikke kombineres med contentType`() {
+        shouldThrow<IllegalArgumentException> {
+            ForventetRespons(
+                status = HttpStatusCode.OK,
+                body = ForventetBody.Tom,
+                contentType = ContentType.Application.Json,
+            )
+        }.message shouldBe "ForventetBody.Tom krever at responsen ikke har Content-Type, så contentType kan ikke settes samtidig"
     }
 
     @Test
@@ -125,7 +144,7 @@ internal class DefaultRequestWithAssertionsTest {
                     method = HttpMethod.Get,
                     uri = "/json",
                     jwt = "jwt-for-test",
-                    forventetStatus = HttpStatusCode.BadRequest,
+                    forventet = ForventetRespons(status = HttpStatusCode.BadRequest),
                 )
             }.message!!
             message shouldContain "Response details:"
@@ -141,9 +160,11 @@ internal class DefaultRequestWithAssertionsTest {
             defaultRequestWithAssertions(
                 method = HttpMethod.Get,
                 uri = "/headere",
-                forventetStatus = HttpStatusCode.OK,
-                forventetBody = "harAuth=true, callId=DEFAULT_CALL_ID",
-                forventetContentType = ContentType.Text.Plain.withCharset(Charsets.UTF_8),
+                forventet = ForventetRespons(
+                    status = HttpStatusCode.OK,
+                    body = ForventetBody.Eksakt("harAuth=true, callId=DEFAULT_CALL_ID"),
+                    contentType = ContentType.Text.Plain.withCharset(Charsets.UTF_8),
+                ),
             )
         }
     }
@@ -156,9 +177,11 @@ internal class DefaultRequestWithAssertionsTest {
                 method = HttpMethod.Get,
                 uri = "/headere",
                 jwt = null,
-                forventetStatus = HttpStatusCode.OK,
-                forventetBody = "harAuth=false, callId=DEFAULT_CALL_ID",
-                forventetContentType = ContentType.Text.Plain.withCharset(Charsets.UTF_8),
+                forventet = ForventetRespons(
+                    status = HttpStatusCode.OK,
+                    body = ForventetBody.Eksakt("harAuth=false, callId=DEFAULT_CALL_ID"),
+                    contentType = ContentType.Text.Plain.withCharset(Charsets.UTF_8),
+                ),
             )
         }
     }
@@ -180,9 +203,11 @@ internal class DefaultRequestWithAssertionsTest {
                 method = HttpMethod.Post,
                 uri = "/ekko",
                 jwt = "jwt-for-test",
-                forventetStatus = HttpStatusCode.OK,
-                forventetJsonBody = """{"x":42}""",
-                forventetContentType = ContentType.Application.Json,
+                forventet = ForventetRespons(
+                    status = HttpStatusCode.OK,
+                    body = ForventetBody.Json("""{"x":42}"""),
+                    contentType = ContentType.Application.Json,
+                ),
             ) {
                 setBody("""{"x":42}""")
             }

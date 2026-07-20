@@ -30,8 +30,8 @@ internal class LibsArkitekturKonsistTest {
     }
 
     @Test
-    fun `produksjonskode henter aldri nåtid uten Clock`() {
-        IngenNowUtenClock.assert(Konsist.scopeFromProduction())
+    fun `henter aldri nåtid uten Clock`() {
+        IngenNowUtenClock.assert(Konsist.scopeFromProject())
     }
 
     @Test

@@ -11,7 +11,6 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.append
 import io.ktor.http.contentType
 import io.ktor.server.testing.ApplicationTestBuilder
@@ -38,12 +37,9 @@ suspend fun ApplicationTestBuilder.defaultRequest(
 }
 
 /**
- * Sender en request via [defaultRequest] og asserter på responsen.
- * Asserter alltid at status er [forventetStatus].
- * [forventetBody] asserter eksakt strenglikhet mot responsbodyen, mens [forventetJsonBody] asserter JSON-likhet.
- * Maks én av [forventetBody] og [forventetJsonBody] kan være satt.
- * [forventetContentType] asserter responsens Content-Type når den er satt; `null` betyr at Content-Type ikke assertes.
- * Kryssjekker at tom [forventetBody] innebærer at responsen ikke har Content-Type, og at manglende Content-Type innebærer tom responsbody.
+ * Sender en request via [defaultRequest] og asserter responsen mot [forventet].
+ * Er [forventet] `null`, gjøres ingen assertions i det hele tatt.
+ * Kryssjekker at manglende Content-Type innebærer tom responsbody.
  * Ved assertion-feil dumpes status, Content-Type og body i feilmeldingen.
  */
 suspend fun ApplicationTestBuilder.defaultRequestWithAssertions(
@@ -51,16 +47,13 @@ suspend fun ApplicationTestBuilder.defaultRequestWithAssertions(
     uri: String,
     clock: Clock = fixedClock,
     jwt: String? = JwtGenerator(clock = clock).createJwtForSaksbehandler(),
-    forventetStatus: HttpStatusCode,
-    forventetBody: String? = null,
-    forventetJsonBody: String? = null,
-    forventetContentType: ContentType? = null,
+    forventet: ForventetRespons?,
     setup: HttpRequestBuilder.() -> Unit = {},
 ): HttpResponse {
-    require(forventetBody == null || forventetJsonBody == null) {
-        "Sett maks én av forventetBody og forventetJsonBody"
-    }
     val response = defaultRequest(method = method, uri = uri, clock = clock, jwt = jwt, setup = setup)
+    if (forventet == null) {
+        return response
+    }
     val bodyAsText = response.bodyAsText()
     val contentType = response.contentType()
     val status = response.status
@@ -70,21 +63,24 @@ suspend fun ApplicationTestBuilder.defaultRequestWithAssertions(
             "Content-Type: $contentType\n" +
             "Body: $bodyAsText",
     ) {
-        if (forventetBody == "") {
-            contentType shouldBe null
-        }
         if (contentType == null) {
             bodyAsText shouldBe ""
         }
-        status shouldBe forventetStatus
-        if (forventetBody != null) {
-            bodyAsText shouldBe forventetBody
+        status shouldBe forventet.status
+        when (val forventetBody = forventet.body) {
+            null -> {}
+
+            ForventetBody.Tom -> {
+                bodyAsText shouldBe ""
+                contentType shouldBe null
+            }
+
+            is ForventetBody.Eksakt -> bodyAsText shouldBe forventetBody.verdi
+
+            is ForventetBody.Json -> bodyAsText shouldEqualJson forventetBody.verdi
         }
-        if (forventetJsonBody != null) {
-            bodyAsText shouldEqualJson forventetJsonBody
-        }
-        if (forventetContentType != null) {
-            contentType shouldBe forventetContentType
+        if (forventet.contentType != null) {
+            contentType shouldBe forventet.contentType
         }
     }
     return response

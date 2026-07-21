@@ -51,6 +51,19 @@ internal class LibsArkitekturKonsistTest {
         IngenClockDefault.assert(Konsist.scopeFromProduction().slice { file -> "test-common" !in file.path })
     }
 
+    /**
+     * `httpklient`-infrastrukturen er unntatt fordi transporten selv er bygget på JDK-klienten (`java.net.http`).
+     * `ktor-test-common` er unntatt fordi `defaultRequest` bruker `testApplication` sin ktor-klient — eneste vei inn til test-serveren, og ikke noe httpklient kan erstatte.
+     */
+    @Test
+    fun `ingen andre http-klienter enn libs httpklient i produksjonskode`() {
+        IngenAndreHttpKlienter.assert(
+            Konsist.scopeFromProduction().slice { file ->
+                "httpklient/httpklient-infrastruktur/" !in file.path && "ktor-test-common/" !in file.path
+            },
+        )
+    }
+
     @Test
     fun `kdoc og kommentarer har maks en setning per linje`() {
         EnSetningPerLinje.assertFlereSetningerIKommentarer(Konsist.scopeFromProject())

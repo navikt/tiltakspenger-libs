@@ -11,6 +11,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.withCharset
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -38,6 +39,9 @@ internal class DefaultRequestWithAssertionsTest {
             }
             post("/ekko") {
                 call.respondText(call.receiveText(), ContentType.Application.Json)
+            }
+            get("/pdf") {
+                call.respondBytes("%PDF".toByteArray(), ContentType.Application.Pdf)
             }
         }
     }
@@ -121,6 +125,42 @@ internal class DefaultRequestWithAssertionsTest {
                     ),
                 )
             }.message shouldContain "Response details:"
+        }
+    }
+
+    @Test
+    fun `Bytes asserter rå bytelikhet`() {
+        testApplication {
+            testRoutes()
+            defaultRequestWithAssertions(
+                method = HttpMethod.Get,
+                uri = "/pdf",
+                jwt = "jwt-for-test",
+                forventet = ForventetRespons(
+                    status = HttpStatusCode.OK,
+                    body = ForventetBody.Bytes("%PDF".toByteArray()),
+                    contentType = ContentType.Application.Pdf,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun `Bytes-avvik gir assertion-feil med byte-antall i dumpen`() {
+        testApplication {
+            testRoutes()
+            val message = shouldThrow<AssertionError> {
+                defaultRequestWithAssertions(
+                    method = HttpMethod.Get,
+                    uri = "/pdf",
+                    jwt = "jwt-for-test",
+                    forventet = ForventetRespons(
+                        status = HttpStatusCode.OK,
+                        body = ForventetBody.Bytes(byteArrayOf(1, 2, 3)),
+                    ),
+                )
+            }.message!!
+            message shouldContain "Body: <4 byte>"
         }
     }
 

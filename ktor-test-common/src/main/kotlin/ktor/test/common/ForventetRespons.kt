@@ -34,4 +34,10 @@ sealed interface ForventetBody {
 
     /** Asserter JSON-likhet mot bodyen. */
     data class Json(val verdi: String) : ForventetBody
+
+    /**
+     * Asserter eksakt bytelikhet mot den rå responsbodyen, f.eks. for PDF-er.
+     * Bevisst ikke en data class: generert `equals`/`hashCode` ville sammenlignet arrayen på referanse, ikke innhold.
+     */
+    class Bytes(val verdi: ByteArray) : ForventetBody
 }

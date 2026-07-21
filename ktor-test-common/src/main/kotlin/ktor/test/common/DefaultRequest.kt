@@ -8,6 +8,7 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.request
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.readRawBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -41,6 +42,7 @@ suspend fun ApplicationTestBuilder.defaultRequest(
  * Er [forventet] `null`, gjøres ingen assertions i det hele tatt.
  * Kryssjekker at manglende Content-Type innebærer tom responsbody.
  * Ved assertion-feil dumpes status, Content-Type og body i feilmeldingen.
+ * For [ForventetBody.Bytes] dumpes byte-antallet i stedet for body-teksten.
  */
 suspend fun ApplicationTestBuilder.defaultRequestWithAssertions(
     method: HttpMethod,
@@ -57,11 +59,15 @@ suspend fun ApplicationTestBuilder.defaultRequestWithAssertions(
     val bodyAsText = response.bodyAsText()
     val contentType = response.contentType()
     val status = response.status
+    val bodyIFeilmelding = when (forventet.body) {
+        is ForventetBody.Bytes -> "<${response.readRawBytes().size} byte>"
+        else -> bodyAsText
+    }
     withClue(
         "Response details:\n" +
             "Status: $status\n" +
             "Content-Type: $contentType\n" +
-            "Body: $bodyAsText",
+            "Body: $bodyIFeilmelding",
     ) {
         if (contentType == null) {
             bodyAsText shouldBe ""
@@ -78,6 +84,8 @@ suspend fun ApplicationTestBuilder.defaultRequestWithAssertions(
             is ForventetBody.Eksakt -> bodyAsText shouldBe forventetBody.verdi
 
             is ForventetBody.Json -> bodyAsText shouldEqualJson forventetBody.verdi
+
+            is ForventetBody.Bytes -> response.readRawBytes() shouldBe forventetBody.verdi
         }
         if (forventet.contentType != null) {
             contentType shouldBe forventet.contentType

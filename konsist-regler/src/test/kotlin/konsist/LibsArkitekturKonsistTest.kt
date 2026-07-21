@@ -65,6 +65,11 @@ internal class LibsArkitekturKonsistTest {
     }
 
     @Test
+    fun `backticks rundt navn kun for testnavn med mellomrom`() {
+        IngenBackticksUtenMellomrom.assert(Konsist.scopeFromProject())
+    }
+
+    @Test
     fun `kdoc og kommentarer har maks en setning per linje`() {
         EnSetningPerLinje.assertFlereSetningerIKommentarer(Konsist.scopeFromProject())
     }

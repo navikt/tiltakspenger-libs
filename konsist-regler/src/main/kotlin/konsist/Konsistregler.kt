@@ -26,13 +26,13 @@ internal fun KoFileDeclaration.kodelinjer(): List<Pair<Int, String>> =
         }
     }
 
-private val strengliteralRegex = Regex(""""[^"]*"""")
+internal val strengliteralRegex = Regex(""""[^"]*"""")
 
 /**
  * Kutter linjen ved første `//` som starter en trailing-kommentar.
  * `//` inne i strengliteraler (typisk URL-er) beholdes med en enkel heuristikk: oddetall anførselstegn foran, eller `:` rett foran.
  */
-private fun String.utenTrailingKommentar(): String {
+internal fun String.utenTrailingKommentar(): String {
     var searchFrom = 0
     while (true) {
         val index = indexOf("//", searchFrom)

@@ -31,7 +31,7 @@ logback = "1.5.38"
 mockk = "1.14.11"
 # Netty brukes ikke direkte, men er en hyppig kilde til sikkerhetshull; vi styrer derfor de transitive versjonene selv med bom-er per linje.
 # 4.1-linja kommer fra r2dbc-postgresql 1.1.2 (nyeste), som drar inn sårbar 4.1.112 (bl.a. GHSA-c653-97m9-rcg9).
-netty41 = "4.1.136.Final"
+netty41 = "4.2.16.Final"
 # 4.2-linja kommer fra ktor-server-netty 3.4.3, som drar inn sårbar 4.2.12 (bl.a. GHSA-x4gw-5cx5-pgmh).
 netty42 = "4.2.16.Final"
 postgresql = "42.7.13"

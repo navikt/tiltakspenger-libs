@@ -75,6 +75,10 @@ jobs:
         run: ./gradlew --console=plain -Pversion=${{ steps.tag.outputs.version }} build publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Spotless provisjonerer ktlint via detached configurations; det er rene byggeverktøy og ga falske Dependabot-alerts (logback 1.3.x fra ktlint-cli).
+          DEPENDENCY_GRAPH_EXCLUDE_CONFIGURATIONS: 'detachedConfiguration.*'
+          # Kun modulenes runtimeClasspath scopes som runtime; test- og verktøyavhengigheter får scope development, som kan filtreres i Dependabot-alerts.
+          DEPENDENCY_GRAPH_RUNTIME_INCLUDE_CONFIGURATIONS: '^runtimeClasspath$'
       # SLSA-provenance for de publiserte jar-ene, se navikt/tiltakspenger-libs#528.
       # Attestasjonen binder hver jar (inkl. sources- og testFixtures-jar-er) kryptografisk til commit og workflow-kjøring via GitHubs artifact attestations.
       # Konsumenter verifiserer med `gh attestation verify <jar> --repo navikt/tiltakspenger-libs` - se README.

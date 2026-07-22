@@ -20,6 +20,9 @@ dependencies {
     // Server-bootstrap (embeddedServer/connector/Netty) for det felles oppstartsmønsteret.
     compileOnly(libs.ktor.server.host.common)
     compileOnly(libs.ktor.server.netty)
+    // Ktor er bevisst låst til 3.4-linja (se dependabot.yml), så Netty-sikkerhetsfikser styres her i stedet.
+    // api-scope med vilje: bom-en propagerer via modulmetadata og løfter også konsumentenes transitive Netty fra ktor-server-netty, uten å røre deres ktor-versjon.
+    api(platform(libs.netty42.bom))
 
     testImplementation(project(":test-common"))
     testImplementation(libs.ktor.server.test.host)

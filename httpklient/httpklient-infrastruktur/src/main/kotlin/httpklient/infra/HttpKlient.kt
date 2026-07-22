@@ -27,7 +27,7 @@ import kotlin.reflect.typeOf
  * Felles HTTP-klient for tiltakspenger-tjenester: én statisk typet metode per reelt behov, med innebygd auth, timeout, retry, circuit breaker og en enhetlig feiltype ([HttpKlientError]).
  *
  * `Content-Type`, `Accept` og (de)serialisering er en intern konsekvens av hvilken metode du kaller — det finnes ingen content-type-strenger, body-varianter eller respons-typemagi i API-et.
- * Klienten logger aldri selv; bruk [HttpKlientError.loggFeil] og HttpKlientResponse.loggTilSikkerlogg fra laget som har domenekonteksten.
+ * Klienten logger aldri selv; bruk [HttpKlientError.loggFeil] og HttpKlientResponse.loggSuksess fra laget som har domenekonteksten.
  *
  * Dette er en `final` klasse uten interface: den eneste sømmen er [transport], og tester bytter den mot `FakeHttpTransport` (testFixtures) slik at hele den reelle pipelinen — auth-materialisering, retry-gates, statusregler, dekoding, metadata og redaksjon — kjører for ekte i test i stedet for å emuleres.
  *

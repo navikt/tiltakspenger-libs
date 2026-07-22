@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.httpklient
 import arrow.core.Either
 import arrow.resilience.CircuitBreaker
 import io.github.oshai.kotlinlogging.KLogger
+import no.nav.tiltakspenger.libs.logging.SE_SIKKERLOGG
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import kotlin.time.Duration
 
@@ -262,7 +263,7 @@ fun HttpKlientError.loggFeil(
 ) {
     val throwable = throwableOrNull()
     val logMelding =
-        "Feil ved $operasjon. $kontekst. Status: ${metadata.statusCode}, forsøk: ${metadata.attempts}. Se sikkerlogg for detaljer."
+        "Feil ved $operasjon. $kontekst. Status: ${metadata.statusCode}, forsøk: ${metadata.attempts}. $SE_SIKKERLOGG"
     val sikkerMelding =
         "Feil ved $operasjon. $kontekst. Status: ${metadata.statusCode}, forsøk: ${metadata.attempts}, request: ${metadata.rawRequestString}. response: ${metadata.rawResponseString}. responseHeaders: ${metadata.responseHeaders}."
     if (throwable != null) {

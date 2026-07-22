@@ -5,9 +5,14 @@ auth0-jwt = "4.5.2"
 auth0-jwks = "0.24.1"
 caffeine = "3.2.4"
 flyway = "12.10.0"
+handlebars = "4.5.3"
 hikaricp = "7.1.0"
 jackson = "3.2.1"
 jackson-annotations = "2.22"
+# Jackson 2 brukes ikke direkte, men kommer transitivt via WireMock og java-jwt; bom-en løfter dem over de patchede versjonene (bl.a. GHSA-j3rv-43j4-c7qm).
+jackson2 = "2.22.1"
+# Jetty 11 er EOL og får ikke fiks for bl.a. GHSA-355h-qmc2-wpwf; jetty12-varianten av WireMock + denne bom-en gir patchet Jetty.
+jetty = "12.0.37"
 junit = "6.1.1"
 kafka = "4.3.1"
 konsist = "0.17.3"
@@ -20,11 +25,19 @@ kotlin-logging = "8.0.4"
 kotlin-wiremock = "2.1.1"
 kotlinx-coroutines = "1.11.0"
 kotliquery = "1.9.1"
+# Låst til 3.4-linja på grunn av en alvorlig klientbug i 3.5.x - se ignore-blokken i .github/dependabot.yml.
 ktor = "3.4.3"
 logback = "1.5.38"
 mockk = "1.14.11"
+# Netty brukes ikke direkte, men er en hyppig kilde til sikkerhetshull; vi styrer derfor de transitive versjonene selv med bom-er per linje.
+# 4.1-linja kommer fra r2dbc-postgresql 1.1.2 (nyeste), som drar inn sårbar 4.1.112 (bl.a. GHSA-c653-97m9-rcg9).
+netty41 = "4.1.136.Final"
+# 4.2-linja kommer fra ktor-server-netty 3.4.3, som drar inn sårbar 4.2.12 (bl.a. GHSA-x4gw-5cx5-pgmh).
+netty42 = "4.2.16.Final"
 postgresql = "42.7.13"
 r2dbc-postgresql = "1.1.2.RELEASE"
+# SCRAM brukes ikke direkte, men r2dbc-postgresql drar inn 3.2 med auth-nedgraderingssårbarhet (GHSA-p9jg-fcr6-3mhf, patchet i 3.3).
+scram = "3.4"
 slf4j = "2.0.18"
 spotless = "8.8.0"
 testcontainers = "2.0.5"
@@ -40,8 +53,12 @@ auth0-java-jwt = { module = "com.auth0:java-jwt", version.ref = "auth0-jwt" }
 auth0-jwks-rsa = { module = "com.auth0:jwks-rsa", version.ref = "auth0-jwks" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson-annotations" }
+jackson2-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson2" }
+jetty-bom = { module = "org.eclipse.jetty:jetty-bom", version.ref = "jetty" }
+jetty-ee10-bom = { module = "org.eclipse.jetty.ee10:jetty-ee10-bom", version.ref = "jetty" }
 jackson-core = { module = "tools.jackson.core:jackson-core", version.ref = "jackson" }
 jackson-databind = { module = "tools.jackson.core:jackson-databind", version.ref = "jackson" }
 jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
@@ -74,8 +91,12 @@ ktor-utils = { module = "io.ktor:ktor-utils", version.ref = "ktor" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-dsl-jvm = { module = "io.mockk:mockk-dsl-jvm", version.ref = "mockk" }
+netty41-bom = { module = "io.netty:netty-bom", version.ref = "netty41" }
+netty42-bom = { module = "io.netty:netty-bom", version.ref = "netty42" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 r2dbc-postgresql = { module = "org.postgresql:r2dbc-postgresql", version.ref = "r2dbc-postgresql" }
+scram-client = { module = "com.ongres.scram:scram-client", version.ref = "scram" }
+scram-common = { module = "com.ongres.scram:scram-common", version.ref = "scram" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
@@ -83,7 +104,8 @@ testcontainers-kafka = { module = "org.testcontainers:testcontainers-kafka", ver
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 testcontainers-r2dbc = { module = "org.testcontainers:testcontainers-r2dbc", version.ref = "testcontainers" }
 ulid-kotlin = { module = "com.aallam.ulid:ulid-kotlin", version.ref = "ulid" }
-wiremock = { module = "org.wiremock:wiremock", version.ref = "wiremock" }
+# jetty12-varianten fordi standardartefakten bygger på EOL Jetty 11 uten sikkerhetsfikser.
+wiremock = { module = "org.wiremock:wiremock-jetty12", version.ref = "wiremock" }
 
 # Gradle plugin artifacts (used as dependencies in buildSrc)
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

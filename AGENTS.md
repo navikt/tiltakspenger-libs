@@ -58,7 +58,7 @@ Refererer KDoc i en domene-modul noe som bor i en infrastruktur-modul, dropp kla
 ### `httpklient`-struktur
 
 Modulen er delt i `httpklient:httpklient-domene` og `httpklient:httpklient-infrastruktur` etter samme mønster som `personklient`/`persistering`, med et aggregator-prosjekt uten artefakt.
-Domenet inneholder kun det som eksponeres ut til konsumentenes domenelag: `HttpKlientResponse` (med `tryMap`/`loggTilSikkerlogg`) og feil-/metadata-familien (`HttpKlientError`, `HttpKlientMetadata`, `HttpKlientTidsstempler` med hjelpere som `harStatus`/`loggFeil`), alt i rotpakka `no.nav.tiltakspenger.libs.httpklient`.
+Domenet inneholder kun det som eksponeres ut til konsumentenes domenelag: `HttpKlientResponse` (med `tryMap`/`loggSuksess`) og feil-/metadata-familien (`HttpKlientError`, `HttpKlientMetadata`, `HttpKlientTidsstempler` med hjelpere som `harStatus`/`loggFeil`), alt i rotpakka `no.nav.tiltakspenger.libs.httpklient`.
 Alt annet er wiring og bor i infrastrukturen under `httpklient.infra`: klienten og config i `infra`-rot, `infra.transport`, `infra.kall` (`Statusregel`, `Header`/`NavHeadere`, `KlientAuth`/`AuthTokenProvider`, `SerialisertJson`, `HttpMethod`), `infra.retry`, `infra.circuitbreaker`, og `bodySomJson` i `infra.feil` (json-modulen er aldri ok i domenet).
 Det finnes ingen split packages på tvers av modulene.
 Konsumenter avhenger av `project(":httpklient:httpklient-infrastruktur")`; domenet følger med transitivt som `api`.
@@ -67,7 +67,7 @@ Den offentlige klienten er den `final` klassen `HttpKlient(clock, config, transp
 API-et er én statisk typet metode per reelt behov (`getJson`, `getJsonEllerNull`, `postJson`, `postJsonEllerNull`, `postJsonUtenSvar`/`putJsonUtenSvar`/`patchJsonUtenSvar`, `postJsonMotPdf`, `getPdf`, `postTekst`, `postForm`); `Content-Type`, `Accept` og (de)serialisering er en intern konsekvens av metoden du kaller.
 All konfig er ren data i `HttpKlientConfig` (timeout, `KlientAuth`, `Retry`, `CircuitBreakerConfig`, skip-cache-statuser); det finnes ingen per-kall-overstyringer — et endepunkt med avvikende behov får en egen klientinstans.
 Statuser som betyr suksess uttrykkes med `Statusregel` (data, ikke predikater); statuser som bærer et domeneutfall (f.eks. `403`/`409` med strukturert body) skal ikke inn i statusregelen, men utledes fra feiltypen med `harStatus` og `bodySomJson`.
-Klienten logger aldri selv — konsumentene bruker `HttpKlientError.loggFeil` og `HttpKlientResponse.loggTilSikkerlogg` fra laget som har domenekonteksten.
+Klienten logger aldri selv — konsumentene bruker `HttpKlientError.loggFeil` og `HttpKlientResponse.loggSuksess` fra laget som har domenekonteksten.
 Ferdigserialisert JSON sendes med `SerialisertJson`-wrapperen (aldri en `String`-overload); egne request-headere settes med `Header`/`NavHeadere`, som avviser de reserverte navnene klienten selv eier.
 De reified metodene er tynne inline-fasader som kun fanger typeargumentet og delegerer til `@PublishedApi internal`-broer, slik at de interne modellene (`HttpKlientRequest`, `ResponsFormat`) ikke lekker inn i public inline-bytecode.
 

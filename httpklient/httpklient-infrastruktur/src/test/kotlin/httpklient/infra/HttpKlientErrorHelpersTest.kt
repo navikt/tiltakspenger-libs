@@ -1,24 +1,17 @@
 package no.nav.tiltakspenger.libs.httpklient.infra
 
-import io.kotest.assertions.throwables.shouldThrowWithMessage
-import io.kotest.matchers.booleans.shouldBeFalse
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
-import no.nav.tiltakspenger.libs.httpklient.HttpKlientResponse
-import no.nav.tiltakspenger.libs.httpklient.authFeilUtenKall
 import no.nav.tiltakspenger.libs.httpklient.harStatus
 import no.nav.tiltakspenger.libs.httpklient.infra.feil.bodySomJson
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.Statusregel
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
-import no.nav.tiltakspenger.libs.httpklient.loggFeil
-import no.nav.tiltakspenger.libs.httpklient.loggTilSikkerlogg
-import no.nav.tiltakspenger.libs.httpklient.tryMap
+import no.nav.tiltakspenger.libs.httpklient.loggSuksess
 import org.junit.jupiter.api.Test
 import java.net.URI
 
@@ -58,7 +51,7 @@ internal class HttpKlientErrorHelpersTest {
     }
 
     @Test
-    fun `loggTilSikkerlogg kan kalles på suksess-responser uten å feile`() = runTest {
+    fun `loggSuksess kan kalles på suksess-responser uten å feile`() = runTest {
         // Sikkerlogg skriver til en dedikert logger; her verifiserer vi kun at hjelperen fungerer på en ekte pipeline-respons (datadeling-paritetsmønsteret).
         val transport = FakeHttpTransport()
         transport.leggIKøJson("""{"status":"ok","antall":1}""")
@@ -66,6 +59,6 @@ internal class HttpKlientErrorHelpersTest {
 
         val response = klient.getJson<TestResponseDto>(uri).getOrFail()
 
-        response.loggTilSikkerlogg("Sendte vedtak til datadeling.")
+        response.loggSuksess(KotlinLogging.logger {}, "Sendte vedtak til datadeling.")
     }
 }

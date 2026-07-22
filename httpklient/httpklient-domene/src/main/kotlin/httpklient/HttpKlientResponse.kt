@@ -1,6 +1,8 @@
 package no.nav.tiltakspenger.libs.httpklient
 
 import arrow.core.Either
+import io.github.oshai.kotlinlogging.KLogger
+import no.nav.tiltakspenger.libs.logging.SE_SIKKERLOGG
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import kotlin.time.Duration
 
@@ -33,12 +35,19 @@ data class HttpKlientResponse<out Body>(
 }
 
 /**
- * Suksess-sti-logging til sikkerlogg for kritiske klienter som skal ha sporbarhet også når kallet lykkes (datadeling-paritet).
+ * Suksess-sti-logging for kritiske klienter som skal ha sporbarhet også når kallet lykkes (datadeling-paritet).
+ * Logger alltid parvis, jf. logge-regelen i AGENTS-backend.md: en PII-fri linje i vanlig logg og en sikkerlogg-linje som starter identisk og fortsetter med redigert rå request/respons på slutten.
+ * Slik kan vanlig logg leses som en helhet, med sikkerlogg som ekstra kontekst funnet via den identiske starten.
  * Requesten er redigert (auth/sensitive headere maskert) og responsen er lesbar tekst med binær-placeholder, så innholdet er trygt for sikkerlogg.
+ *
+ * @param logger Kallerens egen logger, slik at logglinja får kallerens navnrom.
+ * @param melding Kort PII-fri beskrivelse av hendelsen, f.eks. `"Hentet meldekort fra Arena."`.
  */
-fun HttpKlientResponse<*>.loggTilSikkerlogg(melding: String) {
+fun HttpKlientResponse<*>.loggSuksess(logger: KLogger, melding: String) {
+    val start = "$melding Status: $statusCode, forsøk: $attempts."
+    logger.info { "$start $SE_SIKKERLOGG" }
     // Bruker invariant-aksessorene (ikke metadata direkte): et invariant-brudd skal feile tydelig, ikke bli et stille «Response: null» i sikkerlogg.
-    Sikkerlogg.info { "$melding Status: $statusCode, forsøk: $attempts. Request: $rawRequestString. Response: $rawResponseString." }
+    Sikkerlogg.info { "$start Request: $rawRequestString. Response: $rawResponseString." }
 }
 
 /**

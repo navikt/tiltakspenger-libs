@@ -1,31 +1,25 @@
 package no.nav.tiltakspenger.libs.logging
 
-import io.github.oshai.kotlinlogging.KLogger
-import io.github.oshai.kotlinlogging.KMarkerFactory
-import io.github.oshai.kotlinlogging.KotlinLogging
+import no.nav.tiltakspenger.libs.logging.infra.KotlinLoggingSikkerlogg
 
-// Se https://docs.nais.io/observability/logging/how-to/team-logs/ for konfigurasjon
-object Sikkerlogg {
-    private val sikkerLogger: KLogger = KotlinLogging.logger("team-logs-logger")
-    private val sikkerMarker = KMarkerFactory.getMarker("TEAM_LOGS")
+/**
+ * Sikkerlogg for logglinjer som kan inneholde personopplysninger og derfor kun skal til team-logs.
+ * Se https://docs.nais.io/observability/logging/how-to/team-logs/ for konfigurasjon.
+ * Implementasjoner navngis etter teknologien de bruker, som [KotlinLoggingSikkerlogg].
+ * Companion-objektet er default-instansen og gir kildekompatibilitet for statiske kallsteder inntil konsumentene injiserer interfacet.
+ */
+interface Sikkerlogg {
+    fun trace(throwable: Throwable? = null, loggstatement: () -> Any?)
 
-    fun trace(throwable: Throwable? = null, loggstatement: () -> Any?) {
-        sikkerLogger.trace(throwable = throwable, marker = sikkerMarker, message = loggstatement)
-    }
+    fun debug(throwable: Throwable? = null, loggstatement: () -> Any?)
 
-    fun debug(throwable: Throwable? = null, loggstatement: () -> Any?) {
-        sikkerLogger.debug(throwable = throwable, marker = sikkerMarker, message = loggstatement)
-    }
+    fun info(throwable: Throwable? = null, loggstatement: () -> Any?)
 
-    fun info(throwable: Throwable? = null, loggstatement: () -> Any?) {
-        sikkerLogger.info(throwable = throwable, marker = sikkerMarker, message = loggstatement)
-    }
+    fun warn(throwable: Throwable? = null, loggstatement: () -> Any?)
 
-    fun warn(throwable: Throwable? = null, loggstatement: () -> Any?) {
-        sikkerLogger.warn(throwable = throwable, marker = sikkerMarker, message = loggstatement)
-    }
+    fun error(throwable: Throwable? = null, loggstatement: () -> Any?)
 
-    fun error(throwable: Throwable? = null, loggstatement: () -> Any?) {
-        sikkerLogger.error(throwable = throwable, marker = sikkerMarker, message = loggstatement)
-    }
+    // Delegeringen til en infra-plassert implementasjon er en bevisst, midlertidig kant som holder statiske kallsteder kompilerende.
+    // Den fjernes når konsumentene er over på injisert instans.
+    companion object : Sikkerlogg by KotlinLoggingSikkerlogg
 }

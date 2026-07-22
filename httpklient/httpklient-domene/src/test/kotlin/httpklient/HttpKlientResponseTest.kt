@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.httpklient
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -46,8 +47,8 @@ internal class HttpKlientResponseTest {
     }
 
     @Test
-    fun `loggTilSikkerlogg bruker invariant-aksessorene`() {
+    fun `loggSuksess bruker invariant-aksessorene`() {
         // Røyktest på at hjelperen kan kalles på en gyldig respons; innholdet verifiseres ikke (Sikkerlogg er et objekt uten søm).
-        respons.loggTilSikkerlogg("Sendte til datadeling.")
+        respons.loggSuksess(KotlinLogging.logger {}, "Sendte til datadeling.")
     }
 }

@@ -3,7 +3,6 @@ package no.nav.tiltakspenger.libs.httpklient.infra
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.http.Fault
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -17,7 +16,12 @@ import no.nav.tiltakspenger.libs.common.stoppedServerUri
 import no.nav.tiltakspenger.libs.common.withWireMockServer
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import org.junit.jupiter.api.Test
+import java.io.OutputStream
+import java.net.InetAddress
+import java.net.ServerSocket
+import java.net.Socket
 import java.net.URI
+import kotlin.concurrent.thread
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -35,23 +39,35 @@ internal class HttpKlientFaultTest {
     }
 
     @Test
-    fun `returnerer NetworkError ved CONNECTION_RESET_BY_PEER`() = runTest {
-        assertFaultGirNetworkError(Fault.CONNECTION_RESET_BY_PEER, "/reset")
+    fun `returnerer NetworkError når tilkoblingen resettes`() = runTest {
+        assertFaultGirNetworkError { socket ->
+            // SO_LINGER=0 gjør at close() sender TCP RST i stedet for FIN.
+            socket.setSoLinger(true, 0)
+            socket.close()
+        }
     }
 
     @Test
-    fun `returnerer NetworkError ved EMPTY_RESPONSE`() = runTest {
-        assertFaultGirNetworkError(Fault.EMPTY_RESPONSE, "/empty")
+    fun `returnerer NetworkError ved tom respons`() = runTest {
+        assertFaultGirNetworkError { socket ->
+            socket.close()
+        }
     }
 
     @Test
-    fun `returnerer NetworkError ved MALFORMED_RESPONSE_CHUNK`() = runTest {
-        assertFaultGirNetworkError(Fault.MALFORMED_RESPONSE_CHUNK, "/malformed")
+    fun `returnerer NetworkError ved malformet chunket respons`() = runTest {
+        assertFaultGirNetworkError { socket ->
+            socket.getOutputStream().skrivOgFlush("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nIKKE-EN-CHUNK\r\n")
+            socket.close()
+        }
     }
 
     @Test
-    fun `returnerer NetworkError ved RANDOM_DATA_THEN_CLOSE`() = runTest {
-        assertFaultGirNetworkError(Fault.RANDOM_DATA_THEN_CLOSE, "/random")
+    fun `returnerer NetworkError ved søppeldata før lukking`() = runTest {
+        assertFaultGirNetworkError { socket ->
+            socket.getOutputStream().skrivOgFlush("dette er ikke http")
+            socket.close()
+        }
     }
 
     @Test
@@ -79,13 +95,47 @@ internal class HttpKlientFaultTest {
     }
 }
 
-private suspend fun assertFaultGirNetworkError(fault: Fault, path: String) {
-    withWireMockServer { wiremock ->
-        wiremock.stubFor(get(urlEqualTo(path)).willReturn(aResponse().withFault(fault)))
+/**
+ * Starter en rå TCP-server på IPv4-loopback som leser requesten ferdig og deretter utfører [fault] på socketen, og asserter at klienten oversetter bruddet til [HttpKlientError.NetworkError].
+ * Vi bruker rå sockets i stedet for WireMocks `Fault`-enum fordi jetty12-varianten av WireMock ikke støtter fault injection — den svarer med en ren HTTP 500 i stedet for å bryte forbindelsen.
+ * Accept-løkka håndterer flere tilkoblinger, slik at en eventuell klient-retry treffer samme fault i stedet for å henge.
+ */
+private suspend fun assertFaultGirNetworkError(fault: (Socket) -> Unit) {
+    ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { server ->
+        thread(isDaemon = true, name = "fault-server") {
+            try {
+                while (true) {
+                    server.accept().use { socket ->
+                        socket.lesRequestHeadere()
+                        fault(socket)
+                    }
+                }
+            } catch (_: Exception) {
+                // ServerSocket.close() avbryter accept() — normal stopp.
+            }
+        }
         val klient = testHttpKlient(timeout = 1_000.milliseconds)
+        val uri = URI.create("http://127.0.0.1:${server.localPort}/fault")
 
-        val error = klient.getPdf(URI.create("${wiremock.baseUrl()}$path")).swap().getOrNull()!!
+        val error = klient.getPdf(uri).swap().getOrNull()!!
 
         error.shouldBeInstanceOf<HttpKlientError.NetworkError>()
     }
+}
+
+/** Leser til slutten av request-headerne (tom linje), slik at faulten treffer etter at klienten har sendt hele requesten. */
+private fun Socket.lesRequestHeadere() {
+    val inn = getInputStream()
+    var sisteFireBytes = 0
+    while (true) {
+        val byte = inn.read()
+        if (byte == -1) return
+        sisteFireBytes = (sisteFireBytes shl 8) or byte
+        if (sisteFireBytes == 0x0D0A0D0A) return
+    }
+}
+
+private fun OutputStream.skrivOgFlush(tekst: String) {
+    write(tekst.toByteArray(Charsets.ISO_8859_1))
+    flush()
 }

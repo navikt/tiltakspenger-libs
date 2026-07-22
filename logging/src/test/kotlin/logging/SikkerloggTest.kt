@@ -24,7 +24,7 @@ internal class SikkerloggTest {
 
     @Test
     fun `KotlinLoggingSikkerlogg kan brukes som injisert instans på alle nivåer, med og uten throwable`() {
-        loggPåAlleNivåer(KotlinLoggingSikkerlogg)
+        loggPåAlleNivåer(KotlinLoggingSikkerlogg())
     }
 
     @Test

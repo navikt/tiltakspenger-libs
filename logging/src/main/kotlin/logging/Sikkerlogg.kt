@@ -9,6 +9,13 @@ import no.nav.tiltakspenger.libs.logging.infra.KotlinLoggingSikkerlogg
  * Companion-objektet er default-instansen og gir kildekompatibilitet for statiske kallsteder inntil konsumentene injiserer interfacet.
  */
 interface Sikkerlogg {
+    /**
+     * Ferdig setning som legges på slutten av vanlige logglinjer som har en tilhørende sikkerlogg-linje.
+     * Implementasjonen bygger den av verdier konsumenten sender inn ved konstruksjon (typisk appnavn og GCP-prosjekt fra appens konfigurasjon) — sikkerlogg graver aldri i miljøvariabler selv.
+     * Uten verdier er den ren tekst uten lenke, som i companion-objektet.
+     */
+    val seSikkerlogg: String
+
     fun trace(throwable: Throwable? = null, loggstatement: () -> Any?)
 
     fun debug(throwable: Throwable? = null, loggstatement: () -> Any?)
@@ -21,5 +28,5 @@ interface Sikkerlogg {
 
     // Delegeringen til en infra-plassert implementasjon er en bevisst, midlertidig kant som holder statiske kallsteder kompilerende.
     // Den fjernes når konsumentene er over på injisert instans.
-    companion object : Sikkerlogg by KotlinLoggingSikkerlogg
+    companion object : Sikkerlogg by KotlinLoggingSikkerlogg()
 }

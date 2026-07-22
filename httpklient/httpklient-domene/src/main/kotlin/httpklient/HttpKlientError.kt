@@ -1,9 +1,7 @@
 package no.nav.tiltakspenger.libs.httpklient
 
-import arrow.core.Either
 import arrow.resilience.CircuitBreaker
 import io.github.oshai.kotlinlogging.KLogger
-import no.nav.tiltakspenger.libs.logging.SE_SIKKERLOGG
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import kotlin.time.Duration
 
@@ -255,22 +253,24 @@ fun authFeilUtenKall(throwable: Throwable): HttpKlientError.AuthError {
  * @param logger Kallerens egen logger, slik at logglinja får kallerens navnrom.
  * @param operasjon Kort beskrivelse av hva som feilet, f.eks. `"sending til datadeling"`.
  * @param kontekst Domenekontekst som bare kalleren har, f.eks. `"Sak abc, saksnummer 123"`.
+ * @param sikkerlogg Sikkerlogg-instansen henvisningen og sikkerlogg-linja går gjennom; default er companion-objektet (ren tekst-henvisning), injiser appens instans for klikkbar lenke.
  */
 fun HttpKlientError.loggFeil(
     logger: KLogger,
     operasjon: String,
     kontekst: String,
+    sikkerlogg: Sikkerlogg = Sikkerlogg,
 ) {
     val throwable = throwableOrNull()
     val logMelding =
-        "Feil ved $operasjon. $kontekst. Status: ${metadata.statusCode}, forsøk: ${metadata.attempts}. $SE_SIKKERLOGG"
+        "Feil ved $operasjon. $kontekst. Status: ${metadata.statusCode}, forsøk: ${metadata.attempts}. ${sikkerlogg.seSikkerlogg}"
     val sikkerMelding =
         "Feil ved $operasjon. $kontekst. Status: ${metadata.statusCode}, forsøk: ${metadata.attempts}, request: ${metadata.rawRequestString}. response: ${metadata.rawResponseString}. responseHeaders: ${metadata.responseHeaders}."
     if (throwable != null) {
         logger.error(throwable) { logMelding }
-        Sikkerlogg.error(throwable) { sikkerMelding }
+        sikkerlogg.error(throwable) { sikkerMelding }
     } else {
         logger.error { logMelding }
-        Sikkerlogg.error { sikkerMelding }
+        sikkerlogg.error { sikkerMelding }
     }
 }

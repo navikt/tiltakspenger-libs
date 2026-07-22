@@ -2,7 +2,6 @@ package no.nav.tiltakspenger.libs.httpklient
 
 import arrow.core.Either
 import io.github.oshai.kotlinlogging.KLogger
-import no.nav.tiltakspenger.libs.logging.SE_SIKKERLOGG
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import kotlin.time.Duration
 
@@ -42,12 +41,13 @@ data class HttpKlientResponse<out Body>(
  *
  * @param logger Kallerens egen logger, slik at logglinja får kallerens navnrom.
  * @param melding Kort PII-fri beskrivelse av hendelsen, f.eks. `"Hentet meldekort fra Arena."`.
+ * @param sikkerlogg Sikkerlogg-instansen henvisningen og sikkerlogg-linja går gjennom; default er companion-objektet (ren tekst-henvisning), injiser appens instans for klikkbar lenke.
  */
-fun HttpKlientResponse<*>.loggSuksess(logger: KLogger, melding: String) {
+fun HttpKlientResponse<*>.loggSuksess(logger: KLogger, melding: String, sikkerlogg: Sikkerlogg = Sikkerlogg) {
     val start = "$melding Status: $statusCode, forsøk: $attempts."
-    logger.info { "$start $SE_SIKKERLOGG" }
+    logger.info { "$start ${sikkerlogg.seSikkerlogg}" }
     // Bruker invariant-aksessorene (ikke metadata direkte): et invariant-brudd skal feile tydelig, ikke bli et stille «Response: null» i sikkerlogg.
-    Sikkerlogg.info { "$start Request: $rawRequestString. Response: $rawResponseString." }
+    sikkerlogg.info { "$start Request: $rawRequestString. Response: $rawResponseString." }
 }
 
 /**

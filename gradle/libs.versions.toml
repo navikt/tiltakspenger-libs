@@ -13,7 +13,7 @@ jackson-annotations = "2.22"
 jackson2 = "2.22.1"
 # Jetty 11 er EOL og får ikke fiks for bl.a. GHSA-355h-qmc2-wpwf; jetty12-varianten av WireMock + denne bom-en gir patchet Jetty.
 jetty = "12.0.37"
-junit = "6.1.1"
+junit = "6.1.2"
 kafka = "4.3.1"
 konsist = "0.17.3"
 kotest = "6.2.2"

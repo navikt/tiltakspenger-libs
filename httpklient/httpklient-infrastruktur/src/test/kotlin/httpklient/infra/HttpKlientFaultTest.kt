@@ -12,6 +12,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import no.nav.tiltakspenger.libs.common.stoppedServerUri
 import no.nav.tiltakspenger.libs.common.withWireMockServer
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
@@ -101,25 +102,27 @@ internal class HttpKlientFaultTest {
  * Accept-løkka håndterer flere tilkoblinger, slik at en eventuell klient-retry treffer samme fault i stedet for å henge.
  */
 private suspend fun assertFaultGirNetworkError(fault: (Socket) -> Unit) {
-    ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { server ->
-        thread(isDaemon = true, name = "fault-server") {
-            try {
-                while (true) {
-                    server.accept().use { socket ->
-                        socket.lesRequestHeadere()
-                        fault(socket)
+    withContext(Dispatchers.IO) {
+        ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { server ->
+            thread(isDaemon = true, name = "fault-server") {
+                try {
+                    while (true) {
+                        server.accept().use { socket ->
+                            socket.lesRequestHeadere()
+                            fault(socket)
+                        }
                     }
+                } catch (_: Exception) {
+                    // ServerSocket.close() avbryter accept() — normal stopp.
                 }
-            } catch (_: Exception) {
-                // ServerSocket.close() avbryter accept() — normal stopp.
             }
+            val klient = testHttpKlient(timeout = 1_000.milliseconds)
+            val uri = URI.create("http://127.0.0.1:${server.localPort}/fault")
+
+            val error = klient.getPdf(uri).swap().getOrNull()!!
+
+            error.shouldBeInstanceOf<HttpKlientError.NetworkError>()
         }
-        val klient = testHttpKlient(timeout = 1_000.milliseconds)
-        val uri = URI.create("http://127.0.0.1:${server.localPort}/fault")
-
-        val error = klient.getPdf(uri).swap().getOrNull()!!
-
-        error.shouldBeInstanceOf<HttpKlientError.NetworkError>()
     }
 }
 

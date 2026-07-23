@@ -23,12 +23,16 @@ import java.util.concurrent.atomic.AtomicBoolean
  * }
  * ```
  *
+ * @param host Nettverksgrensesnittet serveren binder til.
+ * Default `0.0.0.0` (alle grensesnitt) er nødvendig i Nais-pods og containere, der trafikken kommer inn utenfra.
+ * Lokale kjøringer (typisk LokalMain) bør sende `127.0.0.1` slik at serveren ikke eksponeres på nettverket maskinen står på.
  * @param module Kjøres som Ktor-modul.
  * Får `shutdownPågår` som skal sendes inn i [konfigurerLivssyklus].
  */
 fun startKtorServer(
     log: KLogger,
     port: Int,
+    host: String = "0.0.0.0",
     shutdownGracePeriodMillis: Long = 5_000,
     shutdownTimeoutMillis: Long = 30_000,
     module: Application.(shutdownPågår: AtomicBoolean) -> Unit,
@@ -41,6 +45,7 @@ fun startKtorServer(
         factory = Netty,
         configure = {
             connector {
+                this.host = host
                 this.port = port
             }
             shutdownGracePeriod = shutdownGracePeriodMillis

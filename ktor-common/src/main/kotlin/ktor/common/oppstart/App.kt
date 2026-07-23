@@ -115,6 +115,8 @@ fun Application.konfigurerOppstart(
  * }
  * ```
  *
+ * @param host Nettverksgrensesnittet serveren binder til, se [startKtorServer].
+ *   Lokale kjøringer bør sende `127.0.0.1`; default `0.0.0.0` er nødvendig i Nais og containere.
  * @param oppsett Hva som skal kjøres (jobber + Kafka) og leader-election-/scheduling-oppsettet, se [Bakgrunnsprosessoppsett].
  *   `null` (default) betyr at appen ikke har noen bakgrunnsprosesser (kun HTTP), og da trengs verken `electorPath` eller `clock`.
  * @param ktorModule Konsumentens eget Ktor-oppsett.
@@ -123,6 +125,7 @@ fun Application.konfigurerOppstart(
 fun startApp(
     log: KLogger,
     port: Int,
+    host: String = "0.0.0.0",
     isNais: Boolean,
     oppsett: Bakgrunnsprosessoppsett? = null,
     shutdownGracePeriodMillis: Long = 5_000,
@@ -133,6 +136,7 @@ fun startApp(
     startKtorServer(
         log = log,
         port = port,
+        host = host,
         shutdownGracePeriodMillis = shutdownGracePeriodMillis,
         shutdownTimeoutMillis = shutdownTimeoutMillis,
     ) { shutdownPågår ->

@@ -7,7 +7,10 @@ import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringSerializer
 
 class LocalKafkaConfig(
-    // TODO jah: føles skjørt og basere seg på System.genenv i en lib-fil. Kan vi bare fjerne? Brukes disse egentlig i praksis? Bevis for/mot med tester.
+    // TODO jah: føles skjørt og basere seg på System.genenv i en lib-fil.
+    // Kan vi bare fjerne?
+    // Brukes disse egentlig i praksis?
+    // Bevis for/mot med tester.
     private val kafkaBrokers: String = System.getenv("KAFKA_BROKERS") ?: "localhost:9092",
     private val avroSchemaRegistry: String = System.getenv("KAFKA_SCHEMA_REGISTRY") ?: "localhost:9092",
     private val kafkaAutoOffsetReset: String = "earliest",

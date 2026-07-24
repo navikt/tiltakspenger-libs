@@ -7,6 +7,7 @@ import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringSerializer
 
 class LocalKafkaConfig(
+    // TODO jah: føles skjørt og basere seg på System.genenv i en lib-fil. Kan vi bare fjerne? Brukes disse egentlig i praksis? Bevis for/mot med tester.
     private val kafkaBrokers: String = System.getenv("KAFKA_BROKERS") ?: "localhost:9092",
     private val avroSchemaRegistry: String = System.getenv("KAFKA_SCHEMA_REGISTRY") ?: "localhost:9092",
     private val kafkaAutoOffsetReset: String = "earliest",
@@ -29,6 +30,10 @@ class LocalKafkaConfig(
         ConsumerConfig.MAX_POLL_RECORDS_CONFIG to MAX_POLL_RECORDS,
     ) + commonConfig()
 
+    /**
+     * Lokalt schema registry kjører uten autentisering, derfor settes ingen basic.auth-propertyer.
+     * USER_INFO uten tilhørende basic.auth.user.info gjør at konsumenten ikke kan konstrueres.
+     */
     override fun <K, V> avroConsumerConfig(
         keyDeserializer: Deserializer<K>,
         valueDeserializer: Deserializer<V>,
@@ -36,7 +41,6 @@ class LocalKafkaConfig(
         useSpecificAvroReader: Boolean,
     ) = mapOf(
         "schema.registry.url" to avroSchemaRegistry,
-        "basic.auth.credentials.source" to "USER_INFO",
     ) + consumerConfig(
         keyDeserializer = keyDeserializer,
         valueDeserializer = valueDeserializer,

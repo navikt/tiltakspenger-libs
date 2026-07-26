@@ -57,11 +57,33 @@ internal class LibsArkitekturKonsistTest {
      */
     @Test
     fun `ingen andre http-klienter enn libs httpklient i produksjonskode`() {
-        IngenAndreHttpKlienter.assert(
+        IngenAndreHttpKlienter.assertIngenKlienterIProduksjonskode(
             Konsist.scopeFromProduction().slice { file ->
                 "httpklient/httpklient-infrastruktur/" !in file.path && "ktor-test-common/" !in file.path
             },
         )
+    }
+
+    /**
+     * Testkoden får bruke `testApplication`-klienten, men ikke lage ekte nettverksklienter.
+     * Unntakene er de tre testene som med vilje kjører en ekte server over sokkel og trenger en klient utenfra: oppstartstestene i `ktor-common` og WireMock-hjelperen i `test-common`.
+     * `httpklient`-infrastrukturen er unntatt av samme grunn som over — den tester sin egen JDK-transport.
+     */
+    @Test
+    fun `ingen ekte http-klienter i testkode`() {
+        IngenAndreHttpKlienter.assertIngenKlienterITestkode(
+            Konsist.scopeFromTest().slice { file -> "httpklient/httpklient-infrastruktur/" !in file.path },
+            unntatteFilstier = setOf(
+                "ktor-common/src/test/kotlin/ktor/common/oppstart/AppTest.kt",
+                "ktor-common/src/test/kotlin/ktor/common/oppstart/OppstartTest.kt",
+                "test-common/src/test/kotlin/common/WiremockExTest.kt",
+            ),
+        )
+    }
+
+    @Test
+    fun `ingen andre http-klienter deklarert i byggfilene`() {
+        IngenAndreHttpKlienter.assertIngenKlientavhengigheter(repoRot())
     }
 
     @Test

@@ -1,11 +1,9 @@
 package no.nav.tiltakspenger.libs.konsist
 
 import com.lemonappdev.konsist.api.container.KoScope
-import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.extension
 import kotlin.io.path.readLines
-import kotlin.streams.asSequence
 
 /**
  * Håndhever konvensjonen om én setning per linje i KDoc, kommentarer og markdown-filer.
@@ -275,20 +273,13 @@ object EnSetningPerLinje {
 
     /**
      * Markdown-filene under rota, minus ekskluderte kataloger og resources.
-     * Ekskluderingen er segmentbasert slik at også nestede kataloger treffes (f.eks. `<modul>/build/` når rota er repo-rota, ikke bare `build/` på toppnivå).
      * Filer under `src/<sourceSet>/resources` er data (f.eks. testfixtures), ikke dokumentasjon, og hoppes alltid over — samme prinsipp som [kildefiler].
      */
     private fun Path.markdownFiler(ekskluderteKataloger: Set<String>): Sequence<Path> =
-        Files
-            .walk(this)
-            .asSequence()
-            .filter { path -> path.extension == "md" }
+        filerUnder(ekskluderteKataloger) { path -> path.extension == "md" }
             .filterNot { path ->
-                val relativ = relativize(path)
-                val relativStreng = relativ.toString()
-                relativ.any { segment -> segment.toString() in ekskluderteKataloger } ||
-                    "src/main/resources/" in relativStreng ||
-                    "src/test/resources/" in relativStreng
+                val relativStreng = relativize(path).toString()
+                "src/main/resources/" in relativStreng || "src/test/resources/" in relativStreng
             }
 
     /** Setningsavslutter, eventuelle avsluttende tegn (sitat/parentes/utheving), mellomrom, eventuelle innledende tegn og stor forbokstav. */
@@ -320,6 +311,4 @@ object EnSetningPerLinje {
         )
 
     private val interjeksjoner = setOf("nb", "obs", "viktig", "merk")
-
-    val standardEkskluderteKataloger = setOf("build", ".gradle", ".git", ".idea", "node_modules")
 }

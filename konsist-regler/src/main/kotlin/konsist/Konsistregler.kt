@@ -2,6 +2,26 @@ package no.nav.tiltakspenger.libs.konsist
 
 import com.lemonappdev.konsist.api.container.KoScope
 import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.streams.asSequence
+
+/**
+ * Kataloger som aldri inneholder kildekode eller konfigurasjon vi eier, og som de filbaserte reglene alltid hopper over.
+ */
+val standardEkskluderteKataloger = setOf("build", ".gradle", ".git", ".idea", "node_modules")
+
+/**
+ * Filene under rota som [predikat] godtar, minus alt under [ekskluderteKataloger].
+ * Ekskluderingen er segmentbasert slik at også nestede kataloger treffes (f.eks. `<modul>/build/` når rota er repo-rota, ikke bare `build/` på toppnivå).
+ * Brukes av reglene som leser filer direkte fra disk i stedet for gjennom et Konsist-scope (markdown og byggfiler).
+ */
+internal fun Path.filerUnder(ekskluderteKataloger: Set<String>, predikat: (Path) -> Boolean): Sequence<Path> =
+    Files
+        .walk(this)
+        .asSequence()
+        .filter(predikat)
+        .filterNot { path -> relativize(path).any { segment -> segment.toString() in ekskluderteKataloger } }
 
 /**
  * Kildefilene i scopet, uten `.kt`-filer som ligger under resources.

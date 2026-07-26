@@ -48,7 +48,7 @@ internal class HttpKlientResponseTest {
 
     @Test
     fun `loggSuksess bruker invariant-aksessorene`() {
-        // Røyktest på at hjelperen kan kalles på en gyldig respons; innholdet verifiseres ikke (Sikkerlogg er et objekt uten søm).
+        // Røyktest på at hjelperen kan kalles på en gyldig respons; innholdet verifiseres ikke (Sikkerlogg er et objekt som ikke kan byttes ut).
         respons.loggSuksess(KotlinLogging.logger {}, "Sendte til datadeling.")
     }
 }

@@ -9,8 +9,10 @@ import no.nav.tiltakspenger.libs.httpklient.HttpKlientResponse
 import no.nav.tiltakspenger.libs.httpklient.infra.circuitbreaker.CircuitBreakerCacheKey
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.Header
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.HttpMethod
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.MultipartDeler
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.SerialisertJson
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.Statusregel
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.erUtenLinjeskift
 import no.nav.tiltakspenger.libs.httpklient.infra.retry.RetryConfig
 import no.nav.tiltakspenger.libs.httpklient.infra.retry.toRetryConfig
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.HttpTransport
@@ -19,6 +21,7 @@ import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.time.Clock
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -29,7 +32,7 @@ import kotlin.reflect.typeOf
  * `Content-Type`, `Accept` og (de)serialisering er en intern konsekvens av hvilken metode du kaller — det finnes ingen content-type-strenger, body-varianter eller respons-typemagi i API-et.
  * Klienten logger aldri selv; bruk [HttpKlientError.loggFeil] og HttpKlientResponse.loggSuksess fra laget som har domenekonteksten.
  *
- * Dette er en `final` klasse uten interface: den eneste sømmen er [transport], og tester bytter den mot `FakeHttpTransport` (testFixtures) slik at hele den reelle pipelinen — auth-materialisering, retry-gates, statusregler, dekoding, metadata og redaksjon — kjører for ekte i test i stedet for å emuleres.
+ * Dette er en `final` klasse uten interface: det eneste som kan byttes ut er [transport], og tester bytter den mot `FakeHttpTransport` (testFixtures) slik at hele den reelle pipelinen — auth-materialisering, retry-gates, statusregler, dekoding, metadata og maskering — kjører for ekte i test i stedet for å emuleres.
  *
  * De reified metodene er tynne inline-fasader som kun fanger typeargumentet; all logikk ligger i `internal`-broene under, slik at interne typer ikke lekker inn i public inline-bytecode.
  *
@@ -41,7 +44,7 @@ import kotlin.reflect.typeOf
  * Påkrevd; ingen default i produksjonskode (se AGENTS.md).
  * @param config Klientens oppførsel som ren data.
  * Per-kall-overstyringer finnes ikke; avvikende behov får en egen klientinstans.
- * @param transport Den eneste nettverks-sømmen.
+ * @param transport Det eneste stedet klienten rører nettverket.
  * Default er produksjonstransporten på `java.net.http.HttpClient`; tester sender inn en `FakeHttpTransport`.
  */
 class HttpKlient(
@@ -207,6 +210,38 @@ class HttpKlient(
     ): Either<HttpKlientError, HttpKlientResponse<ByteArray>> =
         utfør(HttpMethod.GET, uri, headere, bearerToken, godta, HttpKlientRequest.Body.Ingen, ResponsFormat.PdfBytes)
 
+    /**
+     * POST rå bytes med konsument-oppgitt [contentType] → PDF som rå bytes (bilde mot pdfgens bilde-endepunkt).
+     * [contentType] er en parameter her — og bare her — fordi selve payloaden bestemmer den (`image/png` vs `image/jpeg`), i motsetning til de øvrige metodene der bodyformatet er gitt av metoden.
+     * Requesten dekodes aldri som tekst i `rawRequestString`; den får placeholderen `<binær body, N bytes, media/type>` og er dermed sikkerlogg-trygg.
+     */
+    suspend fun postBytesMotPdf(
+        uri: URI,
+        bytes: ByteArray,
+        contentType: String,
+        headere: List<Header> = emptyList(),
+        bearerToken: AccessToken? = null,
+        godta: Statusregel = Statusregel.Alle2xx,
+    ): Either<HttpKlientError, HttpKlientResponse<ByteArray>> =
+        utfør(HttpMethod.POST, uri, headere, bearerToken, godta, bytesBody(bytes, contentType), ResponsFormat.PdfBytes)
+
+    // ---------- multipart/form-data (filopplasting) ----------
+
+    /**
+     * POST `multipart/form-data` med binære filparter ([MultipartDel]) → JSON deserialisert til [Res], eller `Unit` for endepunkt uten interessant body.
+     * Boundary genereres per kall og legges på `Content-Type` av klienten; konsumenten oppgir kun delene.
+     * [MultipartDeler] garanterer at det finnes minst én del og at feltnavnene er unike, så disse invariantene trenger ikke gjentas på kallstedet.
+     * Som for [postBytesMotPdf] havner aldri rå bytes i `rawRequestString` — hver del vises som `<binær del 'felt' (filnavn), N bytes, media/type>`.
+     */
+    suspend inline fun <reified Res : Any> postMultipart(
+        uri: URI,
+        deler: MultipartDeler,
+        headere: List<Header> = emptyList(),
+        bearerToken: AccessToken? = null,
+        godta: Statusregel = Statusregel.Alle2xx,
+    ): Either<HttpKlientError, HttpKlientResponse<Res>> =
+        postMultipartIntern(typeOf<Res>(), uri, deler, headere, bearerToken, godta)
+
     // ---------- Rå tekst og form-encoding (tilgangsmaskin, token-endepunkt) ----------
 
     /**
@@ -338,6 +373,17 @@ class HttpKlient(
         utfør(HttpMethod.POST, uri, headere, bearerToken, godta, HttpKlientRequest.Body.Tekst(tekst, sensitiv), jsonEllerUnitResponsFormat(type, metodenavn = "postTekst"))
 
     @PublishedApi
+    internal suspend fun <Res> postMultipartIntern(
+        type: KType,
+        uri: URI,
+        deler: MultipartDeler,
+        headere: List<Header>,
+        bearerToken: AccessToken?,
+        godta: Statusregel,
+    ): Either<HttpKlientError, HttpKlientResponse<Res>> =
+        utfør(HttpMethod.POST, uri, headere, bearerToken, godta, multipartBody(deler), jsonEllerUnitResponsFormat(type, metodenavn = "postMultipart"))
+
+    @PublishedApi
     internal suspend fun <Res> postFormIntern(
         type: KType,
         uri: URI,
@@ -384,6 +430,24 @@ internal fun jsonBody(body: Any): HttpKlientRequest.Body.Json {
     }
     return HttpKlientRequest.Body.Json(body)
 }
+
+/**
+ * Binær body med konsument-oppgitt mediatype.
+ * Verdien blir til `Content-Type`-headeren, så CR/LF avvises fail-fast her i stedet for å bli en ugyldig header når JDK-en bygger requesten.
+ */
+internal fun bytesBody(bytes: ByteArray, contentType: String): HttpKlientRequest.Body.Bytes {
+    require(contentType.isNotBlank()) { "contentType kan ikke være blank — den blir Content-Type-headeren på requesten." }
+    require(contentType.erUtenLinjeskift()) { "contentType kan ikke inneholde linjeskift, var '$contentType'" }
+    return HttpKlientRequest.Body.Bytes(bytes, contentType)
+}
+
+/**
+ * Multipart-body med en tilfeldig boundary, generert her slik at `Content-Type`-headeren og bodyen bygges fra samme verdi.
+ * Prefikset gjør boundaryen gjenkjennelig i pakkedumper; UUID-en holder den unik per kall, godt innenfor RFC 2046 sin grense på 70 tegn.
+ * At det finnes minst én del og at feltnavnene er unike, er allerede garantert av [MultipartDeler].
+ */
+internal fun multipartBody(deler: MultipartDeler): HttpKlientRequest.Body.Multipart =
+    HttpKlientRequest.Body.Multipart(deler = deler, boundary = "tiltakspenger-${UUID.randomUUID()}")
 
 /** Fail-fast mot respons-typeargumenter som har en dedikert metode i stedet. */
 internal fun krevStøttetJsonResponsType(type: KType, metodenavn: String) {
@@ -461,12 +525,8 @@ internal fun byggHttpKlientRequest(
             konsumentHeadere[header.navn] = mutableListOf(header.verdi)
         }
     }
-    val contentType = when (body) {
-        HttpKlientRequest.Body.Ingen -> null
-        is HttpKlientRequest.Body.Json, is HttpKlientRequest.Body.FerdigJson -> "application/json"
-        is HttpKlientRequest.Body.Tekst -> "text/plain; charset=utf-8"
-        is HttpKlientRequest.Body.Form -> "application/x-www-form-urlencoded"
-    }
+    // Content-Type eies av bodyen selv; her plukkes den bare opp.
+    val contentType = body.contentType
     val accept = when (responsFormat) {
         is ResponsFormat.Json, is ResponsFormat.JsonEllerNull -> "application/json"
         ResponsFormat.PdfBytes -> "application/pdf"

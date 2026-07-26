@@ -117,7 +117,7 @@ class FakeHttpTransport : HttpTransport {
 
     /**
      * Drenerer requestens `BodyPublisher` til bytes via en [Flow.Subscriber] som samler ByteBuffers.
-     * JDK-ens publishers (`ofString`/`noBody`) leverer synkront ved subscribe, men vi venter med timeout for å være robuste mot andre implementasjoner.
+     * JDK-ens publishers (`ofByteArray`/`noBody`) leverer synkront ved subscribe, men vi venter med timeout for å være robuste mot andre implementasjoner.
      */
     private fun drenBodyBytes(request: HttpRequest): ByteArray {
         val publisher = request.bodyPublisher().orElse(null) ?: return ByteArray(0)

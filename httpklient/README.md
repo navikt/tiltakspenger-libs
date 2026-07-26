@@ -6,99 +6,104 @@ Målet er å standardisere enkel HTTP-bruk i tiltakspenger-libs med:
 
 - Arrow `Either<HttpKlientError, HttpKlientResponse<T>>` i stedet for exceptions i API-et (suksess-grenen er en `HttpKlientResponse<T>` med status, body og metadata).
 - Egne venstresider for blant annet `Timeout`, `NetworkError`, `InvalidRequest`, `UventetStatus`, `SerializationError`, `DeserializationError` og `CircuitBreakerOpen`, gruppert i `RequestIkkeSendt`, `IngenRespons` og `ResponsMottatt` etter «så serveren requesten min?».
-- Støtte for JSON som `String` inn/ut.
-- Støtte for DTO-er inn/ut via `tiltakspenger-libs/json` sine `serialize`/`deserialize`-hjelpere.
-- Suspend-first API med en Ktor-inspirert `RequestBuilder`.
-- Verb-hjelpere for `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD` og `OPTIONS`.
-- Felles `HttpKlientMetadata` på både `HttpKlientResponse` og `HttpKlientError` med rå request/response, headere og status der de finnes.
-- Konfigurerbar definisjon av hvilke HTTP-statuser som regnes som suksess.
+- Én statisk typet metode per reelt behov, i stedet for en generisk builder: `Content-Type`, `Accept` og (de)serialisering er en konsekvens av hvilken metode du kaller.
+- DTO-er inn/ut via `tiltakspenger-libs/json` sine `serialize`/`deserialize`-hjelpere.
+- Felles `HttpKlientMetadata` på både `HttpKlientResponse` og `HttpKlientError` med rå request/response, headere, tidsstempler og status der de finnes.
+- `Statusregel` som ren data for hvilke HTTP-statuser som regnes som suksess.
 - Valgfri resilience via retry og circuit breaker basert på Arrow Resilience.
-- Valgfri logging via vanlig `KLogger` og/eller `Sikkerlogg`.
+- Klienten logger aldri selv; konsumenten logger én gang per hendelse med `HttpKlientError.loggFeil` / `HttpKlientResponse.loggSuksess`.
 
-## Eksempel
+## API-et
 
-Bruk `HttpKlient` som avhengighetstype i konsumenter.
-Produksjonsklienten opprettes via `HttpKlient(clock = ...)`-factoryen (den konkrete implementasjonen er intern).
-Tester kan bruke `HttpKlientFake` fra `test-common`.
-
-Generisk request med builder:
+`HttpKlient` er en `final` klasse uten interface — det eneste som kan byttes ut er `HttpTransport`.
+All konfigurasjon er ren data i `HttpKlientConfig` (timeout, `KlientAuth`, `Retry`, `CircuitBreakerConfig`, skip-cache-statuser).
+Det finnes ingen per-kall-overstyringer: et endepunkt med avvikende behov får en egen klientinstans.
 
 ```kotlin
-val klient: HttpKlient = HttpKlient(clock = clock)
-
-val response: Either<HttpKlientError, HttpKlientResponse<MinResponseDto>> = klient.request<MinResponseDto>(
-    uri = URI.create("https://example.com/api"),
-    method = HttpMethod.POST,
-) {
-    header("X-Trace-Id", traceId)
-    timeout = 5.seconds
-    json(MinRequestDto(id = "123"))
-}
+val klient = HttpKlient(
+    clock = clock,
+    config = HttpKlientConfig(
+        timeout = 10.seconds,
+        auth = KlientAuth.System(authTokenProvider),
+        retry = Retry.Fast(maksForsøk = 4, delay = 1.seconds),
+    ),
+    transport = JavaHttpTransport(connectTimeout = 5.seconds),
+)
 ```
 
-Verb-hjelpere setter HTTP-metoden for deg:
+| Behov | Metode |
+|---|---|
+| JSON inn/ut | `getJson<T>`, `postJson<T>` (DTO eller `SerialisertJson`) |
+| JSON ut, `null` på gitte statuser | `getJsonEllerNull<T>`, `postJsonEllerNull<T>` |
+| JSON inn, kun status ut | `postJsonUtenSvar`, `putJsonUtenSvar`, `patchJsonUtenSvar` |
+| PDF ut | `postJsonMotPdf`, `getPdf` |
+| Binært inn (bilde mot pdfgen) | `postBytesMotPdf(bytes, contentType)` |
+| Filopplasting | `postMultipart<T>(deler: MultipartDeler)` |
+| Rå tekst inn | `postTekst<T>(tekst, sensitiv)` |
+| `application/x-www-form-urlencoded` inn | `postForm<T>(felter)` |
+
+Ferdigserialisert JSON sendes med `SerialisertJson`-wrapperen (aldri en `String`-overload), typisk når nøyaktig denne payloaden skal persisteres sammen med resultatet.
+Egne request-headere settes med `Header`/`NavHeadere`; de reserverte navnene (`Content-Type`, `Accept`, `Authorization`, `Content-Length`, `Host`) eies av klienten og avvises fail-fast.
 
 ```kotlin
-val response = klient.get<MinResponseDto>(URI.create("https://example.com/api/123")) {
-    header("X-Trace-Id", traceId)
-    timeout = 5.seconds
-}
+val respons = klient.postJson<SaksnummerResponse>(
+    uri = URI.create("$baseUrl/saksnummer"),
+    body = FnrDTO(fnr.verdi),
+    headere = listOf(NavHeadere.navCallId(correlationId.toString())),
+    godta = Statusregel.Eksakt(200),
+)
 ```
 
-For JSON som allerede er en `String`, bruk `String`-overloaden (strengen sendes verbatim, ikke serialisert på nytt):
+### Binære bodyer og sikkerlogg
 
-```kotlin
-val response = klient.post<String>(URI.create("https://example.com/api"), """{"id":"123"}""")
+Binært innhold dekodes aldri som tekst, verken inn eller ut.
+`metadata.rawResponseString` blir `<binær respons, N bytes>`, en `postBytesMotPdf`-request blir `<binær body, N bytes, image/png>`, og en multipart-request gjengis som struktur og størrelser:
+
+```
+<multipart/form-data, 2 deler>
+<binær del 'file0' (vedlegg.png), 4711 bytes, image/png>
+<binær del 'file1' (dok.pdf), 91234 bytes, application/pdf>
 ```
 
-Tilsvarende finnes `post`/`put`/`patch` med en DTO som `body: Any` (serialiseres via `tiltakspenger-libs/json`).
-
-For raw tekst uten JSON-headere:
-
-```kotlin
-val response = klient.post<String>(URI.create("https://example.com/api")) {
-    header("Content-Type", "text/plain")
-    body("hei")
-}
-```
-
-For `application/x-www-form-urlencoded` (f.eks. token-endepunkter):
-
-```kotlin
-val response = klient.post<String>(URI.create("https://example.com/token")) {
-    formUrlEncoded("grant_type" to "client_credentials", "scope" to "api://app-x")
-}
-```
+Det gjør at metadataen alltid trygt kan sendes til sikkerlogg.
+`MultipartDel` avviser CR/LF i feltnavn, filnavn og `Content-Type` (header-injeksjon), mens anførselstegn og backslash i et brukeropplastet filnavn escapes ved enkoding i stedet for å velte kallet.
+Delene sendes som `MultipartDeler` — en `Nel`-basert samletype som eier invariantene «minst én del» og «unike feltnavn», i stedet for at hvert kallsted gjentar dem.
+Bygger du delene med `mapIndexed` o.l., konverter med `tilMultipartDeler()`.
 
 ### Response-typer og tomme bodyer
 
-Response-typen `T` i `request<T>` / verb-hjelperne styrer hvordan bodyen tolkes:
+En tom body kan ikke deserialiseres til en DTO.
+Et `204`-svar med en DTO som response-type gir derfor `HttpKlientError.DeserializationError` med en feilmelding som peker videre.
+Bruk `getJsonEllerNull`/`postJsonEllerNull` med `nullVedStatus`, eller en `UtenSvar`-variant, for endepunkter som kan svare uten body.
 
-- `String` — rå body uten deserialisering.
-- `Unit` — bodyen ignoreres.
-  Bruk denne for `204 No Content`, `HEAD` og andre svar uten body.
-- En DTO — bodyen deserialiseres med `tiltakspenger-libs/json`.
-
-Merk at en tom body _ikke_ kan deserialiseres til en DTO.
-Et `204`-svar, et `HEAD`-svar eller et tomt `304`-svar med en DTO som response-type gir derfor `HttpKlientError.DeserializationError`.
-Bruk `Unit` (eller `String`) som response-type for endepunkter som kan svare uten body.
+`getJson<String>`, `getJson<Unit>` og `getJson<ByteArray>` er bevisst ulovlige og feiler fail-fast: rå respons-tekst finnes alltid i `metadata.rawResponseString`, `Unit` har egne `UtenSvar`-varianter, og binært har `getPdf`/`postJsonMotPdf`.
 
 ## Testing
 
-`test-common` eksponerer `HttpKlientFake`, en enkel fake som implementerer `HttpKlient`, tar opp alle requests som `HttpKlientRequest`, og svarer med køede responser/feil:
+Tester bytter ut `HttpTransport` med `FakeHttpTransport` fra modulens testFixtures:
 
 ```kotlin
-val httpKlient = HttpKlientFake().apply {
-    enqueueResponse(MinResponseDto(id = "123"))
-}
-
-val response = httpKlient.get<MinResponseDto>(URI.create("https://example.com/api/123")).getOrFail()
-
-httpKlient.requests.single().method shouldBe HttpMethod.GET
+testImplementation(testFixtures("com.github.navikt.tiltakspenger-libs:httpklient-infrastruktur:$felleslibVersion"))
 ```
 
-Hvis faken brukes uten konfigurert respons returneres en tydelig `HttpKlientError.InvalidRequest`
-med `metadata.attempts = 0`, slik at tester feiler deterministisk uten å finne opp en defaultverdi.
+Da kjører hele den reelle pipelinen — auth-materialisering, retry-gates, statusregler, Jackson-deserialisering, metadata og maskering — og bare nettverket er borte.
+En køet `500` gir dermed `Left(UventetStatus)` fordi produksjonens statusregel faktisk evalueres, ikke fordi faken emulerer den.
+
+```kotlin
+val transport = FakeHttpTransport()
+transport.leggIKøJson(SaksnummerResponse(saksnummer = "202501011001"))
+
+val klient = MinKlient(baseUrl = "http://localhost", clock = fixedClock, transport = transport)
+klient.hentSaksnummer(fnr).getOrFail().saksnummer shouldBe "202501011001"
+
+transport.mottatteKall.single().bodyTekst shouldBe """{"fnr":"12345678901"}"""
+```
+
+Køen er FIFO uavhengig av URI, og retry konsumerer ett køet svar per forsøk.
+Tom kø kaster `AssertionError` med metode og URI, slik at et manglende testoppsett feiler høylytt.
+Transportfeil simuleres med `leggIKøKast` og JDK-exceptions (`HttpTimeoutException` → `Timeout`, `IOException` → `NetworkError`).
+
+Hver klient bør i tillegg ha én test som bygger default-`HttpKlient`-oppsettet mot WireMock, slik at også produksjonstransporten og den reelle URL-byggingen er dekket.
 
 ## Metadata, headere og logging
 
@@ -460,8 +465,8 @@ Trenger du domenespesifikke tellere (f.eks. per nedstrøms-tjeneste eller per re
 
 ## Begrensninger og videre arbeid
 
-- **Binære bodyer / nedlasting**: requests og responser håndteres i dag kun som `String` (`BodyHandlers.ofString` / `BodyPublishers.ofString`).
-  Fil- og byte-baserte over-/nedlastinger er TODO og legges til ved behov.
+- **Filbaserte over-/nedlastinger**: binære bodyer støttes i begge retninger, men alltid i minnet som `ByteArray`.
+  Streaming rett til eller fra fil (`BodyPublishers.ofFile` / `BodyHandlers.ofFile`) er TODO og legges til ved behov.
 - **`Retry-After`**: klienten respekterer foreløpig ikke `Retry-After`-headeren på `429`/`503`; backoff styres kun av den konfigurerte `Schedule`.
   Å lese `Retry-After` for retryable responser er TODO.
 

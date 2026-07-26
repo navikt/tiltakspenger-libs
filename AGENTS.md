@@ -64,7 +64,10 @@ Det finnes ingen split packages på tvers av modulene.
 Konsumenter avhenger av `project(":httpklient:httpklient-infrastruktur")`; domenet følger med transitivt som `api`.
 
 Den offentlige klienten er den `final` klassen `HttpKlient(clock, config, transport)` — det finnes ikke noe interface, og den eneste sømmen er `HttpTransport` (transporten som rører nettverket).
-API-et er én statisk typet metode per reelt behov (`getJson`, `getJsonEllerNull`, `postJson`, `postJsonEllerNull`, `postJsonUtenSvar`/`putJsonUtenSvar`/`patchJsonUtenSvar`, `postJsonMotPdf`, `getPdf`, `postTekst`, `postForm`); `Content-Type`, `Accept` og (de)serialisering er en intern konsekvens av metoden du kaller.
+API-et er én statisk typet metode per reelt behov (`getJson`, `getJsonEllerNull`, `postJson`, `postJsonEllerNull`, `postJsonUtenSvar`/`putJsonUtenSvar`/`patchJsonUtenSvar`, `postJsonMotPdf`, `getPdf`, `postBytesMotPdf`, `postMultipart`, `postTekst`, `postForm`); `Content-Type`, `Accept` og (de)serialisering er en intern konsekvens av metoden du kaller.
+Binært innhold dekodes aldri som tekst i noen retning: både binære responser, `postBytesMotPdf`-bodyer og multipart-deler gjengis som placeholdere i `rawRequestString`/`rawResponseString`, slik at metadataen alltid er sikkerlogg-trygg.
+`postBytesMotPdf` er den eneste metoden som tar `Content-Type` som parameter, fordi payloaden selv bestemmer den (`image/png` vs `image/jpeg`).
+Multipart-deler sendes som samletypen `MultipartDeler` (`Nel<MultipartDel>` med guards for «minst én del» og unike feltnavn), ikke som en naken `List` — invariantene hører hjemme i typen, ikke på kallstedet.
 All konfig er ren data i `HttpKlientConfig` (timeout, `KlientAuth`, `Retry`, `CircuitBreakerConfig`, skip-cache-statuser); det finnes ingen per-kall-overstyringer — et endepunkt med avvikende behov får en egen klientinstans.
 Statuser som betyr suksess uttrykkes med `Statusregel` (data, ikke predikater); statuser som bærer et domeneutfall (f.eks. `403`/`409` med strukturert body) skal ikke inn i statusregelen, men utledes fra feiltypen med `harStatus` og `bodySomJson`.
 Klienten logger aldri selv — konsumentene bruker `HttpKlientError.loggFeil` og `HttpKlientResponse.loggSuksess` fra laget som har domenekonteksten.

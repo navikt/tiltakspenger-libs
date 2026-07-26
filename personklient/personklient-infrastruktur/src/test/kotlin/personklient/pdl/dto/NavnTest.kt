@@ -76,4 +76,9 @@ internal class NavnTest {
         )
         avklartNavn shouldBe navn.right()
     }
+
+    @Test
+    fun `skal si fra når det ikke finnes noe navn`() {
+        avklarNavn(emptyList()) shouldBe FellesPersonklientError.IngenNavnFunnet.left()
+    }
 }

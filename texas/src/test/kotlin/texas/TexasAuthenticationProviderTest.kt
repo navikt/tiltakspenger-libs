@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.texas
 import io.kotest.matchers.shouldBe
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
@@ -15,6 +16,7 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.ktor.server.util.url
 import io.mockk.coEvery
@@ -22,9 +24,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.auth.test.core.JwtGenerator
 import no.nav.tiltakspenger.libs.common.Fnr
-import no.nav.tiltakspenger.libs.common.GenerellSystembruker
-import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
-import no.nav.tiltakspenger.libs.common.GenerellSystembrukerroller
 import no.nav.tiltakspenger.libs.common.Saksbehandlerrolle
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.json.objectMapper
@@ -190,10 +189,8 @@ class TexasAuthenticationProviderTest {
                     routing {
                         authenticate(IdentityProvider.AZUREAD.value) {
                             get("/some-path") {
-                                @Suppress("UNCHECKED_CAST")
-                                val systembruker =
-                                    call.systembruker(systembrukerMapper = ::mapper as (String, String, Set<String>) -> GenerellSystembruker<GenerellSystembrukerrolle, GenerellSystembrukerroller<GenerellSystembrukerrolle>>)
-                                        ?: throw RuntimeException("Kunne ikke mappe til systembruker")
+                                val systembruker = call.systembruker(systembrukerMapper = testSystembrukerMapper)
+                                    ?: throw RuntimeException("Kunne ikke mappe til systembruker")
                                 call.respond(message = systembruker, status = HttpStatusCode.OK)
                             }
                         }
@@ -263,43 +260,142 @@ class TexasAuthenticationProviderTest {
             }
         }
     }
-}
 
-private data class TestSystembruker(
-    override val roller: TestSystembrukerroller,
-    override val klientId: String,
-    override val klientnavn: String,
-) : GenerellSystembruker<TestSystembrukerrolle, TestSystembrukerroller>
+    @Test
+    fun `ingen Authorization-header - returnerer 401`() = runTest {
+        testApplication {
+            appMedTexasAuth(IdentityProvider.TOKENX)
+            defaultRequest(HttpMethod.Get, "/some-path", jwt = null).status shouldBe HttpStatusCode.Unauthorized
+        }
+    }
 
-private enum class TestSystembrukerrolle : GenerellSystembrukerrolle {
-    LAGE_HENDELSER,
-    HENTE_DATA,
-}
+    @Test
+    fun `Authorization-header med annet skjema enn Bearer - returnerer 401`() = runTest {
+        testApplication {
+            appMedTexasAuth(IdentityProvider.TOKENX)
+            defaultRequest(HttpMethod.Get, "/some-path", jwt = null) {
+                headers.append(HttpHeaders.Authorization, "Basic ${jwtGenerator.createJwtForSaksbehandler()}")
+            }.status shouldBe HttpStatusCode.Unauthorized
+        }
+    }
 
-private data class TestSystembrukerroller(
-    override val value: Set<TestSystembrukerrolle>,
-) : GenerellSystembrukerroller<TestSystembrukerrolle>,
-    Set<TestSystembrukerrolle> by value {
+    @Test
+    fun `Authorization-header som ikke er en enkelt blob - returnerer 401`() = runTest {
+        testApplication {
+            appMedTexasAuth(IdentityProvider.TOKENX)
+            defaultRequest(HttpMethod.Get, "/some-path", jwt = null) {
+                headers.append(HttpHeaders.Authorization, """Digest realm="tpts", nonce="abc"""")
+            }.status shouldBe HttpStatusCode.Unauthorized
+        }
+    }
 
-    constructor(vararg roller: TestSystembrukerrolle) : this(roller.toSet())
-    constructor(roller: Collection<TestSystembrukerrolle>) : this(roller.toSet())
+    @Test
+    fun `introspeksjonskallet feiler - returnerer 401`() = runTest {
+        coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } throws RuntimeException("Texas er nede")
+        testApplication {
+            appMedTexasAuth(IdentityProvider.TOKENX)
+            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+        }
+        // Exceptions uten melding faller tilbake på en fast tekst i challengen.
+        coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } throws RuntimeException()
+        testApplication {
+            appMedTexasAuth(IdentityProvider.TOKENX)
+            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+        }
+    }
 
-    fun harLageHendelser(): Boolean = value.contains(TestSystembrukerrolle.LAGE_HENDELSER)
-    fun harHenteData(): Boolean = value.contains(TestSystembrukerrolle.HENTE_DATA)
-}
+    @Test
+    fun `maskinporten og idporten er ikke implementert - returnerer 401`() = runTest {
+        coEvery { texasClient.introspectToken(any(), any()) } returns aktivIntrospeksjon()
+        testApplication {
+            appMedTexasAuth(IdentityProvider.MASKINPORTEN)
+            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+        }
+        testApplication {
+            appMedTexasAuth(IdentityProvider.IDPORTEN)
+            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+        }
+    }
 
-private fun mapper(
-    klientId: String = "klientId",
-    klientnavn: String = "klientnavn",
-    roller: Set<String>,
-): TestSystembruker {
-    return TestSystembruker(
-        roller = TestSystembrukerroller(
-            roller.map {
-                TestSystembrukerrolle.valueOf(it.uppercase())
-            }.toSet(),
-        ),
-        klientId = klientId,
-        klientnavn = klientnavn,
+    @Test
+    fun `ekstern bruker uten godkjent innloggingsnivå - returnerer 401`() = runTest {
+        coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } returns aktivIntrospeksjon(
+            other = mapOf("pid" to "12345678910", "acr" to "idporten-loa-substantial"),
+        )
+        testApplication {
+            appMedTexasAuth(IdentityProvider.TOKENX)
+            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+        }
+    }
+
+    @Test
+    fun `ekstern bruker uten acr-claim - returnerer 401`() = runTest {
+        coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } returns aktivIntrospeksjon(
+            other = mapOf("pid" to "12345678910"),
+        )
+        testApplication {
+            appMedTexasAuth(IdentityProvider.TOKENX)
+            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+        }
+    }
+
+    @Test
+    fun `ekstern bruker uten acr-claim slipper gjennom når innloggingsnivå ikke kreves`() = runTest {
+        coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } returns aktivIntrospeksjon(
+            other = mapOf("pid" to "12345678910"),
+        )
+        testApplication {
+            appMedTexasAuth(IdentityProvider.TOKENX, requireIdportenLevelHigh = false)
+            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.OK
+        }
+    }
+
+    @Test
+    fun `ekstern bruker uten pid-claim - returnerer 500`() = runTest {
+        coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } returns aktivIntrospeksjon(
+            other = mapOf("acr" to "Level4"),
+        )
+        testApplication {
+            appMedTexasAuth(IdentityProvider.TOKENX)
+            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.InternalServerError
+        }
+    }
+
+    private fun aktivIntrospeksjon(other: Map<String, Any?> = emptyMap()) = TexasIntrospectionResponse(
+        active = true,
+        error = null,
+        groups = null,
+        roles = null,
+        other = other,
     )
+
+    /**
+     * Minimal app for feilveiene: ruta svarer bare 200, siden det er providern som avviser før den nås.
+     */
+    private fun ApplicationTestBuilder.appMedTexasAuth(
+        identityProvider: IdentityProvider,
+        requireIdportenLevelHigh: Boolean = true,
+    ) {
+        application {
+            authentication {
+                register(
+                    TexasAuthenticationProvider(
+                        TexasAuthenticationProvider.Config(
+                            name = identityProvider.value,
+                            texasClient = texasClient,
+                            identityProvider = identityProvider,
+                            requireIdportenLevelHigh = requireIdportenLevelHigh,
+                        ),
+                    ),
+                )
+            }
+            routing {
+                authenticate(identityProvider.value) {
+                    get("/some-path") {
+                        call.respond(HttpStatusCode.OK)
+                    }
+                }
+            }
+        }
+    }
 }

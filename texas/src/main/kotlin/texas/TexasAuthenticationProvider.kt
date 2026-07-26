@@ -66,9 +66,14 @@ class TexasAuthenticationProvider(
 
         val principal = when (identityProvider) {
             IdentityProvider.TOKENX -> context.getPrincipalForUser(tokenClaims, token) ?: return
+
             IdentityProvider.AZUREAD -> getPrincipalForInternalUser(tokenClaims, token, tilganger)
-            IdentityProvider.MASKINPORTEN -> context.loginChallenge(AuthenticationFailedCause.Error("Not implemented"))
-            IdentityProvider.IDPORTEN -> context.loginChallenge(AuthenticationFailedCause.Error("Not implemented"))
+
+            // Uten return ville challengen blitt overstyrt av principalen under, og kallet sluppet gjennom med 200.
+            IdentityProvider.MASKINPORTEN, IdentityProvider.IDPORTEN -> {
+                context.loginChallenge(AuthenticationFailedCause.Error("Not implemented"))
+                return
+            }
         }
         context.principal(
             principal,

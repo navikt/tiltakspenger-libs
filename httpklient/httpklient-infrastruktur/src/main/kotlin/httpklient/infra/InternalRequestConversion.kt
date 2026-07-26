@@ -17,8 +17,8 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
     requestHeaders: Map<String, List<String>>,
     authTidsstempler: HttpKlientTidsstempler,
 ): Either<HttpKlientError, PreparedHttpKlientRequest> {
-    val bodyAsString = when (val requestBody = body) {
-        HttpKlientRequest.Body.Ingen -> null
+    val materialisertBody = when (val requestBody = body) {
+        HttpKlientRequest.Body.Ingen -> MaterialisertBody(bytes = null, visningstekst = null)
 
         is HttpKlientRequest.Body.Json -> Either.catch { serialize(requestBody.value) }
             .getOrElse { e ->
@@ -33,17 +33,22 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
                         tidsstempler = authTidsstempler,
                     ),
                 ).left()
-            }
+            }.let { MaterialisertBody.tekstlig(it) }
 
-        is HttpKlientRequest.Body.FerdigJson -> requestBody.json
+        is HttpKlientRequest.Body.FerdigJson -> MaterialisertBody.tekstlig(requestBody.json)
 
-        is HttpKlientRequest.Body.Tekst -> requestBody.tekst
+        is HttpKlientRequest.Body.Tekst -> MaterialisertBody.tekstlig(requestBody.tekst)
 
-        is HttpKlientRequest.Body.Form -> requestBody.enkodet
+        is HttpKlientRequest.Body.Form -> MaterialisertBody.tekstlig(requestBody.enkodet)
+
+        // Begge de binære variantene eier både sin egen enkoding og sin sikkerlogg-trygge visningstekst.
+        is HttpKlientRequest.Body.Bytes -> MaterialisertBody(requestBody.bytes, requestBody.visningstekst)
+
+        is HttpKlientRequest.Body.Multipart -> MaterialisertBody(requestBody.enkodet(), requestBody.visningstekst)
     }
     val rawRequestString = rawRequestString(
         requestHeaders = requestHeaders,
-        bodyAsString = bodyAsString,
+        bodyAsString = materialisertBody.visningstekst,
     )
 
     return Either.catch {
@@ -58,7 +63,7 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
         builder
             .method(
                 method.name,
-                bodyAsString?.let { HttpRequest.BodyPublishers.ofString(it) } ?: HttpRequest.BodyPublishers.noBody(),
+                materialisertBody.bytes?.let { HttpRequest.BodyPublishers.ofByteArray(it) } ?: HttpRequest.BodyPublishers.noBody(),
             )
             .build()
             .let {
@@ -76,6 +81,17 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
                 tidsstempler = authTidsstempler,
             ),
         )
+    }
+}
+
+/**
+ * Request-bodyen ferdig materialisert: [bytes] er det som faktisk sendes; [visningstekst] er det som havner i `rawRequestString`.
+ * De to har samme innhold for tekstlige bodyer, men bevisst forskjellige for binære: rå bytes skal aldri kunne havne i sikkerlogg, så de vises som en placeholder — samme regel som for binære responser ([tilLesbarResponsString]).
+ */
+private class MaterialisertBody(val bytes: ByteArray?, val visningstekst: String?) {
+    companion object {
+        /** Tekstlig body: enkodes til UTF-8-bytes med `String.toByteArray()` og sendes med `BodyPublishers.ofByteArray`, som alle andre bodyer. */
+        fun tekstlig(tekst: String) = MaterialisertBody(bytes = tekst.toByteArray(), visningstekst = tekst)
     }
 }
 

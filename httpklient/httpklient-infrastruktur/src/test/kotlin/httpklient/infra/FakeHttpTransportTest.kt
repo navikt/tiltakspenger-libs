@@ -13,9 +13,12 @@ import kotlinx.coroutines.withContext
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.SerialisertJson
+import no.nav.tiltakspenger.libs.httpklient.infra.retry.Retry
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
 import org.junit.jupiter.api.Test
+import java.io.IOException
 import java.net.URI
+import kotlin.time.Duration.Companion.ZERO
 
 /**
  * Kontraktstester for [FakeHttpTransport] — testinfraen konsumentene skal stole på i steg 3+.
@@ -196,6 +199,29 @@ internal class FakeHttpTransportTest {
         val tom = klient.getJsonEllerNull<TestResponseDto>(uri).getOrFail()
         tom.statusCode shouldBe 204
         tom.body shouldBe null
+    }
+
+    @Test
+    fun `leggIKøStatusForAlleForsøk mater hvert retry-forsøk`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøStatusForAlleForsøk(503, "nede", maksForsøk = 3)
+        val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 3, delay = ZERO))
+
+        val feil = klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!
+
+        feil.shouldBeInstanceOf<HttpKlientError.UventetStatus>().body shouldBe "nede"
+        transport.mottatteKall shouldHaveSize 3
+    }
+
+    @Test
+    fun `leggIKøKastForAlleForsøk mater hvert retry-forsøk`() = runTest {
+        val transport = FakeHttpTransport()
+        // Uten maksForsøk-argument: default-verdien (4) skal matche flåtens Retry.Fast-standard.
+        transport.leggIKøKastForAlleForsøk(IOException("connection reset"))
+        val klient = fakeHttpKlient(transport, retry = Retry.Fast(maksForsøk = 4, delay = ZERO))
+
+        klient.getJson<TestResponseDto>(uri).swap().getOrNull()!!.shouldBeInstanceOf<HttpKlientError.NetworkError>()
+        transport.mottatteKall shouldHaveSize 4
     }
 }
 

@@ -68,6 +68,60 @@ tasks {
 java {
     withSourcesJar()
 }
+
+// --- Ingen andre HTTP-klienter enn httpklient ---------------------------------
+// Konsist-reglene (IngenAndreHttpKlienter) dekker det vi selv skriver og deklarerer.
+// Denne dekker det siste hullet: en klient som kommer inn transitivt gjennom en annen
+// avhengighet, uten at den står i noen import eller byggfil. Den ligger i convention-
+// pluginen slik at alle modulene får den, og fordi en klient på runtime-classpathen til
+// en libs-modul forplanter seg til alle konsumentene.
+//
+// Ktor-klienten står bevisst IKKE på lista, og skal ikke legges til: `ktor-server-auth`
+// eksponerer `ktor-client-core` som `api` (OAuth-provideren bruker den), så den ligger på
+// classpathen så lenge vi bruker ktor sin server-auth. Ktor-klienten håndheves i kilden
+// (konsist-regelen) og i byggfila.
+val verifiserHttpKlienter =
+    tasks.register("verifiserHttpKlienter") {
+        group = "verification"
+        description = "Feiler hvis en annen HTTP-klient enn libs sin httpklient ligger på runtime-classpathen."
+        // Lista ligger inne i tasken, ikke som script-val: configuration cache kan ikke
+        // serialisere referanser til byggskript-objekter fanget i doLast.
+        //
+        // Test-hjelpemodulene eksponerer WireMock og Testcontainers, som selv bruker Apache
+        // HttpClient 5. Det er testinfrastruktur, ikke en klient vi kaller ut med, og den følger
+        // kun testscope videre til konsumentene — appenes egen runtimeClasspath er verifisert ren.
+        // Derfor er kun Apache tatt ut for disse modulene; resten av lista gjelder også der.
+        val erTesthjelpemodul = project.name in setOf("test-common", "auth-test-core", "ktor-test-common", "persistering-test-common")
+        val forbudteHttpKlienter =
+            listOfNotNull(
+                "com.squareup.okhttp3",
+                "com.squareup.retrofit2",
+                "org.apache.httpcomponents".takeUnless { erTesthjelpemodul },
+                "com.github.kittinunf.fuel",
+                "com.konghq:unirest",
+                "io.vertx:vertx-web-client",
+                "org.http4k:http4k-client",
+                "io.github.openfeign",
+            )
+        val artefakter = configurations.named("runtimeClasspath").get().incoming.artifacts
+        // Filene som input gir Gradle task-avhengighetene: uten dem kan ikke artefaktene slås opp
+        // før jar-taskene til et inkludert bygg har kjørt (composite build).
+        inputs.files(artefakter.artifactFiles).withPropertyName("runtimeClasspath")
+        val runtimeKomponenter =
+            artefakter.resolvedArtifacts
+                .map { liste -> liste.map { artefakt -> artefakt.id.componentIdentifier.displayName } }
+        doLast {
+            val funn = runtimeKomponenter.get().filter { komponent -> forbudteHttpKlienter.any { it in komponent } }
+            if (funn.isNotEmpty()) {
+                throw GradleException(
+                    "Andre HTTP-klienter enn libs sin httpklient på runtime-classpathen:\n" +
+                        funn.distinct().sorted().joinToString("\n") { "- $it" },
+                )
+            }
+        }
+    }
+
+tasks.named("check") { dependsOn(verifiserHttpKlienter) }
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {

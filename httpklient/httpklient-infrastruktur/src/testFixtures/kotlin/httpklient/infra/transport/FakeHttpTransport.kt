@@ -96,6 +96,20 @@ class FakeHttpTransport : HttpTransport {
         synchronized(lock) { kø += KøetSvar.Kast(throwable) }
     }
 
+    /**
+     * Køer samme feilstatus for hvert forsøk klienten kommer til å gjøre.
+     * En klient med `Retry.Fast(maksForsøk = 4)` henter sitt eget svar fra køen per forsøk, så én køet feilstatus ville gitt «mangler køet svar» på forsøk to.
+     * [maksForsøk] må matche klientens egen retry-konfigurasjon.
+     */
+    fun leggIKøStatusForAlleForsøk(statusCode: Int, body: String = "", contentType: String = "application/json", maksForsøk: Int = 4) {
+        repeat(maksForsøk) { leggIKøStatus(statusCode, body, contentType) }
+    }
+
+    /** Køer samme transport-exception for hvert forsøk, av samme grunn som [leggIKøStatusForAlleForsøk]. */
+    fun leggIKøKastForAlleForsøk(throwable: Throwable, maksForsøk: Int = 4) {
+        repeat(maksForsøk) { leggIKøKast(throwable) }
+    }
+
     override suspend fun send(request: HttpRequest): TransportRespons {
         // Bodyen dreneres utenfor låsen (kan blokkere kort), men opptak + uttak av svar skjer atomisk under låsen.
         val bodyBytes = drenBodyBytes(request)

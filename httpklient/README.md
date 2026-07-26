@@ -70,11 +70,30 @@ Det gjør at metadataen alltid trygt kan sendes til sikkerlogg.
 Delene sendes som `MultipartDeler` — en `Nel`-basert samletype som eier invariantene «minst én del» og «unike feltnavn», i stedet for at hvert kallsted gjentar dem.
 Bygger du delene med `mapIndexed` o.l., konverter med `tilMultipartDeler()`.
 
+Escapingen er quoted-pair (`\"`, `\\`), ikke prosentkoding som nettlesere og OkHttp bruker.
+Det er verifisert mot den eneste mottakeren vi har: NAIS-antivirus ([`nais/clamav-rest`](https://github.com/nais/clamav-rest)) parser med Go sin `mime/multipart`, som unescaper quoted-pair.
+Prosentkoding ville gitt filnavn verbatim tilbake som `cv%22.pdf` i skanneresultatet.
+Legger du til en mottaker med en annen parser, sjekk dette punktet på nytt.
+
+#### Størrelse er kallstedets ansvar
+
+`httpklient` håndhever ingen størrelsesgrense på request-bodyer.
+Den enkodede multipart-bodyen materialiseres i minnet i tillegg til de `ByteArray`-ene konsumenten allerede holder — grovt 2-3× total filstørrelse per samtidige request.
+Videresender du brukeropplastede vedlegg uten egen kontroll, holder N samtidige opplastinger à M MB til å ta ned poden.
+Grensen hører hjemme på kallstedet, som kjenner både forventet filstørrelse og hvor mange samtidige opplastinger tjenesten skal tåle.
+Nedstrøms finnes det gjerne en grense i tillegg — NAIS-antivirus svarer `413` med `file size exceeds limit` — men den beskytter mottakeren, ikke oss.
+
+`MultipartDel` og `postBytesMotPdf` kopierer heller ikke `ByteArray`-en de får inn, av samme minnehensyn.
+De låner kallerens array; muterer du den etter at delen er konstruert, går det muterte innholdet på wire.
+
 ### Response-typer og tomme bodyer
 
 En tom body kan ikke deserialiseres til en DTO.
 Et `204`-svar med en DTO som response-type gir derfor `HttpKlientError.DeserializationError` med en feilmelding som peker videre.
 Bruk `getJsonEllerNull`/`postJsonEllerNull` med `nullVedStatus`, eller en `UtenSvar`-variant, for endepunkter som kan svare uten body.
+
+En `Statusregel.Eksakt` som godtar `204`/`205` avvises fail-fast når bodyen faktisk skal deserialiseres, siden RFC 9110 garanterer at de statusene er uten body.
+Det gjelder også `postTekst`/`postForm`/`postMultipart`, men kun for DTO-responstyper: `postTekst<Unit>(godta = Statusregel.Eksakt(204))` er lovlig og riktig for endepunkter som tilgangsmaskinen, som svarer `204` uten innhold.
 
 `getJson<String>`, `getJson<Unit>` og `getJson<ByteArray>` er bevisst ulovlige og feiler fail-fast: rå respons-tekst finnes alltid i `metadata.rawResponseString`, `Unit` har egne `UtenSvar`-varianter, og binært har `getPdf`/`postJsonMotPdf`.
 
@@ -465,7 +484,7 @@ Trenger du domenespesifikke tellere (f.eks. per nedstrøms-tjeneste eller per re
 
 ## Begrensninger og videre arbeid
 
-- **Filbaserte over-/nedlastinger**: binære bodyer støttes i begge retninger, men alltid i minnet som `ByteArray`.
+- **Filbaserte over-/nedlastinger**: binære bodyer støttes i begge retninger, men alltid i minnet som `ByteArray`, og uten størrelsesgrense i biblioteket — se [Størrelse er kallstedets ansvar](#størrelse-er-kallstedets-ansvar).
   Streaming rett til eller fra fil (`BodyPublishers.ofFile` / `BodyHandlers.ofFile`) er TODO og legges til ved behov.
 - **`Retry-After`**: klienten respekterer foreløpig ikke `Retry-After`-headeren på `429`/`503`; backoff styres kun av den konfigurerte `Schedule`.
   Å lese `Retry-After` for retryable responser er TODO.

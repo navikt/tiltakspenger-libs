@@ -214,6 +214,8 @@ class HttpKlient(
      * POST rå bytes med konsument-oppgitt [contentType] → PDF som rå bytes (bilde mot pdfgens bilde-endepunkt).
      * [contentType] er en parameter her — og bare her — fordi selve payloaden bestemmer den (`image/png` vs `image/jpeg`), i motsetning til de øvrige metodene der bodyformatet er gitt av metoden.
      * Requesten dekodes aldri som tekst i `rawRequestString`; den får placeholderen `<binær body, N bytes, media/type>` og er dermed sikkerlogg-trygg.
+     *
+     * Klienten har ingen størrelsesgrense, og [bytes] kopieres ikke — kallstedet må kappe brukerstyrte payloads selv, se `postMultipart`.
      */
     suspend fun postBytesMotPdf(
         uri: URI,
@@ -232,6 +234,12 @@ class HttpKlient(
      * Boundary genereres per kall og legges på `Content-Type` av klienten; konsumenten oppgir kun delene.
      * [MultipartDeler] garanterer at det finnes minst én del og at feltnavnene er unike, så disse invariantene trenger ikke gjentas på kallstedet.
      * Som for [postBytesMotPdf] havner aldri rå bytes i `rawRequestString` — hver del vises som `<binær del 'felt' (filnavn), N bytes, media/type>`.
+     *
+     * ## Kallstedet må begrense filstørrelsen
+     * Klienten håndhever ingen grense, og den enkodede bodyen materialiseres i minnet i tillegg til de `ByteArray`-ene konsumenten allerede holder — grovt 2-3× total filstørrelse per samtidige request.
+     * Videresender du brukeropplastede vedlegg uten egen størrelseskontroll, er N samtidige opplastinger à M MB nok til å ta ned poden.
+     * Grensen hører hjemme på kallstedet, som kjenner både forventet filstørrelse og hvor mange samtidige opplastinger tjenesten skal tåle.
+     * Nedstrøms finnes det gjerne en grense i tillegg: NAIS-antivirus svarer `413` med `file size exceeds limit` når requesten overskrider `ServerMaxRequestSize`.
      */
     suspend inline fun <reified Res : Any> postMultipart(
         uri: URI,
@@ -370,7 +378,7 @@ class HttpKlient(
         bearerToken: AccessToken?,
         godta: Statusregel,
     ): Either<HttpKlientError, HttpKlientResponse<Res>> =
-        utfør(HttpMethod.POST, uri, headere, bearerToken, godta, HttpKlientRequest.Body.Tekst(tekst, sensitiv), jsonEllerUnitResponsFormat(type, metodenavn = "postTekst"))
+        utfør(HttpMethod.POST, uri, headere, bearerToken, godta, HttpKlientRequest.Body.Tekst(tekst, sensitiv), jsonEllerUnitResponsFormat(type, metodenavn = "postTekst", godta = godta))
 
     @PublishedApi
     internal suspend fun <Res> postMultipartIntern(
@@ -381,7 +389,7 @@ class HttpKlient(
         bearerToken: AccessToken?,
         godta: Statusregel,
     ): Either<HttpKlientError, HttpKlientResponse<Res>> =
-        utfør(HttpMethod.POST, uri, headere, bearerToken, godta, multipartBody(deler), jsonEllerUnitResponsFormat(type, metodenavn = "postMultipart"))
+        utfør(HttpMethod.POST, uri, headere, bearerToken, godta, multipartBody(deler), jsonEllerUnitResponsFormat(type, metodenavn = "postMultipart", godta = godta))
 
     @PublishedApi
     internal suspend fun <Res> postFormIntern(
@@ -392,7 +400,7 @@ class HttpKlient(
         bearerToken: AccessToken?,
         godta: Statusregel,
     ): Either<HttpKlientError, HttpKlientResponse<Res>> =
-        utfør(HttpMethod.POST, uri, headere, bearerToken, godta, HttpKlientRequest.Body.Form(enkodFormFelter(felter)), jsonEllerUnitResponsFormat(type, metodenavn = "postForm"))
+        utfør(HttpMethod.POST, uri, headere, bearerToken, godta, HttpKlientRequest.Body.Form(enkodFormFelter(felter)), jsonEllerUnitResponsFormat(type, metodenavn = "postForm", godta = godta))
 
     /**
      * Pipeline-inngangen alle metodene delegerer til.
@@ -479,19 +487,28 @@ internal fun krevIkkeTomBodyStatuser(godta: Statusregel, metodenavn: String, hin
     }
 }
 
-/** `Unit` betyr «ignorer bodyen» for tekst-/form-metodene (som ikke har egne UtenSvar-varianter); alt annet deserialiseres fra JSON. */
-internal fun jsonEllerUnitResponsFormat(type: KType, metodenavn: String): ResponsFormat = when (type.classifier) {
+/**
+ * `Unit` betyr «ignorer bodyen» for tekst-/form-/multipart-metodene (som ikke har egne UtenSvar-varianter); alt annet deserialiseres fra JSON.
+ *
+ * [godta] tas inn her, og ikke i de kallende `*Intern`-metodene, fordi tom-body-guarden kun gir mening når bodyen faktisk skal deserialiseres.
+ * `postTekst<Unit>(godta = Eksakt(204))` er et reelt mønster — tilgangsmaskinen svarer `204` — mens `postTekst<Dto>(godta = Eksakt(204))` aldri kan lykkes.
+ * De JSON-baserte metodene kaller [krevIkkeTomBodyStatuser] direkte i stedet, siden de alltid deserialiserer.
+ */
+internal fun jsonEllerUnitResponsFormat(type: KType, metodenavn: String, godta: Statusregel): ResponsFormat = when (type.classifier) {
     Unit::class -> ResponsFormat.IngenBody
 
     String::class -> throw IllegalArgumentException(
-        "$metodenavn<String> støttes ikke: rå respons-tekst finnes alltid i metadata.rawResponseString.",
+        "$metodenavn<String> støttes ikke: rå respons-tekst finnes alltid i metadata.rawResponseString, og JSON skal deserialiseres til en DTO.",
     )
 
     ByteArray::class -> throw IllegalArgumentException(
         "$metodenavn<ByteArray> støttes ikke: bruk postJsonMotPdf/getPdf for binære responser.",
     )
 
-    else -> ResponsFormat.Json(type)
+    else -> {
+        krevIkkeTomBodyStatuser(godta, metodenavn = metodenavn, hint = "Bruk $metodenavn<Unit> når bodyen skal ignoreres.")
+        ResponsFormat.Json(type)
+    }
 }
 
 internal fun krevIkkeTomme(nullVedStatus: Set<Int>): Set<Int> {

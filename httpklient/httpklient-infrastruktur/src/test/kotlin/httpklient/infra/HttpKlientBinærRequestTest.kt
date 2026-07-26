@@ -137,6 +137,14 @@ internal class HttpKlientBinærRequestTest {
         bodySomLatin1 shouldContain "name=\"file0\"; filename=\"en.png\""
         bodySomLatin1 shouldContain "name=\"file1\"; filename=\"to.pdf\""
         bodySomLatin1 shouldContain "Content-Type: application/pdf"
+
+        // Byte-eksakt også for flere deler: enkoderen bygger hodene separat for å kunne forhåndsberegne bodystørrelsen, og sammenføyningen må fortsatt være identisk.
+        val forventet = "--$boundary\r\nContent-Disposition: form-data; name=\"file0\"; filename=\"en.png\"\r\nContent-Type: image/png\r\n\r\n".toByteArray() +
+            pngBytes +
+            "\r\n--$boundary\r\nContent-Disposition: form-data; name=\"file1\"; filename=\"to.pdf\"\r\nContent-Type: application/pdf\r\n\r\n".toByteArray() +
+            pdfBytes +
+            "\r\n--$boundary--\r\n".toByteArray()
+        kall.bodyBytes.toList() shouldBe forventet.toList()
     }
 
     @Test

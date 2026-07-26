@@ -1,7 +1,11 @@
 package no.nav.tiltakspenger.libs.httpklient.infra
 
 import io.kotest.assertions.throwables.shouldThrowWithMessage
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
+import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.MultipartDel
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.MultipartDeler
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.SerialisertJson
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.Statusregel
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
@@ -45,12 +49,42 @@ internal class HttpKlientGuardsTest {
 
     @Test
     fun `String og ByteArray som responstype avvises også for postTekst og postForm`() = runTest {
-        shouldThrowWithMessage<IllegalArgumentException>("postTekst<String> støttes ikke: rå respons-tekst finnes alltid i metadata.rawResponseString.") {
+        shouldThrowWithMessage<IllegalArgumentException>(
+            "postTekst<String> støttes ikke: rå respons-tekst finnes alltid i metadata.rawResponseString, og JSON skal deserialiseres til en DTO.",
+        ) {
             klient.postTekst<String>(uri, tekst = "hei")
         }
         shouldThrowWithMessage<IllegalArgumentException>("postForm<ByteArray> støttes ikke: bruk postJsonMotPdf/getPdf for binære responser.") {
             klient.postForm<ByteArray>(uri, felter = listOf("a" to "1"))
         }
+    }
+
+    @Test
+    fun `Eksakt med 204 eller 205 avvises også for tekst-, form- og multipart-metodene`() = runTest {
+        // Samme fail-fast som på JSON-metodene: uten den ville kallet passert alle guards og først feilet med DeserializationError ved runtime.
+        shouldThrowWithMessage<IllegalArgumentException>(
+            "postMultipart kan ikke godta status 204 — den har per RFC 9110 ingen body. Bruk postMultipart<Unit> når bodyen skal ignoreres.",
+        ) {
+            klient.postMultipart<TestResponseDto>(uri, MultipartDeler(MultipartDel("file0", "cv.pdf", "application/pdf", byteArrayOf(1))), godta = Statusregel.Eksakt(204))
+        }
+        shouldThrowWithMessage<IllegalArgumentException>(
+            "postTekst kan ikke godta status 205 — den har per RFC 9110 ingen body. Bruk postTekst<Unit> når bodyen skal ignoreres.",
+        ) {
+            klient.postTekst<TestResponseDto>(uri, tekst = "hei", godta = Statusregel.Eksakt(205))
+        }
+        shouldThrowWithMessage<IllegalArgumentException>(
+            "postForm kan ikke godta status 204 — den har per RFC 9110 ingen body. Bruk postForm<Unit> når bodyen skal ignoreres.",
+        ) {
+            klient.postForm<TestResponseDto>(uri, felter = listOf("a" to "1"), godta = Statusregel.Eksakt(200, 204))
+        }
+    }
+
+    @Test
+    fun `Eksakt med 204 er lovlig når responstypen er Unit`() = runTest {
+        // Tilgangsmaskinen svarer 204 uten body, og postTekst<Unit> er den riktige måten å uttrykke det på — guarden over må ikke ta denne.
+        val transport = FakeHttpTransport().apply { leggIKøTomRespons(204) }
+        val respons = fakeHttpKlient(transport).postTekst<Unit>(uri, tekst = "12345678910", sensitiv = true, godta = Statusregel.Eksakt(204)).getOrFail()
+        respons.statusCode shouldBe 204
     }
 
     @Test

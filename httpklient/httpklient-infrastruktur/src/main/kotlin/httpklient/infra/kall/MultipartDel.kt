@@ -9,6 +9,11 @@ package no.nav.tiltakspenger.libs.httpklient.infra.kall
  *
  * Ikke en data class: den genererte `equals` ville sammenlignet [innhold] med referanselikhet, og `toString` ville skrevet ut en array-referanse.
  * Begge er skrevet for hånd nedenfor i stedet — verdilikhet er det [MultipartDeler] trenger for å være en meningsfull data class.
+ *
+ * Merk at typen tross verdilikheten ikke er en full verditype: [innhold] kopieres bevisst ikke, så delen låner kallerens array og eier den ikke.
+ * Muterer kalleren arrayet etter at delen er konstruert, men før kallet er sendt, går det muterte innholdet på wire — og `equals`/`hashCode` er tilsvarende ustabile.
+ * Avveiningen er minnebruk: et vedlegg kan være flere megabyte, og selve multipart-bodyen materialiseres uansett i minnet i tillegg til delene, så en kopi her ville lagt enda et filavtrykk til per samtidige request.
+ * Ikke gjenbruk eller muter en `ByteArray` du har gitt til en `MultipartDel`.
  */
 class MultipartDel(
     val feltnavn: String,

@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.httpklient.infra
 
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.HttpMethod
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.MultipartDel
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.MultipartDeler
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.Statusregel
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.godtar
@@ -61,6 +62,10 @@ internal data class HttpKlientRequest(
         /**
          * Rå bytes med konsument-oppgitt [contentType] (bilde mot pdfgens bilde-endepunkt).
          * Bevisst ikke en data class: `ByteArray` har referanselikhet i `equals`, og typen trenger ikke verdilikhet.
+         *
+         * [bytes] kopieres bevisst ikke — typen låner kallerens array og eier den ikke.
+         * Muterer kalleren arrayet etter at bodyen er bygget, men før requesten er sendt, går det muterte innholdet på wire.
+         * Avveiningen er minnebruk: en body kan være flere megabyte, og en kopi her ville lagt ett helt filavtrykk til per samtidige request for å beskytte mot en mutasjon som måtte skje i vinduet mellom konstruksjon og sending — i praksis samme uttrykk.
          */
         class Bytes(val bytes: ByteArray, override val contentType: String) : Body {
             /** Rå bytes skal aldri havne i `rawRequestString` (og dermed i sikkerlogg) — samme regel som for binære responser. */
@@ -81,22 +86,36 @@ internal data class HttpKlientRequest(
              * Ligger her sammen med [contentType] fordi de to må bygges av samme [boundary] for at requesten skal være gyldig.
              */
             fun enkodet(): ByteArray {
-                val ut = ByteArrayOutputStream()
-                deler.forEach { del ->
-                    ut.writeBytes(
-                        buildString {
-                            append("--").append(boundary).append(CRLF)
-                            append("Content-Disposition: form-data; name=\"").append(del.feltnavn.escapetIHeader()).append("\"")
-                            append("; filename=\"").append(del.filnavn.escapetIHeader()).append("\"").append(CRLF)
-                            append("Content-Type: ").append(del.contentType).append(CRLF)
-                            append(CRLF)
-                        }.toByteArray(),
-                    )
+                // Headerne bygges før bytestrømmen slik at den totale størrelsen er kjent eksakt og ByteArrayOutputStream slipper å doble seg opp fra 32 bytes.
+                // Uten dette koster et vedlegg på 10 MB rundt 19 reallokeringer med kopiering på nøyaktig den stien som håndterer de største bodyene.
+                val hoder = deler.map { it.hode() }
+                val avslutning = "--$boundary--$CRLF".toByteArray()
+                val ut = ByteArrayOutputStream(størrelse(hoder, avslutning.size))
+                deler.forEachIndexed { indeks, del ->
+                    ut.writeBytes(hoder[indeks])
                     ut.writeBytes(del.innhold)
                     ut.writeBytes(CRLF.toByteArray())
                 }
-                ut.writeBytes("--$boundary--$CRLF".toByteArray())
+                ut.writeBytes(avslutning)
                 return ut.toByteArray()
+            }
+
+            /** Én dels `Content-Disposition`/`Content-Type`-hode, ferdig enkodet — bygget én gang og gjenbrukt både til størrelsesberegningen og til selve skrivingen. */
+            private fun MultipartDel.hode(): ByteArray = buildString {
+                append("--").append(boundary).append(CRLF)
+                append("Content-Disposition: form-data; name=\"").append(feltnavn.escapetIHeader()).append("\"")
+                append("; filename=\"").append(filnavn.escapetIHeader()).append("\"").append(CRLF)
+                append("Content-Type: ").append(contentType).append(CRLF)
+                append(CRLF)
+            }.toByteArray()
+
+            /**
+             * Nøyaktig bodystørrelse: hvert hode, hver dels innhold, CRLF-en etter hver del, og avslutningsboundaryen.
+             * Summeres som `Long` og klippes til [Int.MAX_VALUE] slik at en absurd stor body ikke gir negativ startstørrelse (som [ByteArrayOutputStream] avviser); en body over 2 GB feiler uansett senere i `toByteArray()`.
+             */
+            private fun størrelse(hoder: List<ByteArray>, avslutning: Int): Int {
+                val sum = deler.indices.sumOf { hoder[it].size.toLong() + deler[it].innhold.size + CRLF.length } + avslutning
+                return sum.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
             }
 
             /** Sikkerlogg-trygg gjengivelse: struktur og størrelser, aldri filinnholdet. */
@@ -111,6 +130,11 @@ internal data class HttpKlientRequest(
 /**
  * Escaper backslash og anførselstegn i navn som gjengis i anførselstegn i `Content-Disposition` (RFC 7578 §4.2, med quoted-string fra RFC 2045).
  * CR/LF er allerede avvist i [no.nav.tiltakspenger.libs.httpklient.infra.kall.MultipartDel], så dette er alt som gjenstår for at et brukeropplastet filnavn ikke skal kunne bryte ut av headeren.
+ *
+ * Nettlesere (WHATWG) og OkHttp prosentkoder i stedet (`%22`), og quoted-pair forutsetter at mottakerens parser faktisk implementerer den.
+ * Verifisert mot den eneste mottakeren vi har: NAIS-antivirus er [nais/clamav-rest](https://github.com/nais/clamav-rest), som parser med Go sin `mime/multipart` → `mime.ParseMediaType`, og `consumeValue` i Go sin `mime/mediatype.go` unescaper `\X` for tspecials — settet `()<>@,;:\"/[]?=` inneholder både `"` og `\`.
+ * Prosentkoding ville vært et regress mot nettopp den mottakeren: Go dekoder ikke `%22`, så et filnavn med anførselstegn kom tilbake verbatim som `cv%22.pdf` i skanneresultatet.
+ * Klarer Go derimot ikke å parse headeren, blir `FileName()` tom og parten havner blant skjemaverdiene i stedet for blant filene — altså stille ikke skannet — så det er verdt å holde seg til enkodingen parseren forstår.
  */
 private fun String.escapetIHeader(): String = replace("\\", "\\\\").replace("\"", "\\\"")
 

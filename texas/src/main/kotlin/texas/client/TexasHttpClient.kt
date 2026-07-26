@@ -30,6 +30,11 @@ import kotlin.time.Duration.Companion.seconds
  * Alle Texas-endepunktene snakker JSON begge veier; ikke-2xx eller udeserialiserbar respons logges (med responskode, som før) og kastes videre — underliggende exception der én finnes, ellers en [RuntimeException] med responskoden.
  * Denne klienten kan ikke selv bruke token-basert auth ([KlientAuth.Ingen]) — det er den som lager tokens.
  *
+ * ## Target-format
+ * Target normaliseres for Azure AD av [normaliserAzureTarget], slik at kallstedet kan oppgi scope på den stilen appen allerede konfigurerer det i — `cluster:namespace:app` eller ferdig utskrevet `api://cluster.namespace.app/.default`.
+ * TokenX, Maskinporten og ID-porten får target uendret; kun Entra ID krever application ID URI-formen.
+ * Parameteret `rewriteAudienceTarget` er derfor overflødig og ignoreres — se [TexasClient.getSystemToken].
+ *
  * ## Caching og `skip_cache` (skipCache)
  * Texas cacher tokens: endepunktet returnerer alltid et cachet token hvis det finnes, og aldri et utløpt token.
  * `skipCache = true` setter `skip_cache` i requesten og tvinger Texas til å gå forbi cachen og hente et ferskt token fra identity provideren (f.eks. Entra ID).
@@ -86,12 +91,7 @@ class TexasHttpClient(
     ): AccessToken {
         val texasTokenRequest = TexasTokenRequest(
             identityProvider = identityProvider.value,
-            target = if (rewriteAudienceTarget) {
-                val target = audienceTarget.replace(':', '.')
-                "api://$target/.default"
-            } else {
-                audienceTarget
-            },
+            target = identityProvider.normaliserTarget(audienceTarget),
             skipCache = skipCache,
         )
         return httpKlient.postJson<TexasTokenResponse>(tokenUri, texasTokenRequest)
@@ -115,7 +115,7 @@ class TexasHttpClient(
     ): AccessToken {
         val texasExchangeTokenRequest = TexasExchangeTokenRequest(
             identityProvider = identityProvider.value,
-            target = audienceTarget,
+            target = identityProvider.normaliserTarget(audienceTarget),
             userToken = userToken,
             skipCache = skipCache,
         )

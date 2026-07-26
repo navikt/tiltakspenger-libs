@@ -11,9 +11,10 @@ import no.nav.tiltakspenger.libs.texas.IdentityProvider
  * [skipCache][AuthTokenProvider.hentToken] videreformidles til Texas' `skip_cache`, slik at `httpklient` sin skip-cache-retry (typisk ved `401` fra target) faktisk tvinger fram et ferskt token forbi Texas-cachen.
  *
  * @param texasClient Klienten mot Texas-sidecaren.
- * @param audienceTarget Target-appen tokenet skal utstedes for (f.eks. `dev-gcp:tpts:tiltakspenger-datadeling`).
+ * @param audienceTarget Target-appen tokenet skal utstedes for.
+ * Begge stilene appene våre konfigurerer scope i fungerer: nais-kortformen `dev-gcp:tpts:tiltakspenger-datadeling` og den ferdig utskrevne `api://dev-gcp.tpts.tiltakspenger-datadeling/.default`.
  * @param identityProvider Identity provideren tokenet skal utstedes av; default Entra ID.
- * @param rewriteAudienceTarget Se [TexasClient.getSystemToken] — skriver om `cluster:namespace:app` til `api://cluster.namespace.app/.default`.
+ * @param rewriteAudienceTarget Utgått og uten effekt, se [TexasClient.getSystemToken] — ikke oppgi den i nye kallsteder.
  */
 class TexasSystemTokenProvider(
     private val texasClient: TexasClient,

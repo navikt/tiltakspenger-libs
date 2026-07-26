@@ -210,20 +210,69 @@ internal class TexasHttpClientTest {
     }
 
     @Test
-    fun `getSystemToken uten rewrite sender audience target uendret`() = runTest {
+    fun `getSystemToken lar ferdig utskrevet audience target stå`() = runTest {
         val transport = FakeHttpTransport().apply {
             leggIKøJson(json = """{"access_token": "abc123", "expires_in": 3600}""")
         }
 
         texasClient(transport).getSystemToken(
-            audienceTarget = "custom-audience",
+            audienceTarget = "api://dev-fss.teamdokumenthandtering.saf/.default",
+            identityProvider = IdentityProvider.AZUREAD,
+        )
+
+        val requestBody = deserialize<Map<String, Any?>>(transport.mottatteKall.single().bodyTekst)
+        requestBody["target"] shouldBe "api://dev-fss.teamdokumenthandtering.saf/.default"
+        requestBody["skip_cache"] shouldBe false
+    }
+
+    /**
+     * Flagget er utgått og skal ikke lenger kunne velte et kall.
+     * Dette er nøyaktig kombinasjonen som tok ned `tiltakspenger-soknad-api` i produksjon: kortform fra nais-manifestet, med omskrivingen slått av.
+     */
+    @Test
+    fun `getSystemToken normaliserer også når det utgåtte rewrite-flagget er av`() = runTest {
+        val transport = FakeHttpTransport().apply {
+            leggIKøJson(json = """{"access_token": "abc123", "expires_in": 3600}""")
+        }
+
+        texasClient(transport).getSystemToken(
+            audienceTarget = "prod-fss:pdl:pdl-api",
             identityProvider = IdentityProvider.AZUREAD,
             rewriteAudienceTarget = false,
         )
 
         val requestBody = deserialize<Map<String, Any?>>(transport.mottatteKall.single().bodyTekst)
-        requestBody["target"] shouldBe "custom-audience"
-        requestBody["skip_cache"] shouldBe false
+        requestBody["target"] shouldBe "api://prod-fss.pdl.pdl-api/.default"
+    }
+
+    @Test
+    fun `getSystemToken lar eksterne API-er utenfor nais stå urørt`() = runTest {
+        val transport = FakeHttpTransport().apply {
+            leggIKøJson(json = """{"access_token": "graph-token", "expires_in": 3600}""")
+        }
+
+        texasClient(transport).getSystemToken(
+            audienceTarget = "https://graph.microsoft.com/.default",
+            identityProvider = IdentityProvider.AZUREAD,
+        )
+
+        val requestBody = deserialize<Map<String, Any?>>(transport.mottatteKall.single().bodyTekst)
+        requestBody["target"] shouldBe "https://graph.microsoft.com/.default"
+    }
+
+    @Test
+    fun `getSystemToken lar target for andre identity providere enn Azure AD stå urørt`() = runTest {
+        val transport = FakeHttpTransport().apply {
+            leggIKøJson(json = """{"access_token": "mp-token", "expires_in": 3600}""")
+        }
+
+        texasClient(transport).getSystemToken(
+            audienceTarget = "nav:tiltakspenger/vedtak",
+            identityProvider = IdentityProvider.MASKINPORTEN,
+        )
+
+        val requestBody = deserialize<Map<String, Any?>>(transport.mottatteKall.single().bodyTekst)
+        requestBody["target"] shouldBe "nav:tiltakspenger/vedtak"
     }
 
     @Test
@@ -245,6 +294,42 @@ internal class TexasHttpClientTest {
         requestBody["user_token"] shouldBe "bruker-jwt"
         requestBody["target"] shouldBe "api://dev-gcp.tpts.tilgangsmaskin/.default"
         requestBody["skip_cache"] shouldBe false
+    }
+
+    /**
+     * TokenX bruker `cluster:namespace:app` som target.
+     * Normaliseringen for Azure AD må ikke røre den formen — gjør den det, slutter alle innloggede brukerkall å virke.
+     */
+    @Test
+    fun `exchangeToken lar TokenX-target stå på kortformen`() = runTest {
+        val transport = FakeHttpTransport().apply {
+            leggIKøJson(json = """{"access_token": "tokenx-token", "expires_in": 60}""")
+        }
+
+        texasClient(transport).exchangeToken(
+            userToken = "bruker-jwt",
+            audienceTarget = "prod-fss:pdl:pdl-api",
+            identityProvider = IdentityProvider.TOKENX,
+        )
+
+        val requestBody = deserialize<Map<String, Any?>>(transport.mottatteKall.single().bodyTekst)
+        requestBody["target"] shouldBe "prod-fss:pdl:pdl-api"
+    }
+
+    @Test
+    fun `exchangeToken normaliserer on-behalf-of-target for Azure AD`() = runTest {
+        val transport = FakeHttpTransport().apply {
+            leggIKøJson(json = """{"access_token": "obo-token", "expires_in": 60}""")
+        }
+
+        texasClient(transport).exchangeToken(
+            userToken = "bruker-jwt",
+            audienceTarget = "prod-fss:teamdokumenthandtering:saf",
+            identityProvider = IdentityProvider.AZUREAD,
+        )
+
+        val requestBody = deserialize<Map<String, Any?>>(transport.mottatteKall.single().bodyTekst)
+        requestBody["target"] shouldBe "api://prod-fss.teamdokumenthandtering.saf/.default"
     }
 
     @Test

@@ -11,9 +11,9 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 /**
- * Transport-sømmen: det eneste punktet i `httpklient` som rører nettverket.
+ * Det eneste punktet i `httpklient` som rører nettverket.
  *
- * Alt over sømmen — auth-resolve, header-bygging, retry, skip-cache-retry, circuit breaker, statusevaluering, dekoding, metadata og redaksjon — er felles pipeline-kode som kjører uansett transport.
+ * Alt utenom selve nettverkskallet — auth-resolve, header-bygging, retry, skip-cache-retry, circuit breaker, statusevaluering, dekoding, metadata og maskering — er felles pipeline-kode som kjører uansett transport.
  * Produksjon bruker [JavaHttpTransport] (default i [no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient]); tester bytter inn `FakeHttpTransport` fra testFixtures og kjører likevel hele den reelle pipelinen, i stedet for å emulere den.
  *
  * Kontrakt: [send] returnerer en [TransportRespons] for enhver fullstendig HTTP-respons (uansett status), og kaster for alt annet (timeout, IO-/nettverksfeil); transporten skal ikke pakke exceptions inn i egne typer.

@@ -56,10 +56,7 @@ kover {
         }
         verify {
             rule {
-                // TODO kover: backfill til 100 % dekning — https://github.com/navikt/tiltakspenger-libs/issues/522
-                // Ratchet, ikke mål: gulvet er målt dekning ved innføringen, slik at dekningen aldri kan regressere.
-                // Målet er 100 som i httpklient/jobber; gapet er udekket kode fra før HttpKlient-migreringen.
-                minBound(61)
+                minBound(100)
             }
         }
     }

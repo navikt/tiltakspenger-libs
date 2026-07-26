@@ -24,6 +24,7 @@ include(
     "ktor-common",
     "ktor-test-common",
     "logging",
+    "lokal-oppstart",
     "meldekort-dtos",
     "meldekort",
     "kafka",

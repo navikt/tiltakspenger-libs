@@ -23,6 +23,7 @@ import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequest
 import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequestWithAssertions
 import no.nav.tiltakspenger.libs.texas.client.TexasClient
 import no.nav.tiltakspenger.libs.texas.client.TexasIntrospectionResponse
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 /**
@@ -35,6 +36,13 @@ internal class ApplicationCallHelpersTest {
         AdRolle(Saksbehandlerrolle.SAKSBEHANDLER, "1b3a2c4d-d620-4fcf-a29b-a6cdadf29680"),
     )
     private val kastedeFeil = mutableListOf<Throwable>()
+
+    /**
+     * Testklassen kjører med `per_class`-livssyklus (se conventionpluginet), så instansen deles av alle testene her.
+     * Uten denne ville [kastedeFeil] akkumulert på tvers, og assertionene kunne ikke sagt noe om antall.
+     */
+    @BeforeEach
+    fun tømFangedeFeil() = kastedeFeil.clear()
 
     @Test
     fun `saksbehandler - systembrukertoken gir 403 ikke_saksbehandler`() = runTest {
@@ -196,7 +204,7 @@ internal class ApplicationCallHelpersTest {
             texasApp()
             defaultRequest(method = HttpMethod.Get, uri = "/fnr").status shouldBe HttpStatusCode.InternalServerError
         }
-        kastedeFeil.map { it.shouldBeInstanceOf<IllegalStateException>().message }.distinct() shouldBe listOf("Mangler principal")
+        kastedeFeilErManglerPrincipal()
     }
 
     @Test
@@ -215,10 +223,14 @@ internal class ApplicationCallHelpersTest {
                     }
                 }
             }
+            // Rutene sjekkes hver for seg: samles feilene opp, ville testen bestått selv om bare den ene ruta kastet.
             defaultRequest(method = HttpMethod.Get, uri = "/saksbehandler-uten-auth").status shouldBe HttpStatusCode.InternalServerError
+            kastedeFeilErManglerPrincipal()
+            kastedeFeil.clear()
+
             defaultRequest(method = HttpMethod.Get, uri = "/systembruker-uten-auth").status shouldBe HttpStatusCode.InternalServerError
+            kastedeFeilErManglerPrincipal()
         }
-        kastedeFeil.map { it.shouldBeInstanceOf<IllegalStateException>().message }.distinct() shouldBe listOf("Mangler principal")
     }
 
     /**
@@ -269,6 +281,14 @@ internal class ApplicationCallHelpersTest {
             roles = roller,
             other = other,
         )
+    }
+
+    /**
+     * Asserter at det ble fanget minst én feil, og at alle fangede feilene er `IllegalStateException("Mangler principal")`.
+     * Samme exception passerer pipelinen flere ganger per request, så antallet er en implementasjonsdetalj i ktor og assertes bevisst ikke.
+     */
+    private fun kastedeFeilErManglerPrincipal() {
+        kastedeFeil.map { it.shouldBeInstanceOf<IllegalStateException>().message }.distinct() shouldBe listOf("Mangler principal")
     }
 
     /**

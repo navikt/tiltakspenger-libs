@@ -7,8 +7,9 @@ import arrow.core.toNonEmptyListOrNull
 /**
  * Delene i én `multipart/form-data`-body.
  *
- * Egen type i stedet for en naken `List<MultipartDel>` fordi invariantene hører hjemme i typen, ikke på hvert kallsted:
- * en body uten deler er meningsløs, og to deler med samme [MultipartDel.feltnavn] er lovlige etter RFC 7578, men i praksis alltid en feil hos oss — serveren svarer da med færre resultater enn vi sendte filer, uten å si fra.
+ * Egen type i stedet for en naken `List<MultipartDel>` fordi invariantene hører hjemme i typen, ikke på hvert kallsted.
+ * En body uten deler er meningsløs.
+ * To deler med samme [MultipartDel.feltnavn] er lovlige etter RFC 7578, men i praksis alltid en feil hos oss — serveren svarer da med færre resultater enn vi sendte filer, uten å si fra.
  *
  * Delegerer til [value], så enkoderen kan bruke typen som en vanlig `List<MultipartDel>`.
  */

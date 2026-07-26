@@ -97,6 +97,14 @@ internal class PdlPersonTest {
             gtLand = null,
             regel = "2",
         )
-        GtType.entries shouldBe listOf(GtType.KOMMUNE, GtType.BYDEL, GtType.UTLAND, GtType.UDEFINERT)
+    }
+
+    @Test
+    fun `deserialiserer alle gt-typene PDL kan svare med`() {
+        GtType.entries.forEach { type ->
+            deserialize<GeografiskTilknytning>(
+                """{ "gtType": "$type", "gtKommune": null, "gtBydel": null, "gtLand": null, "regel": "2" }""",
+            ).gtType shouldBe type
+        }
     }
 }

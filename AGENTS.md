@@ -19,7 +19,7 @@ Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tilta
   Alle submoduler tar den i bruk via `plugins { id("tiltakspenger-lib-conventions") }`.
   Den konfigurerer Kotlin/JVM-target, Spotless med pinnet ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5, publisering og ekskludering av JUnit 4.
   Plugin- og bibliotekversjoner er sentralisert i `gradle/libs.versions.toml`.
-  Enkeltmoduler kan slå på JetBrains Kover for coverage (nå: `jobber` og `arenatiltak-dtos`).
+  Enkeltmoduler kan slå på JetBrains Kover for coverage (nå: `arenatiltak-dtos`, `httpklient-domene`, `httpklient-infrastruktur`, `jobber`, `json`, `ktor-common`, `ktor-test-common`, `meldekort-dtos`, `personklient-infrastruktur` og `texas`).
 - **Kildelayout**: standard Kotlin/Gradle-layout.
   Per [Kotlins kodekonvensjoner](https://kotlinlang.org/docs/coding-conventions.html#directory-structure) utelates den felles rotpakka `no.nav.tiltakspenger.libs` fra mappestrukturen (f.eks. `common/src/main/kotlin/common/SakId.kt` for pakka `no.nav.tiltakspenger.libs.common`).
 - **Domene/infrastruktur-splitt**: Moduler med eksterne avhengigheter (HTTP-klienter, DB) deles i `*-domene` (rent domene, ingen eksterne deps) og `*-infrastruktur` (eksterne deps tillatt).
@@ -59,7 +59,7 @@ Refererer KDoc i en domene-modul noe som bor i en infrastruktur-modul, dropp kla
 
 Modulen er delt i `httpklient:httpklient-domene` og `httpklient:httpklient-infrastruktur` etter samme mønster som `personklient`/`persistering`, med et aggregator-prosjekt uten artefakt.
 Domenet inneholder kun det som eksponeres ut til konsumentenes domenelag: `HttpKlientResponse` (med `tryMap`/`loggSuksess`) og feil-/metadata-familien (`HttpKlientError`, `HttpKlientMetadata`, `HttpKlientTidsstempler` med hjelpere som `harStatus`/`loggFeil`), alt i rotpakka `no.nav.tiltakspenger.libs.httpklient`.
-Alt annet er wiring og bor i infrastrukturen under `httpklient.infra`: klienten og config i `infra`-rot, `infra.transport`, `infra.kall` (`Statusregel`, `Header`/`NavHeadere`, `KlientAuth`/`AuthTokenProvider`, `SerialisertJson`, `HttpMethod`), `infra.retry`, `infra.circuitbreaker`, og `bodySomJson` i `infra.feil` (json-modulen er aldri ok i domenet).
+Alt annet er wiring og bor i infrastrukturen under `httpklient.infra`: klienten og config i `infra`-rot, `infra.transport`, `infra.kall` (`Statusregel`, `Header`/`NavHeadere`, `KlientAuth`/`AuthTokenProvider`, `SerialisertJson`, `HttpMethod`, `MultipartDel`/`MultipartDeler`), `infra.retry`, `infra.circuitbreaker`, og `bodySomJson` i `infra.feil` (json-modulen er aldri ok i domenet).
 Det finnes ingen split packages på tvers av modulene.
 Konsumenter avhenger av `project(":httpklient:httpklient-infrastruktur")`; domenet følger med transitivt som `api`.
 
@@ -103,8 +103,7 @@ Hvis du finner deg selv i å legge til en standardverdi for å få ødelagte/man
 ./lint_and_build.sh                          # lint + bygg + test (foretrukket)
 ./clean_lint_and_build.sh                    # clean + lint + bygg + test
 ./gradlew :<modul>:test                      # test én enkelt modul
-./gradlew :jobber:koverXmlReport             # coverage-rapport for jobber
-./gradlew :arenatiltak-dtos:koverXmlReport   # coverage-rapport for arenatiltak-dtos
+./gradlew :<modul>:koverXmlReport            # coverage-rapport for én kover-modul, f.eks. :jobber eller :texas
 ```
 
 - `spotlessApply` kjøres med `--no-parallel --max-workers=1` fra hjelpeskriptene, fordi Spotless + ktlint kan kaste en flaky `InvocationTargetException` når flere `spotlessKotlin`-tasks initialiserer ktlint parallelt.

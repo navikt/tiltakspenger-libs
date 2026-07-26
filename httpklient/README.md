@@ -66,7 +66,7 @@ Binært innhold dekodes aldri som tekst, verken inn eller ut.
 ```
 
 Det gjør at metadataen alltid trygt kan sendes til sikkerlogg.
-`MultipartDel` avviser CR/LF i feltnavn, filnavn og `Content-Type` (header-injeksjon), mens anførselstegn og backslash i et brukeropplastet filnavn escapes ved enkoding i stedet for å velte kallet.
+`MultipartDel` avviser CR/LF i feltnavn, filnavn og `Content-Type` (header-injeksjon), mens anførselstegn og backslash i feltnavn og brukeropplastede filnavn escapes ved enkoding i stedet for å velte kallet.
 Delene sendes som `MultipartDeler` — en `Nel`-basert samletype som eier invariantene «minst én del» og «unike feltnavn», i stedet for at hvert kallsted gjentar dem.
 Bygger du delene med `mapIndexed` o.l., konverter med `tilMultipartDeler()`.
 

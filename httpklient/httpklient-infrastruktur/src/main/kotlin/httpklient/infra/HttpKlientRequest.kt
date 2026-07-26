@@ -109,7 +109,7 @@ internal data class HttpKlientRequest(
 }
 
 /**
- * Escaper backslash og anførselstegn i navn som gjengis i anførselstegn i `Content-Disposition` (RFC 6266 §4.1).
+ * Escaper backslash og anførselstegn i navn som gjengis i anførselstegn i `Content-Disposition` (RFC 7578 §4.2, med quoted-string fra RFC 2045).
  * CR/LF er allerede avvist i [no.nav.tiltakspenger.libs.httpklient.infra.kall.MultipartDel], så dette er alt som gjenstår for at et brukeropplastet filnavn ikke skal kunne bryte ut av headeren.
  */
 private fun String.escapetIHeader(): String = replace("\\", "\\\\").replace("\"", "\\\"")

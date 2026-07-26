@@ -228,7 +228,7 @@ class HttpKlient(
     // ---------- multipart/form-data (filopplasting) ----------
 
     /**
-     * POST `multipart/form-data` med binære filparter ([MultipartDel]) → JSON deserialisert til [Res], eller `Unit` for endepunkt uten interessant body.
+     * POST `multipart/form-data` med binære filparter ([no.nav.tiltakspenger.libs.httpklient.infra.kall.MultipartDel]) → JSON deserialisert til [Res], eller `Unit` for endepunkt uten interessant body.
      * Boundary genereres per kall og legges på `Content-Type` av klienten; konsumenten oppgir kun delene.
      * [MultipartDeler] garanterer at det finnes minst én del og at feltnavnene er unike, så disse invariantene trenger ikke gjentas på kallstedet.
      * Som for [postBytesMotPdf] havner aldri rå bytes i `rawRequestString` — hver del vises som `<binær del 'felt' (filnavn), N bytes, media/type>`.

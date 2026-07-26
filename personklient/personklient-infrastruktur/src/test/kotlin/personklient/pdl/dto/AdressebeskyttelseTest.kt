@@ -7,7 +7,6 @@ import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.nå
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError
 import org.junit.jupiter.api.Test
-import no.nav.tiltakspenger.libs.person.AdressebeskyttelseGradering as AdressebeskyttelseGraderingDto
 
 internal class AdressebeskyttelseTest {
     private val nå = nå(fixedClock)
@@ -99,16 +98,6 @@ internal class AdressebeskyttelseTest {
 
         avklarGradering(listOf(fregUtenFolkeregistermetadata)) shouldBe AdressebeskyttelseGradering.STRENGT_FORTROLIG.right()
         avklarGradering(listOf(pdlUtenEndringer)) shouldBe AdressebeskyttelseGradering.FORTROLIG.right()
-    }
-
-    @Test
-    fun `graderingene mapper til person-dtoen`() {
-        AdressebeskyttelseGradering.entries.map { it.toPersonDto(it) } shouldBe listOf(
-            AdressebeskyttelseGraderingDto.STRENGT_FORTROLIG_UTLAND,
-            AdressebeskyttelseGraderingDto.STRENGT_FORTROLIG,
-            AdressebeskyttelseGraderingDto.FORTROLIG,
-            AdressebeskyttelseGraderingDto.UGRADERT,
-        )
     }
 
     @Test

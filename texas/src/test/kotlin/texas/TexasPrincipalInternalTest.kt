@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.texas
 
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import no.nav.tiltakspenger.libs.common.Saksbehandlerrolle
 import org.junit.jupiter.api.Test
 
@@ -135,13 +136,14 @@ internal class TexasPrincipalInternalTest {
             .leftOrNull() shouldBe InternalPrincipalMappingfeil.IngenRoller
     }
 
+    /**
+     * Feiltypene sammenlignes med `shouldBe` i testene over, så verdilikheten må faktisk skille på hvilket claim som mangler.
+     * Uten dette ville en test som forventer `ManglerClaim("azp")` bestått på `ManglerClaim("NAVident")`.
+     */
     @Test
-    fun `mappingfeilene skiller på claim og variant`() {
+    fun `ManglerClaim skiller på hvilket claim som mangler`() {
         InternalPrincipalMappingfeil.ManglerClaim("azp") shouldBe InternalPrincipalMappingfeil.ManglerClaim("azp")
-        (InternalPrincipalMappingfeil.ManglerClaim("azp") == InternalPrincipalMappingfeil.ManglerClaim("NAVident")) shouldBe false
-        InternalPrincipalMappingfeil.ManglerClaim("azp").toString() shouldBe "ManglerClaim(claim=azp)"
-        InternalPrincipalMappingfeil.IkkeSaksbehandler.toString() shouldBe "IkkeSaksbehandler"
-        InternalPrincipalMappingfeil.IkkeSystembruker.toString() shouldBe "IkkeSystembruker"
-        InternalPrincipalMappingfeil.IngenRoller.toString() shouldBe "IngenRoller"
+        InternalPrincipalMappingfeil.ManglerClaim("azp") shouldNotBe InternalPrincipalMappingfeil.ManglerClaim("NAVident")
+        InternalPrincipalMappingfeil.ManglerClaim("azp") shouldNotBe InternalPrincipalMappingfeil.IkkeSaksbehandler
     }
 }

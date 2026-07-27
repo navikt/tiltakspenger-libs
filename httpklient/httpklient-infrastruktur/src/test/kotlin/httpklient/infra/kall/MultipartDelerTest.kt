@@ -7,8 +7,9 @@ import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
 
 internal class MultipartDelerTest {
-    private fun del(feltnavn: String = "file0", innhold: ByteArray = byteArrayOf(1, 2, 3)) =
-        MultipartDel(feltnavn = feltnavn, filnavn = "vedlegg.png", contentType = "image/png", innhold = innhold)
+    // Filnavnet følger feltnavnet slik at deler med ulikt feltnavn også får ulikt filnavn — begge må være unike, se init-blokka i MultipartDeler.
+    private fun del(feltnavn: String = "file0", innhold: ByteArray = byteArrayOf(1, 2, 3), filnavn: String = "$feltnavn.png") =
+        MultipartDel(feltnavn = feltnavn, filnavn = filnavn, contentType = "image/png", innhold = innhold)
 
     @Test
     fun `to samlinger med like deler er like, selv om delene er ulike instanser`() {
@@ -64,12 +65,24 @@ internal class MultipartDelerTest {
     }
 
     @Test
-    fun `ingen konstruksjonsvei omgår guarden, heller ikke copy`() {
-        // copy() går via primærkonstruktøren og kjører dermed init — standard Kotlin, låst fast her fordi hele poenget med typen er guarden.
+    fun `avviser duplikate filnavn, som ville latt ett vedlegg gå uskannet gjennom virussjekken`() {
+        // ClamAV nøkler skanneresultatene på filnavn (files[header.Filename] = buf), så to like filnavn kollapser til ett resultat.
+        // Unike feltnavn hjelper ikke: feltnavnet forsvinner hos mottakeren.
+        shouldThrowWithMessage<IllegalArgumentException>("filnavn kan ikke ha duplikate verdier, men hadde: [cv.pdf, cv.pdf]") {
+            MultipartDeler(nonEmptyListOf(del("file0", filnavn = "cv.pdf"), del("file1", filnavn = "cv.pdf")))
+        }
+    }
+
+    @Test
+    fun `ingen konstruksjonsvei omgår guardene, heller ikke copy`() {
+        // copy() går via primærkonstruktøren og kjører dermed init — standard Kotlin, låst fast her fordi hele poenget med typen er guardene.
         val deler = MultipartDeler(del("file0"))
 
         shouldThrowWithMessage<IllegalArgumentException>("feltnavn kan ikke ha duplikate verdier, men hadde: [file0, file0]") {
-            deler.copy(value = nonEmptyListOf(del("file0"), del("file0")))
+            deler.copy(value = nonEmptyListOf(del("file0"), del("file0", filnavn = "annet.png")))
+        }
+        shouldThrowWithMessage<IllegalArgumentException>("filnavn kan ikke ha duplikate verdier, men hadde: [cv.pdf, cv.pdf]") {
+            deler.copy(value = nonEmptyListOf(del("file0", filnavn = "cv.pdf"), del("file1", filnavn = "cv.pdf")))
         }
     }
 

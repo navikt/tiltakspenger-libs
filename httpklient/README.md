@@ -67,8 +67,12 @@ Binært innhold dekodes aldri som tekst, verken inn eller ut.
 
 Det gjør at metadataen alltid trygt kan sendes til sikkerlogg.
 `MultipartDel` avviser CR/LF i feltnavn, filnavn og `Content-Type` (header-injeksjon), mens anførselstegn og backslash i feltnavn og brukeropplastede filnavn escapes ved enkoding i stedet for å velte kallet.
-Delene sendes som `MultipartDeler` — en `Nel`-basert samletype som eier invariantene «minst én del» og «unike feltnavn», i stedet for at hvert kallsted gjentar dem.
+Delene sendes som `MultipartDeler` — en `Nel`-basert samletype som eier invariantene «minst én del», «unike feltnavn» og «unike filnavn», i stedet for at hvert kallsted gjentar dem.
 Bygger du delene med `mapIndexed` o.l., konverter med `tilMultipartDeler()`.
+
+Kravet om unike filnavn er ikke kosmetikk: NAIS-antivirus nøkler skanneresultatene på filnavn (`files[header.Filename] = buf`), så to deler med samme filnavn kollapser til én oppføring, og den ene filen blir aldri skannet.
+Unike feltnavn hjelper ikke mot dette — feltnavnet forsvinner hos mottakeren.
+Har kallstedet filnavn det ikke kontrollerer, som brukeropplastede vedlegg, må det gjøre dem unike selv før delene bygges (f.eks. med et indekssuffiks).
 
 Escapingen er quoted-pair (`\"`, `\\`), ikke prosentkoding som nettlesere og OkHttp bruker.
 Det er verifisert mot den eneste mottakeren vi har: NAIS-antivirus ([`nais/clamav-rest`](https://github.com/nais/clamav-rest)) parser med Go sin `mime/multipart`, som unescaper quoted-pair.

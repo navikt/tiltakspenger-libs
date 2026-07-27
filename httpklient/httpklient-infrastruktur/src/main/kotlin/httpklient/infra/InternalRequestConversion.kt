@@ -118,7 +118,7 @@ private fun preFlightMetadata(
 
 /**
  * Lesbar tekst-representasjon av requesten, til [HttpKlientMetadata.rawRequestString].
- * Sensitive headere maskeres (standardsettet i [redactSensitiveHeaders] pluss konsumentens [no.nav.tiltakspenger.libs.httpklient.infra.kall.Header.sensitiv]-markerte), en [HttpKlientRequest.Body.Tekst] med `sensitiv = true` vises som `***`, og resultatet trunkeres til [MAKS_RAW_STRING_LENGDE] tegn.
+ * Sensitive headere maskeres (standardsettet i [maskerSensitiveHeadere] pluss konsumentens [no.nav.tiltakspenger.libs.httpklient.infra.kall.Header.sensitiv]-markerte), en [HttpKlientRequest.Body.Tekst] med `sensitiv = true` vises som `***`, og resultatet trunkeres til [MAKS_RAW_STRING_LENGDE] tegn.
  * Selve HTTP-requesten sendes alltid med ekte verdier; dette gjelder kun tekstrepresentasjonen som havner i logger.
  */
 internal fun HttpKlientRequest.rawRequestString(
@@ -133,7 +133,7 @@ internal fun HttpKlientRequest.rawRequestString(
         append(method.name)
         append(" ")
         append(uri)
-        requestHeaders.redactSensitiveHeaders(ekstraSensitive = sensitiveHeaderNavn).forEach { (name, values) ->
+        requestHeaders.maskerSensitiveHeadere(ekstraSensitive = sensitiveHeaderNavn).forEach { (name, values) ->
             values.forEach { value ->
                 append("\n")
                 append(name)

@@ -30,7 +30,7 @@ import kotlin.time.Duration.Companion.seconds
  * @param connectTimeout Connect-timeout mot sidecaren; den er lokal, så default er stram.
  * @param timeout Request-timeout per kall.
  * Den gamle klienten hadde ingen request-timeout (kunne henge for alltid); et lite tak er strengt bedre for en lokal sidecar.
- * @param transport Nettverks-sømmen til [HttpKlient]; default er produksjonstransporten, tester sender inn `FakeHttpTransport` slik at hele den reelle pipelinen kjører.
+ * @param transport Transporten som gjør nettverkskallet; default er produksjonstransporten, tester sender inn `FakeHttpTransport` slik at hele den reelle pipelinen kjører.
  *
  * Docs: https://doc.nais.io/services/leader-election/
  */

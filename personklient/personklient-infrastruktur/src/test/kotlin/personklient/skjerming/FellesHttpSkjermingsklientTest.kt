@@ -23,7 +23,7 @@ import java.time.Instant
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo as headerEqualTo
 
 /**
- * Testene går via WireMock (ekte transport): klassens offentlige konstruktør er frossen og har bevisst ingen transport-søm.
+ * Testene går via WireMock med den ekte transporten, så også wire-formatet dekkes.
  */
 internal class FellesHttpSkjermingsklientTest {
 

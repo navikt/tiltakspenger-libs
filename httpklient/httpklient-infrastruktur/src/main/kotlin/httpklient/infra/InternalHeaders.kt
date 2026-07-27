@@ -23,7 +23,7 @@ private val sensitiveHeaderNames = setOf("authorization", "proxy-authorization",
  * Standardsettet (auth/cookie) utvides med [ekstraSensitive] — lowercase-navnene på konsument-headere markert [no.nav.tiltakspenger.libs.httpklient.infra.kall.Header.sensitiv] (f.eks. en `ident`-header med fnr).
  * Brukes før headere puttes inn i [no.nav.tiltakspenger.libs.httpklient.HttpKlientMetadata.rawRequestString], slik at bearer-tokens og PII ikke lekker til logger.
  */
-internal fun Map<String, List<String>>.redactSensitiveHeaders(
+internal fun Map<String, List<String>>.maskerSensitiveHeadere(
     ekstraSensitive: Set<String>,
 ): Map<String, List<String>> {
     val skalMaskeres = { navn: String -> navn.lowercase() in sensitiveHeaderNames || navn.lowercase() in ekstraSensitive }

@@ -4,7 +4,7 @@ import no.nav.tiltakspenger.libs.logging.infra.KotlinLoggingSikkerlogg
 import org.junit.jupiter.api.Test
 
 /**
- * Røyktester på at sikkerlogg kan kalles på alle nivåer uten å feile; innholdet verifiseres ikke (implementasjonen har ingen søm).
+ * Røyktester på at sikkerlogg kan kalles på alle nivåer uten å feile; loggeren er hardkodet, så innholdet kan ikke verifiseres.
  */
 internal class SikkerloggTest {
     @Test

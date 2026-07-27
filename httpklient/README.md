@@ -145,7 +145,7 @@ val metadata: HttpKlientMetadata = response.metadata
 
 - `rawRequestString` — klientens tekstrepresentasjon av requesten (ikke garantert byte-for-byte wire-format fra Java `HttpClient`).
 - `rawResponseString` — rå response-body når en response finnes.
-- `requestHeaders` — effektive request-headere, med _uredigerte_ verdier (en bearer-token ligger her i klartekst).
+- `requestHeaders` — effektive request-headere, med _umaskerte_ verdier (en bearer-token ligger her i klartekst).
   Logg derfor `rawRequestString` framfor `requestHeaders` direkte.
 - `responseHeaders` — response-headere når en response finnes.
 - `statusCode` — HTTP-status når en response finnes.
@@ -175,7 +175,7 @@ Left-verdier fyller inn så mye metadata som finnes for feilsituasjonen.
 For eksempel har `SerializationError` request-informasjon, men ingen response, mens `UventetStatus` har både request, response-body, response-headere og status.
 
 Sensitive headere (`Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`) maskeres til `***` i `rawRequestString`, slik at bearer-tokens ikke lekker.
-Selve HTTP-requesten sendes med de ekte verdiene, og det strukturerte `requestHeaders`-mappet beholder også de uredigerte verdiene (bruk `rawRequestString` hvis du skal logge).
+Selve HTTP-requesten sendes med de ekte verdiene, og det strukturerte `requestHeaders`-mappet beholder også de umaskerte verdiene (bruk `rawRequestString` hvis du skal logge).
 For hva som maskeres i selve loggingen, se [Vanlig logg vs. Sikkerlogg (PII)](#vanlig-logg-vs-sikkerlogg-pii).
 
 HTTP-headere er case-insensitive, så bruk hjelperne `responseHeader(name)` / `responseHeaderValues(name)` (og `requestHeader` / `requestHeaderValues`) på `HttpKlientMetadata` i stedet for å slå opp direkte i mappet:
@@ -228,7 +228,7 @@ Vanlig `logger` skal aldri inneholde PII, mens `Sikkerlogg` kan.
 - **Binært innhold** gjengis som `<binær respons, N bytes>` og lignende, aldri som dekodet tekst.
 
 Kalleren styrer altså PII-grensen gjennom `kontekst`-strengen: den havner i vanlig logg, så bruk ID-er (`sakId`, saksnummer, periode) og ikke fødselsnummer eller navn.
-Skriver du en egen logglinje ved siden av, bruk `metadata.rawRequestString` — ikke `metadata.requestHeaders`, som har uredigerte verdier.
+Skriver du en egen logglinje ved siden av, bruk `metadata.rawRequestString` — ikke `metadata.requestHeaders`, som har umaskerte verdier.
 
 ## Suksess-statuser
 

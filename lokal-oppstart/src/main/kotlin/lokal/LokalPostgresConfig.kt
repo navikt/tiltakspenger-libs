@@ -50,7 +50,7 @@ data class LokalPostgresConfig(
     val kommandotimeout: Duration = 5.minutes,
     /** Overstyrer modus i kode og hopper over [LokalDatabaseModus.MILJØVARIABEL]. */
     val modusOverstyring: LokalDatabaseModus? = null,
-    /** Sømmen mot miljøet, slik at modus-valget kan testes uten å sette miljøvariabler. */
+    /** Leser miljøet, slik at modus-valget kan testes uten å sette miljøvariabler. */
     val lesMiljøvariabel: (String) -> String? = { navn -> System.getenv(navn) ?: System.getProperty(navn) },
 ) {
     /** Url-en appen skal koble seg til i [LokalDatabaseModus.DockerCompose]. */

@@ -208,7 +208,7 @@ internal class FellesHttpPersonklientTest {
     fun `request som ikke lar seg bygge mappes til NetworkError`() = runTest {
         // Ikke-ASCII-hostnavn avvises av JDK-ens HttpRequest-validering før noe sendes (RequestIkkeSendt).
         val pdlClient = FellesHttpPersonklient(
-            endepunkt = "http://pdl-søm.test/graphql",
+            endepunkt = "http://pdl-æøå.test/graphql",
             clock = fixedClock,
             transport = FakeHttpTransport(),
         )

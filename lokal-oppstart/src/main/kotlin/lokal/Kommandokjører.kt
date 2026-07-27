@@ -28,10 +28,7 @@ internal sealed interface Kommandofeil {
     data object Avbrutt : Kommandofeil
 }
 
-/**
- * Sømmen mot prosessene vi starter.
- * Finnes for at oppstartslogikken skal kunne testes uten docker.
- */
+/** Finnes for at oppstartslogikken skal kunne testes uten docker. */
 internal fun interface Kommandokjører {
     fun kjør(kommando: List<String>, arbeidskatalog: Path?, timeout: Duration): Either<Kommandofeil, Kommandoresultat>
 }

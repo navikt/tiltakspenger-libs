@@ -248,7 +248,7 @@ fun authFeilUtenKall(throwable: Throwable): HttpKlientError.AuthError {
  * Slik unngås dobbeltlogging (transport-logg fra libs + domenelogg fra konsument), og det blir nøyaktig én logghendelse per feilsituasjon.
  * All HTTP-kontekst hentes fra feilen selv ([HttpKlientError.metadata]), så kalleren bidrar bare med det kalleren vet mer om enn klienten: [operasjon] og [kontekst].
  *
- * En «logghendelse» er paret [logger].error (uten personopplysninger) + `Sikkerlogg.error` (med redigert request og lesbar respons), i tråd med resten av kodebasen.
+ * En «logghendelse» er paret [logger].error (uten personopplysninger) + `Sikkerlogg.error` (med maskert request og lesbar respons), i tråd med resten av kodebasen.
  *
  * @param logger Kallerens egen logger, slik at logglinja får kallerens navnrom.
  * @param operasjon Kort beskrivelse av hva som feilet, f.eks. `"sending til datadeling"`.

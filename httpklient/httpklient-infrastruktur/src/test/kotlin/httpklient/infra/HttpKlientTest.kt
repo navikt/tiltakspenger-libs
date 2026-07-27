@@ -58,7 +58,7 @@ internal class HttpKlientTest {
     }
 
     @Test
-    fun `sensitive headernavn samles lowercase for redaksjonen`() {
+    fun `sensitive headernavn samles lowercase for maskeringen`() {
         val request = bygg(
             headere = listOf(
                 Header("Ident", "12345678901", sensitiv = true),

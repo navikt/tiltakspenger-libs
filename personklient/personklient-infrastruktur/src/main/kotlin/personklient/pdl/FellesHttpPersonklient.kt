@@ -37,7 +37,7 @@ import kotlin.time.Duration.Companion.seconds
  * F.eks "IND" for individstønad (det gamle navnet på tiltakspenger)
  * @param clock Klokken til metadata-tidsstempler i [HttpKlient].
  * Påkrevd; ingen default i produksjonskode (se AGENTS.md).
- * @param transport Nettverks-sømmen til [HttpKlient]; default er produksjonstransporten, tester sender inn `FakeHttpTransport`.
+ * @param transport Transporten som gjør nettverkskallet; default er produksjonstransporten, tester sender inn `FakeHttpTransport`.
  */
 internal class FellesHttpPersonklient(
     endepunkt: String,
@@ -74,7 +74,7 @@ internal class FellesHttpPersonklient(
 
     /**
      * Mapper [HttpKlientError] til [FellesPersonklientError] og logger med samme meldinger og logg/sikkerlogg-splitt som før migreringen.
-     * Vanlig logg får aldri request/respons (requesten bærer fnr); sikkerlogg får redigert request og lesbar respons fra metadataen.
+     * Vanlig logg får aldri request/respons (requesten bærer fnr); sikkerlogg får maskert request og lesbar respons fra metadataen.
      */
     private fun HttpKlientError.tilFellesPersonklientErrorOgLogg(): FellesPersonklientError = when (this) {
         is HttpKlientError.ResponsMottatt -> when (this) {

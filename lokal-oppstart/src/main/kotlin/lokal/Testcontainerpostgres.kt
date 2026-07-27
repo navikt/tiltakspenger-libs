@@ -7,10 +7,7 @@ import org.testcontainers.utility.TestcontainersConfiguration
 
 private val log = KotlinLogging.logger {}
 
-/**
- * Sømmen mot Testcontainers.
- * Finnes for at modusvalget skal kunne testes uten å starte en container.
- */
+/** Finnes for at modusvalget skal kunne testes uten å starte en container. */
 internal fun interface Testcontainerpostgres {
     fun start(config: LokalPostgresConfig): Either<LokalPostgresFeil, LokalPostgres>
 }

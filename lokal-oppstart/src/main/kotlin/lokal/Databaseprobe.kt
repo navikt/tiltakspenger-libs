@@ -16,10 +16,7 @@ internal sealed interface Tilkoblingsfeil {
     data class Mislyktes(val melding: String) : Tilkoblingsfeil
 }
 
-/**
- * Sømmen mot den lokale databasen.
- * Finnes for at oppstartslogikken skal kunne testes uten postgres.
- */
+/** Finnes for at oppstartslogikken skal kunne testes uten postgres. */
 internal interface Databaseprobe {
     /** Åpner og lukker en tilkobling for å se om databasen faktisk svarer. */
     fun prøvTilkobling(jdbcUrl: String, timeout: Duration): Either<Tilkoblingsfeil, Unit>
@@ -54,10 +51,7 @@ internal class JdbcDatabaseprobe : Databaseprobe {
     }
 }
 
-/**
- * Sømmen mot klokka som går mens vi venter.
- * Finnes for at tester skal slippe å sove.
- */
+/** Finnes for at tester skal slippe å sove. */
 internal fun interface Venting {
     fun vent(varighet: Duration, steg: String): Either<LokalPostgresFeil.Avbrutt, Unit>
 }

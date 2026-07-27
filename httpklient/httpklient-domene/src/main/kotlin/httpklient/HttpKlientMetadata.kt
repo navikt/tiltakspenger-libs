@@ -12,7 +12,7 @@ import kotlin.time.Duration
  * @property requestHeaders Kun headerne klienten selv setter på requesten:
  *   - konsumentens egne headere (via `headere`-parameteren på metodene),
  *   - klientens default-headere: `Accept`/`Content-Type` utledet av metoden og bodytypen (se `byggHttpKlientRequest`),
- *   - en eventuell bearer-token materialisert av klienten, i klartekst som `Authorization: Bearer ...` (bruk derfor [rawRequestString], som redakterer sensitive headere, ved logging).
+ *   - en eventuell bearer-token materialisert av klienten, i klartekst som `Authorization: Bearer ...` (bruk derfor [rawRequestString], som maskerer sensitive headere, ved logging).
  *   Bevarer innsettings-rekkefølge fra `headere`-parameteren; klientens default-headere havner til slutt.
  *   Inneholder bevisst _ikke_ transport-headerne `java.net.http.HttpClient` legger på selv ved sending — typisk `Host`, `User-Agent` (`Java-http-client/<jdk-versjon>`, f.eks. `Java-http-client/25`) og `Content-Length` (sistnevnte for body-requester).
  *   Disse settes i JDK-ens ikke-offentlige connection-lag og eksponeres ikke via `HttpRequest.headers()` (verifisert), så vi kan verken lese dem tilbake fra klienten eller speile dem her uten å reimplementere JDK-intern oppførsel — som ville bundet oss til Java-versjonen.

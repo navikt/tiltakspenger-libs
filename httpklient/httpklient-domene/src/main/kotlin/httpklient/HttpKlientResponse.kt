@@ -35,9 +35,9 @@ data class HttpKlientResponse<out Body>(
 
 /**
  * Suksess-sti-logging for kritiske klienter som skal ha sporbarhet også når kallet lykkes (datadeling-paritet).
- * Logger alltid parvis, jf. logge-regelen i AGENTS-backend.md: en PII-fri linje i vanlig logg og en sikkerlogg-linje som starter identisk og fortsetter med redigert rå request/respons på slutten.
+ * Logger alltid parvis, jf. logge-regelen i AGENTS-backend.md: en PII-fri linje i vanlig logg og en sikkerlogg-linje som starter identisk og fortsetter med maskert rå request/respons på slutten.
  * Slik kan vanlig logg leses som en helhet, med sikkerlogg som ekstra kontekst funnet via den identiske starten.
- * Requesten er redigert (auth/sensitive headere maskert) og responsen er lesbar tekst med binær-placeholder, så innholdet er trygt for sikkerlogg.
+ * Requesten er maskert (auth og sensitive headere) og responsen er lesbar tekst med binær-placeholder, så innholdet er trygt for sikkerlogg.
  *
  * @param logger Kallerens egen logger, slik at logglinja får kallerens navnrom.
  * @param melding Kort PII-fri beskrivelse av hendelsen, f.eks. `"Hentet meldekort fra Arena."`.

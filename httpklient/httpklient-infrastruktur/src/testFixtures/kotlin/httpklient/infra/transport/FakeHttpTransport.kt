@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Kø-basert [HttpTransport] for tester: svarer med køede responser/exceptions og tar opp kallene den mottar.
  *
- * Faken emulerer ingenting: den byttes inn som transport på en ekte [no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient], slik at hele den reelle pipelinen kjører i test — auth-materialisering, retry-gates, statusregler, Jackson-deserialisering, metadata og redaksjon.
+ * Faken emulerer ingenting: den byttes inn som transport på en ekte [no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient], slik at hele den reelle pipelinen kjører i test — auth-materialisering, retry-gates, statusregler, Jackson-deserialisering, metadata og maskering.
  * En køet `500` gir derfor automatisk `Left(UventetStatus)` fordi produksjonens statusregel evalueres, og en DTO med ødelagte annotasjoner feiler i test akkurat som i produksjon.
  *
  * Kontrakt: ren FIFO — svarene konsumeres i køet rekkefølge uavhengig av URI (bevisst; parallelle kall mot samme fake gir nondeterministisk tildeling og skal heller bruke én klient/fake per mål).

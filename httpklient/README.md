@@ -72,7 +72,8 @@ Bygger du delene med `mapIndexed` o.l., konverter med `tilMultipartDeler()`.
 
 Kravet om unike filnavn er ikke kosmetikk: NAIS-antivirus nøkler skanneresultatene på filnavn (`files[header.Filename] = buf`), så to deler med samme filnavn kollapser til én oppføring, og den ene filen blir aldri skannet.
 Unike feltnavn hjelper ikke mot dette — feltnavnet forsvinner hos mottakeren.
-Har kallstedet filnavn det ikke kontrollerer, som brukeropplastede vedlegg, må det gjøre dem unike selv før delene bygges (f.eks. med et indekssuffiks).
+Har kallstedet filnavn det ikke kontrollerer, som brukeropplastede vedlegg, må det gjøre dem unike selv før delene bygges.
+`tiltakspenger-soknad-api` gjør det med et indeksprefiks (`cv.pdf` → `0-cv.pdf`): prefiks framfor suffiks lar filendelsen bli stående sist, og navnene blir garantert unike siden indeksen er rene siffer avsluttet med bindestrek.
 
 Escapingen er quoted-pair (`\"`, `\\`), ikke prosentkoding som nettlesere og OkHttp bruker.
 Det er verifisert mot den eneste mottakeren vi har: NAIS-antivirus ([`nais/clamav-rest`](https://github.com/nais/clamav-rest)) parser med Go sin `mime/multipart`, som unescaper quoted-pair.
@@ -195,160 +196,94 @@ Det er denne aksen som faktisk styrer hvor trygt det er å retry-e og om kallet 
 | `IngenRespons` | Et HTTP-forsøk ble startet, men ingen fullstendig respons kom tilbake. Ukjent om serveren rakk å behandle requesten. | `Timeout`, `NetworkError` |
 | `ResponsMottatt` | Serveren svarte, så både `statusCode` og rå-`body` er garantert (i tillegg til `responseHeaders`). | `UventetStatus`, `DeserializationError` |
 
-Du kan matche enten på den konkrete varianten eller på gruppen. `UventetStatus` het tidligere `Ikke2xx`; navnet er endret fordi feilen egentlig betyr «status ble ikke godtatt av det konfigurerte `successStatus`-predikatet», ikke bokstavelig «utenfor 2xx».
+Du kan matche enten på den konkrete varianten eller på gruppen. `UventetStatus` het tidligere `Ikke2xx`; navnet er endret fordi feilen egentlig betyr «status ble ikke godtatt av kallets `Statusregel`», ikke bokstavelig «utenfor 2xx».
 
-Logging er av som standard.
-Den kan skrus på globalt:
+### Logging
 
-```kotlin
-val klient = HttpKlient(clock = clock) {
-    logging = HttpKlientLoggingConfig(
-        logger = logg,
-        loggTilSikkerlogg = true,
-        inkluderHeadere = false,
-    )
-}
-```
-
-Eller per request:
+Klienten logger aldri selv.
+Konsumenten logger nøyaktig én gang per hendelse, fra laget som har domenekonteksten (typisk en service), med hjelperne på feil- og responstypen:
 
 ```kotlin
-val response = klient.get<MinResponseDto>(URI.create("https://example.com/api/123")) {
-    logging {
-        logger = logg
-        loggTilSikkerlogg = true
-        inkluderHeadere = true
-    }
-}
+return arenaKlient.hentMeldekort(fnr, periode)
+    .onLeft { it.loggFeil(logger, "henting av meldekort fra Arena", "Periode: $periode", sikkerlogg) }
+    .onRight { it.loggSuksess(logger, "Hentet meldekort fra Arena.", sikkerlogg) }
+    .map { it.body }
 ```
 
-### Granulær nivåstyring
+`loggFeil` henter all HTTP-kontekst fra feilen selv, så kalleren bidrar bare med det den vet mer om enn klienten: hva som ble forsøkt (`operasjon`) og hvilket domeneobjekt det gjaldt (`kontekst`).
+`logger` er kallerens egen logger, slik at logglinja får kallerens navnerom.
+`sikkerlogg` defaulter til companion-objektet, som gir en ren tekst-henvisning; injiser appens `KotlinLoggingSikkerlogg(appNavn, gcpProsjektId)` for å få en klikkbar lenke til sikkerloggen i logglinja.
 
-Loggnivået styres per kategori av kall, slik at du kan skru ned støy uten å miste feillogging (og motsatt):
-
-| Felt | Kategori | Default |
-|---|---|---|
-| `suksessNivå` | Kall godtatt av `successStatus`-predikatet | `INFO` |
-| `klientfeilNivå` | Respons med `4xx` som ikke ble godtatt som suksess | `ERROR` |
-| `serverfeilNivå` | Respons med annen uventet status (typisk `5xx`) | `ERROR` |
-| `feilNivå` | Feil uten godtatt respons (transport, timeout, serialisering, deserialisering, auth, circuit breaker) | `ERROR` |
-| `skipCacheRetryNivå` | Diagnostikk når en skip-cache-retry ikke hjalp: et ferskt token ble også avvist (typisk persistent `401`/`403`) | `WARN` |
-
-Hver kategori settes til et `HttpKlientLogNivå` (`OFF`, `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`).
-`OFF` slår kategorien helt av.
-Nivået gjelder både `logger` og — når `loggTilSikkerlogg = true` — `Sikkerlogg` (`Sikkerlogg` har ikke `trace`, så `TRACE` mappes til `debug` der).
+At klienten er stille er et bevisst valg: transport-logging fra libs pluss domenelogging fra konsumenten ga to logghendelser for samme feil, og bare konsumenten vet hva kallet betød.
+Konsumentens egen klientklasse skal derfor heller ikke logge — den returnerer `Either`, og laget som håndterer feilen logger den én gang.
 
 ### Vanlig logg vs. Sikkerlogg (PII)
 
 Vanlig `logger` skal aldri inneholde PII, mens `Sikkerlogg` kan.
-Modulen håndhever dette i alle loggkategorier:
+`loggFeil` og `loggSuksess` håndhever delingen:
 
-- **URI**: Til vanlig `logger` logges kun `scheme://host:port/path` — query-parametre, fragment og eventuell user-info (potensiell PII, f.eks. `?fnr=…`) strippes bort. `Sikkerlogg` får hele URI-en.
-- **Headere** (`inkluderHeadere = true`): Til vanlig `logger` vises headernavn, men *alle* verdier maskeres til `***` (en egendefinert header kan inneholde PII). `Sikkerlogg` får de ekte verdiene, med unntak av de faste sensitive headerne (`Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`) som er hemmeligheter og alltid maskeres.
-- **Respons-body**: Logges kun til `Sikkerlogg`, aldri til vanlig `logger`.
+- **Vanlig logg** får `operasjon`, `kontekst`, `statusCode`, `attempts` og henvisningen til sikkerloggen — ingenting fra selve requesten eller responsen.
+- **Sikkerlogg** får i tillegg `rawRequestString`, `rawResponseString` og `responseHeaders`.
+- **Sensitive headere** (`Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`) er allerede maskert til `***` i `rawRequestString`, så heller ikke sikkerloggen ser bearer-tokens.
+- **Binært innhold** gjengis som `<binær respons, N bytes>` og lignende, aldri som dekodet tekst.
 
-Vil du ha alt (full URI, ekte header-verdier, body) til ett sted, sett `loggTilSikkerlogg = true`.
-
-```kotlin
-val klient = HttpKlient(clock = clock) {
-    logging = HttpKlientLoggingConfig(
-        logger = logg,
-        suksessNivå = HttpKlientLogNivå.OFF, // ingen støy fra vellykkede kall
-        klientfeilNivå = HttpKlientLogNivå.INFO, // 4xx er forventet her, logg lavt
-        // serverfeilNivå og feilNivå beholder ERROR
-    )
-}
-```
+Kalleren styrer altså PII-grensen gjennom `kontekst`-strengen: den havner i vanlig logg, så bruk ID-er (`sakId`, saksnummer, periode) og ikke fødselsnummer eller navn.
+Skriver du en egen logglinje ved siden av, bruk `metadata.rawRequestString` — ikke `metadata.requestHeaders`, som har uredigerte verdier.
 
 ## Suksess-statuser
 
-Som standard er `2xx` suksess (`HttpStatusSuccess.is2xx`).
-Dette kan overstyres globalt, enten med et eget predikat eller med en av hjelperne i `HttpStatusSuccess`:
+`Statusregel` er ren data, ikke et predikat, slik at regelen kan sammenlignes, logges og asserters i tester.
+Default er `Statusregel.Alle2xx`.
+Endepunkter med avvikende kontrakt setter regelen per kall med `godta`:
 
 ```kotlin
-val klient = HttpKlient(clock = clock) {
-    successStatus = HttpStatusSuccess.exactly(200, 201, 204)
-}
-```
-
-`HttpStatusSuccess` tilbyr `is2xx`, `exactly(vararg koder)` og `inRange(range)` — så du slipper å skrive predikatene selv.
-
-Per request kan du sende inn et predikat, en liste av koder, eller en range:
-
-```kotlin
-// Eksplisitt predikat (f.eks. 2xx pluss 304)
-klient.get<String>(URI.create("https://example.com/api/cache")) {
-    successStatus { code -> HttpStatusSuccess.is2xx(code) || code == 304 }
-}
-
-// Bare noen eksakte koder
-klient.get<String>(URI.create("https://example.com/api/cache")) {
-    successStatus(200, 304)
-}
-
-// En range
-klient.get<String>(URI.create("https://example.com/api/cache")) {
-    successStatus(200..204)
-}
-```
-
-## Retry
-
-`HttpKlient` har valgfri retry-støtte basert på Arrow Resilience `Schedule`.
-Default er `RetryConfig.None`, dvs. ingen retries.
-
-Eksponentiell backoff og enkelt predikat via fabrikkmetode:
-
-```kotlin
-val klient = HttpKlient(clock = clock) {
-    defaultRetry = RetryConfig.exponential(
-        maxRetries = 3,
-        initialDelay = 200.milliseconds,
-        maxDelay = 2.seconds,
-        jitter = true,
-        retryOn = RetryOnServerErrorsAndNetwork,
-    ).notifyOnExcessiveRetries(threshold = 2)
-}
-```
-
-`RetryOnServerErrorsAndNetwork` tillater retry kun for idempotente metoder (`GET`, `HEAD`, `OPTIONS`, `PUT`, `DELETE`).
-Hvilke utfall som i det hele tatt er retry-bare (`408`/`425`/`429`/`500`/`502`/`503`/`504` / `Timeout` / `NetworkError`) styres av `AttemptOutcome.retryable` som en hard gate før predikatet.
-En respons som allerede regnes som suksess av det konfigurerte `successStatus`-predikatet retry-es aldri, selv om statuskoden er i den retryable mengden (f.eks. hvis en konsument bevisst godtar `503` som suksess).
-
-For konstant backoff finnes `RetryConfig.fixed(maxRetries, delay)`.
-Konsumenter kan også sende inn en Arrow `Schedule<AttemptOutcome, *>` direkte.
-På den bare `RetryConfig(schedule = ...)`-konstruktøren defaulter `retryOn` til `NeverRetry`, så den retry-er ikke før du eksplisitt opt-iner (f.eks. `retryOn = RetryOnServerErrorsAndNetwork` eller `withRetryOn(...)`).
-Fabrikkene `exponential`/`fixed` defaulter derimot til `RetryOnServerErrorsAndNetwork`, siden det å velge en av dem allerede uttrykker eksplisitt retry-intensjon:
-
-```kotlin
-val retryConfig = RetryConfig(
-    schedule = Schedule.spaced<AttemptOutcome>(200.milliseconds)
-        .zipLeft(Schedule.recurs(3)),
-    retryOn = RetryOnServerErrorsAndNetwork,
+val respons = klient.postJson<UtbetalingResponse>(
+    uri = URI.create("$baseUrl/utbetaling"),
+    body = request,
+    godta = Statusregel.Eksakt(202),
 )
 ```
 
-Per-request override fungerer som for `successStatus` og `loggingConfig`:
+En status som ikke godtas gir `HttpKlientError.UventetStatus` med lesbar body og full metadata.
+Statuser som betyr noe *annet* enn suksess hører ikke hjemme i `Eksakt` — tilgangsmaskinens `403` og dokarkivs dedup-`409` leses fra feiltypen med `harStatus`/`bodySomJson`, slik at suksesskanalen beholder én type.
+
+## Retry
+
+Retry er ren data på klientens config, og default er `Retry.Ingen` — retry er en aktiv beslutning per klient, ikke noe man får stille.
 
 ```kotlin
-val response = klient.post<String>(URI.create("https://example.com/api/idempotent-key")) {
-    json(payload)
-    retryConfig = RetryConfig.fixed(maxRetries = 2, delay = 100.milliseconds)
-}
+val klient = HttpKlient(
+    clock = clock,
+    config = HttpKlientConfig(
+        retry = Retry.Standard(maksForsøk = 3, grunnDelay = 250.milliseconds, maksDelay = 2.seconds),
+    ),
+    transport = transport,
+)
 ```
 
-`HttpKlientMetadata` får alltid med `attempts`, `attemptDurations` og `totalDuration`, både på vellykkede svar og på alle `HttpKlientError`-varianter.
-Disse kan brukes til å få et bilde av hvor mye tid og hvor mange retries et kall faktisk forbrukte.
+| Variant | Oppførsel |
+|---|---|
+| `Retry.Ingen` | Ingen retries (default). Riktig der konsumenten selv eier feilhåndteringen, f.eks. utbetaling. |
+| `Retry.Fast(maksForsøk, delay)` | Konstant delay uten jitter. Finnes for paritet med appene som kjørte «N forsøk med konstant 1 s» på ktor-klienten — en migrering rett til `Standard` ville stille byttet dem til eksponentiell backoff. |
+| `Retry.Standard(maksForsøk, grunnDelay, maksDelay)` | Eksponentiell backoff med moderat symmetrisk jitter (0.5–1.5), hardt cappet på `maksDelay`. |
 
-`onExcessiveRetries` kalles når antall retries (`attempts - 1`) er minst `excessiveRetriesThreshold`.
-Uten en egen hook logges et default-varsel via klientens `HttpKlientLoggingConfig` på `excessiveRetriesNivå` (default `WARN`) — skrur du av logging (eller setter kategorien til `OFF`), er også dette varselet stille.
-Setter du en egen hook med `notifyOnExcessiveRetries(threshold) { ... }`, får den hele `RetryOutcome` (samme data som default-loggingen) og tar over ansvaret, f.eks. for å eksponere som metrikk.
-Bruk `withoutExcessiveRetriesNotification()` for å skru av varslingen helt.
+`maksForsøk` teller totalt antall forsøk inkludert det første, så `Fast(maksForsøk = 4)` tilsvarer ktor-ens `retryOnServerErrors(3)`.
+
+To gates er harde og kan ikke konfigureres bort:
+
+- Et utfall som ikke er retryable forsøkes aldri på nytt (se tabellen under).
+- `POST` og `PATCH` retryes aldri som standard: når et forsøk feiler uten respons, er det ukjent om serveren rakk å behandle requesten, og et nytt forsøk kan gi doble sideeffekter.
+  `GET` og `PUT` regnes som idempotente (RFC 9110 §9.2.2).
+  Endepunkter med dedup — dokarkiv svarer `409` på duplikater — kan opt-e inn med `retryIkkeIdempotente = true`.
+
+En respons som godtas av `Statusregel` retryes aldri, selv om statuskoden er i den retryable mengden (f.eks. hvis en konsument bevisst godtar `503` som suksess).
+
+`HttpKlientMetadata` får alltid med `attempts`, `attemptDurations` og `totalDuration`, både på vellykkede svar og på alle `HttpKlientError`-varianter, så forbruket av tid og forsøk kan leses rett av svaret.
 
 ### Retryable-flagg
 
-Hver `HttpKlientError` (og `AttemptOutcome` internt) eksponerer `retryable: Boolean`.
-Retry-loopen bruker dette som en **hard gate** — den vil aldri forsøke på nytt for utfall som regnes som permanente, uansett hva [RetryConfig.retryOn] returnerer:
+Hver `HttpKlientError` eksponerer `retryable: Boolean`.
+Retry-loopen bruker dette som en **hard gate** — den vil aldri forsøke på nytt for utfall som regnes som permanente:
 
 | Variant | `retryable` |
 |---|---|
@@ -357,28 +292,32 @@ Retry-loopen bruker dette som en **hard gate** — den vil aldri forsøke på ny
 | `UventetStatus` med øvrige statuser | `false` |
 | `InvalidRequest`, `SerializationError`, `DeserializationError`, `AuthError`, `CircuitBreakerOpen` | `false` |
 
-Dvs. selv et altfor liberalt `retryOn = { true }`-predikat vil aldri retry-e en validerings- eller deserialiseringsfeil eller en `404`.
+Dvs. verken en validerings- eller deserialiseringsfeil eller en `404` blir forsøkt på nytt, uansett hvilken `Retry`-variant klienten er konfigurert med.
 
 ## Circuit breaker
 
 `HttpKlient` har valgfri circuit breaker-støtte basert på Arrow Resilience `CircuitBreaker`.
 Default er `CircuitBreakerConfig.None`, dvs. ingen circuit breaker.
 
-Konfigurasjon gjøres fluent på samme måte som retry:
+Configen bygges fluent og settes på klientens `HttpKlientConfig`:
 
 ```kotlin
-val klient = HttpKlient(clock = clock) {
-    defaultCircuitBreaker = CircuitBreakerConfig.count(
-        name = "min-nedstroem",
-        maxFailures = 5,
-        resetTimeout = 30.seconds,
-    ).withExponentialBackoff(
-        factor = 2.0,
-        maxResetTimeout = 5.minutes,
-    ).doOnOpen {
-        meterRegistry.counter("nedstrom_circuit_breaker_open").increment()
-    }
-}
+val klient = HttpKlient(
+    clock = clock,
+    config = HttpKlientConfig(
+        circuitBreaker = CircuitBreakerConfig.count(
+            name = "min-nedstroem",
+            maxFailures = 5,
+            resetTimeout = 30.seconds,
+        ).withExponentialBackoff(
+            factor = 2.0,
+            maxResetTimeout = 5.minutes,
+        ).doOnOpen {
+            meterRegistry.counter("nedstrom_circuit_breaker_open").increment()
+        },
+    ),
+    transport = transport,
+)
 ```
 
 `CircuitBreakerConfig.count(name, maxFailures, resetTimeout)` åpner etter `maxFailures` feil som matcher `failurePredicate`.
@@ -399,22 +338,9 @@ val config = CircuitBreakerConfig.slidingWindow(
 )
 ```
 
-Per-request override fungerer som for `retryConfig`:
-
-```kotlin
-val response = klient.get<String>(URI.create("https://example.com/api")) {
-    circuitBreakerConfig = CircuitBreakerConfig.count(
-        name = "example-api",
-        maxFailures = 2,
-        resetTimeout = 10.seconds,
-    )
-}
-```
-
 Circuit breaker-state er lokal for én `HttpKlient`-instans.
 Det finnes ingen statisk/global state.
-Hvis samme `name` brukes flere ganger på samme klient, deles state for den navngitte breakeren i klientinstansen.
-Dette unngår at nye, semantisk like lambdaer i inline config lager hver sin breaker.
+Trenger to endepunkter hver sin breaker, får de hver sin klientinstans — på samme måte som for de øvrige configene.
 
 Ved åpen breaker returnerer klienten `HttpKlientError.CircuitBreakerOpen` med `metadata.attempts = 0`, siden ingen HTTP-forsøk ble utført.
 
@@ -430,47 +356,51 @@ Et kall som lykkes etter retry teller derfor ikke som circuit breaker-feil, mens
 
 ## Auth-token
 
-`HttpKlient` støtter både klient-nivå og per-request bearer-token basert på `AccessToken` fra `common`.
+`HttpKlient` støtter både klient-nivå og per-kall bearer-token basert på `AccessToken` fra `common`.
 Klienten setter `Authorization: Bearer <token>` automatisk hvis ikke konsumenten allerede har satt `Authorization`-headeren eksplisitt.
 
-Klient-nivå (kalles foran hver request — egnet for `texas`/Token-X-flyter):
+Klient-nivå settes med `KlientAuth` på configen (`KlientAuth.Ingen` er default — riktig for pdfgen, ClamAV og leader-elector).
+`KlientAuth.System` kaller provideren foran hver request, og er den som passer `texas`-flyter:
 
 ```kotlin
-val klient: HttpKlient = HttpKlient(clock = clock) {
-    authTokenProvider = object : AuthTokenProvider {
-        override suspend fun hentToken(skipCache: Boolean): AccessToken =
-            tokenService.systemToken("api://app-x", skipCache = skipCache)
-    }
-}
+val klient = HttpKlient(
+    clock = clock,
+    config = HttpKlientConfig(
+        auth = KlientAuth.System(
+            object : AuthTokenProvider {
+                override suspend fun hentToken(skipCache: Boolean): AccessToken =
+                    tokenService.systemToken("api://app-x", skipCache = skipCache)
+            },
+        ),
+    ),
+    transport = transport,
+)
 ```
 
 `AuthTokenProvider` er bevisst et vanlig interface (ikke en typealias eller `fun interface`) slik at eksisterende wiring må implementere `hentToken` og navngi `skipCache` når `libs` bumpes — i stedet for at en gammel parameterløs lambda stille kompilerer videre med en ignorert `it`.
 
 `hentToken` kalles med `skipCache = false` på det første forsøket.
 Hvis serveren svarer med en status i `skipCacheRetryStatuses` (default kun `401`), gjør klienten _ett_ nytt forsøk der `hentToken` kalles med `skipCache = true`, slik at et cachet, men avvist, token kan byttes ut med et ferskt.
-`403` er bevisst ikke med i default (ofte et persistent tilgangsavslag som ville doblet trafikken uten å hjelpe) — sett `skipCacheRetryStatuses = setOf(401, 403)` for å opt-e inn, eller `emptySet()` for å slå retryen av.
-Feiler også det andre forsøket, logges en diagnostikkmelding via `loggingConfig` på `skipCacheRetryNivå` (default `WARN`) slik at klienter der dette skjer i loop-aktig volum kan oppdages — konsekvent styrt av samme logging-config som resten av modulen (sett `skipCacheRetryNivå = HttpKlientLogNivå.OFF` for å slå den av).
+`403` er bevisst ikke med i default (ofte et persistent tilgangsavslag som ville doblet trafikken uten å hjelpe) — sett `skipCacheRetryStatuses = setOf(401, 403)` på configen for å opt-e inn, eller `emptySet()` for å slå retryen av.
+Status leses kun fra et resultat som ble regnet som feil, så en konsument som bevisst godtar `401` som suksess via `Statusregel.Eksakt` får aldri et uventet ekstra kall.
+Feiler også det andre forsøket, kommer det ingen egen logglinje fra klienten — feilen returneres som vanlig, og konsumenten logger den én gang med `loggFeil`.
 
-Per-request (overstyrer klient-default):
+Per kall (overstyrer alltid klient-nivået, typisk OBO-tokens som veksles per saksbehandler):
 
 ```kotlin
-val response = klient.get<MinDto>(URI.create("https://example.com/api")) {
-    bearerToken(innkommendeAccessToken)
-}
+val respons = klient.getJson<MinDto>(
+    uri = URI.create("$baseUrl/api"),
+    bearerToken = innkommendeAccessToken,
+)
 ```
 
-Hvis `authTokenProvider` kaster, returneres `HttpKlientError.AuthError` (ikke-retryable) og _ingen_ HTTP-kall blir gjort. `metadata.attempts` er `0` for denne feiltypen.
+Hvis `hentToken` kaster, returneres `HttpKlientError.AuthError` (ikke-retryable) og _ingen_ HTTP-kall blir gjort. `metadata.attempts` er `0` for denne feiltypen.
 
 ## Redirects
 
-Den underliggende `java.net.http.HttpClient` følger ikke redirects som standard ([HttpClient.Redirect.NEVER]), slik at `3xx`-svar dukker opp eksplisitt som `UventetStatus` i stedet for å bli fulgt stille.
-Sett `followRedirects` på klient-configen for å endre dette:
-
-```kotlin
-val klient = HttpKlient(clock = clock) {
-    followRedirects = HttpClient.Redirect.NORMAL
-}
-```
+Redirects følges aldri.
+`JavaHttpTransport` bygger den underliggende `java.net.http.HttpClient` med `HttpClient.Redirect.NEVER`, slik at `3xx`-svar dukker opp eksplisitt som `UventetStatus` i stedet for å bli fulgt stille.
+Det er ikke konfigurerbart — ingen konsument bruker redirects, og en tjeneste som begynner å svare `3xx` er noe konsumenten bør se, ikke noe klienten skal skjule.
 
 ## Observability / metrikker
 
@@ -484,7 +414,7 @@ observability:
     runtime: java
 ```
 
-Trenger du domenespesifikke tellere (f.eks. per nedstrøms-tjeneste eller per retry-forbruk), kan du bruke de eksisterende hookene: `onExcessiveRetries` på `RetryConfig` og `doOnOpen` / `doOnClosed` / `doOnHalfOpen` / `doOnRejectedTask` på circuit breaker-configen, samt `metadata.attempts` / `metadata.totalDuration` på hvert svar.
+Trenger du domenespesifikke tellere (f.eks. per nedstrøms-tjeneste eller per retry-forbruk), kan du bruke circuit breaker-hookene `doOnOpen` / `doOnClosed` / `doOnHalfOpen` / `doOnRejectedTask`, samt `metadata.attempts` og `metadata.totalDuration` på hvert svar.
 
 ## Begrensninger og videre arbeid
 

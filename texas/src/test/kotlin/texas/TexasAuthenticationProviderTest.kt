@@ -1,13 +1,9 @@
 package no.nav.tiltakspenger.libs.texas
 
 import io.kotest.matchers.shouldBe
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.URLProtocol
-import io.ktor.http.path
 import io.ktor.serialization.jackson3.JacksonConverter
 import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
@@ -18,7 +14,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
-import io.ktor.server.util.url
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -26,6 +21,7 @@ import no.nav.tiltakspenger.libs.auth.test.core.JwtGenerator
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.common.Saksbehandlerrolle
 import no.nav.tiltakspenger.libs.common.fixedClock
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.HttpMethod
 import no.nav.tiltakspenger.libs.json.objectMapper
 import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequest
 import no.nav.tiltakspenger.libs.texas.client.TexasClient
@@ -79,15 +75,12 @@ class TexasAuthenticationProviderTest {
                     }
                 }
                 defaultRequest(
-                    HttpMethod.Get,
-                    url {
-                        protocol = URLProtocol.HTTPS
-                        path("/some-path")
-                    },
+                    HttpMethod.GET,
+                    "/some-path",
                     jwt = jwtGenerator.createJwtForUser(fnr = fnr),
                 ).apply {
-                    status shouldBe HttpStatusCode.OK
-                    bodyAsText() shouldBe objectMapper.writeValueAsString(Fnr.fromString(fnr))
+                    statusCode shouldBe 200
+                    body shouldBe objectMapper.writeValueAsString(Fnr.fromString(fnr))
                 }
             }
         }
@@ -142,15 +135,12 @@ class TexasAuthenticationProviderTest {
                     }
                 }
                 defaultRequest(
-                    HttpMethod.Get,
-                    url {
-                        protocol = URLProtocol.HTTPS
-                        path("/some-path")
-                    },
+                    HttpMethod.GET,
+                    "/some-path",
                     jwt = jwtGenerator.createJwtForSaksbehandler(),
                 ).apply {
-                    status shouldBe HttpStatusCode.OK
-                    bodyAsText() shouldBe """{"navIdent":"$navIdent","brukernavn":"Sak Behandler","epost":"$epost","roller":["SAKSBEHANDLER"],"scopes":[],"klientId":"saksbehandling-id","klientnavn":"saksbehandling"}"""
+                    statusCode shouldBe 200
+                    body shouldBe """{"navIdent":"$navIdent","brukernavn":"Sak Behandler","epost":"$epost","roller":["SAKSBEHANDLER"],"scopes":[],"klientId":"saksbehandling-id","klientnavn":"saksbehandling"}"""
                 }
             }
         }
@@ -197,15 +187,12 @@ class TexasAuthenticationProviderTest {
                     }
                 }
                 defaultRequest(
-                    HttpMethod.Get,
-                    url {
-                        protocol = URLProtocol.HTTPS
-                        path("/some-path")
-                    },
+                    HttpMethod.GET,
+                    "/some-path",
                     jwt = jwtGenerator.createJwtForSystembruker(),
                 ).apply {
-                    status shouldBe HttpStatusCode.OK
-                    bodyAsText() shouldBe """{"roller":["HENTE_DATA"],"klientId":"saksbehandling-id","klientnavn":"saksbehandling","navIdent":null}"""
+                    statusCode shouldBe 200
+                    body shouldBe """{"roller":["HENTE_DATA"],"klientId":"saksbehandling-id","klientnavn":"saksbehandling","navIdent":null}"""
                 }
             }
         }
@@ -248,14 +235,11 @@ class TexasAuthenticationProviderTest {
                     }
                 }
                 defaultRequest(
-                    HttpMethod.Get,
-                    url {
-                        protocol = URLProtocol.HTTPS
-                        path("/some-path")
-                    },
+                    HttpMethod.GET,
+                    "/some-path",
                     jwt = jwtGenerator.createJwtForUser(fnr = fnr),
                 ).apply {
-                    status shouldBe HttpStatusCode.Unauthorized
+                    statusCode shouldBe 401
                 }
             }
         }
@@ -265,7 +249,7 @@ class TexasAuthenticationProviderTest {
     fun `ingen Authorization-header - returnerer 401`() = runTest {
         testApplication {
             appMedTexasAuth(IdentityProvider.TOKENX)
-            defaultRequest(HttpMethod.Get, "/some-path", jwt = null).status shouldBe HttpStatusCode.Unauthorized
+            defaultRequest(HttpMethod.GET, "/some-path", jwt = null).statusCode shouldBe 401
         }
     }
 
@@ -273,9 +257,12 @@ class TexasAuthenticationProviderTest {
     fun `Authorization-header med annet skjema enn Bearer - returnerer 401`() = runTest {
         testApplication {
             appMedTexasAuth(IdentityProvider.TOKENX)
-            defaultRequest(HttpMethod.Get, "/some-path", jwt = null) {
-                headers.append(HttpHeaders.Authorization, "Basic ${jwtGenerator.createJwtForSaksbehandler()}")
-            }.status shouldBe HttpStatusCode.Unauthorized
+            defaultRequest(
+                HttpMethod.GET,
+                "/some-path",
+                jwt = null,
+                headere = mapOf(HttpHeaders.Authorization to "Basic ${jwtGenerator.createJwtForSaksbehandler()}"),
+            ).statusCode shouldBe 401
         }
     }
 
@@ -283,9 +270,12 @@ class TexasAuthenticationProviderTest {
     fun `Authorization-header som ikke er en enkelt blob - returnerer 401`() = runTest {
         testApplication {
             appMedTexasAuth(IdentityProvider.TOKENX)
-            defaultRequest(HttpMethod.Get, "/some-path", jwt = null) {
-                headers.append(HttpHeaders.Authorization, """Digest realm="tpts", nonce="abc"""")
-            }.status shouldBe HttpStatusCode.Unauthorized
+            defaultRequest(
+                HttpMethod.GET,
+                "/some-path",
+                jwt = null,
+                headere = mapOf(HttpHeaders.Authorization to """Digest realm="tpts", nonce="abc""""),
+            ).statusCode shouldBe 401
         }
     }
 
@@ -294,13 +284,13 @@ class TexasAuthenticationProviderTest {
         coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } throws RuntimeException("Texas er nede")
         testApplication {
             appMedTexasAuth(IdentityProvider.TOKENX)
-            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+            defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
         // Exceptions uten melding faller tilbake på en fast tekst i challengen.
         coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } throws RuntimeException()
         testApplication {
             appMedTexasAuth(IdentityProvider.TOKENX)
-            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+            defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
     }
 
@@ -309,11 +299,11 @@ class TexasAuthenticationProviderTest {
         coEvery { texasClient.introspectToken(any(), any()) } returns aktivIntrospeksjon()
         testApplication {
             appMedTexasAuth(IdentityProvider.MASKINPORTEN)
-            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+            defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
         testApplication {
             appMedTexasAuth(IdentityProvider.IDPORTEN)
-            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+            defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
     }
 
@@ -324,7 +314,7 @@ class TexasAuthenticationProviderTest {
         )
         testApplication {
             appMedTexasAuth(IdentityProvider.TOKENX)
-            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+            defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
     }
 
@@ -335,7 +325,7 @@ class TexasAuthenticationProviderTest {
         )
         testApplication {
             appMedTexasAuth(IdentityProvider.TOKENX)
-            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.Unauthorized
+            defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
     }
 
@@ -346,7 +336,7 @@ class TexasAuthenticationProviderTest {
         )
         testApplication {
             appMedTexasAuth(IdentityProvider.TOKENX, requireIdportenLevelHigh = false)
-            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.OK
+            defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 200
         }
     }
 
@@ -357,7 +347,7 @@ class TexasAuthenticationProviderTest {
         )
         testApplication {
             appMedTexasAuth(IdentityProvider.TOKENX)
-            defaultRequest(HttpMethod.Get, "/some-path").status shouldBe HttpStatusCode.InternalServerError
+            defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 500
         }
     }
 

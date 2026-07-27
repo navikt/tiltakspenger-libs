@@ -9,6 +9,9 @@ dependencies {
     implementation(project(":json"))
     implementation(project(":auth-test-core"))
 
+    // api, ikke implementation: HttpMethod står i signaturen til defaultRequest, så konsumentene må se den.
+    api(project(":httpklient:httpklient-infrastruktur"))
+
     implementation(libs.arrow.core)
     implementation(libs.kotest.assertions.core)
     implementation(libs.kotest.assertions.json)

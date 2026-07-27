@@ -2,7 +2,6 @@ package no.nav.tiltakspenger.libs.texas
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCallPipeline
@@ -17,7 +16,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.Saksbehandlerrolle
-import no.nav.tiltakspenger.libs.ktor.test.common.ForventetBody
+import no.nav.tiltakspenger.libs.httpklient.infra.kall.HttpMethod
 import no.nav.tiltakspenger.libs.ktor.test.common.ForventetRespons
 import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequest
 import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequestWithAssertions
@@ -58,12 +57,9 @@ internal class ApplicationCallHelpersTest {
         testApplication {
             texasApp()
             defaultRequestWithAssertions(
-                method = HttpMethod.Get,
+                method = HttpMethod.GET,
                 uri = "/saksbehandler",
-                forventet = ForventetRespons(
-                    status = HttpStatusCode.Forbidden,
-                    body = ForventetBody.Json("""{"melding":"Brukeren er ikke en saksbehandler","kode":"ikke_saksbehandler"}"""),
-                ),
+                forventet = ForventetRespons.json(403, """{"melding":"Brukeren er ikke en saksbehandler","kode":"ikke_saksbehandler"}"""),
             )
         }
     }
@@ -83,12 +79,9 @@ internal class ApplicationCallHelpersTest {
         testApplication {
             texasApp()
             defaultRequestWithAssertions(
-                method = HttpMethod.Get,
+                method = HttpMethod.GET,
                 uri = "/saksbehandler",
-                forventet = ForventetRespons(
-                    status = HttpStatusCode.Forbidden,
-                    body = ForventetBody.Json("""{"melding":"Saksbehandler må ha minst en autorisert rolle for å aksessere denne ressursen","kode":"mangler_rolle"}"""),
-                ),
+                forventet = ForventetRespons.json(403, """{"melding":"Saksbehandler må ha minst en autorisert rolle for å aksessere denne ressursen","kode":"mangler_rolle"}"""),
             )
         }
     }
@@ -107,12 +100,9 @@ internal class ApplicationCallHelpersTest {
         testApplication {
             texasApp()
             defaultRequestWithAssertions(
-                method = HttpMethod.Get,
+                method = HttpMethod.GET,
                 uri = "/saksbehandler",
-                forventet = ForventetRespons(
-                    status = HttpStatusCode.Forbidden,
-                    body = ForventetBody.Json("""{"melding":"Tokenet mangler claim: NAVident","kode":"ugyldig_token"}"""),
-                ),
+                forventet = ForventetRespons.json(403, """{"melding":"Tokenet mangler claim: NAVident","kode":"ugyldig_token"}"""),
             )
         }
     }
@@ -132,12 +122,9 @@ internal class ApplicationCallHelpersTest {
         testApplication {
             texasApp()
             defaultRequestWithAssertions(
-                method = HttpMethod.Get,
+                method = HttpMethod.GET,
                 uri = "/systembruker",
-                forventet = ForventetRespons(
-                    status = HttpStatusCode.Forbidden,
-                    body = ForventetBody.Json("""{"melding":"Brukeren er ikke en systembruker","kode":"ikke_systembruker"}"""),
-                ),
+                forventet = ForventetRespons.json(403, """{"melding":"Brukeren er ikke en systembruker","kode":"ikke_systembruker"}"""),
             )
         }
     }
@@ -156,12 +143,9 @@ internal class ApplicationCallHelpersTest {
         testApplication {
             texasApp()
             defaultRequestWithAssertions(
-                method = HttpMethod.Get,
+                method = HttpMethod.GET,
                 uri = "/systembruker",
-                forventet = ForventetRespons(
-                    status = HttpStatusCode.Forbidden,
-                    body = ForventetBody.Json("""{"melding":"Systembrukeren må ha minst en autorisert rolle for å aksessere denne ressursen","kode":"mangler_rolle"}"""),
-                ),
+                forventet = ForventetRespons.json(403, """{"melding":"Systembrukeren må ha minst en autorisert rolle for å aksessere denne ressursen","kode":"mangler_rolle"}"""),
             )
         }
     }
@@ -179,12 +163,9 @@ internal class ApplicationCallHelpersTest {
         testApplication {
             texasApp()
             defaultRequestWithAssertions(
-                method = HttpMethod.Get,
+                method = HttpMethod.GET,
                 uri = "/systembruker",
-                forventet = ForventetRespons(
-                    status = HttpStatusCode.Forbidden,
-                    body = ForventetBody.Json("""{"melding":"Tokenet mangler claim: azp_name","kode":"ugyldig_token"}"""),
-                ),
+                forventet = ForventetRespons.json(403, """{"melding":"Tokenet mangler claim: azp_name","kode":"ugyldig_token"}"""),
             )
         }
     }
@@ -202,7 +183,7 @@ internal class ApplicationCallHelpersTest {
 
         testApplication {
             texasApp()
-            defaultRequest(method = HttpMethod.Get, uri = "/fnr").status shouldBe HttpStatusCode.InternalServerError
+            defaultRequest(method = HttpMethod.GET, uri = "/fnr").statusCode shouldBe 500
         }
         kastedeFeilErManglerPrincipal()
     }
@@ -224,11 +205,11 @@ internal class ApplicationCallHelpersTest {
                 }
             }
             // Rutene sjekkes hver for seg: samles feilene opp, ville testen bestått selv om bare den ene ruta kastet.
-            defaultRequest(method = HttpMethod.Get, uri = "/saksbehandler-uten-auth").status shouldBe HttpStatusCode.InternalServerError
+            defaultRequest(method = HttpMethod.GET, uri = "/saksbehandler-uten-auth").statusCode shouldBe 500
             kastedeFeilErManglerPrincipal()
             kastedeFeil.clear()
 
-            defaultRequest(method = HttpMethod.Get, uri = "/systembruker-uten-auth").status shouldBe HttpStatusCode.InternalServerError
+            defaultRequest(method = HttpMethod.GET, uri = "/systembruker-uten-auth").statusCode shouldBe 500
             kastedeFeilErManglerPrincipal()
         }
     }
@@ -251,20 +232,14 @@ internal class ApplicationCallHelpersTest {
                 }
             }
             defaultRequestWithAssertions(
-                method = HttpMethod.Get,
+                method = HttpMethod.GET,
                 uri = "/saksbehandler-ukjent-feil",
-                forventet = ForventetRespons(
-                    status = HttpStatusCode.InternalServerError,
-                    body = ForventetBody.Json("""{"melding":"Noe gikk galt ved mapping til saksbehandler","kode":"ukjent_feil"}"""),
-                ),
+                forventet = ForventetRespons.json(500, """{"melding":"Noe gikk galt ved mapping til saksbehandler","kode":"ukjent_feil"}"""),
             )
             defaultRequestWithAssertions(
-                method = HttpMethod.Get,
+                method = HttpMethod.GET,
                 uri = "/systembruker-ukjent-feil",
-                forventet = ForventetRespons(
-                    status = HttpStatusCode.InternalServerError,
-                    body = ForventetBody.Json("""{"melding":"Noe gikk galt ved mapping til systembruker","kode":"ukjent_feil"}"""),
-                ),
+                forventet = ForventetRespons.json(500, """{"melding":"Noe gikk galt ved mapping til systembruker","kode":"ukjent_feil"}"""),
             )
         }
     }

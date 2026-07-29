@@ -1,6 +1,5 @@
-package no.nav.tiltakspenger.libs.kafka
+package no.nav.tiltakspenger.libs.kafka.infra
 
-import no.nav.tiltakspenger.libs.kafka.config.MAX_POLL_INTERVAL_MS
 import kotlin.math.min
 
 class ConsumerStatus(

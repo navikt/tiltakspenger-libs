@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.kafka
+package no.nav.tiltakspenger.libs.kafka.infra
 
 import kotlinx.coroutines.Job
 

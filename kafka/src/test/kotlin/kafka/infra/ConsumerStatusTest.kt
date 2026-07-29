@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.kafka
+package no.nav.tiltakspenger.libs.kafka.infra
 
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test

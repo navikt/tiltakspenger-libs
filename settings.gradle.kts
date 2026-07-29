@@ -28,6 +28,7 @@ include(
     "meldekort-dtos",
     "meldekort",
     "kafka",
+    "kafka-avro",
     "kafka-test",
     "konsist-regler",
     "texas",

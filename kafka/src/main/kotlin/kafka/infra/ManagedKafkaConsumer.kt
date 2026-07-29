@@ -1,4 +1,4 @@
-package no.nav.tiltakspenger.libs.kafka
+package no.nav.tiltakspenger.libs.kafka.infra
 
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -10,7 +10,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import no.nav.tiltakspenger.libs.kafka.ManagedKafkaConsumer.Companion.BACKOFF_STEP_MILLIS
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.KafkaConsumer

@@ -1,10 +1,9 @@
-package no.nav.tiltakspenger.libs.kafka
+package no.nav.tiltakspenger.libs.kafka.infra
 
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import no.nav.tiltakspenger.libs.kafka.config.LocalKafkaConfig
 import no.nav.tiltakspenger.libs.kafka.test.SingletonKafkaProvider
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.consumer.ConsumerConfig
@@ -34,14 +33,14 @@ class ManagedKafkaConsumerTest {
     private val testBaseBackoffDelayMillis = 1L
     private val testInitialBackoffDelayMillis = 1L
 
-    private val stringConsumerConfig = LocalKafkaConfig(SingletonKafkaProvider.getHost())
+    private val stringConsumerConfig = KafkaConfig(kafkaBrokers = SingletonKafkaProvider.getHost())
         .consumerConfig(
             keyDeserializer = StringDeserializer(),
             valueDeserializer = StringDeserializer(),
             groupId = "test-consumer-${UUID.randomUUID()}",
         )
 
-    private val intConsumerConfig = LocalKafkaConfig(SingletonKafkaProvider.getHost())
+    private val intConsumerConfig = KafkaConfig(kafkaBrokers = SingletonKafkaProvider.getHost())
         .consumerConfig(
             keyDeserializer = IntegerDeserializer(),
             valueDeserializer = IntegerDeserializer(),
@@ -86,7 +85,7 @@ class ManagedKafkaConsumerTest {
         val uuidTopic = "uuid.topic"
         produceUUIDByteArray(ProducerRecord(uuidTopic, key, value))
 
-        val config = LocalKafkaConfig(SingletonKafkaProvider.getHost())
+        val config = KafkaConfig(kafkaBrokers = SingletonKafkaProvider.getHost())
             .consumerConfig(
                 keyDeserializer = UUIDDeserializer(),
                 valueDeserializer = ByteArrayDeserializer(),
@@ -326,7 +325,7 @@ class ManagedKafkaConsumerTest {
         val topic = "graceful.stop.topic"
         produceStringString(ProducerRecord(topic, key, value))
 
-        val config = LocalKafkaConfig(SingletonKafkaProvider.getHost())
+        val config = KafkaConfig(kafkaBrokers = SingletonKafkaProvider.getHost())
             .consumerConfig(
                 keyDeserializer = StringDeserializer(),
                 valueDeserializer = StringDeserializer(),

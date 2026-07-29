@@ -1,18 +1,21 @@
-package no.nav.tiltakspenger.libs.kafka
+package no.nav.tiltakspenger.libs.kafka.infra
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import no.nav.tiltakspenger.libs.kafka.config.KafkaConfig
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerRecord
 import java.time.Duration
 
+/**
+ * Produsent som logger metadata for hver melding og lukker seg selv ved shutdown.
+ * Konfigurasjonen bygges typisk med [KafkaConfig.producerConfig], eventuelt med overstyringer plusset på.
+ */
 class Producer<K, V>(
-    kafkaConfig: KafkaConfig,
+    producerConfig: Map<String, *>,
     gracePeriodMillis: Long = 1000,
     private val kanLoggeKey: Boolean = true,
 ) {
     private val log = KotlinLogging.logger {}
-    private val producer = KafkaProducer<K, V>(kafkaConfig.producerConfig())
+    private val producer = KafkaProducer<K, V>(producerConfig)
 
     init {
         Runtime.getRuntime().addShutdownHook(

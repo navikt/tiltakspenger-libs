@@ -1,132 +1,96 @@
-# Oppsett av ny kafka-consumer
+# kafka
 
-## Oversikt
+Kafka-oppsett for appene: `KafkaConfig` bygger konfigurasjonsmappene, `ManagedKafkaConsumer` kjører konsument-loopen og `Producer` produserer meldinger.
+Alt ligger i pakka `no.nav.tiltakspenger.libs.kafka.infra`, siden Kafka er infrastruktur og aldri skal importeres fra et domenelag.
+Avro-topics krever i tillegg modulen `kafka-avro`.
 
-Beskrivelse av hvordan man setter opp en ny Kafka-consumer.  
-Målet er å lage en consumer som kan lese meldinger fra et Kafka-topic og deserialisere dem (f.eks. Avro).
+## KafkaConfig
 
-`JournalposthendelseConsumer` brukes her som et eksempel.
-
----
-
-## 1. Lage en ny consumer-klasse
-
-- Lag en ny klasse som representerer consumeren din.
-- Klassen må implementere interfacet `Consumer<K, V>`.
-- Klassen bør ta inn parameterne som trengs for å initialisere consumeren, f.eks.:
-    - `topic`: Kafka-topic som skal leses
-    - `groupId`: Kafka consumer group
-    - `kafkaConfig`: Konfigurasjon for consumeren.
-      Her benytter vi at forskjellige configs basert på om vi kjører i nais eller lokalt.
-
-Eksempel:
+`KafkaConfig` er en final klasse med ren data og uten miljølesing: brokeradresse, `autoOffsetReset` og et `KafkaSikkerhet`-valg.
+Det finnes ingen egne klasser for nais, lokalt eller test — forskjellen er bare verdiene du konstruerer den med.
 
 ```kotlin
-class JournalposthendelseConsumer(
+// På Nais: leser KAFKA_BROKERS og SSL-oppsettet fra miljøvariablene Aiven setter.
+val kafkaConfig = KafkaConfig.fraNaisEnv()
+
+// Lokalt og i tester: ingen sikkerhet, bare en brokeradresse.
+val kafkaConfig = KafkaConfig(kafkaBrokers = "localhost:9092")
+```
+
+Konsumentene velger typisk config etter kjøremiljø der de wires opp:
+
+```kotlin
+val kafkaConfig = if (Configuration.isNais()) KafkaConfig.fraNaisEnv(autoOffsetReset = "latest") else KafkaConfig(kafkaBrokers = "localhost:9092")
+```
+
+Spesialtilfeller overstyres ved å plusse på resultatmappa, siden siste verdi vinner ved like nøkler:
+
+```kotlin
+val config = kafkaConfig.consumerConfig(
+    keyDeserializer = StringDeserializer(),
+    valueDeserializer = StringDeserializer(),
+    groupId = groupId,
+) + mapOf(ConsumerConfig.MAX_POLL_RECORDS_CONFIG to 100)
+```
+
+## Sette opp en ny consumer
+
+Lag en klasse som implementerer `Consumer<K, V>` og delegerer til en `ManagedKafkaConsumer`:
+
+```kotlin
+class MinConsumer(
     topic: String,
-    groupId: String = KAFKA_CONSUMER_GROUP_ID,
-    kafkaConfig: KafkaConfig = if (Configuration.isNais()) KafkaConfigImpl(autoOffsetReset = "latest") else LocalKafkaConfig(),
-) : Consumer<String, JournalfoeringHendelseRecord> {
-    // Implementasjon kommer her
-}
-```
-
-## 2. Konfigurasjon av Kafka-consumer
-
-- Lag en instans av consumeren ved å bruke `ManagedKafkaConsumer`.
-- Hvis du bruker Avro, må du bruke `avroConsumerConfig`, ellers `consumerConfig`
-    - `valueDeserializer` bør settes til `KafkaAvroDeserializer()` for Avro-meldinger.
-      Ellers kan du bruke `StringDeserializer()`.
-
-Eksempel:
-
-````kotlin
-private val consumer = ManagedKafkaConsumer(
-    topic = topic,
-    config = kafkaConfig.avroConsumerConfig(
-        keyDeserializer = StringDeserializer(),
-        valueDeserializer = KafkaAvroDeserializer(),
-        groupId = groupId,
-        useSpecificAvroReader = true,
-    ),
-    consume = ::consume,
-)
-````
-
-## 3. Implementere konsumering av meldinger
-
-- Implementer metoden `consume` for å håndtere meldinger som leses fra Kafka. 
-
-Eksempel:
-
-````kotlin
-override suspend fun consume(key: String, value: JournalfoeringHendelseRecord) {
-    if (value.hendelsesType == "JournalpostMottatt" && value.temaNytt == "IND") {
-        log.info { "Hendelse er av typen JournalpostMottatt ${value.journalpostId}" }
-    }
-}
-````
-
-## 4. Lag en instans av consumeren i ApplicationContext
-
-- Lag en instans av klassen din i ønskede contexts.
-
-Eksempel med consument i `ApplicationContext.kt`:
-
-```kotlin
-val journalposthendelseConsumer by lazy {
-    JournalposthendelseConsumer(
-        topic = Configuration.topic,
+    groupId: String,
+    kafkaConfig: KafkaConfig,
+) : Consumer<String, String> {
+    private val consumer = ManagedKafkaConsumer(
+        topic = topic,
+        config = kafkaConfig.consumerConfig(
+            keyDeserializer = StringDeserializer(),
+            valueDeserializer = StringDeserializer(),
+            groupId = groupId,
+        ),
+        consume = ::consume,
     )
+
+    override suspend fun consume(key: String, value: String) {
+        // Håndter meldingen.
+    }
+
+    override fun run() = consumer.run()
 }
 ```
 
-## 5. Starte consumeren
-
-- Start consumeren ved å kalle `run()`-metoden på instansen din.
-
-Eksempel hvor man starter en consumer i `Application.kt`:
+Konsumenter startes kun på Nais, siden det verken finnes Kafka eller schema registry i det lokale oppsettet:
 
 ```kotlin
 if (Configuration.isNais()) {
-    applicationContext.journalposthendelseConsumer.run()
+    applicationContext.minConsumer.run()
 }
 ```
 
-## Huske regler
+## Producer
 
-Når du setter opp en ny Kafka-consumer, er det noen viktige regler og praksiser du alltid bør følge:
+`Producer` tar konfigurasjonsmappa direkte, på samme måte som `ManagedKafkaConsumer`:
 
-**Tilgang til lesing av meldingene**
-- Ofte krever de ulike produsentene av meldinger at du har tilgang til å lese fra topicet.
-  Som oftest må du lage en PR i det respektive teamets repo for å få dette til.
+```kotlin
+val producer = Producer<String, String>(producerConfig = kafkaConfig.producerConfig())
+```
 
-**Legge til topics i miljøvariabler**
+`producerConfig()` bruker String-serialisering for nøkkel og verdi; trenger du noe annet, finnes en variant som tar serialisererne som parametre.
 
-- Sørg for at Kafka-topic som consumeren skal lese er definert i konfigurasjonen for miljøet.
-- Disse blir gjort på litt forskjellige måter i appene våre.
-  Følg appens konvensjon.
+## Migrering fra det gamle API-et
 
-**Hente ut Avro-skjemaer**
+Det gamle `KafkaConfig`-interfacet med `KafkaConfigImpl` og `LocalKafkaConfig` i pakka `kafka.config` er fjernet.
 
-- For Avro-deserialisering må du ha de riktige `.avsc/.avdl`-filene (schema-definitionene).
-  Disse finner man sikkert rundt omkring på dokumentasjonssidene til teamet som produserer meldinger.
+- `KafkaConfigImpl(autoOffsetReset = …)` → `KafkaConfig.fraNaisEnv(autoOffsetReset = …)`.
+- `LocalKafkaConfig()` → `KafkaConfig(kafkaBrokers = "localhost:9092")`.
+- `kafkaConfig.avroConsumerConfig(…)` → pakk configen i `AvroKafkaConfig` fra modulen `kafka-avro`.
+- `Producer(kafkaConfig)` → `Producer(producerConfig = kafkaConfig.producerConfig())`.
+- Pakkenavnet er nytt: `no.nav.tiltakspenger.libs.kafka.infra` (og `…kafka.avro.infra` for avro).
 
-**Plassering av Avro-filer**
+## Praktiske regler
 
-- Legg `.avsc/.avdl`-filene i prosjektets `src/main/avro`-mappe.
-
-eksempel struktur:
-
-  ```
-  src/main/avro/
-    JournalfoeringHendelseRecord.avsc
-    AndreMeldingRecord.avsc
-  ```
-
-## Nyttige tips
-
-- `autoOffsetReset` i `KafkaConfig` bør settes til `"latest"`når man kjører konsumenten for første gang.
-  Dette er fordi den må 'initalisere' en offsett for første gang.
-  Vi har i visse tilfeller endret til `none` etterpå.
-- `AvroSchemaSupport`-pluginen som finnes for Intellij gir deg kule snacks når du jobber med Avro-filer.
+- Produsentteamet må ofte gi appen lesetilgang til topicet, typisk via en PR i deres repo.
+- Sørg for at topicet ligger i miljøkonfigurasjonen; følg appens konvensjon.
+- `autoOffsetReset` bør settes til `"latest"` første gang en ny consumer group kjører, siden gruppa må initialisere en offset.

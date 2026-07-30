@@ -7,6 +7,11 @@ import java.nio.file.Path
 /**
  * Kjører de delte reglene på hele tiltakspenger-libs.
  * Konsist `scopeFromProject()`/`scopeFromTest()` skanner alle moduler, så disse testene dekker hele repoet.
+ *
+ * Tre av reglene kjøres bevisst ikke her.
+ * [RouteBuilderKontrakt] gjelder ikke: libs har ingen route-test-buildere — ktor-test-common definerer hjelperne builderne bruker, ikke buildere.
+ * [Testparallellitet] gjelder ikke: libs-modulene kjører ikke testene sine parallelt ennå.
+ * [IsolertDatabasetestKonvensjon] gjelder ikke: ingen libs-tester bruker runIsolated — persistering-test-common definerer parameteren, konsumentene bruker den.
  */
 internal class LibsArkitekturKonsistTest {
     @Test
@@ -89,6 +94,38 @@ internal class LibsArkitekturKonsistTest {
     @Test
     fun `backticks rundt navn kun for testnavn med mellomrom`() {
         IngenBackticksUtenMellomrom.assert(Konsist.scopeFromProject())
+    }
+
+    @Test
+    fun `ingen global mocking i testkode`() {
+        IngenGlobalMocking.assert(Konsist.scopeFromTest())
+    }
+
+    @Test
+    fun `ingen JUnit-livssyklus i testkode`() {
+        IngenJUnitLivssyklus.assert(Konsist.scopeFromTest())
+    }
+
+    @Test
+    fun `ingen muterbar tilstand i testklassers felter`() {
+        IngenMuterbareTestfelter.assert(Konsist.scopeFromTest())
+    }
+
+    /**
+     * `httpklient-infrastruktur` er unntatt: modulens tester ER wire-format-laget — de verifiserer den ekte JDK-transporten mot en levende server, som er nettopp det WireMock finnes for.
+     * `WiremockExTest` tester WireMock-hjelperne i test-common og er wire-format per definisjon.
+     * Personklient-testene er migreringsgjeld: de kjører produksjonsklienten over WireMock i stedet for `FakeHttpTransport`, og står på whitelisten til noen migrerer dem.
+     */
+    @Test
+    fun `wiremock kun i bevisste wire-format-tester`() {
+        WireMockKunForWireFormat.assert(
+            Konsist.scopeFromTest().slice { file -> "httpklient/httpklient-infrastruktur/" !in file.path },
+            tillatteFiler = setOf(
+                "test-common/src/test/kotlin/common/WiremockExTest.kt",
+                "personklient/personklient-infrastruktur/src/test/kotlin/personklient/pdl/FellesHttpPersonklientTest.kt",
+                "personklient/personklient-infrastruktur/src/test/kotlin/personklient/skjerming/FellesHttpSkjermingsklientTest.kt",
+            ),
+        )
     }
 
     @Test

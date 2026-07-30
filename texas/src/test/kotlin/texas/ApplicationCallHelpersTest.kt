@@ -22,29 +22,100 @@ import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequest
 import no.nav.tiltakspenger.libs.ktor.test.common.defaultRequestWithAssertions
 import no.nav.tiltakspenger.libs.texas.client.TexasClient
 import no.nav.tiltakspenger.libs.texas.client.TexasIntrospectionResponse
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+
+/** Rollene testene autoriserer mot; immutable og derfor trygg å dele på tvers av tester. */
+private val alleAdRoller = listOf(
+    AdRolle(Saksbehandlerrolle.SAKSBEHANDLER, "1b3a2c4d-d620-4fcf-a29b-a6cdadf29680"),
+)
 
 /**
  * Dekker feilveiene i `call.fnr()`, `call.saksbehandler()` og `call.systembruker()`.
  * Suksessveiene dekkes av [TexasAuthenticationProviderTest], som kjører samme rutene gjennom hele auth-providern.
  */
 internal class ApplicationCallHelpersTest {
-    private val texasClient = mockk<TexasClient>()
-    private val alleAdRoller = listOf(
-        AdRolle(Saksbehandlerrolle.SAKSBEHANDLER, "1b3a2c4d-d620-4fcf-a29b-a6cdadf29680"),
-    )
-    private val kastedeFeil = mutableListOf<Throwable>()
 
     /**
-     * Testklassen kjører med `per_class`-livssyklus (se conventionpluginet), så instansen deles av alle testene her.
-     * Uten denne ville [kastedeFeil] akkumulert på tvers, og assertionene kunne ikke sagt noe om antall.
+     * Mocken og de fangede feilene bygges per test via [medKontekst], slik at ingenting deles når testmetoder kjører parallelt med `per_class`-livssyklus.
      */
-    @BeforeEach
-    fun tømFangedeFeil() = kastedeFeil.clear()
+    private class Testkontekst {
+        val texasClient = mockk<TexasClient>()
+        val kastedeFeil = mutableListOf<Throwable>()
+
+        fun introspeksjonGir(
+            other: Map<String, Any?>,
+            grupper: List<String>? = null,
+            roller: List<String>? = null,
+        ) {
+            coEvery { texasClient.introspectToken(any(), IdentityProvider.AZUREAD) } returns TexasIntrospectionResponse(
+                active = true,
+                error = null,
+                groups = grupper,
+                roles = roller,
+                other = other,
+            )
+        }
+
+        /**
+         * Asserter at det ble fanget minst én feil, og at alle fangede feilene er `IllegalStateException("Mangler principal")`.
+         * Samme exception passerer pipelinen flere ganger per request, så antallet er en implementasjonsdetalj i ktor og assertes bevisst ikke.
+         */
+        fun kastedeFeilErManglerPrincipal() {
+            kastedeFeil.map { it.shouldBeInstanceOf<IllegalStateException>().message }.distinct() shouldBe listOf("Mangler principal")
+        }
+
+        /**
+         * Test-motoren gjør ubehandlede exceptions om til 500 i stedet for å kaste dem videre til klienten.
+         * Vi fanger dem i pipelinen slik at testene kan asserte på selve feilen og ikke bare statuskoden.
+         */
+        fun Application.fangKastedeFeil() {
+            intercept(ApplicationCallPipeline.Setup) {
+                try {
+                    proceed()
+                } catch (e: Throwable) {
+                    kastedeFeil += e
+                    throw e
+                }
+            }
+        }
+
+        fun ApplicationTestBuilder.texasApp() {
+            application {
+                fangKastedeFeil()
+                authentication {
+                    register(
+                        TexasAuthenticationProvider(
+                            TexasAuthenticationProvider.Config(
+                                name = IdentityProvider.AZUREAD.value,
+                                texasClient = texasClient,
+                                identityProvider = IdentityProvider.AZUREAD,
+                            ),
+                        ),
+                    )
+                }
+                routing {
+                    authenticate(IdentityProvider.AZUREAD.value) {
+                        get("/saksbehandler") {
+                            call.saksbehandler(alleAdRoller) ?: return@get
+                            call.respond(HttpStatusCode.OK)
+                        }
+                        get("/systembruker") {
+                            call.systembruker(testSystembrukerMapper) ?: return@get
+                            call.respond(HttpStatusCode.OK)
+                        }
+                        get("/fnr") {
+                            call.respond(call.fnr())
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun medKontekst(block: suspend Testkontekst.() -> Unit) = runTest { Testkontekst().block() }
 
     @Test
-    fun `saksbehandler - systembrukertoken gir 403 ikke_saksbehandler`() = runTest {
+    fun `saksbehandler - systembrukertoken gir 403 ikke_saksbehandler`() = medKontekst {
         introspeksjonGir(
             other = mapOf(
                 "azp_name" to "saksbehandling",
@@ -65,7 +136,7 @@ internal class ApplicationCallHelpersTest {
     }
 
     @Test
-    fun `saksbehandler - ingen grupper gir 403 mangler_rolle`() = runTest {
+    fun `saksbehandler - ingen grupper gir 403 mangler_rolle`() = medKontekst {
         introspeksjonGir(
             other = mapOf(
                 "azp_name" to "saksbehandling",
@@ -87,7 +158,7 @@ internal class ApplicationCallHelpersTest {
     }
 
     @Test
-    fun `saksbehandler - manglende NAVident gir 403 ugyldig_token`() = runTest {
+    fun `saksbehandler - manglende NAVident gir 403 ugyldig_token`() = medKontekst {
         introspeksjonGir(
             other = mapOf(
                 "azp_name" to "saksbehandling",
@@ -108,7 +179,7 @@ internal class ApplicationCallHelpersTest {
     }
 
     @Test
-    fun `systembruker - saksbehandlertoken gir 403 ikke_systembruker`() = runTest {
+    fun `systembruker - saksbehandlertoken gir 403 ikke_systembruker`() = medKontekst {
         introspeksjonGir(
             other = mapOf(
                 "azp_name" to "saksbehandling",
@@ -130,7 +201,7 @@ internal class ApplicationCallHelpersTest {
     }
 
     @Test
-    fun `systembruker - ingen roller gir 403 mangler_rolle`() = runTest {
+    fun `systembruker - ingen roller gir 403 mangler_rolle`() = medKontekst {
         introspeksjonGir(
             other = mapOf(
                 "azp_name" to "saksbehandling",
@@ -151,7 +222,7 @@ internal class ApplicationCallHelpersTest {
     }
 
     @Test
-    fun `systembruker - manglende azp_name gir 403 ugyldig_token`() = runTest {
+    fun `systembruker - manglende azp_name gir 403 ugyldig_token`() = medKontekst {
         introspeksjonGir(
             other = mapOf(
                 "azp" to "saksbehandling-id",
@@ -171,7 +242,7 @@ internal class ApplicationCallHelpersTest {
     }
 
     @Test
-    fun `fnr - intern principal på ruta gir IllegalStateException`() = runTest {
+    fun `fnr - intern principal på ruta gir IllegalStateException`() = medKontekst {
         introspeksjonGir(
             other = mapOf(
                 "azp_name" to "saksbehandling",
@@ -189,7 +260,7 @@ internal class ApplicationCallHelpersTest {
     }
 
     @Test
-    fun `saksbehandler og systembruker uten intern principal gir IllegalStateException`() = runTest {
+    fun `saksbehandler og systembruker uten intern principal gir IllegalStateException`() = medKontekst {
         testApplication {
             application {
                 fangKastedeFeil()
@@ -219,7 +290,7 @@ internal class ApplicationCallHelpersTest {
      * Den nås kun ved å kalle oversetteren direkte, siden `toSaksbehandler`/`toSystembruker` aldri returnerer motpartens variant.
      */
     @Test
-    fun `mappingfeil fra motsatt retning gir 500 ukjent_feil`() = runTest {
+    fun `mappingfeil fra motsatt retning gir 500 ukjent_feil`() = medKontekst {
         testApplication {
             application {
                 routing {
@@ -241,75 +312,6 @@ internal class ApplicationCallHelpersTest {
                 uri = "/systembruker-ukjent-feil",
                 forventet = ForventetRespons.json(500, """{"melding":"Noe gikk galt ved mapping til systembruker","kode":"ukjent_feil"}"""),
             )
-        }
-    }
-
-    private fun introspeksjonGir(
-        other: Map<String, Any?>,
-        grupper: List<String>? = null,
-        roller: List<String>? = null,
-    ) {
-        coEvery { texasClient.introspectToken(any(), IdentityProvider.AZUREAD) } returns TexasIntrospectionResponse(
-            active = true,
-            error = null,
-            groups = grupper,
-            roles = roller,
-            other = other,
-        )
-    }
-
-    /**
-     * Asserter at det ble fanget minst én feil, og at alle fangede feilene er `IllegalStateException("Mangler principal")`.
-     * Samme exception passerer pipelinen flere ganger per request, så antallet er en implementasjonsdetalj i ktor og assertes bevisst ikke.
-     */
-    private fun kastedeFeilErManglerPrincipal() {
-        kastedeFeil.map { it.shouldBeInstanceOf<IllegalStateException>().message }.distinct() shouldBe listOf("Mangler principal")
-    }
-
-    /**
-     * Test-motoren gjør ubehandlede exceptions om til 500 i stedet for å kaste dem videre til klienten.
-     * Vi fanger dem i pipelinen slik at testene kan asserte på selve feilen og ikke bare statuskoden.
-     */
-    private fun Application.fangKastedeFeil() {
-        intercept(ApplicationCallPipeline.Setup) {
-            try {
-                proceed()
-            } catch (e: Throwable) {
-                kastedeFeil += e
-                throw e
-            }
-        }
-    }
-
-    private fun ApplicationTestBuilder.texasApp() {
-        application {
-            fangKastedeFeil()
-            authentication {
-                register(
-                    TexasAuthenticationProvider(
-                        TexasAuthenticationProvider.Config(
-                            name = IdentityProvider.AZUREAD.value,
-                            texasClient = texasClient,
-                            identityProvider = IdentityProvider.AZUREAD,
-                        ),
-                    ),
-                )
-            }
-            routing {
-                authenticate(IdentityProvider.AZUREAD.value) {
-                    get("/saksbehandler") {
-                        call.saksbehandler(alleAdRoller) ?: return@get
-                        call.respond(HttpStatusCode.OK)
-                    }
-                    get("/systembruker") {
-                        call.systembruker(testSystembrukerMapper) ?: return@get
-                        call.respond(HttpStatusCode.OK)
-                    }
-                    get("/fnr") {
-                        call.respond(call.fnr())
-                    }
-                }
-            }
         }
     }
 }

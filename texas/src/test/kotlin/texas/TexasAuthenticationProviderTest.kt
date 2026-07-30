@@ -29,13 +29,14 @@ import no.nav.tiltakspenger.libs.texas.client.TexasIntrospectionResponse
 import org.junit.jupiter.api.Test
 
 class TexasAuthenticationProviderTest {
+    // Mocken bygges per test slik at stubbing ikke deles mellom parallelle tester; klokka og jwt-generatoren er tilstandsløse og trygge å dele.
     val clock = fixedClock
     val jwtGenerator = JwtGenerator(clock = clock)
-    val texasClient = mockk<TexasClient>()
 
     @Test
     fun `ekstern bruker, gyldig token - autentiseres og riktig principal`() {
         val fnr = "12345678910"
+        val texasClient = mockk<TexasClient>()
         coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } returns TexasIntrospectionResponse(
             active = true,
             error = null,
@@ -95,6 +96,7 @@ class TexasAuthenticationProviderTest {
         )
         val epost = "Sak.Behandler@nav.no"
         val navIdent = "Z12345"
+        val texasClient = mockk<TexasClient>()
         coEvery { texasClient.introspectToken(any(), IdentityProvider.AZUREAD) } returns TexasIntrospectionResponse(
             active = true,
             error = null,
@@ -148,6 +150,7 @@ class TexasAuthenticationProviderTest {
 
     @Test
     fun `systembruker, gyldig token - autentiseres og riktig principal`() {
+        val texasClient = mockk<TexasClient>()
         coEvery { texasClient.introspectToken(any(), IdentityProvider.AZUREAD) } returns TexasIntrospectionResponse(
             active = true,
             error = null,
@@ -201,6 +204,7 @@ class TexasAuthenticationProviderTest {
     @Test
     fun `ekstern bruker, ugyldig token - returnerer 401`() {
         val fnr = "12345678910"
+        val texasClient = mockk<TexasClient>()
         coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } returns TexasIntrospectionResponse(
             active = false,
             error = "Expired",
@@ -281,72 +285,78 @@ class TexasAuthenticationProviderTest {
 
     @Test
     fun `introspeksjonskallet feiler - returnerer 401`() = runTest {
+        val texasClient = mockk<TexasClient>()
         coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } throws RuntimeException("Texas er nede")
         testApplication {
-            appMedTexasAuth(IdentityProvider.TOKENX)
+            appMedTexasAuth(IdentityProvider.TOKENX, texasClient = texasClient)
             defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
         // Exceptions uten melding faller tilbake på en fast tekst i challengen.
         coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } throws RuntimeException()
         testApplication {
-            appMedTexasAuth(IdentityProvider.TOKENX)
+            appMedTexasAuth(IdentityProvider.TOKENX, texasClient = texasClient)
             defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
     }
 
     @Test
     fun `maskinporten og idporten er ikke implementert - returnerer 401`() = runTest {
+        val texasClient = mockk<TexasClient>()
         coEvery { texasClient.introspectToken(any(), any()) } returns aktivIntrospeksjon()
         testApplication {
-            appMedTexasAuth(IdentityProvider.MASKINPORTEN)
+            appMedTexasAuth(IdentityProvider.MASKINPORTEN, texasClient = texasClient)
             defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
         testApplication {
-            appMedTexasAuth(IdentityProvider.IDPORTEN)
+            appMedTexasAuth(IdentityProvider.IDPORTEN, texasClient = texasClient)
             defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
     }
 
     @Test
     fun `ekstern bruker uten godkjent innloggingsnivå - returnerer 401`() = runTest {
+        val texasClient = mockk<TexasClient>()
         coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } returns aktivIntrospeksjon(
             other = mapOf("pid" to "12345678910", "acr" to "idporten-loa-substantial"),
         )
         testApplication {
-            appMedTexasAuth(IdentityProvider.TOKENX)
+            appMedTexasAuth(IdentityProvider.TOKENX, texasClient = texasClient)
             defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
     }
 
     @Test
     fun `ekstern bruker uten acr-claim - returnerer 401`() = runTest {
+        val texasClient = mockk<TexasClient>()
         coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } returns aktivIntrospeksjon(
             other = mapOf("pid" to "12345678910"),
         )
         testApplication {
-            appMedTexasAuth(IdentityProvider.TOKENX)
+            appMedTexasAuth(IdentityProvider.TOKENX, texasClient = texasClient)
             defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 401
         }
     }
 
     @Test
     fun `ekstern bruker uten acr-claim slipper gjennom når innloggingsnivå ikke kreves`() = runTest {
+        val texasClient = mockk<TexasClient>()
         coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } returns aktivIntrospeksjon(
             other = mapOf("pid" to "12345678910"),
         )
         testApplication {
-            appMedTexasAuth(IdentityProvider.TOKENX, requireIdportenLevelHigh = false)
+            appMedTexasAuth(IdentityProvider.TOKENX, requireIdportenLevelHigh = false, texasClient = texasClient)
             defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 200
         }
     }
 
     @Test
     fun `ekstern bruker uten pid-claim - returnerer 500`() = runTest {
+        val texasClient = mockk<TexasClient>()
         coEvery { texasClient.introspectToken(any(), IdentityProvider.TOKENX) } returns aktivIntrospeksjon(
             other = mapOf("acr" to "Level4"),
         )
         testApplication {
-            appMedTexasAuth(IdentityProvider.TOKENX)
+            appMedTexasAuth(IdentityProvider.TOKENX, texasClient = texasClient)
             defaultRequest(HttpMethod.GET, "/some-path").statusCode shouldBe 500
         }
     }
@@ -361,10 +371,12 @@ class TexasAuthenticationProviderTest {
 
     /**
      * Minimal app for feilveiene: ruta svarer bare 200, siden det er providern som avviser før den nås.
+     * Standardverdien gir en ustubbet mock til testene som avvises før introspeksjonskallet; mocken lages per kall og deler ingen tilstand.
      */
     private fun ApplicationTestBuilder.appMedTexasAuth(
         identityProvider: IdentityProvider,
         requireIdportenLevelHigh: Boolean = true,
+        texasClient: TexasClient = mockk(),
     ) {
         application {
             authentication {

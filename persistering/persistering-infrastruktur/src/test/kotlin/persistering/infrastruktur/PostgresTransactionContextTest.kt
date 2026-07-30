@@ -8,8 +8,6 @@ import kotliquery.queryOf
 import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresSessionContext.Companion.withSession
 import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresTransactionContext.Companion.withSession
 import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresTransactionContext.Companion.withTransaction
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
@@ -22,29 +20,18 @@ import javax.sql.DataSource
 internal class PostgresTransactionContextTest {
 
     companion object {
-        private lateinit var dataSource: DataSource
-        private lateinit var sessionCounter: SessionCounter
-        private val postgres = PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"))
+        /** Startes ved første aksess og stoppes av Testcontainers' Ryuk ved JVM-exit; da trengs ingen JUnit-livssyklusmetoder. */
+        private val postgres = PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine")).also { container -> container.start() }
+
+        private val dataSource: DataSource = PGSimpleDataSource().apply {
+            setURL(postgres.jdbcUrl)
+            user = postgres.username
+            password = postgres.password
+        }
 
         private val logger = KotlinLogging.logger { }
 
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-            postgres.start()
-            dataSource = PGSimpleDataSource().apply {
-                setURL(postgres.jdbcUrl)
-                user = postgres.username
-                password = postgres.password
-            }
-            sessionCounter = SessionCounter(logger)
-        }
-
-        @JvmStatic
-        @AfterAll
-        fun close() {
-            postgres.stop()
-        }
+        private val sessionCounter = SessionCounter(logger)
     }
 
     @Test

@@ -28,6 +28,9 @@ kotliquery = "1.9.1"
 # Låst til 3.4-linja på grunn av en alvorlig klientbug i 3.5.x - se ignore-blokken i .github/dependabot.yml.
 ktor = "3.4.3"
 logback = "1.5.38"
+# LZ4 brukes ikke direkte, men kafka-clients drar inn 1.10.2, der de native XXHash-implementasjonene kan krasje JVM-en på ugyldige byte-intervaller (GHSA-xx22-p4ch-683r).
+# Vi styrer derfor versjonen selv, på samme måte som netty- og scram-linjene under.
+lz4 = "1.11.1"
 mockk = "1.14.11"
 # Netty brukes ikke direkte, men er en hyppig kilde til sikkerhetshull; vi styrer derfor de transitive versjonene selv med bom-er per linje.
 # 4.1-linja kommer fra r2dbc-postgresql 1.1.2 (nyeste), som drar inn sårbar 4.1.112 (bl.a. GHSA-c653-97m9-rcg9).
@@ -89,6 +92,7 @@ ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref 
 ktor-server-test-host-jvm = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor" }
 ktor-utils = { module = "io.ktor:ktor-utils", version.ref = "ktor" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+lz4-java = { module = "at.yawk.lz4:lz4-java", version.ref = "lz4" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-dsl-jvm = { module = "io.mockk:mockk-dsl-jvm", version.ref = "mockk" }
 netty41-bom = { module = "io.netty:netty-bom", version.ref = "netty41" }

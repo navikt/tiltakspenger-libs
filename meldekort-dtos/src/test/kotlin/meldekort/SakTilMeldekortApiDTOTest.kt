@@ -313,25 +313,42 @@ class SakTilMeldekortApiDTOTest {
     }
 
     @Test
-    fun `meldeperiodebehandlinger må være sammenhengende og sortert`() {
-        // periode1 og periode3 — hopper over periode2 — ikke sammenhengende
-        val periode3 = Periode(LocalDate.of(2024, 1, 29), LocalDate.of(2024, 2, 11))
+    fun `meldeperiodebehandlinger må være sortert`() {
         shouldThrow<IllegalArgumentException> {
             meldekortvedtak(
                 meldeperiodebehandlinger = listOf(
+                    meldeperiodebehandling(periode = periode2),
                     meldeperiodebehandling(periode = periode1),
-                    meldeperiodebehandling(periode = periode3),
                 ),
             )
-        }.message shouldBe "Meldeperiodebehandlinger må være sammenhengende og sortert, men var [${periode1.toDTO()}, ${periode3.toDTO()}]"
+        }.message shouldBe "Meldeperiodebehandlinger må være sortert, men var [${periode2.toDTO()}, ${periode1.toDTO()}]"
     }
 
     @Test
     fun `meldekortvedtak kan ha flere sammenhengende meldeperiodebehandlinger`() {
         val vedtak = meldekortvedtak(
             meldeperiodebehandlinger = listOf(
-                meldeperiodebehandling(periode = periode1, dager = listOf(dag(dato = LocalDate.of(2024, 1, 2), beløp = 100, beløpBarnetillegg = 50))),
-                meldeperiodebehandling(periode = periode2, dager = listOf(dag(dato = LocalDate.of(2024, 1, 16), beløp = 200, beløpBarnetillegg = 0))),
+                meldeperiodebehandling(
+                    periode = periode1,
+                    dager = listOf(dag(dato = LocalDate.of(2024, 1, 2), beløp = 100, beløpBarnetillegg = 50)),
+                ),
+                meldeperiodebehandling(
+                    periode = periode2,
+                    dager = listOf(dag(dato = LocalDate.of(2024, 1, 16), beløp = 200, beløpBarnetillegg = 0)),
+                ),
+            ),
+        )
+        vedtak.meldeperiodebehandlinger.size shouldBe 2
+    }
+
+    @Test
+    fun `meldeperiodebehandlinger kan ha hull`() {
+        // periode1 og periode3 — hopper over periode2 — ikke sammenhengende
+        val periode3 = Periode(LocalDate.of(2024, 1, 29), LocalDate.of(2024, 2, 11))
+        val vedtak = meldekortvedtak(
+            meldeperiodebehandlinger = listOf(
+                meldeperiodebehandling(periode = periode1),
+                meldeperiodebehandling(periode = periode3),
             ),
         )
         vedtak.meldeperiodebehandlinger.size shouldBe 2

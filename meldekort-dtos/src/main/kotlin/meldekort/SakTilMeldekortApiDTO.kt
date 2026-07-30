@@ -74,10 +74,10 @@ data class SakTilMeldekortApiDTO(
             }
             require(
                 meldeperiodebehandlinger.zipWithNext().all { (a, b) ->
-                    LocalDate.parse(a.periodeDTO.tilOgMed).plusDays(1) == LocalDate.parse(b.periodeDTO.fraOgMed)
+                    LocalDate.parse(a.periodeDTO.tilOgMed).isBefore(LocalDate.parse(b.periodeDTO.fraOgMed))
                 },
             ) {
-                "Meldeperiodebehandlinger må være sammenhengende og sortert, men var ${meldeperiodebehandlinger.map { it.periodeDTO }}"
+                "Meldeperiodebehandlinger må være sortert, men var ${meldeperiodebehandlinger.map { it.periodeDTO }}"
             }
         }
 

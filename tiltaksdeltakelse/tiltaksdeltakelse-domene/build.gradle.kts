@@ -1,15 +1,26 @@
 plugins {
     id("tiltakspenger-lib-conventions")
+    alias(libs.plugins.kover)
 }
 
 dependencies {
-    implementation(project(":logging"))
-    implementation(libs.arrow.core)
-    implementation(libs.kotlinx.coroutines.core)
-
     testImplementation(project(":test-common"))
 }
 
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(100)
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn("koverVerify")
+}
+
 tasks.withType<Jar> {
-    archiveBaseName.set("persistering-domene")
+    archiveBaseName.set("tiltaksdeltakelse-domene")
 }

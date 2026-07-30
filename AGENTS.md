@@ -114,6 +114,9 @@ Hvis du finner deg selv i å legge til en standardverdi for å få ødelagte/man
   **Foretrekk hjelpeskriptene** fremfor `./gradlew clean spotlessApply build`.
 - En slik `InvocationTargetException` kan fossilere seg i modulens `build/spotless/`-intermediater og replaye deterministisk på senere kjøringer.
   Kuren er `./gradlew :<modul>:clean` og ny kjøring.
+- Spotless ekskluderer `**/resources/**`, fordi default-målet kommer fra `SourceSet.allSource` — som også inneholder resources.
+  `.kt`-filene under `konsist-regler/src/test/resources/fixtures/` er input til reglene, ikke kildekode, og innholdet er poenget: uten ekskluderingen stripper `no-unused-imports` nettopp importene bruddfixturene skal bli tatt på.
+  Formatér aldri fixturene — de skal stå ordrett.
 - Configuration cache er aktivert.
   Unngå `System.getenv()` i build-skript — bruk `providers.environmentVariable()` i stedet.
 

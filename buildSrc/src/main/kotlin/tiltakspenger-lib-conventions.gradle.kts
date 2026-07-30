@@ -33,10 +33,18 @@ configurations.matching { it.name.endsWith("Classpath") }.configureEach {
 
 spotless {
     kotlin {
+        // Spotless henter default-målet sitt fra `SourceSet.allSource`, som også inneholder resources.
+        // `.kt`-filer under resources er fixturer — input til Konsist-reglene, ikke kildekode — og
+        // innholdet er poenget: `no-unused-imports` ville strippet nettopp importene bruddfixturene
+        // skal bli tatt på. Reglene filtrerer bort de samme filene, se `Fixturer.kt`.
+        targetExclude("**/resources/**")
         ktlint(libs.versions.ktlint.get())
             .editorConfigOverride(
                 mapOf(
                     "ktlint_standard_max-line-length" to "off",
+                    // Fjerner ubrukte importer automatisk i spotlessApply, og feiler i spotlessCheck.
+                    // Eksplisitt aktivert fordi default code style (intellij_idea) deaktiverer den.
+                    "ktlint_standard_no-unused-imports" to "enabled",
                     "ktlint_standard_function-signature" to "disabled",
                     "ktlint_standard_function-expression-body" to "disabled",
                 ),

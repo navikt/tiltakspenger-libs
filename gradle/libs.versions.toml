@@ -27,7 +27,7 @@ kotlinx-coroutines = "1.11.0"
 kotliquery = "1.9.1"
 # Låst til 3.4-linja på grunn av en alvorlig klientbug i 3.5.x - se ignore-blokken i .github/dependabot.yml.
 ktor = "3.4.3"
-logback = "1.5.38"
+logback = "1.6.0"
 # LZ4 brukes ikke direkte, men kafka-clients drar inn 1.10.2, der de native XXHash-implementasjonene kan krasje JVM-en på ugyldige byte-intervaller (GHSA-xx22-p4ch-683r).
 # Vi styrer derfor versjonen selv, på samme måte som netty- og scram-linjene under.
 lz4 = "1.11.1"

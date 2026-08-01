@@ -2,15 +2,19 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
+import no.nav.tiltakspenger.libs.common.Virksomhetsnavn
 import org.junit.jupiter.api.Test
 
 internal class ArrangørTest {
     @Test
     fun `bærer begge enhetene hver for seg`() {
-        val arrangør = Arrangør(hovedenhet = "Arrangør AS", underenhet = "Arrangør AS avd Strandveien")
+        val arrangør = Arrangør(
+            hovedenhet = Virksomhetsnavn("Arrangør AS"),
+            underenhet = Virksomhetsnavn("Arrangør AS avd Strandveien"),
+        )
 
-        arrangør.hovedenhet shouldBe "Arrangør AS"
-        arrangør.underenhet shouldBe "Arrangør AS avd Strandveien"
+        arrangør.hovedenhet?.verdi shouldBe "Arrangør AS"
+        arrangør.underenhet?.verdi shouldBe "Arrangør AS avd Strandveien"
     }
 
     /**
@@ -27,12 +31,16 @@ internal class ArrangørTest {
     }
 
     /**
-     * Arrangørnavn røper hvor personen møter opp.
-     * For kode 6, kode 7 og skjermede er det nettopp den opplysningen som ikke skal spres, og en `$deltakelse` i vanlig logg er den enkleste måten å miste den på.
+     * Arrangør har ingen egen `toString()`.
+     * Maskeringen kommer fra [Virksomhetsnavn], og arves av den genererte `toString()`-en.
+     * Det er hele poenget med å markere stedsinformasjon på typen i stedet for å overstyre per klasse som inneholder den.
      */
     @Test
-    fun `toString maskerer arrangørnavnene`() {
-        val arrangør = Arrangør(hovedenhet = "Arrangør AS", underenhet = "Arrangør AS avd Strandveien")
+    fun `toString maskerer arrangørnavnene uten at Arrangør gjør noe selv`() {
+        val arrangør = Arrangør(
+            hovedenhet = Virksomhetsnavn("Arrangør AS"),
+            underenhet = Virksomhetsnavn("Arrangør AS avd Strandveien"),
+        )
 
         arrangør.toString() shouldNotContain "Arrangør AS"
         arrangør.toString() shouldNotContain "Strandveien"
@@ -44,7 +52,7 @@ internal class ArrangørTest {
      */
     @Test
     fun `toString skiller manglende navn fra maskert navn`() {
-        Arrangør(hovedenhet = null, underenhet = "Arrangør AS avd Strandveien").toString() shouldBe
+        Arrangør(hovedenhet = null, underenhet = Virksomhetsnavn("Arrangør AS avd Strandveien")).toString() shouldBe
             "Arrangør(hovedenhet=null, underenhet=*****)"
         Arrangør(hovedenhet = null, underenhet = null).toString() shouldBe
             "Arrangør(hovedenhet=null, underenhet=null)"
@@ -56,6 +64,6 @@ internal class ArrangørTest {
      */
     @Test
     fun `verdiene er fortsatt tilgjengelige gjennom feltene`() {
-        Arrangør(hovedenhet = "Arrangør AS", underenhet = null).hovedenhet shouldBe "Arrangør AS"
+        Arrangør(hovedenhet = Virksomhetsnavn("Arrangør AS"), underenhet = null).hovedenhet?.verdi shouldBe "Arrangør AS"
     }
 }

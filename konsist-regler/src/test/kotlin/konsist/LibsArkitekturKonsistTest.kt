@@ -102,6 +102,11 @@ internal class LibsArkitekturKonsistTest {
     }
 
     @Test
+    fun `personopplysninger maskerer toString selv`() {
+        PersonopplysningMaskererToString.assert(Konsist.scopeFromProduction())
+    }
+
+    @Test
     fun `ingen JUnit-livssyklus i testkode`() {
         IngenJUnitLivssyklus.assert(Konsist.scopeFromTest())
     }
@@ -169,6 +174,7 @@ internal class LibsArkitekturKonsistTest {
                 "no.nav.tiltakspenger.libs.httpklient",
                 "no.nav.tiltakspenger.libs.logging",
                 "no.nav.tiltakspenger.libs.persistering.domene",
+                "no.nav.tiltakspenger.libs.periode",
                 "no.nav.tiltakspenger.libs.person",
                 "no.nav.tiltakspenger.libs.personklient",
                 "no.nav.tiltakspenger.libs.tiltaksdeltakelse",

@@ -1,3 +1,46 @@
-Fellesklient for å hente tiltaksdeltagelser fra Valp
-TODO jah: fyll ut mer siden.
-Lenker osv.
+# tiltaksdeltakelse
+
+Domenemodell for tiltaksdeltakelser, delt mellom `tiltakspenger-saksbehandling-api` og `tiltakspenger-soknad-api`.
+
+Modulen erstatter gradvis appen `tiltakspenger-tiltak` og DTO-ene i `tiltak-dtos`.
+Se [navikt/tiltakspenger#41](https://github.com/navikt/tiltakspenger/issues/41).
+
+## Moduler
+
+| Modul | Innhold |
+|---|---|
+| `tiltaksdeltakelse-domene` | Domenemodellen. Ingen eksterne avhengigheter |
+| `tiltaksdeltakelse-infrastruktur` | Klienter og mapping mot kildene. Ikke tatt i bruk ennå |
+
+## Hva modulen modellerer
+
+To ting, holdt fra hverandre med vilje.
+
+**Kilden.** `Kildestatus` bærer statusen kildesystemet selv oppga, ordrett — `Arenastatus`, `Kometstatus`, `TeamTiltakstatus`.
+`Tiltaksdeltakelse` bærer resten av saksopplysningen: datoer, arrangør, omfang, og tiltakskoden slik kilden skrev den.
+
+**Vår tolkning.** `Deltakerstatus` er domenets egen ordlyd, tre kategorier som avgjør rett: `DeltarEllerHarDeltatt`, `TildeltIkkeStartet` og `IkkeDeltatt`.
+
+Normaliseringen mellom dem er en faglig vurdering, ikke en teknisk oversettelse, og ligger derfor i domenet der den kan granskes og testes.
+
+## Regler som gjelder her
+
+**Modulen svarer aldri på utfallet av en behandling.**
+Om noe kan innvilges avhenger også av saksbehandlers vurdering, som libs ikke kjenner — derfor finnes ikke ordet `kanInnvilges` i modulen.
+Alt som utledes av kildedata heter `somKildenTilsier…` eller `…FraKilden`.
+
+**Ikke forgren på sealed-varianten for å avgjøre et utfall.**
+Varianten beskriver datakvaliteten hos kilden.
+Beslutningsstøtte skal ta verdiene den trenger (tiltakstype, periode, omfang), ikke aggregatet — ellers må en kaller med en vurdert periode enten fabrikkere en falsk kildeverdi eller duplisere logikken.
+
+**Ingen prefiltrering.**
+Alt kilden ga oss får en variant.
+En ukjent tiltakskode eller datoer som ikke henger sammen forsvinner ikke i stillhet, de blir `UkjentTiltakstype` og `Ugyldig`.
+
+**Domenetypene skal aldri lese fra eller skrive til en database.**
+Konsumentene eier sine egne Db-typer og mapper til og fra dem.
+
+## Kilder
+
+Kontrakten vi mottar er `tiltakshistorikk` fra mulighetsrommet.
+Hver `Kildestatus`-implementasjon har KDoc med lenker til både kontrakten og kildesystemet, og for Arena også til hvor kodene ble døpt om (`JATAKK` → `TAKKET_JA_TIL_TILBUD`).

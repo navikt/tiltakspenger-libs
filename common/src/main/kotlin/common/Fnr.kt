@@ -2,10 +2,16 @@ package no.nav.tiltakspenger.libs.common
 
 data class Fnr private constructor(
     val verdi: String,
-) {
+) : Personopplysning {
     init {
         validate(verdi)
     }
+
+    override val begrunnelse: String
+        get() =
+            "Fødselsnummer identifiserer en person entydig, og selve nummeret koder i tillegg fødselsdato i de seks første sifrene og kjønn i personnummeret. " +
+                "Et fødselsnummer på avveie utleverer derfor mer enn identiteten alene, også når mottakeren ikke har oppslag mot Folkeregisteret. " +
+                "Oppbygning: https://www.skatteetaten.no/person/folkeregister/fodsel-og-navnevalg/barn-fodt-i-norge/fodselsnummer/"
 
     override fun toString(): String = "***********"
 

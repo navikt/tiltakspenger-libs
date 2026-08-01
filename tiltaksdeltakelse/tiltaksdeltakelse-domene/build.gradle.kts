@@ -4,6 +4,12 @@ plugins {
 }
 
 dependencies {
+    // common er api: Virksomhetsnavn og Tilknytningstittel er del av den offentlige flaten.
+    api(project(":common"))
+
+    // periodisering er api: Periode er del av GirRett.MedPeriode sin offentlige flate.
+    api(project(":periodisering"))
+
     testImplementation(project(":test-common"))
 }
 

@@ -8,10 +8,11 @@ import java.nio.file.Path
  * Kjører de delte reglene på hele tiltakspenger-libs.
  * Konsist `scopeFromProject()`/`scopeFromTest()` skanner alle moduler, så disse testene dekker hele repoet.
  *
- * Tre av reglene kjøres bevisst ikke her.
+ * Fire av reglene kjøres bevisst ikke her.
  * [RouteBuilderKontrakt] gjelder ikke: libs har ingen route-test-buildere — ktor-test-common definerer hjelperne builderne bruker, ikke buildere.
  * [Testparallellitet] gjelder ikke: libs-modulene kjører ikke testene sine parallelt ennå.
  * [IsolertDatabasetestKonvensjon] gjelder ikke: ingen libs-tester bruker runIsolated — persistering-test-common definerer parameteren, konsumentene bruker den.
+ * [IngenInternalModifier] gjelder motsatt vei: libs er det eneste repoet der `internal` faktisk avgrenser noe, siden modulene publiseres som artefakter.
  */
 internal class LibsArkitekturKonsistTest {
     @Test

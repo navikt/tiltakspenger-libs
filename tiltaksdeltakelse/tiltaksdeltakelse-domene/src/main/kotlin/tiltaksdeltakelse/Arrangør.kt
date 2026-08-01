@@ -1,5 +1,7 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
+import no.nav.tiltakspenger.libs.common.Virksomhetsnavn
+
 /**
  * Arrangøren som gjennomfører tiltaket.
  *
@@ -7,24 +9,13 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
  * Begge navn kan mangle: kilden oppgir dem som valgfrie, og for eldre deltakelser er de ofte ukjente.
  * Team Tiltak oppgir kun én virksomhet (arbeidsgiveren).
  *
- * Typen tar bevisst ikke stilling til hvilken av de to som skal vises.
- * Dagens løsning velger hovedenhet før underenhet, men det er trolig feil for visning siden underenheten er der tiltaket kjøres.
- * Valget hører hjemme der navnet konsumeres, og avgjøres på tallene fra skyggekjøringen.
+ * Arrangørnavn skal det aldri være domenelogikk på.
+ * Det er kun til visning, for å kjenne igjen og skille tiltaksdeltakelser fra hverandre, og hvilken av de to enhetene som vises er visningens valg.
+ *
+ * Navnene er stedsinformasjon, og typen [Virksomhetsnavn] bærer maskeringen.
+ * Denne klassen trenger derfor ingen egen `toString()`: den genererte kaller `toString()` på feltene, som allerede maskerer.
  */
 data class Arrangør(
-    val hovedenhet: String?,
-    val underenhet: String?,
-) {
-    /**
-     * Arrangørnavn er stedsinformasjon: det røper hvor personen faktisk møter opp, ofte helt ned på gateadresse («Arrangør AS avd Strandveien»).
-     * For personer med kode 6, kode 7 eller skjerming er det nettopp den opplysningen som ikke skal spres.
-     * Derfor maskeres navnene her, slik at en `$deltakelse` i vanlig logg ikke lekker dem.
-     *
-     * Verdiene er fortsatt tilgjengelige gjennom feltene.
-     * Sikkerlogg og visning må hente dem eksplisitt — samme disiplin som [no.nav.tiltakspenger.libs.common.Fnr].
-     *
-     * Om navnet er kjent eller ikke er ikke stedsinformasjon, og skilles derfor fortsatt fra maskert verdi.
-     */
-    override fun toString(): String =
-        "Arrangør(hovedenhet=${hovedenhet?.let { "*****" }}, underenhet=${underenhet?.let { "*****" }})"
-}
+    val hovedenhet: Virksomhetsnavn?,
+    val underenhet: Virksomhetsnavn?,
+)

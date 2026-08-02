@@ -6,8 +6,8 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
  * Gjennomføringen er det konkrete tiltaket hos en arrangør, for eksempel «Oppfølging hos Arrangør AS i Strandveien».
  * En person knyttes til en gjennomføring, og det er den koblingen som er deltakelsen.
  *
- * Kun Komet oppgir denne.
- * For Arena og Team Tiltak er den fraværende, og skal da være `null` — ikke tom streng, slik den gamle modellen brukte.
+ * Kilden oppgir en gjennomføring for Arena og Komet; Team Tiltak har ingen.
+ * Der den mangler skal den være `null` — ikke tom streng, slik den gamle modellen brukte.
  */
 @JvmInline
 value class GjennomføringId(

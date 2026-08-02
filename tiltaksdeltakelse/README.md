@@ -40,6 +40,10 @@ En ukjent tiltakskode eller datoer som ikke henger sammen forsvinner ikke i stil
 **Domenetypene skal aldri lese fra eller skrive til en database.**
 Konsumentene eier sine egne Db-typer og mapper til og fra dem.
 
+'**Invariantene bor i typen, og en total funksjon etablerer dem før den konstruerer.**
+Variantene håndhever sine egne påstander med `init` — en `UtenPeriode` med begge datoene på plass eller en `Ugyldig` med datoer som henger sammen kan ikke konstrueres.
+Fabrikken `tiltaksdeltakelse(...)` er total nettopp fordi den bare kaller konstruktører hvis invarianter den allerede har etablert.
+
 ## Kilder
 
 Kontrakten vi mottar er `tiltakshistorikk` fra mulighetsrommet.

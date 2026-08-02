@@ -1,3 +1,5 @@
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+
 plugins {
     id("tiltakspenger-lib-conventions")
     alias(libs.plugins.kover)
@@ -17,7 +19,7 @@ kover {
     reports {
         verify {
             rule {
-                minBound(100)
+                minBound(100, CoverageUnit.BRANCH)
             }
         }
     }

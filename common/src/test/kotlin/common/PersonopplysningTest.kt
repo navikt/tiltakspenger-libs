@@ -54,20 +54,41 @@ internal class PersonopplysningTest {
         tilknytningstittel("Oppfølging hos Arrangør AS") shouldBe Tilknytningstittel("Oppfølging hos Arrangør AS")
     }
 
+    @Test
+    fun `tilknytningstittel maskerer seg selv`() {
+        val tittel = Tilknytningstittel("Oppfølging hos Arrangør AS avd Strandveien")
+
+        tittel.toString() shouldBe "*****"
+        tittel.toString() shouldNotContain "Strandveien"
+        tittel.verdi shouldBe "Oppfølging hos Arrangør AS avd Strandveien"
+    }
+
+    @Test
+    fun `tom tilknytningstittel avvises - fravær uttrykkes med null`() {
+        shouldThrowWithMessage<IllegalArgumentException>("Tilknytningstittel kan ikke være tom") {
+            Tilknytningstittel("")
+        }
+        shouldThrowWithMessage<IllegalArgumentException>("Tilknytningstittel kan ikke være tom") {
+            Tilknytningstittel("   ")
+        }
+    }
+
     /**
      * Begrunnelsen er grunnlaget for å avstemme typene mot PVK-ene, og må stå på hver type.
-     * Fødselsnummer og stedsinformasjon utleverer forskjellige ting om en person, og skal derfor begrunnes hver for seg.
+     * `when`-en er uttømmende uten `else` med vilje: legges en ny personopplysningstype til, kompilerer ikke testen før typen er med her.
+     * Det gjør PVK-lista til noe kompilatoren håndhever, ikke noe noen må huske.
      */
     @Test
-    fun `hver personopplysning begrunner hva den utleverer`() {
-        val personopplysninger: List<Personopplysning> = listOf(
-            Virksomhetsnavn("Arrangør AS"),
-            Fnr.fromString("12345678901"),
-        )
-
-        personopplysninger.forEach { opplysning ->
-            opplysning.begrunnelse.isNotBlank() shouldBe true
+    fun `hver personopplysningstype begrunner hva den utleverer`() {
+        fun begrunnelsen(opplysning: Personopplysning): String = when (opplysning) {
+            is Fnr -> opplysning.begrunnelse
+            is Virksomhetsnavn -> opplysning.begrunnelse
+            is Tilknytningstittel -> opplysning.begrunnelse
         }
+
+        begrunnelsen(Fnr.fromString("12345678901")).isNotBlank() shouldBe true
+        begrunnelsen(Virksomhetsnavn("Arrangør AS")).isNotBlank() shouldBe true
+        begrunnelsen(Tilknytningstittel("Oppfølging hos Arrangør AS")).isNotBlank() shouldBe true
     }
 
     /**

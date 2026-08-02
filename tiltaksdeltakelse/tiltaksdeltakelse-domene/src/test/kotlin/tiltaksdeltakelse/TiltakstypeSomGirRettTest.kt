@@ -13,6 +13,5 @@ internal class TiltakstypeSomGirRettTest {
     @Test
     fun `settet av tiltakstyper som gir rett er 22 - endres det, må konsumentene følge etter`() {
         TiltakstypeSomGirRett.entries.size shouldBe 22
-        TiltakstypeSomGirRett.entries.distinct().size shouldBe TiltakstypeSomGirRett.entries.size
     }
 }

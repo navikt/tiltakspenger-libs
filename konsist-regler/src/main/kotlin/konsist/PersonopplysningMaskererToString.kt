@@ -13,6 +13,7 @@ import com.lemonappdev.konsist.api.container.KoScope
  * Den sjekker ikke hva implementasjonen gjør — at en deklarert `toString()` faktisk maskerer er kodegjennomgangens jobb.
  *
  * [markører] er navnene som regnes som markering, og dekker både rot-interfacet og kategoriene under det.
+ * Regelen ser gjennom hele arvekjeden (`parents(indirectParents = true)`), så en klasse markert via en ny kategori under hierarkiet fanges uten at [markører] må utvides.
  * Kalleren sender typisk `scopeFromProduction()`.
  */
 object PersonopplysningMaskererToString {
@@ -28,7 +29,7 @@ object PersonopplysningMaskererToString {
         .asSequence()
         .flatMap { file -> file.classes(includeNested = true) }
         .filter { klasse -> klasse.hasDataModifier }
-        .filter { klasse -> klasse.parents().any { parent -> parent.name in markører } }
+        .filter { klasse -> klasse.parents(indirectParents = true).any { parent -> parent.name in markører } }
         .filterNot { klasse -> klasse.functions().any { funksjon -> funksjon.name == "toString" } }
         .map { klasse -> "${klasse.containingFile.path}: ${klasse.name}" }
         .toList()

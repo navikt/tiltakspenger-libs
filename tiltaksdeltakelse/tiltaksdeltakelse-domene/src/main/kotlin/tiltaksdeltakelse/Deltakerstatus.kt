@@ -34,10 +34,10 @@ enum class Deltakerstatus {
     val girRettTilÅSøke: Boolean get() = this != IkkeDeltatt
 
     /**
-     * Om deltakelsen kan innvilges.
-     * Speiler dagens krav: deltakelsen må være i gang eller gjennomført.
+     * Om kilden tilsier at deltakelsen er i gang eller gjennomført.
+     * Dagens innvilgelsesguard bygger på akkurat dette, men ordet innvilgelse hører ikke hjemme her: om noe kan innvilges avgjøres i `tiltakspenger-saksbehandling-api`, som også veier saksbehandlers vurdering.
      * Merk at innvilgelse i tillegg krever at både fra- og til-dato er kjent; det er en egenskap ved deltakelsen, ikke ved statusen.
      * En feilregistrert status hos kilden kan gjøre at saksbehandler likevel må innvilge; det håndteres av en overstyring i `tiltakspenger-saksbehandling-api`, aldri ved å endre dette predikatet eller mappingen fra kildestatus.
      */
-    val girRettTilInnvilgelse: Boolean get() = this == DeltarEllerHarDeltatt
+    val deltarEllerHarDeltatt: Boolean get() = this == DeltarEllerHarDeltatt
 }

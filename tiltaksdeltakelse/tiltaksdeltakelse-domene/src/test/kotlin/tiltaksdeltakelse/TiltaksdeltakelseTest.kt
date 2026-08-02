@@ -113,20 +113,23 @@ internal class TiltaksdeltakelseTest {
 
     /**
      * Ugyldige datoer slår ut først, uansett hvor fin tiltakstypen er.
+     * Klassifiseringen bæres likevel: en korrupt rad som ville gitt rett er den mest handlingsutløsende å varsle på.
      */
     @Test
-    fun `ugyldige datoer vinner over tiltakstypen`() {
+    fun `ugyldige datoer vinner over tiltakstypen, men klassifiseringen bæres`() {
         deltakelse(
             tiltakstype = Tiltakstype.SomGirRett(tiltakskodeFraKilden = "JOBBK", tiltakstype = TiltakstypeSomGirRett.JOBBKLUBB),
             fraOgMed = slutt,
             tilOgMed = start,
         ).shouldBeInstanceOf<Tiltaksdeltakelse.Ugyldig>()
+            .tiltakstype shouldBe Tiltakstype.SomGirRett(tiltakskodeFraKilden = "JOBBK", tiltakstype = TiltakstypeSomGirRett.JOBBKLUBB)
 
         deltakelse(
             tiltakstype = Tiltakstype.Ukjent("NOE_HELT_NYTT"),
             fraOgMed = slutt,
             tilOgMed = start,
         ).shouldBeInstanceOf<Tiltaksdeltakelse.Ugyldig>()
+            .tiltakstype shouldBe Tiltakstype.Ukjent("NOE_HELT_NYTT")
     }
 
     @Test
@@ -189,7 +192,7 @@ internal class TiltaksdeltakelseTest {
         id = EksternDeltakelseId("TA1234567"),
         kildestatus = Kometstatus.Kjent(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
         tiltakstypenavn = "Oppfølging",
-        tiltakskodeFraKilden = "INDOPPFAG",
+        tiltakstype = Tiltakstype.SomGirRett(tiltakskodeFraKilden = "INDOPPFAG", tiltakstype = TiltakstypeSomGirRett.OPPFØLGING),
         tittel = Tilknytningstittel("Oppfølging hos Arrangør AS"),
         arrangør = Arrangør(hovedenhet = Virksomhetsnavn("Arrangør AS"), underenhet = null),
         omfang = Deltakelsesomfang(deltakelsesprosent = 60f, dagerPerUke = 3f, deltidsprosentPåGjennomføring = null),

@@ -162,12 +162,15 @@ sealed interface Tiltaksdeltakelse {
      *
      * Disse ble tidligere silt bort i stillhet, slik at ingen oppdaget at kilden hadde korrupte rader.
      * Nå bæres de, slik at de kan vises og varsles på — men de skal aldri brukes som grunnlag for beregning.
+     *
+     * Varianten bærer [tiltakstype] — klassifiseringen vår — slik at det synes om en korrupt rad ville gitt rett.
+     * Det er nettopp denne bøtta som skal varsles på, og «denne ville gitt rett» er det mest handlingsutløsende vi vet om en rad.
      */
     data class Ugyldig(
         override val id: EksternDeltakelseId,
         override val kildestatus: Kildestatus,
         override val tiltakstypenavn: String,
-        override val tiltakskodeFraKilden: String,
+        val tiltakstype: Tiltakstype,
         override val tittel: Tilknytningstittel?,
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
@@ -176,6 +179,8 @@ sealed interface Tiltaksdeltakelse {
         override val tilOgMed: LocalDate,
         val grunn: Ugyldiggrunn,
     ) : Tiltaksdeltakelse {
+        override val tiltakskodeFraKilden: String get() = tiltakstype.tiltakskodeFraKilden
+
         init {
             when (grunn) {
                 Ugyldiggrunn.SluttFørStart -> require(fraOgMed.isAfter(tilOgMed)) { "SluttFørStart krever at sluttdatoen ligger før startdatoen" }
@@ -250,7 +255,7 @@ fun tiltaksdeltakelse(
                 id = id,
                 kildestatus = kildestatus,
                 tiltakstypenavn = tiltakstypenavn,
-                tiltakskodeFraKilden = tiltakstype.tiltakskodeFraKilden,
+                tiltakstype = tiltakstype,
                 tittel = tittel,
                 arrangør = arrangør,
                 omfang = omfang,

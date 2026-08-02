@@ -159,6 +159,8 @@ sealed interface Arenastatus : Kildestatus {
                         Deltakerstatus.DeltarEllerHarDeltatt
                     }
 
+                // GJENNOMFORING_AVBRUTT er en vurdering på linje med TAKKET_JA_TIL_TILBUD: det var tiltaket som ble avbrutt, ikke personens deltakelse, og personen kan ha deltatt fram til avbruddet.
+                // Videreført fra dagens mapping (GJENN_AVB -> Avbrutt -> deltarEllerHarDeltatt), uten kjent grunn til å endre den.
                 DELTAKELSE_AVBRUTT,
                 GJENNOMFORING_AVBRUTT,
                 FULLFORT,

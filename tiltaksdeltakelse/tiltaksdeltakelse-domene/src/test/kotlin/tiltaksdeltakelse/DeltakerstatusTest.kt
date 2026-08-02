@@ -14,20 +14,20 @@ internal class DeltakerstatusTest {
     }
 
     /**
-     * Speiler dagens krav ved innvilgelse: deltakelsen må være i gang eller gjennomført.
+     * Dagens innvilgelsesguard bygger på dette predikatet, men utfallet avgjøres i sb-api — derfor heter det fakta, ikke rettigheter.
      */
     @Test
-    fun `rett til innvilgelse krever at deltakelsen er i gang eller gjennomført`() {
-        Deltakerstatus.entries.filter { it.girRettTilInnvilgelse }.toSet() shouldBe
+    fun `deltar eller har deltatt gjelder nøyaktig den ene kategorien`() {
+        Deltakerstatus.entries.filter { it.deltarEllerHarDeltatt }.toSet() shouldBe
             setOf(Deltakerstatus.DeltarEllerHarDeltatt)
     }
 
     /**
-     * Innvilgelse er strengere enn søknad.
+     * Innvilgelsesgrunnlaget er strengere enn søknadsretten.
      * Holder den invarianten, kan ingen komme i den situasjonen at de får innvilget noe de ikke kunne søkt om.
      */
     @Test
-    fun `alt som kan innvilges kan også søkes om`() {
-        Deltakerstatus.entries.filter { it.girRettTilInnvilgelse }.all { it.girRettTilÅSøke } shouldBe true
+    fun `alt som deltar eller har deltatt kan også søkes om`() {
+        Deltakerstatus.entries.filter { it.deltarEllerHarDeltatt }.all { it.girRettTilÅSøke } shouldBe true
     }
 }

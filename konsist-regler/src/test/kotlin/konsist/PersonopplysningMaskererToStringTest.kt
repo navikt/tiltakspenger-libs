@@ -14,10 +14,11 @@ internal class PersonopplysningMaskererToStringTest {
     fun `flagger data class som lener seg på generert toString`() {
         val brudd = PersonopplysningMaskererToString.brudd(scope)
 
-        brudd shouldHaveSize 2
+        brudd shouldHaveSize 3
         val samlet = brudd.joinToString("\n")
         samlet shouldContain "LekkerFødselsnummer"
         samlet shouldContain "LekkerArrangørnavn"
+        samlet shouldContain "LekkerDiagnose"
     }
 
     /**

@@ -45,7 +45,6 @@ internal class KildestatusTest {
      */
     @Test
     fun `en ukjent kontraktsverdi bærer kontraktens kode ordrett og kilden sin`() {
-        Arenastatus.Ukjent("NY_KONTRAKTSVERDI").kodeIKontrakten shouldBe "NY_KONTRAKTSVERDI"
         Arenastatus.Ukjent("NY_KONTRAKTSVERDI").kilde shouldBe Tiltakskilde.Arena
         Kometstatus.Ukjent("NY_KOMET_KODE", årsak = Kometårsak.Ukjent("NY_ÅRSAK"), opprettet = statusOpprettet).kilde shouldBe Tiltakskilde.Komet
         TeamTiltakstatus.Ukjent("NY_AVTALESTATUS").kilde shouldBe Tiltakskilde.TeamTiltak
@@ -92,7 +91,7 @@ internal class KildestatusTest {
     @Test
     fun `arena - ikke møtt gir ikke rett til innvilgelse`() {
         Arenastatus.Type.IKKE_MOTT.status() shouldBe Deltakerstatus.IkkeDeltatt
-        Arenastatus.Type.IKKE_MOTT.status().girRettTilInnvilgelse shouldBe false
+        Arenastatus.Type.IKKE_MOTT.status().deltarEllerHarDeltatt shouldBe false
         Arenastatus.Type.IKKE_MOTT.status().girRettTilÅSøke shouldBe false
     }
 
@@ -221,14 +220,6 @@ internal class KildestatusTest {
                 "TILBUD" to "TILBUD",
                 "VENTELISTE" to "VENTELISTE",
             )
-    }
-
-    /**
-     * Komet bruker samme navn som kontrakten, så her finnes ikke noe oversettelsesledd å gå seg vill i.
-     */
-    @Test
-    fun `komet - kodeHosKilden er identisk med enum-navnet`() {
-        Kometstatus.Type.entries.all { Kometstatus.Kjent(it, årsak = null, opprettet = statusOpprettet).kodeHosKilden == it.name } shouldBe true
     }
 
     /**

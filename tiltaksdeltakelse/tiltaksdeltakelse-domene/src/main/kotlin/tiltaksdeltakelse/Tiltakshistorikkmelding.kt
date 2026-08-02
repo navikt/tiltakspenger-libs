@@ -31,11 +31,14 @@ sealed interface Tiltakshistorikkmelding {
 
     /**
      * En melding vi ikke kjenner igjen.
-     * Kontrakten kan få nye verdier, og en ny melding betyr sannsynligvis at et svar er ufullstendig på en ny måte — den skal varsles på, ikke forsvinne stille.
+     * Kontrakten kan få nye verdier, og en ny melding betyr sannsynligvis at et svar er ufullstendig på en ny måte — den skal varsles på gjennom [UkjentKildeverdi], ikke forsvinne stille.
      */
     data class Ukjent(
         override val kodeIKontrakten: String,
-    ) : Tiltakshistorikkmelding {
+    ) : Tiltakshistorikkmelding,
+        UkjentKildeverdi {
         override val manglendeKilde: Tiltakskilde? = null
+
+        override val hva: String get() = "melding fra tiltakshistorikk"
     }
 }

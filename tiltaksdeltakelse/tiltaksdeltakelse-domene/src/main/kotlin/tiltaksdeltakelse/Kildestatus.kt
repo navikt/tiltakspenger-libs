@@ -81,6 +81,9 @@ sealed interface Kildestatus {
      * Verdien lagres ordrett hos konsumentene, slik at den tolkes riktig ved neste lesing når mappingen tar den igjen — uten migrering.
      * Den kan ikke tolkes: [Kjent.deltakerstatus] finnes ikke her, så spørsmålet er urepresenterbart i stedet for å få et uærlig svar.
      * Uttrekk og guards utelater den til den er mappet — det er et brukbarhetsspørsmål, aldri et utfall — og den skal varsles på, ikke forsvinne stille.
+     * Varslingen og visningen leser den gjennom [UkjentKildeverdi]-flaten.
      */
-    sealed interface Ukjent : Kildestatus
+    sealed interface Ukjent :
+        Kildestatus,
+        UkjentKildeverdi
 }

@@ -46,6 +46,8 @@ sealed interface TeamTiltakstatus : Kildestatus {
         }
 
         override val kilde: Tiltakskilde get() = Tiltakskilde.TeamTiltak
+
+        override val hva: String get() = "avtalestatus fra Team Tiltak"
     }
 
     enum class Type(

@@ -43,8 +43,14 @@ sealed interface Tiltakstype {
      *
      * Arena oppgir tiltakskoden som fritekst, så en ukjent kode er en påregnelig hendelse og ikke en feil.
      * Den kan i prinsippet gi rett, så deltakelsen skal varsles på — men aldri brukes som grunnlag for vedtak før noen har sett på den.
+     * Varslingen leser den gjennom [UkjentKildeverdi]: Arena-koden går urørt gjennom kontrakten, og for Komet og Team Tiltak er navnene identiske, så kontraktsverdien er kildens kode her.
      */
     data class Ukjent(
         override val tiltakskodeFraKilden: String,
-    ) : Tiltakstype
+    ) : Tiltakstype,
+        UkjentKildeverdi {
+        override val kodeIKontrakten: String get() = tiltakskodeFraKilden
+
+        override val hva: String get() = "tiltakskode fra kilden"
+    }
 }

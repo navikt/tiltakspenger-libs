@@ -19,6 +19,7 @@ kover {
     reports {
         verify {
             rule {
+                minBound(100)
                 minBound(100, CoverageUnit.BRANCH)
             }
         }

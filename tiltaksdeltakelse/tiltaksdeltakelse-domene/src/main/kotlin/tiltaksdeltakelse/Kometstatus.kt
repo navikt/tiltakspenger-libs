@@ -28,15 +28,23 @@ import java.time.LocalDateTime
  * [Kjent.opprettet] sier når øyeblikksbildet ble tatt hos kilden.
  */
 sealed interface Kometstatus : Kildestatus {
+    /**
+     * Årsaken kilden oppga, når den finnes — egen kjent/ukjent-akse, se [Kometårsak].
+     * Leses uavhengig av om selve statustypen er kjent, siden den er et eget felt i kontraktens statusobjekt.
+     */
+    val årsak: Kometårsak?
+
+    /**
+     * Når kilden satte statusen — kildens eget tidspunkt, ikke når vi hentet.
+     * Kontrakten kaller feltet `opprettetDato` og har varslet omdøping til `opprettetTidspunkt`.
+     */
+    val opprettet: LocalDateTime
+
     /** Statusen er en av de fjorten kodene vi kjenner fra kontrakten. */
     data class Kjent(
         val type: Type,
-        val årsak: Kometårsak?,
-        /**
-         * Når kilden satte statusen — kildens eget tidspunkt, ikke når vi hentet.
-         * Kontrakten kaller feltet `opprettetDato` og har varslet omdøping til `opprettetTidspunkt`.
-         */
-        val opprettet: LocalDateTime,
+        override val årsak: Kometårsak?,
+        override val opprettet: LocalDateTime,
     ) : Kometstatus,
         Kildestatus.Kjent {
         override val kilde: Tiltakskilde get() = Tiltakskilde.Komet
@@ -78,8 +86,8 @@ sealed interface Kometstatus : Kildestatus {
      */
     data class Ukjent(
         override val kodeIKontrakten: String,
-        val årsak: Kometårsak?,
-        val opprettet: LocalDateTime,
+        override val årsak: Kometårsak?,
+        override val opprettet: LocalDateTime,
     ) : Kometstatus,
         Kildestatus.Ukjent {
         init {
@@ -87,6 +95,8 @@ sealed interface Kometstatus : Kildestatus {
         }
 
         override val kilde: Tiltakskilde get() = Tiltakskilde.Komet
+
+        override val hva: String get() = "deltakerstatus fra Komet"
     }
 
     /**
@@ -223,12 +233,15 @@ sealed interface Kometårsak {
         override val kodeIKontrakten: String get() = årsak.name
     }
 
-    /** En årsakskode i kontrakten vi ikke kjenner igjen — bæres ordrett, og varsles på. */
+    /** En årsakskode i kontrakten vi ikke kjenner igjen — bæres ordrett, og varsles på gjennom [UkjentKildeverdi]. */
     data class Ukjent(
         override val kodeIKontrakten: String,
-    ) : Kometårsak {
+    ) : Kometårsak,
+        UkjentKildeverdi {
         init {
             require(kodeIKontrakten.isNotBlank()) { "En ukjent kildeverdi må bære kontraktens kode" }
         }
+
+        override val hva: String get() = "årsak fra Komet"
     }
 }

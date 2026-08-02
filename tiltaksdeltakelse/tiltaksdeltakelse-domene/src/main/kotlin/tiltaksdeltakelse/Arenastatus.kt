@@ -49,6 +49,8 @@ sealed interface Arenastatus : Kildestatus {
         }
 
         override val kilde: Tiltakskilde get() = Tiltakskilde.Arena
+
+        override val hva: String get() = "deltakerstatus fra Arena"
     }
 
     enum class Type(

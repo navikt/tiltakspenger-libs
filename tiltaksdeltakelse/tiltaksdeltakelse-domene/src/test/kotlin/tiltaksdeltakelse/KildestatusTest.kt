@@ -224,13 +224,27 @@ internal class KildestatusTest {
 
     /**
      * Team Tiltak skriver to av verdiene med æøå; kontrakten har strippet dem.
+     * Kontrastparet viser skillet: `kodeIKontrakten` er den strippede formen på wiren, `kodeHosKilden` kildens egen.
      */
     @Test
     fun `team tiltak - kodeHosKilden beholder kildens æøå`() {
         TeamTiltakstatus.Kjent(TeamTiltakstatus.Type.GJENNOMFORES).kodeHosKilden shouldBe "GJENNOMFØRES"
+        TeamTiltakstatus.Kjent(TeamTiltakstatus.Type.GJENNOMFORES).kodeIKontrakten shouldBe "GJENNOMFORES"
         TeamTiltakstatus.Kjent(TeamTiltakstatus.Type.PAABEGYNT).kodeHosKilden shouldBe "PÅBEGYNT"
         TeamTiltakstatus.Type.entries.filter { TeamTiltakstatus.Kjent(it).kodeHosKilden != it.name }.toSet() shouldBe
             setOf(TeamTiltakstatus.Type.GJENNOMFORES, TeamTiltakstatus.Type.PAABEGYNT)
+    }
+
+    /**
+     * Hos Komet er kildens og kontraktens språk det samme, så begge feltene svarer likt.
+     * Literalen pinner kontraktsnavnet: kildestatus-enumene følger kontrakten og kan ikke omdøpes fritt.
+     */
+    @Test
+    fun `komet - kildens og kontraktens språk er det samme`() {
+        val kjent = Kometstatus.Kjent(Kometstatus.Type.VENTER_PA_OPPSTART, årsak = null, opprettet = statusOpprettet)
+
+        kjent.kodeIKontrakten shouldBe "VENTER_PA_OPPSTART"
+        kjent.kodeHosKilden shouldBe "VENTER_PA_OPPSTART"
     }
 
     /**

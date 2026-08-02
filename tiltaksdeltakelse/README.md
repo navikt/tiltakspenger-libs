@@ -27,6 +27,10 @@ Normaliseringen mellom dem er en faglig vurdering, ikke en teknisk oversettelse,
 **Samlingen.** `Tiltaksdeltakelser` er wrapperen rundt alt vi mottok for en person, med narrowing (`girRett`, `ugyldige`, `medUkjentKildestatus`), overlappsvar som `Overlapp { Ja, Nei, Kanskje }`, og uttrekket `somKildenTilsierManKanSøkePå(påDato)` — en egen type som bærer datoen utvalget gjaldt.
 `UkjentKildeverdi` samler alt kilden sa som vi ikke kjenner igjen — med `hva` («deltakerstatus fra Arena», «årsak fra Komet», …) og `kodeIKontrakten` — slik at varsling og visning slipper å kjenne hver akse.
 
+**Søknadsreglene er delt og forklarbare.**
+`Søkbarhet` svarer om en deltakelse kan søkes på, med begrunnelse til visning — søknaden velger ut med dem, og saksbehandling-api viser dem, for eksempel ved manuell registrering.
+Unntak aktiveres i regelsettet her, aldri lokalt hos én konsument, slik at flatene aldri kan divergere.
+
 ## Regler som gjelder her
 
 **Modulen svarer aldri på utfallet av en behandling.**

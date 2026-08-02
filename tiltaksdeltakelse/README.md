@@ -17,6 +17,7 @@ Se [navikt/tiltakspenger#41](https://github.com/navikt/tiltakspenger/issues/41).
 To ting, holdt fra hverandre med vilje.
 
 **Kilden.** `Kildestatus` bærer statusen kildesystemet selv oppga, ordrett — `Arenastatus`, `Kometstatus`, `TeamTiltakstatus`.
+En kode vi ikke kjenner igjen flyter inn som kildens egen `Ukjent`-variant, bæres ordrett, og blokkerer tolkning til den er mappet.
 `Tiltaksdeltakelse` bærer resten av saksopplysningen: datoer, arrangør, omfang, og tiltakskoden slik kilden skrev den.
 
 **Vår tolkning.** `Deltakerstatus` er domenets egen ordlyd, tre kategorier som avgjør rett: `DeltarEllerHarDeltatt`, `TildeltIkkeStartet` og `IkkeDeltatt`.
@@ -43,6 +44,10 @@ Konsumentene eier sine egne Db-typer og mapper til og fra dem.
 '**Invariantene bor i typen, og en total funksjon etablerer dem før den konstruerer.**
 Variantene håndhever sine egne påstander med `init` — en `UtenPeriode` med begge datoene på plass eller en `Ugyldig` med datoer som henger sammen kan ikke konstrueres.
 Fabrikken `tiltaksdeltakelse(...)` er total nettopp fordi den bare kaller konstruktører hvis invarianter den allerede har etablert.
+
+**Kildens tomme streng er fravær.**
+Fritekst fra kilden går inn gjennom én total inngang per type — `virksomhetsnavn(...)` og `tilknytningstittel(...)` ved typene i `common` — der både `null` og blank gir `null`, aldri et kast.
+`require`-ene i typene består som vakter mot programmererfeil; adaptere bruker inngangene og konstruerer aldri direkte fra fritekst.
 
 ## Kilder
 

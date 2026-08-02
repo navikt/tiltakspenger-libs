@@ -19,19 +19,37 @@ import java.time.LocalDate
  * Kodene har ingen offentlig dokumentasjon; enumet med sine norske beskrivelser er den praktiske kontrakten.
  *
  * Løpet i grove trekk:
- * [AKTUELL] og [INFORMASJONSMOTE] er tidlig interesse, [VENTELISTE] er kvalifisert uten plass, og [TILBUD] er tilbudt plass.
- * [TAKKET_JA_TIL_TILBUD] og [TAKKET_NEI_TIL_TILBUD] er brukerens svar på tilbudet.
- * [GJENNOMFORES] er selve deltakelsen, som avsluttes med [FULLFORT], [DELTAKELSE_AVBRUTT] eller [IKKE_MOTT].
- * [AVSLAG], [IKKE_AKTUELL], [GJENNOMFORING_AVLYST] og [FEILREGISTRERT] er utganger der deltakelsen aldri ble noe av.
+ * [Type.AKTUELL] og [Type.INFORMASJONSMOTE] er tidlig interesse, [Type.VENTELISTE] er kvalifisert uten plass, og [Type.TILBUD] er tilbudt plass.
+ * [Type.TAKKET_JA_TIL_TILBUD] og [Type.TAKKET_NEI_TIL_TILBUD] er brukerens svar på tilbudet.
+ * [Type.GJENNOMFORES] er selve deltakelsen, som avsluttes med [Type.FULLFORT], [Type.DELTAKELSE_AVBRUTT] eller [Type.IKKE_MOTT].
+ * [Type.AVSLAG], [Type.IKKE_AKTUELL], [Type.GJENNOMFORING_AVLYST] og [Type.FEILREGISTRERT] er utganger der deltakelsen aldri ble noe av.
  */
-data class Arenastatus(
-    val type: Type,
-) : Kildestatus {
-    override val kilde: Tiltakskilde get() = Tiltakskilde.Arena
+sealed interface Arenastatus : Kildestatus {
+    /** Statusen er en av de femten kodene vi kjenner fra kontrakten. */
+    data class Kjent(
+        val type: Type,
+    ) : Arenastatus,
+        Kildestatus.Kjent {
+        override val kilde: Tiltakskilde get() = Tiltakskilde.Arena
 
-    override val kodeHosKilden: String get() = type.kodeHosKilden
+        override val kodeIKontrakten: String get() = type.name
 
-    override fun deltakerstatus(fraOgMed: LocalDate?, påDato: LocalDate): Deltakerstatus = type.deltakerstatus(fraOgMed, påDato)
+        override val kodeHosKilden: String get() = type.kodeHosKilden
+
+        override fun deltakerstatus(fraOgMed: LocalDate?, påDato: LocalDate): Deltakerstatus = type.deltakerstatus(fraOgMed, påDato)
+    }
+
+    /** En kontraktsverdi for Arena vi ikke kjenner igjen — se [Kildestatus.Ukjent]. */
+    data class Ukjent(
+        override val kodeIKontrakten: String,
+    ) : Arenastatus,
+        Kildestatus.Ukjent {
+        init {
+            require(kodeIKontrakten.isNotBlank()) { "En ukjent kildeverdi må bære kontraktens kode" }
+        }
+
+        override val kilde: Tiltakskilde get() = Tiltakskilde.Arena
+    }
 
     enum class Type(
         val kodeHosKilden: String,

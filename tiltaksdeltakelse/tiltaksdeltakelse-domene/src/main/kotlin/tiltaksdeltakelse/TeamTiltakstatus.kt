@@ -13,22 +13,40 @@ import java.time.LocalDate
  * [kodeHosKilden] gir kildens egen staving.
  *
  * **Statusen er ikke registrert, den er utledet.**
- * `Status.fra(avtale)` i kildesystemet regner den ut i denne rekkefølgen: annullert-tidspunkt satt gir [ANNULLERT]; ellers inngått avtale med passert sluttdato gir [AVSLUTTET]; ellers inngått avtale med passert startdato gir [GJENNOMFORES]; ellers inngått avtale gir [KLAR_FOR_OPPSTART]; ellers alle felter utfylt gir [MANGLER_GODKJENNING]; ellers [PAABEGYNT].
+ * `Status.fra(avtale)` i kildesystemet regner den ut i denne rekkefølgen: annullert-tidspunkt satt gir [Type.ANNULLERT]; ellers inngått avtale med passert sluttdato gir [Type.AVSLUTTET]; ellers inngått avtale med passert startdato gir [Type.GJENNOMFORES]; ellers inngått avtale gir [Type.KLAR_FOR_OPPSTART]; ellers alle felter utfylt gir [Type.MANGLER_GODKJENNING]; ellers [Type.PAABEGYNT].
  *
  * To konsekvenser er verdt å merke seg.
- * Skillet mellom [KLAR_FOR_OPPSTART], [GJENNOMFORES] og [AVSLUTTET] er rent datostyrt, akkurat som Arena sin `GJENNOMFORES` — men her regnes det ut hos kilden, så statusen vi mottar er et øyeblikksbilde fra hentetidspunktet.
- * Og [AVSLUTTET] sier bare at avtalen var inngått og at sluttdatoen har passert; det er ikke en bekreftelse på at personen faktisk møtte opp.
+ * Skillet mellom [Type.KLAR_FOR_OPPSTART], [Type.GJENNOMFORES] og [Type.AVSLUTTET] er rent datostyrt, akkurat som Arena sin `GJENNOMFORES` — men her regnes det ut hos kilden, så statusen vi mottar er et øyeblikksbilde fra hentetidspunktet.
+ * Og [Type.AVSLUTTET] sier bare at avtalen var inngått og at sluttdatoen har passert; det er ikke en bekreftelse på at personen faktisk møtte opp.
  *
  * NB: kilden har også en grunn på annulleringen, som vi ikke henter inn.
  */
-data class TeamTiltakstatus(
-    val type: Type,
-) : Kildestatus {
-    override val kilde: Tiltakskilde get() = Tiltakskilde.TeamTiltak
+sealed interface TeamTiltakstatus : Kildestatus {
+    /** Statusen er en av de sju kodene vi kjenner fra kontrakten. */
+    data class Kjent(
+        val type: Type,
+    ) : TeamTiltakstatus,
+        Kildestatus.Kjent {
+        override val kilde: Tiltakskilde get() = Tiltakskilde.TeamTiltak
 
-    override val kodeHosKilden: String get() = type.kodeHosKilden
+        override val kodeIKontrakten: String get() = type.name
 
-    override fun deltakerstatus(fraOgMed: LocalDate?, påDato: LocalDate): Deltakerstatus = type.deltakerstatus(fraOgMed, påDato)
+        override val kodeHosKilden: String get() = type.kodeHosKilden
+
+        override fun deltakerstatus(fraOgMed: LocalDate?, påDato: LocalDate): Deltakerstatus = type.deltakerstatus(fraOgMed, påDato)
+    }
+
+    /** En kontraktsverdi for Team Tiltak vi ikke kjenner igjen — se [Kildestatus.Ukjent]. */
+    data class Ukjent(
+        override val kodeIKontrakten: String,
+    ) : TeamTiltakstatus,
+        Kildestatus.Ukjent {
+        init {
+            require(kodeIKontrakten.isNotBlank()) { "En ukjent kildeverdi må bære kontraktens kode" }
+        }
+
+        override val kilde: Tiltakskilde get() = Tiltakskilde.TeamTiltak
+    }
 
     enum class Type(
         val kodeHosKilden: String,

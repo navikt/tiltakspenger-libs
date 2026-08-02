@@ -17,7 +17,7 @@ internal class TiltaksdeltakelseTest {
 
     private fun deltakelse(
         tiltakstype: Tiltakstype = Tiltakstype.SomGirRett(tiltakskodeFraKilden = "INDOPPFAG", tiltakstype = TiltakstypeSomGirRett.OPPFØLGING),
-        kildestatus: Kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
+        kildestatus: Kildestatus = Kometstatus.Kjent(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
         fraOgMed: LocalDate? = start,
         tilOgMed: LocalDate? = slutt,
         gjennomføringId: GjennomføringId? = GjennomføringId("6f3b1f52-9a1e-4a34-8f9a-1c2d3e4f5a6b"),
@@ -173,7 +173,7 @@ internal class TiltaksdeltakelseTest {
 
     private fun utenPeriode(fraOgMed: LocalDate?, tilOgMed: LocalDate?) = Tiltaksdeltakelse.GirRett.UtenPeriode(
         id = EksternDeltakelseId("TA1234567"),
-        kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
+        kildestatus = Kometstatus.Kjent(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
         tiltakstype = TiltakstypeSomGirRett.OPPFØLGING,
         tiltakstypenavn = "Oppfølging",
         tiltakskodeFraKilden = "INDOPPFAG",
@@ -187,7 +187,7 @@ internal class TiltaksdeltakelseTest {
 
     private fun ugyldig(fraOgMed: LocalDate, tilOgMed: LocalDate, grunn: Ugyldiggrunn) = Tiltaksdeltakelse.Ugyldig(
         id = EksternDeltakelseId("TA1234567"),
-        kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
+        kildestatus = Kometstatus.Kjent(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
         tiltakstypenavn = "Oppfølging",
         tiltakskodeFraKilden = "INDOPPFAG",
         tittel = Tilknytningstittel("Oppfølging hos Arrangør AS"),
@@ -201,18 +201,35 @@ internal class TiltaksdeltakelseTest {
 
     @Test
     fun `kilden utledes fra kildestatusen`() {
-        deltakelse(kildestatus = Arenastatus(Arenastatus.Type.GJENNOMFORES)).kilde shouldBe Tiltakskilde.Arena
-        deltakelse(kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet)).kilde shouldBe Tiltakskilde.Komet
-        deltakelse(kildestatus = TeamTiltakstatus(TeamTiltakstatus.Type.GJENNOMFORES)).kilde shouldBe Tiltakskilde.TeamTiltak
+        deltakelse(kildestatus = Arenastatus.Kjent(Arenastatus.Type.GJENNOMFORES)).kilde shouldBe Tiltakskilde.Arena
+        deltakelse(kildestatus = Kometstatus.Kjent(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet)).kilde shouldBe Tiltakskilde.Komet
+        deltakelse(kildestatus = TeamTiltakstatus.Kjent(TeamTiltakstatus.Type.GJENNOMFORES)).kilde shouldBe Tiltakskilde.TeamTiltak
     }
 
+    /**
+     * Tolkningen finnes bare på kjente kildestatuser, så kallere må narrowe først.
+     * Det er en brukbarhetsforgrening (F-unntaket), ikke et utfall: en ukjent kode kan ikke tolkes.
+     */
     @Test
-    fun `somKildenTilsier spør kildestatusen med deltakelsens startdato`() {
-        deltakelse(kildestatus = Arenastatus(Arenastatus.Type.GJENNOMFORES)).somKildenTilsier(påDato = slutt) shouldBe
-            Deltakerstatus.DeltarEllerHarDeltatt
+    fun `tolkningen krever kjent kildestatus, og tar deltakelsens startdato`() {
+        val deltakelse = deltakelse(kildestatus = Arenastatus.Kjent(Arenastatus.Type.GJENNOMFORES))
 
-        deltakelse(kildestatus = Arenastatus(Arenastatus.Type.GJENNOMFORES)).somKildenTilsier(påDato = start.minusDays(1)) shouldBe
-            Deltakerstatus.TildeltIkkeStartet
+        val kjent = deltakelse.kildestatus.shouldBeInstanceOf<Kildestatus.Kjent>()
+
+        kjent.deltakerstatus(fraOgMed = deltakelse.fraOgMed, påDato = slutt) shouldBe Deltakerstatus.DeltarEllerHarDeltatt
+        kjent.deltakerstatus(fraOgMed = deltakelse.fraOgMed, påDato = start.minusDays(1)) shouldBe Deltakerstatus.TildeltIkkeStartet
+    }
+
+    /**
+     * En ukjent kildestatus påvirker ikke variantvalget — kvalitetsaksene er uavhengige.
+     * Deltakelsen flyter inn, og blokkeringen skjer der tolkningen trengs, ikke ved henting.
+     */
+    @Test
+    fun `ukjent kildestatus flyter inn uten å endre varianten`() {
+        val resultat = deltakelse(kildestatus = Arenastatus.Ukjent("NY_ARENA_KODE"))
+            .shouldBeInstanceOf<Tiltaksdeltakelse.GirRett.MedPeriode>()
+
+        resultat.kildestatus shouldBe Arenastatus.Ukjent("NY_ARENA_KODE")
     }
 
     /**

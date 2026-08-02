@@ -27,6 +27,7 @@ sealed interface Tiltaksdeltakelse {
     /**
      * Kildens egen status, bevart ordrett.
      * [Tiltakskilde] utledes herfra.
+     * Kan være en [Kildestatus.Ukjent]: også en kode vi ikke kjenner igjen bæres, og blokkerer tolkning til den er mappet.
      */
     val kildestatus: Kildestatus
 
@@ -45,8 +46,10 @@ sealed interface Tiltaksdeltakelse {
     /**
      * Kildens leselige tittel, typisk «\<type\> hos \<arrangør\>».
      * Inneholder arrangøren, og er derfor stedsinformasjon.
+     * Kilden er fritekst uten garanti mot tomt innhold, så tittelen kan mangle — `null` betyr at kilden ikke ga noen.
+     * Visning faller da tilbake på [tiltakstypenavn], samme gren som ved adressebeskyttelse.
      */
-    val tittel: Tilknytningstittel
+    val tittel: Tilknytningstittel?
 
     val arrangør: Arrangør
 
@@ -86,7 +89,7 @@ sealed interface Tiltaksdeltakelse {
             override val tiltakstype: TiltakstypeSomGirRett,
             override val tiltakstypenavn: String,
             override val tiltakskodeFraKilden: String,
-            override val tittel: Tilknytningstittel,
+            override val tittel: Tilknytningstittel?,
             override val arrangør: Arrangør,
             override val omfang: Deltakelsesomfang,
             override val gjennomføringId: GjennomføringId?,
@@ -103,7 +106,7 @@ sealed interface Tiltaksdeltakelse {
             override val tiltakstype: TiltakstypeSomGirRett,
             override val tiltakstypenavn: String,
             override val tiltakskodeFraKilden: String,
-            override val tittel: Tilknytningstittel,
+            override val tittel: Tilknytningstittel?,
             override val arrangør: Arrangør,
             override val omfang: Deltakelsesomfang,
             override val gjennomføringId: GjennomføringId?,
@@ -127,7 +130,7 @@ sealed interface Tiltaksdeltakelse {
         override val kildestatus: Kildestatus,
         override val tiltakstypenavn: String,
         override val tiltakskodeFraKilden: String,
-        override val tittel: Tilknytningstittel,
+        override val tittel: Tilknytningstittel?,
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
@@ -146,7 +149,7 @@ sealed interface Tiltaksdeltakelse {
         override val kildestatus: Kildestatus,
         override val tiltakstypenavn: String,
         override val tiltakskodeFraKilden: String,
-        override val tittel: Tilknytningstittel,
+        override val tittel: Tilknytningstittel?,
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
@@ -165,7 +168,7 @@ sealed interface Tiltaksdeltakelse {
         override val kildestatus: Kildestatus,
         override val tiltakstypenavn: String,
         override val tiltakskodeFraKilden: String,
-        override val tittel: Tilknytningstittel,
+        override val tittel: Tilknytningstittel?,
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
@@ -201,16 +204,6 @@ enum class Ugyldiggrunn {
 val Tiltaksdeltakelse.kilde: Tiltakskilde get() = kildestatus.kilde
 
 /**
- * Hva kilden tilsier at deltakelsen er, sett på en gitt dato.
- *
- * Navnet er bevisst: dette er kildens ord, ikke et utfall.
- * Svaret er en funksjon av kildedata og datoen, og skal regnes ut ved henting — ikke leses som en lagret sannhet.
- * At det kan endre seg med datoen er poenget, se `Kildestatus.deltakerstatus`.
- */
-fun Tiltaksdeltakelse.somKildenTilsier(påDato: LocalDate): Deltakerstatus =
-    kildestatus.deltakerstatus(fraOgMed = fraOgMed, påDato = påDato)
-
-/**
  * Perioden kilden oppga, eller `null` når den mangler eller ikke henger sammen.
  * Datoer på tekniske yttergrenser (`LocalDate.MAX` som start, `LocalDate.MIN` som slutt) gir også `null`, siden [Periode] ikke kan bære dem.
  *
@@ -239,7 +232,7 @@ fun tiltaksdeltakelse(
     kildestatus: Kildestatus,
     tiltakstype: Tiltakstype,
     tiltakstypenavn: String,
-    tittel: Tilknytningstittel,
+    tittel: Tilknytningstittel?,
     arrangør: Arrangør,
     omfang: Deltakelsesomfang,
     fraOgMed: LocalDate?,

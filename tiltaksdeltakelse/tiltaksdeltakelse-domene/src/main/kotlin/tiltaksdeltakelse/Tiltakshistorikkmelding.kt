@@ -13,10 +13,10 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
  */
 sealed interface Tiltakshistorikkmelding {
     /**
-     * Koden slik kontrakten skriver den.
+     * Koden slik kontrakten skriver den; meldingen er `tiltakshistorikk` sin egen, så det finnes ikke noe kildespråk ved siden av.
      * Kun til visning og gjenkjenning — diskriminering skjer på typen.
      */
-    val kode: String
+    val kodeIKontrakten: String
 
     /**
      * Kilden svaret er ufullstendig for, eller `null` når meldingen ikke peker på en bestemt kilde.
@@ -25,7 +25,7 @@ sealed interface Tiltakshistorikkmelding {
 
     /** Team Tiltak svarte ikke, og avtaler derfra kan mangle i svaret. */
     data object ManglerHistorikkFraTeamTiltak : Tiltakshistorikkmelding {
-        override val kode = "MANGLER_HISTORIKK_FRA_TEAM_TILTAK"
+        override val kodeIKontrakten = "MANGLER_HISTORIKK_FRA_TEAM_TILTAK"
         override val manglendeKilde = Tiltakskilde.TeamTiltak
     }
 
@@ -34,7 +34,7 @@ sealed interface Tiltakshistorikkmelding {
      * Kontrakten kan få nye verdier, og en ny melding betyr sannsynligvis at et svar er ufullstendig på en ny måte — den skal varsles på, ikke forsvinne stille.
      */
     data class Ukjent(
-        override val kode: String,
+        override val kodeIKontrakten: String,
     ) : Tiltakshistorikkmelding {
         override val manglendeKilde: Tiltakskilde? = null
     }

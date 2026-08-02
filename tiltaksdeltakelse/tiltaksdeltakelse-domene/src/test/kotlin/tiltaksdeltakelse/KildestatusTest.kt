@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -22,19 +23,52 @@ internal class KildestatusTest {
     private val statusOpprettet = LocalDateTime.of(2026, 7, 29, 12, 0)
 
     private fun Arenastatus.Type.status(fraOgMed: LocalDate? = igår) =
-        Arenastatus(this).deltakerstatus(fraOgMed = fraOgMed, påDato = idag)
+        Arenastatus.Kjent(this).deltakerstatus(fraOgMed = fraOgMed, påDato = idag)
 
     private fun Kometstatus.Type.status(fraOgMed: LocalDate? = igår) =
-        Kometstatus(type = this, årsak = null, opprettet = statusOpprettet).deltakerstatus(fraOgMed = fraOgMed, påDato = idag)
+        Kometstatus.Kjent(type = this, årsak = null, opprettet = statusOpprettet).deltakerstatus(fraOgMed = fraOgMed, påDato = idag)
 
     private fun TeamTiltakstatus.Type.status(fraOgMed: LocalDate? = igår) =
-        TeamTiltakstatus(this).deltakerstatus(fraOgMed = fraOgMed, påDato = idag)
+        TeamTiltakstatus.Kjent(this).deltakerstatus(fraOgMed = fraOgMed, påDato = idag)
 
     @Test
     fun `kilden utledes fra statusen`() {
-        Arenastatus(Arenastatus.Type.GJENNOMFORES).kilde shouldBe Tiltakskilde.Arena
-        Kometstatus(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet).kilde shouldBe Tiltakskilde.Komet
-        TeamTiltakstatus(TeamTiltakstatus.Type.GJENNOMFORES).kilde shouldBe Tiltakskilde.TeamTiltak
+        Arenastatus.Kjent(Arenastatus.Type.GJENNOMFORES).kilde shouldBe Tiltakskilde.Arena
+        Kometstatus.Kjent(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet).kilde shouldBe Tiltakskilde.Komet
+        TeamTiltakstatus.Kjent(TeamTiltakstatus.Type.GJENNOMFORES).kilde shouldBe Tiltakskilde.TeamTiltak
+    }
+
+    /**
+     * Et tillegg hos kilden skal flyte inn som ukjent i stedet for å velte deserialiseringen — beslutning D.
+     * Tolkning er urepresenterbar for en ukjent verdi: `deltakerstatus` finnes bare på `Kildestatus.Kjent`.
+     * Det er kontraktens verdi som er ukjent, og det er den som bæres — kildens egen kode er ukjennbar til mappingen finnes.
+     */
+    @Test
+    fun `en ukjent kontraktsverdi bærer kontraktens kode ordrett og kilden sin`() {
+        Arenastatus.Ukjent("NY_KONTRAKTSVERDI").kodeIKontrakten shouldBe "NY_KONTRAKTSVERDI"
+        Arenastatus.Ukjent("NY_KONTRAKTSVERDI").kilde shouldBe Tiltakskilde.Arena
+        Kometstatus.Ukjent("NY_KOMET_KODE", årsak = Kometårsak.Ukjent("NY_ÅRSAK"), opprettet = statusOpprettet).kilde shouldBe Tiltakskilde.Komet
+        TeamTiltakstatus.Ukjent("NY_AVTALESTATUS").kilde shouldBe Tiltakskilde.TeamTiltak
+    }
+
+    /**
+     * For en kjent verdi kjenner vi begge språkene — kontraktens og kildesystemets.
+     * For en ukjent finnes bare kontraktens, og derfor finnes ikke `kodeHosKilden` på `Ukjent`.
+     */
+    @Test
+    fun `arena - en kjent verdi bærer både kontraktens og Arenas språk`() {
+        val kjent = Arenastatus.Kjent(Arenastatus.Type.TAKKET_JA_TIL_TILBUD)
+
+        kjent.kodeIKontrakten shouldBe "TAKKET_JA_TIL_TILBUD"
+        kjent.kodeHosKilden shouldBe "JATAKK"
+    }
+
+    @Test
+    fun `en ukjent kildeverdi uten kode er en programmererfeil`() {
+        shouldThrow<IllegalArgumentException> { Arenastatus.Ukjent("   ") }
+        shouldThrow<IllegalArgumentException> { Kometstatus.Ukjent("", årsak = null, opprettet = statusOpprettet) }
+        shouldThrow<IllegalArgumentException> { TeamTiltakstatus.Ukjent("") }
+        shouldThrow<IllegalArgumentException> { Kometårsak.Ukjent("") }
     }
 
     @Test
@@ -169,7 +203,7 @@ internal class KildestatusTest {
      */
     @Test
     fun `arena - kodeHosKilden er Arenas egen kode, ikke kontraktens navn`() {
-        Arenastatus.Type.entries.associate { it.name to Arenastatus(it).kodeHosKilden } shouldBe
+        Arenastatus.Type.entries.associate { it.name to Arenastatus.Kjent(it).kodeHosKilden } shouldBe
             mapOf(
                 "AKTUELL" to "AKTUELL",
                 "AVSLAG" to "AVSLAG",
@@ -194,7 +228,7 @@ internal class KildestatusTest {
      */
     @Test
     fun `komet - kodeHosKilden er identisk med enum-navnet`() {
-        Kometstatus.Type.entries.all { Kometstatus(it, årsak = null, opprettet = statusOpprettet).kodeHosKilden == it.name } shouldBe true
+        Kometstatus.Type.entries.all { Kometstatus.Kjent(it, årsak = null, opprettet = statusOpprettet).kodeHosKilden == it.name } shouldBe true
     }
 
     /**
@@ -202,9 +236,9 @@ internal class KildestatusTest {
      */
     @Test
     fun `team tiltak - kodeHosKilden beholder kildens æøå`() {
-        TeamTiltakstatus(TeamTiltakstatus.Type.GJENNOMFORES).kodeHosKilden shouldBe "GJENNOMFØRES"
-        TeamTiltakstatus(TeamTiltakstatus.Type.PAABEGYNT).kodeHosKilden shouldBe "PÅBEGYNT"
-        TeamTiltakstatus.Type.entries.filter { TeamTiltakstatus(it).kodeHosKilden != it.name }.toSet() shouldBe
+        TeamTiltakstatus.Kjent(TeamTiltakstatus.Type.GJENNOMFORES).kodeHosKilden shouldBe "GJENNOMFØRES"
+        TeamTiltakstatus.Kjent(TeamTiltakstatus.Type.PAABEGYNT).kodeHosKilden shouldBe "PÅBEGYNT"
+        TeamTiltakstatus.Type.entries.filter { TeamTiltakstatus.Kjent(it).kodeHosKilden != it.name }.toSet() shouldBe
             setOf(TeamTiltakstatus.Type.GJENNOMFORES, TeamTiltakstatus.Type.PAABEGYNT)
     }
 
@@ -230,9 +264,10 @@ internal class KildestatusTest {
      */
     @Test
     fun `komet - årsaken bæres, men endrer ikke utledningen ennå`() {
-        val medÅrsak = Kometstatus(type = Kometstatus.Type.HAR_SLUTTET, årsak = Kometstatus.Årsak.IKKE_MOTT, opprettet = statusOpprettet)
+        val medÅrsak = Kometstatus.Kjent(type = Kometstatus.Type.HAR_SLUTTET, årsak = Kometårsak.Kjent(Kometstatus.Årsak.IKKE_MOTT), opprettet = statusOpprettet)
 
-        medÅrsak.årsak shouldBe Kometstatus.Årsak.IKKE_MOTT
+        medÅrsak.årsak shouldBe Kometårsak.Kjent(Kometstatus.Årsak.IKKE_MOTT)
+        medÅrsak.årsak?.kodeIKontrakten shouldBe "IKKE_MOTT"
         medÅrsak.deltakerstatus(fraOgMed = igår, påDato = idag) shouldBe Deltakerstatus.DeltarEllerHarDeltatt
     }
 

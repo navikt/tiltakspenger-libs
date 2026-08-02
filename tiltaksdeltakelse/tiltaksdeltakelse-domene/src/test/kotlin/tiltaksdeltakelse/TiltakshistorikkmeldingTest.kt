@@ -9,7 +9,7 @@ internal class TiltakshistorikkmeldingTest {
      */
     @Test
     fun `kontraktskoden er spikret`() {
-        Tiltakshistorikkmelding.ManglerHistorikkFraTeamTiltak.kode shouldBe "MANGLER_HISTORIKK_FRA_TEAM_TILTAK"
+        Tiltakshistorikkmelding.ManglerHistorikkFraTeamTiltak.kodeIKontrakten shouldBe "MANGLER_HISTORIKK_FRA_TEAM_TILTAK"
     }
 
     @Test

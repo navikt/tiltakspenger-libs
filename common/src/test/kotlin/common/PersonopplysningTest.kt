@@ -38,6 +38,23 @@ internal class PersonopplysningTest {
     }
 
     /**
+     * Kildene garanterer ikke mot tomme strenger, og en adapter skal aldri kunne kaste på kildedata.
+     * Inngangen er total: fravær og blank gir null, verdi gir typen.
+     */
+    @Test
+    fun `inngangen fra fritekst gjør blank til fravær`() {
+        virksomhetsnavn(null) shouldBe null
+        virksomhetsnavn("") shouldBe null
+        virksomhetsnavn("   ") shouldBe null
+        virksomhetsnavn("Arrangør AS") shouldBe Virksomhetsnavn("Arrangør AS")
+
+        tilknytningstittel(null) shouldBe null
+        tilknytningstittel("") shouldBe null
+        tilknytningstittel("   ") shouldBe null
+        tilknytningstittel("Oppfølging hos Arrangør AS") shouldBe Tilknytningstittel("Oppfølging hos Arrangør AS")
+    }
+
+    /**
      * Begrunnelsen er grunnlaget for å avstemme typene mot PVK-ene, og må stå på hver type.
      * Fødselsnummer og stedsinformasjon utleverer forskjellige ting om en person, og skal derfor begrunnes hver for seg.
      */

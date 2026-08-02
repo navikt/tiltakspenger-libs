@@ -57,6 +57,15 @@ value class Virksomhetsnavn(
 }
 
 /**
+ * Total inngang fra kildens fritekst: `null` og blank betyr fravær, og gir `null`.
+ *
+ * Kildene garanterer ikke mot tomme strenger, og en adapter skal aldri kunne kaste på kildedata.
+ * Regelen «kildens tomme streng er fravær» bor derfor her, ikke på kallstedene.
+ * `require`-en i [Virksomhetsnavn] består som vakt mot programmererfeil ved direkte konstruksjon.
+ */
+fun virksomhetsnavn(verdi: String?): Virksomhetsnavn? = if (verdi.isNullOrBlank()) null else Virksomhetsnavn(verdi)
+
+/**
  * Leselig tittel på en tilknytning, satt sammen av kilden på formen «\<type\> hos \<virksomhet\>».
  *
  * Tittelen inneholder virksomhetsnavnet, og arver dermed stedsinformasjonen fra det.
@@ -78,3 +87,9 @@ value class Tilknytningstittel(
 
     override fun toString(): String = "*****"
 }
+
+/**
+ * Total inngang fra kildens fritekst: `null` og blank betyr fravær, og gir `null`.
+ * Samme regel og begrunnelse som [virksomhetsnavn].
+ */
+fun tilknytningstittel(verdi: String?): Tilknytningstittel? = if (verdi.isNullOrBlank()) null else Tilknytningstittel(verdi)

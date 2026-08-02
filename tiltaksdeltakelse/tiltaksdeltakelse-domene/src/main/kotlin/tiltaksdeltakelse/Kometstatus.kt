@@ -13,6 +13,7 @@ import java.time.LocalDateTime
  *
  * Komet er den eneste kilden som oppgir en **årsak** og et **tidspunkt** sammen med statusen, og derfor den eneste der [Kildestatus] bærer mer enn en kode.
  * Årsaken er ofte det saksbehandler faktisk vil vite: at noen har sluttet sier lite, at de sluttet fordi de fikk jobb sier mye.
+ * Årsaken har sin egen kjent/ukjent-akse — se [Kometårsak].
  *
  * Navnene er identiske hos kilden og i kontrakten, så [kodeHosKilden] er den samme som enum-navnet.
  * Til forskjell fra Arena finnes det ikke noe oversettelsesledd å gå seg vill i.
@@ -24,46 +25,69 @@ import java.time.LocalDateTime
  *
  * Statusene flyttes av en jobb hos kilden, som i tillegg lagrer framtidige statuser med gyldighetsvindu.
  * Den vi mottar er derfor et øyeblikksbilde, ikke en varig sannhet.
- * [opprettet] sier når øyeblikksbildet ble tatt hos kilden.
+ * [Kjent.opprettet] sier når øyeblikksbildet ble tatt hos kilden.
  */
-data class Kometstatus(
-    val type: Type,
-    val årsak: Årsak?,
+sealed interface Kometstatus : Kildestatus {
+    /** Statusen er en av de fjorten kodene vi kjenner fra kontrakten. */
+    data class Kjent(
+        val type: Type,
+        val årsak: Kometårsak?,
+        /**
+         * Når kilden satte statusen — kildens eget tidspunkt, ikke når vi hentet.
+         * Kontrakten kaller feltet `opprettetDato` og har varslet omdøping til `opprettetTidspunkt`.
+         */
+        val opprettet: LocalDateTime,
+    ) : Kometstatus,
+        Kildestatus.Kjent {
+        override val kilde: Tiltakskilde get() = Tiltakskilde.Komet
+
+        override val kodeIKontrakten: String get() = type.name
+
+        override val kodeHosKilden: String get() = type.name
+
+        override fun deltakerstatus(fraOgMed: LocalDate?, påDato: LocalDate): Deltakerstatus =
+            when (type) {
+                // TODO: skal årsaken kunne overstyre typen her?
+                // Komet modellerer «ikke møtt» som årsak, ikke som status — Arena har det som status, og der avklarte fag 2026-07-31 at det ikke er deltakelse.
+                // En Komet-deltakelse med HAR_SLUTTET eller AVBRUTT og årsak IKKE_MOTT er trolig samme tilfelle, men behandles her som deltakelse.
+                // Må avklares med fag, nå som vi endelig har årsaken tilgjengelig.
+                Type.AVBRUTT,
+                Type.DELTAR,
+                Type.FULLFORT,
+                Type.HAR_SLUTTET,
+                -> Deltakerstatus.DeltarEllerHarDeltatt
+
+                Type.VENTER_PA_OPPSTART -> Deltakerstatus.TildeltIkkeStartet
+
+                Type.AVBRUTT_UTKAST,
+                Type.FEILREGISTRERT,
+                Type.IKKE_AKTUELL,
+                Type.KLADD,
+                Type.PABEGYNT_REGISTRERING,
+                Type.SOKT_INN,
+                Type.UTKAST_TIL_PAMELDING,
+                Type.VENTELISTE,
+                Type.VURDERES,
+                -> Deltakerstatus.IkkeDeltatt
+            }
+    }
+
     /**
-     * Når kilden satte statusen — kildens eget tidspunkt, ikke når vi hentet.
-     * Kontrakten kaller feltet `opprettetDato` og har varslet omdøping til `opprettetTidspunkt`.
+     * En kontraktsverdi for Komet vi ikke kjenner igjen — se [Kildestatus.Ukjent].
+     * Årsaken og tidspunktet er egne felter i kontraktens statusobjekt, og leses selv om selve typen er ukjent.
      */
-    val opprettet: LocalDateTime,
-) : Kildestatus {
-    override val kilde: Tiltakskilde get() = Tiltakskilde.Komet
-
-    override val kodeHosKilden: String get() = type.name
-
-    override fun deltakerstatus(fraOgMed: LocalDate?, påDato: LocalDate): Deltakerstatus =
-        when (type) {
-            // TODO: skal årsaken kunne overstyre typen her?
-            // Komet modellerer «ikke møtt» som årsak, ikke som status — Arena har det som status, og der avklarte fag 2026-07-31 at det ikke er deltakelse.
-            // En Komet-deltakelse med HAR_SLUTTET eller AVBRUTT og årsak IKKE_MOTT er trolig samme tilfelle, men behandles her som deltakelse.
-            // Må avklares med fag, nå som vi endelig har årsaken tilgjengelig.
-            Type.AVBRUTT,
-            Type.DELTAR,
-            Type.FULLFORT,
-            Type.HAR_SLUTTET,
-            -> Deltakerstatus.DeltarEllerHarDeltatt
-
-            Type.VENTER_PA_OPPSTART -> Deltakerstatus.TildeltIkkeStartet
-
-            Type.AVBRUTT_UTKAST,
-            Type.FEILREGISTRERT,
-            Type.IKKE_AKTUELL,
-            Type.KLADD,
-            Type.PABEGYNT_REGISTRERING,
-            Type.SOKT_INN,
-            Type.UTKAST_TIL_PAMELDING,
-            Type.VENTELISTE,
-            Type.VURDERES,
-            -> Deltakerstatus.IkkeDeltatt
+    data class Ukjent(
+        override val kodeIKontrakten: String,
+        val årsak: Kometårsak?,
+        val opprettet: LocalDateTime,
+    ) : Kometstatus,
+        Kildestatus.Ukjent {
+        init {
+            require(kodeIKontrakten.isNotBlank()) { "En ukjent kildeverdi må bære kontraktens kode" }
         }
+
+        override val kilde: Tiltakskilde get() = Tiltakskilde.Komet
+    }
 
     /**
      * Løpet går fra utkast ([KLADD], [UTKAST_TIL_PAMELDING], [AVBRUTT_UTKAST]) via innsøking ([SOKT_INN], [VURDERES], [VENTELISTE]) til tildelt plass ([VENTER_PA_OPPSTART]) og deltakelse ([DELTAR]).
@@ -176,5 +200,35 @@ data class Kometstatus(
 
         /** Kurset var fullt. */
         KURS_FULLT,
+    }
+}
+
+/**
+ * Årsaken Komet oppga, kjent eller ikke.
+ *
+ * Egen akse: en kjent status kan komme med en ukjent årsak, og omvendt.
+ * Årsaken driver ingen guards — den er informasjon til saksbehandler — så en ukjent årsak blokkerer ingenting, men skal varsles på.
+ */
+sealed interface Kometårsak {
+    /**
+     * Koden slik kontrakten skriver den; hos Komet er kildens og kontraktens navn de samme.
+     * Kun til visning og gjenkjenning — diskriminering skjer på [Kjent.årsak].
+     */
+    val kodeIKontrakten: String
+
+    /** Årsaken er en av de fjorten verdiene vi kjenner fra kontrakten. */
+    data class Kjent(
+        val årsak: Kometstatus.Årsak,
+    ) : Kometårsak {
+        override val kodeIKontrakten: String get() = årsak.name
+    }
+
+    /** En årsakskode i kontrakten vi ikke kjenner igjen — bæres ordrett, og varsles på. */
+    data class Ukjent(
+        override val kodeIKontrakten: String,
+    ) : Kometårsak {
+        init {
+            require(kodeIKontrakten.isNotBlank()) { "En ukjent kildeverdi må bære kontraktens kode" }
+        }
     }
 }

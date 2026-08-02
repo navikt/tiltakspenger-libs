@@ -8,14 +8,16 @@ import no.nav.tiltakspenger.libs.common.Virksomhetsnavn
 import no.nav.tiltakspenger.libs.periode.Periode
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 internal class TiltaksdeltakelseTest {
     private val start = LocalDate.of(2026, 3, 2)
     private val slutt = LocalDate.of(2026, 6, 30)
+    private val statusOpprettet = LocalDateTime.of(2026, 2, 27, 12, 0)
 
     private fun deltakelse(
         tiltakstype: Tiltakstype = Tiltakstype.SomGirRett(tiltakskodeFraKilden = "INDOPPFAG", tiltakstype = TiltakstypeSomGirRett.OPPFØLGING),
-        kildestatus: Kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null),
+        kildestatus: Kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
         fraOgMed: LocalDate? = start,
         tilOgMed: LocalDate? = slutt,
         gjennomføringId: GjennomføringId? = GjennomføringId("6f3b1f52-9a1e-4a34-8f9a-1c2d3e4f5a6b"),
@@ -171,7 +173,7 @@ internal class TiltaksdeltakelseTest {
 
     private fun utenPeriode(fraOgMed: LocalDate?, tilOgMed: LocalDate?) = Tiltaksdeltakelse.GirRett.UtenPeriode(
         id = EksternDeltakelseId("TA1234567"),
-        kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null),
+        kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
         tiltakstype = TiltakstypeSomGirRett.OPPFØLGING,
         tiltakstypenavn = "Oppfølging",
         tiltakskodeFraKilden = "INDOPPFAG",
@@ -185,7 +187,7 @@ internal class TiltaksdeltakelseTest {
 
     private fun ugyldig(fraOgMed: LocalDate, tilOgMed: LocalDate, grunn: Ugyldiggrunn) = Tiltaksdeltakelse.Ugyldig(
         id = EksternDeltakelseId("TA1234567"),
-        kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null),
+        kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
         tiltakstypenavn = "Oppfølging",
         tiltakskodeFraKilden = "INDOPPFAG",
         tittel = Tilknytningstittel("Oppfølging hos Arrangør AS"),
@@ -200,7 +202,7 @@ internal class TiltaksdeltakelseTest {
     @Test
     fun `kilden utledes fra kildestatusen`() {
         deltakelse(kildestatus = Arenastatus(Arenastatus.Type.GJENNOMFORES)).kilde shouldBe Tiltakskilde.Arena
-        deltakelse(kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null)).kilde shouldBe Tiltakskilde.Komet
+        deltakelse(kildestatus = Kometstatus(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet)).kilde shouldBe Tiltakskilde.Komet
         deltakelse(kildestatus = TeamTiltakstatus(TeamTiltakstatus.Type.GJENNOMFORES)).kilde shouldBe Tiltakskilde.TeamTiltak
     }
 

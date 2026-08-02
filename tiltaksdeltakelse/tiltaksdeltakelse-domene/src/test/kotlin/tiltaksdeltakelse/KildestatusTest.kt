@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * Paritetstester mot dagens oppførsel.
@@ -18,12 +19,13 @@ internal class KildestatusTest {
     private val idag = LocalDate.of(2026, 7, 30)
     private val igår = idag.minusDays(1)
     private val imorgen = idag.plusDays(1)
+    private val statusOpprettet = LocalDateTime.of(2026, 7, 29, 12, 0)
 
     private fun Arenastatus.Type.status(fraOgMed: LocalDate? = igår) =
         Arenastatus(this).deltakerstatus(fraOgMed = fraOgMed, påDato = idag)
 
     private fun Kometstatus.Type.status(fraOgMed: LocalDate? = igår) =
-        Kometstatus(type = this, årsak = null).deltakerstatus(fraOgMed = fraOgMed, påDato = idag)
+        Kometstatus(type = this, årsak = null, opprettet = statusOpprettet).deltakerstatus(fraOgMed = fraOgMed, påDato = idag)
 
     private fun TeamTiltakstatus.Type.status(fraOgMed: LocalDate? = igår) =
         TeamTiltakstatus(this).deltakerstatus(fraOgMed = fraOgMed, påDato = idag)
@@ -31,7 +33,7 @@ internal class KildestatusTest {
     @Test
     fun `kilden utledes fra statusen`() {
         Arenastatus(Arenastatus.Type.GJENNOMFORES).kilde shouldBe Tiltakskilde.Arena
-        Kometstatus(Kometstatus.Type.DELTAR, årsak = null).kilde shouldBe Tiltakskilde.Komet
+        Kometstatus(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet).kilde shouldBe Tiltakskilde.Komet
         TeamTiltakstatus(TeamTiltakstatus.Type.GJENNOMFORES).kilde shouldBe Tiltakskilde.TeamTiltak
     }
 
@@ -192,7 +194,7 @@ internal class KildestatusTest {
      */
     @Test
     fun `komet - kodeHosKilden er identisk med enum-navnet`() {
-        Kometstatus.Type.entries.all { Kometstatus(it, årsak = null).kodeHosKilden == it.name } shouldBe true
+        Kometstatus.Type.entries.all { Kometstatus(it, årsak = null, opprettet = statusOpprettet).kodeHosKilden == it.name } shouldBe true
     }
 
     /**
@@ -228,7 +230,7 @@ internal class KildestatusTest {
      */
     @Test
     fun `komet - årsaken bæres, men endrer ikke utledningen ennå`() {
-        val medÅrsak = Kometstatus(type = Kometstatus.Type.HAR_SLUTTET, årsak = Kometstatus.Årsak.IKKE_MOTT)
+        val medÅrsak = Kometstatus(type = Kometstatus.Type.HAR_SLUTTET, årsak = Kometstatus.Årsak.IKKE_MOTT, opprettet = statusOpprettet)
 
         medÅrsak.årsak shouldBe Kometstatus.Årsak.IKKE_MOTT
         medÅrsak.deltakerstatus(fraOgMed = igår, påDato = idag) shouldBe Deltakerstatus.DeltarEllerHarDeltatt

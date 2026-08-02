@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * Deltakerstatus fra Komet (Deltakeroversikten).
@@ -10,7 +11,7 @@ import java.time.LocalDate
  * Grupperinger og statustekster: https://github.com/navikt/amt-deltakelser/blob/main/amt-deltaker/src/main/kotlin/no/nav/amt/deltaker/extensions/DeltakerStatusExtensions.kt
  * Jobben som flytter status på dato: https://github.com/navikt/amt-deltakelser/blob/main/amt-deltaker/src/main/kotlin/no/nav/amt/deltaker/job/DeltakerProgresjonHandler.kt
  *
- * Komet er den eneste kilden som oppgir en **årsak** sammen med statusen, og derfor den eneste der [Kildestatus] bærer mer enn en kode.
+ * Komet er den eneste kilden som oppgir en **årsak** og et **tidspunkt** sammen med statusen, og derfor den eneste der [Kildestatus] bærer mer enn en kode.
  * Årsaken er ofte det saksbehandler faktisk vil vite: at noen har sluttet sier lite, at de sluttet fordi de fikk jobb sier mye.
  *
  * Navnene er identiske hos kilden og i kontrakten, så [kodeHosKilden] er den samme som enum-navnet.
@@ -23,10 +24,16 @@ import java.time.LocalDate
  *
  * Statusene flyttes av en jobb hos kilden, som i tillegg lagrer framtidige statuser med gyldighetsvindu.
  * Den vi mottar er derfor et øyeblikksbilde, ikke en varig sannhet.
+ * [opprettet] sier når øyeblikksbildet ble tatt hos kilden.
  */
 data class Kometstatus(
     val type: Type,
     val årsak: Årsak?,
+    /**
+     * Når kilden satte statusen — kildens eget tidspunkt, ikke når vi hentet.
+     * Kontrakten kaller feltet `opprettetDato` og har varslet omdøping til `opprettetTidspunkt`.
+     */
+    val opprettet: LocalDateTime,
 ) : Kildestatus {
     override val kilde: Tiltakskilde get() = Tiltakskilde.Komet
 

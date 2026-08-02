@@ -7,9 +7,19 @@ import java.nio.file.Path
 import kotlin.streams.asSequence
 
 /**
+ * Kataloger som inneholder en annen utsjekk av repoet, typisk et git-arbeidstre lagt under repo-rota (`.worktrees/<gren>/`).
+ * Filene der tilhører en annen gren, og skal aldri påvirke reglene i arbeidskopien de tilfeldigvis ligger inni.
+ * Begge skrivemåtene er med fordi repoenes `.gitignore` allerede ignorerer begge.
+ *
+ * Uten dette henter `Konsist.scopeFromProject()` inn arbeidstreets kildesett som om det var en egen modul.
+ * En regel som ble skjerpet på hovedgrenen feiler da lokalt på et arbeidstre som ennå ikke er rebaset, mens CI er grønn — og hovedtreet er blokkert av kode det ikke eier.
+ */
+val ekskluderteUtsjekker = setOf(".worktrees", ".worktree")
+
+/**
  * Kataloger som aldri inneholder kildekode eller konfigurasjon vi eier, og som de filbaserte reglene alltid hopper over.
  */
-val standardEkskluderteKataloger = setOf("build", ".gradle", ".git", ".idea", "node_modules")
+val standardEkskluderteKataloger = setOf("build", ".gradle", ".git", ".idea", "node_modules") + ekskluderteUtsjekker
 
 /**
  * Filene under rota som [predikat] godtar, minus alt under [ekskluderteKataloger].
@@ -24,12 +34,16 @@ internal fun Path.filerUnder(ekskluderteKataloger: Set<String>, predikat: (Path)
         .filterNot { path -> relativize(path).any { segment -> segment.toString() in ekskluderteKataloger } }
 
 /**
- * Kildefilene i scopet, uten `.kt`-filer som ligger under resources.
+ * Kildefilene i scopet, uten `.kt`-filer som ligger under resources, og uten filer som tilhører en annen utsjekk ([ekskluderteUtsjekker]).
  * Konsist tar med `.kt`-filer under `src/<sourceSet>/resources` i prosjekt-scopene, men slike filer er data (f.eks. testfixturene til reglene i denne modulen), ikke kildekode.
- * Alle reglene i modulen går via denne, slik at fixtures og annen ressurs-data aldri gir brudd.
+ * Alle reglene i modulen går via denne, så filtreringen gjelder uansett hvilket scope kalleren sender inn.
+ *
+ * Merk at `build` bevisst ikke filtreres her: Konsist-scopene inneholder ikke byggutdata, og testfixturene i denne modulen leses nettopp fra `build/resources/test`.
  */
 fun KoScope.kildefiler(): List<KoFileDeclaration> = files.filterNot { file ->
-    "/src/test/resources/" in file.path || "/src/main/resources/" in file.path
+    "/src/test/resources/" in file.path ||
+        "/src/main/resources/" in file.path ||
+        ekskluderteUtsjekker.any { katalog -> "/$katalog/" in file.path }
 }
 
 /**

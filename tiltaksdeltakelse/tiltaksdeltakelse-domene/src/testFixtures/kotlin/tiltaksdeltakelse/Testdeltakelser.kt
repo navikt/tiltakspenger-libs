@@ -5,17 +5,17 @@ import no.nav.tiltakspenger.libs.common.Virksomhetsnavn
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-internal val testStatusOpprettet: LocalDateTime = LocalDateTime.of(2026, 2, 27, 12, 0)
+val testStatusOpprettet: LocalDateTime = LocalDateTime.of(2026, 2, 27, 12, 0)
 
-internal val testStart: LocalDate = LocalDate.of(2026, 3, 2)
+val testStart: LocalDate = LocalDate.of(2026, 3, 2)
 
-internal val testSlutt: LocalDate = LocalDate.of(2026, 6, 30)
+val testSlutt: LocalDate = LocalDate.of(2026, 6, 30)
 
 /**
- * Bygger en deltakelse gjennom fabrikken, med alle felt fylt eksplisitt.
- * Varianten følger av inputen, akkurat som i produksjon.
+ * Bygger en deltakelse gjennom fabrikken, med alle felt fylt eksplisitt — varianten følger av inputen, akkurat som i produksjon.
+ * Til tester i modulen, i konsumentene og i skyggekjøringen: bygg gjennom denne i stedet for å kopiere konstruktørkall, så følger testene med når typen endres.
  */
-internal fun testdeltakelse(
+fun testdeltakelse(
     id: String = "TA1234567",
     kildestatus: Kildestatus = Kometstatus.Kjent(Kometstatus.Type.DELTAR, årsak = null, opprettet = testStatusOpprettet),
     tiltakstype: Tiltakstype = Tiltakstype.SomGirRett(tiltakskodeFraKilden = "INDOPPFAG", tiltakstype = TiltakstypeSomGirRett.OPPFØLGING),

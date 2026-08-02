@@ -3,6 +3,8 @@ import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 plugins {
     id("tiltakspenger-lib-conventions")
     alias(libs.plugins.kover)
+    // Byggerne publiseres som testFixtures-variant slik at konsumentene og skyggekjøringen bygger deltakelser gjennom fabrikken, ikke egne kopier.
+    `java-test-fixtures`
 }
 
 dependencies {
@@ -13,6 +15,7 @@ dependencies {
     api(project(":periodisering"))
 
     testImplementation(project(":test-common"))
+    testImplementation(testFixtures(project(":tiltaksdeltakelse:tiltaksdeltakelse-domene")))
 }
 
 kover {

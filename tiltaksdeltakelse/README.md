@@ -10,7 +10,7 @@ Se [navikt/tiltakspenger#41](https://github.com/navikt/tiltakspenger/issues/41).
 | Modul | Innhold |
 |---|---|
 | `tiltaksdeltakelse-domene` | Domenemodellen. Ingen eksterne avhengigheter |
-| `tiltaksdeltakelse-infrastruktur` | Klienter og mapping mot kildene. Ikke tatt i bruk ennå |
+| `tiltaksdeltakelse-infrastruktur` | Kontraktskopien av `tiltakshistorikk`, kodetabellene og mappingen til domenet. Klientene og hente-tjenesten er under utbygging, og ingen konsument bruker modulen ennå |
 
 ## Hva modulen modellerer
 
@@ -26,6 +26,10 @@ Normaliseringen mellom dem er en faglig vurdering, ikke en teknisk oversettelse,
 
 **Samlingen.** `Tiltaksdeltakelser` er wrapperen rundt alt vi mottok for en person, med narrowing (`girRett`, `ugyldige`, `medUkjentKildestatus`), overlappsvar som `Overlapp { Ja, Nei, Kanskje }`, og uttrekket `somKildenTilsierManKanSøkePå(påDato)` — en egen type som bærer datoen utvalget gjaldt.
 `UkjentKildeverdi` samler alt kilden sa som vi ikke kjenner igjen — med `hva` («deltakerstatus fra Arena», «årsak fra Komet», …) og `kodeIKontrakten` — slik at varsling og visning slipper å kjenne hver akse.
+
+**Hentingen.** `Tiltakshistorikk` er resultatet av én henting: deltakelsene, kompletthet (`Tiltakshistorikkmeldinger` med `manglendeKilder`, og `UkjenteDeltakelsesformer` for kontraktsvarianter vi ikke har), og `hentetTidspunkt` ytterst.
+Kompletthet bor på hentingen og ikke på `Tiltaksdeltakelser`, fordi samletypen også kan bygges fra lagrede rader — en tom meldingsliste der ville påstått et komplett svar den ikke kan garantere.
+`ukjenteKildeverdier` på hentingen samler alt som ikke lot seg tolke, på tvers av deltakelser, meldinger og deltakelsesformer.
 
 **Søknadsreglene er delt og forklarbare.**
 `Søkbarhet` svarer om en deltakelse kan søkes på, med begrunnelse til visning — søknaden velger ut med dem, og saksbehandling-api viser dem, for eksempel ved manuell registrering.

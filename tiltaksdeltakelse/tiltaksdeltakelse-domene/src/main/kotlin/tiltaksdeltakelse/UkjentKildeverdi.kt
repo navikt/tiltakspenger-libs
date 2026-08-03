@@ -7,7 +7,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
  * Flaten samler dem: [hva] sier hvilken verdi det gjelder, [kodeIKontrakten] bærer det som faktisk sto på wiren.
  * Samme mønster som `Personopplysning.begrunnelse` i `common`: teksten er statisk per type, og skal kunne leses av andre enn utviklere.
  *
- * Implementeres av [Kildestatus.Ukjent]-variantene, [Kometårsak.Ukjent], [Tiltakshistorikkmelding.Ukjent] og [Tiltakstype.Ukjent].
+ * Implementeres av [Kildestatus.Ukjent]-variantene, [Kometårsak.Ukjent], [Tiltakshistorikkmelding.Ukjent], [Tiltakstype.Ukjent] og [UkjentDeltakelsesform].
  * Se [ukjenteKildeverdier] for alt som er ukjent ved én deltakelse.
  */
 sealed interface UkjentKildeverdi {

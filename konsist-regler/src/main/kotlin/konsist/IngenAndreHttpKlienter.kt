@@ -58,14 +58,14 @@ object IngenAndreHttpKlienter {
     private val urlConnection = listOf("java.net.HttpURLConnection", "java.net.URLConnection")
 
     /** Alt som er forbudt i produksjonskode: hele ktor-klienten, hele JDK-klienten og alle tredjepartsklientene. */
-    private val forbudtIProduksjonskode =
+    val standardForbudtIProduksjonskode =
         tredjepartsklienter + ktorKlientmotorer + urlConnection + listOf("io.ktor.client.", "java.net.http.")
 
     /**
      * Alt som er forbudt i testkode.
      * `java.net.http.HttpClient` er selve klienten og forbudt, mens `HttpRequest`/`HttpResponse` er kontraktstypene `HttpTransport` og `FakeHttpTransport` eksponerer og derfor tillatt.
      */
-    private val forbudtITestkode =
+    val standardForbudtITestkode =
         tredjepartsklienter + ktorKlientmotorer + urlConnection + listOf("java.net.http.HttpClient")
 
     /**
@@ -75,7 +75,7 @@ object IngenAndreHttpKlienter {
      * Ktor-artefaktene er listet enkeltvis, ikke som prefikset `io.ktor:ktor-client`.
      * Motorene og kjernen skal aldri deklareres, mens plugin-artefakter som `ktor-client-content-negotiation` er legitime i testscope: de konfigurerer `testApplication`-klienten, som ikke er en nettverksklient.
      */
-    private val forbudteKoordinater = listOf(
+    val standardForbudteKoordinater = listOf(
         "io.ktor:ktor-client-core",
         "io.ktor:ktor-client-cio",
         "io.ktor:ktor-client-apache",
@@ -101,11 +101,17 @@ object IngenAndreHttpKlienter {
         "libs.unirest",
     )
 
-    fun klienterIProduksjonskode(scope: KoScope, unntatteFilstier: Set<String> = emptySet()): List<String> =
-        kildekodebrudd(scope, forbudtIProduksjonskode, unntatteFilstier)
+    fun klienterIProduksjonskode(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudtePrefikser: List<String> = emptyList(),
+    ): List<String> = kildekodebrudd(scope, standardForbudtIProduksjonskode + ekstraForbudtePrefikser, unntatteFilstier)
 
-    fun klienterITestkode(scope: KoScope, unntatteFilstier: Set<String> = emptySet()): List<String> =
-        kildekodebrudd(scope, forbudtITestkode, unntatteFilstier)
+    fun klienterITestkode(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudtePrefikser: List<String> = emptyList(),
+    ): List<String> = kildekodebrudd(scope, standardForbudtITestkode + ekstraForbudtePrefikser, unntatteFilstier)
 
     /**
      * Byggfilene under [rot] (`build.gradle.kts` og `gradle/libs.versions.toml`) som deklarerer en forbudt klientavhengighet.
@@ -115,7 +121,11 @@ object IngenAndreHttpKlienter {
      *
      * Begrensning: koordinaten må stå på samme linje som konfigurasjonsnavnet, altså `implementation("gruppe:artefakt:versjon")`, som er formen hele flåten bruker.
      */
-    fun klientavhengigheter(rot: Path, unntatteFilstier: Set<String> = emptySet()): List<String> =
+    fun klientavhengigheter(
+        rot: Path,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudteKoordinater: List<String> = emptyList(),
+    ): List<String> =
         rot
             .filerUnder(standardEkskluderteKataloger) { path -> path.name == "build.gradle.kts" || path.name == "libs.versions.toml" }
             .filterNot { fil ->
@@ -128,25 +138,37 @@ object IngenAndreHttpKlienter {
                     if (trimmet.startsWith("//") || trimmet.startsWith("#") || "exclude(" in trimmet || !deklarasjonsRegex.containsMatchIn(trimmet)) {
                         null
                     } else {
-                        forbudteKoordinater
+                        (standardForbudteKoordinater + ekstraForbudteKoordinater)
                             .firstOrNull { koordinat -> koordinat in trimmet }
                             ?.let { koordinat -> "${rot.relativize(fil)}:${index + 1}: $koordinat" }
                     }
                 }
             }.toList()
 
-    fun assertIngenKlienterIProduksjonskode(scope: KoScope, unntatteFilstier: Set<String> = emptySet()) = assertIngenBrudd(
-        klienterIProduksjonskode(scope, unntatteFilstier),
+    fun assertIngenKlienterIProduksjonskode(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudtePrefikser: List<String> = emptyList(),
+    ) = assertIngenBrudd(
+        klienterIProduksjonskode(scope, unntatteFilstier, ekstraForbudtePrefikser),
         "HTTP-kall går via libs sin httpklient. Følgende importer av andre HTTP-klienter er ikke tillatt.",
     )
 
-    fun assertIngenKlienterITestkode(scope: KoScope, unntatteFilstier: Set<String> = emptySet()) = assertIngenBrudd(
-        klienterITestkode(scope, unntatteFilstier),
+    fun assertIngenKlienterITestkode(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudtePrefikser: List<String> = emptyList(),
+    ) = assertIngenBrudd(
+        klienterITestkode(scope, unntatteFilstier, ekstraForbudtePrefikser),
         "Testkode driver test-serveren med ktor sin testApplication-klient og eksterne kall med FakeHttpTransport. Følgende klientmotorer og klientbiblioteker er ikke tillatt.",
     )
 
-    fun assertIngenKlientavhengigheter(rot: Path, unntatteFilstier: Set<String> = emptySet()) = assertIngenBrudd(
-        klientavhengigheter(rot, unntatteFilstier),
+    fun assertIngenKlientavhengigheter(
+        rot: Path,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudteKoordinater: List<String> = emptyList(),
+    ) = assertIngenBrudd(
+        klientavhengigheter(rot, unntatteFilstier, ekstraForbudteKoordinater),
         "Byggfilene skal ikke deklarere andre HTTP-klienter enn libs sin httpklient.",
     )
 

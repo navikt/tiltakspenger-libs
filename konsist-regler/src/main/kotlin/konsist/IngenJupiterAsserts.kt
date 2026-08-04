@@ -10,18 +10,23 @@ import com.lemonappdev.konsist.api.container.KoScope
  */
 object IngenJupiterAsserts {
 
-    fun brudd(scope: KoScope): List<String> = scope.kildefiler().flatMap { file ->
-        file.imports
-            .filter { import ->
-                import.name == "org.junit.jupiter.api.Assertions" ||
-                    import.name.startsWith("org.junit.jupiter.api.Assertions.") ||
-                    import.name.startsWith("org.junit.jupiter.api.assert")
-            }
-            .map { import -> "${file.path}: ${import.name}" }
+    /**
+     * Importprefiksene som er Jupiter-assertions.
+     * `...api.Assertions` dekker både klassen selv og statiske importer fra den, og `...api.assert` dekker toppnivåfunksjonene (`assertThrows`, `assertAll`).
+     */
+    val standardForbudtePrefikser = setOf("org.junit.jupiter.api.Assertions", "org.junit.jupiter.api.assert")
+
+    fun brudd(scope: KoScope, ekstraForbudtePrefikser: Set<String> = emptySet()): List<String> {
+        val forbudte = standardForbudtePrefikser + ekstraForbudtePrefikser
+        return scope.kildefiler().flatMap { file ->
+            file.imports
+                .filter { import -> forbudte.any { prefiks -> import.name.startsWith(prefiks) } }
+                .map { import -> "${file.path}: ${import.name}" }
+        }
     }
 
-    fun assert(scope: KoScope) = assertIngenBrudd(
-        brudd(scope),
+    fun assert(scope: KoScope, ekstraForbudtePrefikser: Set<String> = emptySet()) = assertIngenBrudd(
+        brudd(scope, ekstraForbudtePrefikser),
         "Bruk Kotest assertions (io.kotest.matchers.* / io.kotest.assertions.*). Følgende Jupiter Assertions-importer er ikke tillatt.",
     )
 }

@@ -14,29 +14,44 @@ import com.lemonappdev.konsist.api.container.KoScope
  */
 object IngenGlobalMocking {
 
-    fun brudd(scope: KoScope, unntatteFilstier: Set<String> = emptySet()): List<String> = scope
-        .kildefiler()
-        .filterNot { file -> unntatteFilstier.any { sti -> file.path.endsWith(sti) } }
-        .flatMap { file ->
-            val importbrudd = file.imports
-                .filter { import -> import.name.startsWith("io.mockk.") && import.name.removePrefix("io.mockk.") in globaleMockkFunksjoner }
-                .map { import -> "${file.path}: ${import.name}" }
-            val kallbrudd = file
-                .kodelinjer()
-                .filterNot { (_, kode) -> kode.trimStart().startsWith("import ") }
-                .mapNotNull { (linjenummer, kode) ->
-                    kallRegex.find(kode)?.let { match -> "${file.path}:$linjenummer: ${match.groupValues[1]}" }
-                }
-            importbrudd + kallbrudd
-        }
+    fun brudd(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudteFunksjoner: Set<String> = emptySet(),
+    ): List<String> {
+        val forbudteFunksjoner = standardGlobaleMockkFunksjoner + ekstraForbudteFunksjoner
+        val kallRegex = kallRegex(forbudteFunksjoner)
+        return scope
+            .kildefiler()
+            .filterNot { file -> unntatteFilstier.any { sti -> file.path.endsWith(sti) } }
+            .flatMap { file ->
+                val importbrudd = file.imports
+                    .filter { import -> import.name.startsWith("io.mockk.") && import.name.removePrefix("io.mockk.") in forbudteFunksjoner }
+                    .map { import -> "${file.path}: ${import.name}" }
+                val kallbrudd = file
+                    .kodelinjer()
+                    .filterNot { (_, kode) -> kode.trimStart().startsWith("import ") }
+                    .mapNotNull { (linjenummer, kode) ->
+                        kallRegex.find(kode)?.let { match -> "${file.path}:$linjenummer: ${match.groupValues[1]}" }
+                    }
+                importbrudd + kallbrudd
+            }
+    }
 
-    fun assert(scope: KoScope, unntatteFilstier: Set<String> = emptySet()) = assertIngenBrudd(
-        brudd(scope, unntatteFilstier),
+    fun assert(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudteFunksjoner: Set<String> = emptySet(),
+    ) = assertIngenBrudd(
+        brudd(scope, unntatteFilstier, ekstraForbudteFunksjoner),
         "Ingen global mocking i tester — mockkStatic/mockkObject/mockkConstructor muterer JVM-tilstand som lekker mellom parallelle tester. Bruk mockk/spyk per test, eller helst en fake.",
     )
 
-    /** Funksjonene i mockk som muterer global JVM-tilstand, inkludert oppryddingsvariantene. */
-    private val globaleMockkFunksjoner = setOf(
+    /**
+     * Funksjonene i mockk som muterer global JVM-tilstand, inkludert oppryddingsvariantene.
+     * Et repo med en egen hjelper som gjør det samme legger navnet til med `ekstraForbudteFunksjoner`.
+     */
+    val standardGlobaleMockkFunksjoner = setOf(
         "mockkStatic",
         "mockkObject",
         "mockkConstructor",
@@ -49,5 +64,7 @@ object IngenGlobalMocking {
         "clearConstructorMockk",
     )
 
-    private val kallRegex = Regex("""\b(${globaleMockkFunksjoner.joinToString("|")})\s*\(""")
+    /** Regexen bygges av funksjonssettet, slik at et tillegg fra kalleren fanges både som import og som kall. */
+    private fun kallRegex(funksjoner: Set<String>) =
+        Regex("""\b(${funksjoner.joinToString("|") { funksjon -> Regex.escape(funksjon) }})\s*\(""")
 }

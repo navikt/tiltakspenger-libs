@@ -14,18 +14,35 @@ import com.lemonappdev.konsist.api.container.KoScope
  */
 object IngenNowUtenClock {
 
-    fun brudd(scope: KoScope): List<String> = scope.kildefiler().flatMap { file ->
-        file.kodelinjer().mapNotNull { (linjenummer, kode) ->
-            nowUtenClockRegex.find(kode)?.let { match -> "${file.path}:$linjenummer: ${match.value}" }
+    fun brudd(scope: KoScope, ekstraTyper: Set<String> = emptySet()): List<String> {
+        val regex = nowUtenClockRegex(standardTyper + ekstraTyper)
+        return scope.kildefiler().flatMap { file ->
+            file.kodelinjer().mapNotNull { (linjenummer, kode) ->
+                regex.find(kode)?.let { match -> "${file.path}:$linjenummer: ${match.value}" }
+            }
         }
     }
 
-    fun assert(scope: KoScope) = assertIngenBrudd(
-        brudd(scope),
+    fun assert(scope: KoScope, ekstraTyper: Set<String> = emptySet()) = assertIngenBrudd(
+        brudd(scope, ekstraTyper),
         "Hent aldri nåtid uten Clock — bruk now(clock) eller nå(clock) fra libs-common (se «Clock og tid» i AGENTS-backend.md).",
     )
 
-    /** No-arg `now()` på java.time-typene. */
-    private val nowUtenClockRegex =
-        Regex("""\b(Instant|LocalDate|LocalDateTime|LocalTime|OffsetDateTime|OffsetTime|ZonedDateTime|YearMonth|Year|MonthDay)\.now\(\)""")
+    /** Typene i java.time som har en no-arg `now()`; et repo med en egen tidstype som følger samme mønster legger navnet til. */
+    val standardTyper = setOf(
+        "Instant",
+        "LocalDate",
+        "LocalDateTime",
+        "LocalTime",
+        "OffsetDateTime",
+        "OffsetTime",
+        "ZonedDateTime",
+        "YearMonth",
+        "Year",
+        "MonthDay",
+    )
+
+    /** No-arg `now()` på typene i settet. */
+    private fun nowUtenClockRegex(typer: Set<String>) =
+        Regex("""\b(${typer.joinToString("|") { type -> Regex.escape(type) }})\.now\(\)""")
 }

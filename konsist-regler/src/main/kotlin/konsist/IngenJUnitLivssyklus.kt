@@ -15,30 +15,42 @@ import com.lemonappdev.konsist.api.container.KoScope
  */
 object IngenJUnitLivssyklus {
 
-    fun brudd(scope: KoScope, unntatteFilstier: Set<String> = emptySet()): List<String> = scope
-        .kildefiler()
-        .filterNot { file -> unntatteFilstier.any { sti -> file.path.endsWith(sti) } }
-        .flatMap { file ->
-            val importbrudd = file.imports
-                .filter { import -> import.name in livssyklusAnnotasjoner }
-                .map { import -> "${file.path}: ${import.name}" }
-            val tekstbrudd = file
-                .kodelinjer()
-                .filterNot { (_, kode) -> kode.trimStart().startsWith("import ") }
-                .mapNotNull { (linjenummer, kode) ->
-                    livssyklusAnnotasjoner
-                        .firstOrNull { annotasjon -> annotasjon in kode }
-                        ?.let { annotasjon -> "${file.path}:$linjenummer: $annotasjon" }
-                }
-            importbrudd + tekstbrudd
-        }
+    fun brudd(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraLivssyklusAnnotasjoner: Set<String> = emptySet(),
+    ): List<String> {
+        val livssyklusAnnotasjoner = standardLivssyklusAnnotasjoner + ekstraLivssyklusAnnotasjoner
+        return scope
+            .kildefiler()
+            .filterNot { file -> unntatteFilstier.any { sti -> file.path.endsWith(sti) } }
+            .flatMap { file ->
+                val importbrudd = file.imports
+                    .filter { import -> import.name in livssyklusAnnotasjoner }
+                    .map { import -> "${file.path}: ${import.name}" }
+                val tekstbrudd = file
+                    .kodelinjer()
+                    .filterNot { (_, kode) -> kode.trimStart().startsWith("import ") }
+                    .mapNotNull { (linjenummer, kode) ->
+                        livssyklusAnnotasjoner
+                            .firstOrNull { annotasjon -> annotasjon in kode }
+                            ?.let { annotasjon -> "${file.path}:$linjenummer: $annotasjon" }
+                    }
+                importbrudd + tekstbrudd
+            }
+    }
 
-    fun assert(scope: KoScope, unntatteFilstier: Set<String> = emptySet()) = assertIngenBrudd(
-        brudd(scope, unntatteFilstier),
+    fun assert(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraLivssyklusAnnotasjoner: Set<String> = emptySet(),
+    ) = assertIngenBrudd(
+        brudd(scope, unntatteFilstier, ekstraLivssyklusAnnotasjoner),
         "Ingen JUnit-livssyklus i tester — @BeforeEach/@BeforeAll administrerer delt tilstand som blir en race under parallellkjøring, og @TestInstance skal settes globalt i junit-platform.properties, ikke per klasse. Bygg konteksten inne i hver test.",
     )
 
-    private val livssyklusAnnotasjoner = setOf(
+    /** Livssyklus-annotasjonene i JUnit; et repo med en egen livssyklus-annotasjon legger det fullkvalifiserte navnet til. */
+    val standardLivssyklusAnnotasjoner = setOf(
         "org.junit.jupiter.api.BeforeEach",
         "org.junit.jupiter.api.AfterEach",
         "org.junit.jupiter.api.BeforeAll",

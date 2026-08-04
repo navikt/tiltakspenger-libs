@@ -12,8 +12,8 @@ import com.lemonappdev.konsist.api.container.KoScope
  * Regelen krever derfor at en `data class` som markerer seg deklarerer sin egen `toString()`.
  * Den sjekker ikke hva implementasjonen gjør — at en deklarert `toString()` faktisk maskerer er kodegjennomgangens jobb.
  *
- * [markører] er navnene som regnes som markering, og dekker både rot-interfacet og kategoriene under det.
- * Regelen ser gjennom hele arvekjeden (`parents(indirectParents = true)`), så en klasse markert via en ny kategori under hierarkiet fanges uten at [markører] må utvides.
+ * [standardMarkører] er navnene som regnes som markering, og dekker både rot-interfacet og kategoriene under det.
+ * Regelen ser gjennom hele arvekjeden (`parents(indirectParents = true)`), så en klasse markert via en ny kategori under hierarkiet fanges uten at settet må utvides — `ekstraMarkører` trengs først når et repo innfører en markør som ikke arver fra rot-interfacet.
  * Kalleren sender typisk `scopeFromProduction()`.
  */
 object PersonopplysningMaskererToString {
@@ -23,22 +23,25 @@ object PersonopplysningMaskererToString {
 
     fun brudd(
         scope: KoScope,
-        markører: Set<String> = standardMarkører,
-    ): List<String> = scope
-        .kildefiler()
-        .asSequence()
-        .flatMap { file -> file.classes(includeNested = true) }
-        .filter { klasse -> klasse.hasDataModifier }
-        .filter { klasse -> klasse.parents(indirectParents = true).any { parent -> parent.name in markører } }
-        .filterNot { klasse -> klasse.functions().any { funksjon -> funksjon.name == "toString" } }
-        .map { klasse -> "${klasse.containingFile.path}: ${klasse.name}" }
-        .toList()
+        ekstraMarkører: Set<String> = emptySet(),
+    ): List<String> {
+        val markører = standardMarkører + ekstraMarkører
+        return scope
+            .kildefiler()
+            .asSequence()
+            .flatMap { file -> file.classes(includeNested = true) }
+            .filter { klasse -> klasse.hasDataModifier }
+            .filter { klasse -> klasse.parents(indirectParents = true).any { parent -> parent.name in markører } }
+            .filterNot { klasse -> klasse.functions().any { funksjon -> funksjon.name == "toString" } }
+            .map { klasse -> "${klasse.containingFile.path}: ${klasse.name}" }
+            .toList()
+    }
 
     fun assert(
         scope: KoScope,
-        markører: Set<String> = standardMarkører,
+        ekstraMarkører: Set<String> = emptySet(),
     ) = assertIngenBrudd(
-        brudd(scope, markører),
+        brudd(scope, ekstraMarkører),
         "En data class som markerer seg som personopplysning må deklarere sin egen toString() — den genererte skriver ut verdien i klartekst.",
     )
 }

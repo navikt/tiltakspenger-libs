@@ -19,30 +19,41 @@ import com.lemonappdev.konsist.api.declaration.KoPropertyDeclaration
  */
 object IngenMuterbareTestfelter {
 
-    fun brudd(scope: KoScope, unntatteFilstier: Set<String> = emptySet()): List<String> = scope
-        .kildefiler()
-        .filterNot { file -> unntatteFilstier.any { sti -> file.path.endsWith(sti) } }
-        .flatMap { file -> file.toppnivåbrudd() + file.testklassebrudd() }
+    fun brudd(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraMuterbareInitialisatorer: Set<String> = emptySet(),
+    ): List<String> {
+        val regex = muterbarInitialisatorRegex(standardMuterbareInitialisatorer + ekstraMuterbareInitialisatorer)
+        return scope
+            .kildefiler()
+            .filterNot { file -> unntatteFilstier.any { sti -> file.path.endsWith(sti) } }
+            .flatMap { file -> file.toppnivåbrudd(regex) + file.testklassebrudd(regex) }
+    }
 
-    fun assert(scope: KoScope, unntatteFilstier: Set<String> = emptySet()) = assertIngenBrudd(
-        brudd(scope, unntatteFilstier),
+    fun assert(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraMuterbareInitialisatorer: Set<String> = emptySet(),
+    ) = assertIngenBrudd(
+        brudd(scope, unntatteFilstier, ekstraMuterbareInitialisatorer),
         "Ingen muterbar tilstand i testklassers felter — med per_class-livssyklus og parallelle testmetoder er feltet en race. Bygg tilstanden inne i hver test.",
     )
 
-    private fun KoFileDeclaration.toppnivåbrudd(): List<String> =
-        properties(includeNested = false).mapNotNull { property -> property.somBrudd() }
+    private fun KoFileDeclaration.toppnivåbrudd(regex: Regex): List<String> =
+        properties(includeNested = false).mapNotNull { property -> property.somBrudd(regex) }
 
-    private fun KoFileDeclaration.testklassebrudd(): List<String> =
+    private fun KoFileDeclaration.testklassebrudd(regex: Regex): List<String> =
         classes(includeNested = true)
             .filter { klasse -> klasse.erTestklasse() }
-            .flatMap { klasse -> klasse.properties(includeNested = false).mapNotNull { property -> property.somBrudd() } }
+            .flatMap { klasse -> klasse.properties(includeNested = false).mapNotNull { property -> property.somBrudd(regex) } }
 
     private fun KoClassDeclaration.erTestklasse(): Boolean =
         functions().any { funksjon -> funksjon.annotations.any { annotasjon -> annotasjon.name in testannotasjoner } }
 
-    private fun KoPropertyDeclaration.somBrudd(): String? = when {
+    private fun KoPropertyDeclaration.somBrudd(regex: Regex): String? = when {
         isVar -> "$location: feltet $name er var og deler tilstand mellom tester"
-        muterbarInitialisatorRegex.containsMatchIn(text) -> "$location: feltet $name initialiseres med muterbar tilstand som deles mellom tester"
+        regex.containsMatchIn(text) -> "$location: feltet $name initialiseres med muterbar tilstand som deles mellom tester"
         else -> null
     }
 
@@ -51,7 +62,23 @@ object IngenMuterbareTestfelter {
     /**
      * Initialisatorer som beviselig gir muterbar tilstand: mocks (som muteres av verify-/answers-oppsett og kall-opptak), muterbare collections og atomics.
      * Lista er bevisst kort og presis framfor komplett — heller et akseptert hull enn falske positiver på immutable verdiobjekter.
+     * Et repo med en egen muterbar testtype (en kø, en teller, en fake med opptak) legger navnet til med `ekstraMuterbareInitialisatorer`.
      */
-    private val muterbarInitialisatorRegex =
-        Regex("""=\s*(mockk|spyk|mutableListOf|mutableMapOf|mutableSetOf|ArrayDeque|LinkedList|AtomicBoolean|AtomicInteger|AtomicLong|AtomicReference)\s*[<(]""")
+    val standardMuterbareInitialisatorer = setOf(
+        "mockk",
+        "spyk",
+        "mutableListOf",
+        "mutableMapOf",
+        "mutableSetOf",
+        "ArrayDeque",
+        "LinkedList",
+        "AtomicBoolean",
+        "AtomicInteger",
+        "AtomicLong",
+        "AtomicReference",
+    )
+
+    /** Regexen bygges av navnesettet: `= <navn>(` eller `= <navn><`, slik at et tillegg fra kalleren treffer på lik linje. */
+    private fun muterbarInitialisatorRegex(initialisatorer: Set<String>) =
+        Regex("""=\s*(${initialisatorer.joinToString("|") { navn -> Regex.escape(navn) }})\s*[<(]""")
 }

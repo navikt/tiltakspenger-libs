@@ -8,11 +8,13 @@ import java.nio.file.Path
  * Kjører de delte reglene på hele tiltakspenger-libs.
  * Konsist `scopeFromProject()`/`scopeFromTest()` skanner alle moduler, så disse testene dekker hele repoet.
  *
- * Fire av reglene kjøres bevisst ikke her.
+ * Seks av reglene kjøres bevisst ikke her.
  * [RouteBuilderKontrakt] gjelder ikke: libs har ingen route-test-buildere — ktor-test-common definerer hjelperne builderne bruker, ikke buildere.
  * [Testparallellitet] gjelder ikke: libs-modulene kjører ikke testene sine parallelt ennå.
  * [IsolertDatabasetestKonvensjon] gjelder ikke: ingen libs-tester bruker runIsolated — persistering-test-common definerer parameteren, konsumentene bruker den.
  * [IngenInternalModifier] gjelder motsatt vei: libs er det eneste repoet der `internal` faktisk avgrenser noe, siden modulene publiseres som artefakter.
+ * [JsonbSkriving] gjelder ikke: libs skriver ingen SQL i produksjonskode — `persistering` tilbyr sesjons- og transaksjonshåndteringen, mens spørringene bor i konsumentene.
+ * [DomenepakkeUtenInfrastruktur] gjelder ikke: libs skiller domene og infrastruktur i moduler, ikke i pakker under én domenepakke — [InfraImport] på `-domene/`-slicet er formen regelen tar her.
  */
 internal class LibsArkitekturKonsistTest {
     @Test
@@ -40,12 +42,20 @@ internal class LibsArkitekturKonsistTest {
         IngenNowUtenClock.assert(Konsist.scopeFromProject())
     }
 
+    /** Fila som definerer `nå(clock)` kaller `LocalDateTime.now(clock)` legitimt — den er hele poenget med hjelperen. */
+    private val unntattLocalDateTimeNow = setOf("common/src/main/kotlin/common/LocalDateTimeEx.kt")
+
     @Test
     fun `bruk nå fra libs-common, ikke LocalDateTime-now`() {
         IngenLocalDateTimeNow.assert(
             scope = Konsist.scopeFromProject(),
-            unntatteFilstier = setOf("common/src/main/kotlin/common/LocalDateTimeEx.kt"),
+            unntatteFilstier = unntattLocalDateTimeNow,
         )
+    }
+
+    @Test
+    fun `whitelisten for LocalDateTime-now inneholder ingen ryddede filer`() {
+        assertWhitelistenErRyddet(unntattLocalDateTimeNow, IngenLocalDateTimeNow.brudd(Konsist.scopeFromProject()))
     }
 
     /**
@@ -70,21 +80,28 @@ internal class LibsArkitekturKonsistTest {
         )
     }
 
+    /** De tre testene som med vilje kjører en ekte server over sokkel og trenger en klient utenfra: oppstartstestene i `ktor-common` og WireMock-hjelperen i `test-common`. */
+    private val unntatteHttpKlienttester = setOf(
+        "ktor-common/src/test/kotlin/ktor/common/oppstart/AppTest.kt",
+        "ktor-common/src/test/kotlin/ktor/common/oppstart/OppstartTest.kt",
+        "test-common/src/test/kotlin/common/WiremockExTest.kt",
+    )
+
     /**
      * Testkoden får bruke `testApplication`-klienten, men ikke lage ekte nettverksklienter.
-     * Unntakene er de tre testene som med vilje kjører en ekte server over sokkel og trenger en klient utenfra: oppstartstestene i `ktor-common` og WireMock-hjelperen i `test-common`.
      * `httpklient`-infrastrukturen er unntatt av samme grunn som over — den tester sin egen JDK-transport.
      */
     @Test
     fun `ingen ekte http-klienter i testkode`() {
         IngenAndreHttpKlienter.assertIngenKlienterITestkode(
-            Konsist.scopeFromTest().slice { file -> "httpklient/httpklient-infrastruktur/" !in file.path },
-            unntatteFilstier = setOf(
-                "ktor-common/src/test/kotlin/ktor/common/oppstart/AppTest.kt",
-                "ktor-common/src/test/kotlin/ktor/common/oppstart/OppstartTest.kt",
-                "test-common/src/test/kotlin/common/WiremockExTest.kt",
-            ),
+            httpKlientTestscope(),
+            unntatteFilstier = unntatteHttpKlienttester,
         )
+    }
+
+    @Test
+    fun `whitelisten for http-klienter i testkode inneholder ingen ryddede filer`() {
+        assertWhitelistenErRyddet(unntatteHttpKlienttester, IngenAndreHttpKlienter.klienterITestkode(httpKlientTestscope()))
     }
 
     @Test
@@ -118,20 +135,26 @@ internal class LibsArkitekturKonsistTest {
     }
 
     /**
-     * `httpklient-infrastruktur` er unntatt: modulens tester ER wire-format-laget — de verifiserer den ekte JDK-transporten mot en levende server, som er nettopp det WireMock finnes for.
      * `WiremockExTest` tester WireMock-hjelperne i test-common og er wire-format per definisjon.
      * Personklient-testene er migreringsgjeld: de kjører produksjonsklienten over WireMock i stedet for `FakeHttpTransport`, og står på whitelisten til noen migrerer dem.
      */
+    private val tillatteWireMockTester = setOf(
+        "test-common/src/test/kotlin/common/WiremockExTest.kt",
+        "personklient/personklient-infrastruktur/src/test/kotlin/personklient/pdl/FellesHttpPersonklientTest.kt",
+        "personklient/personklient-infrastruktur/src/test/kotlin/personklient/skjerming/FellesHttpSkjermingsklientTest.kt",
+    )
+
+    /**
+     * `httpklient-infrastruktur` er unntatt: modulens tester ER wire-format-laget — de verifiserer den ekte JDK-transporten mot en levende server, som er nettopp det WireMock finnes for.
+     */
     @Test
     fun `wiremock kun i bevisste wire-format-tester`() {
-        WireMockKunForWireFormat.assert(
-            Konsist.scopeFromTest().slice { file -> "httpklient/httpklient-infrastruktur/" !in file.path },
-            tillatteFiler = setOf(
-                "test-common/src/test/kotlin/common/WiremockExTest.kt",
-                "personklient/personklient-infrastruktur/src/test/kotlin/personklient/pdl/FellesHttpPersonklientTest.kt",
-                "personklient/personklient-infrastruktur/src/test/kotlin/personklient/skjerming/FellesHttpSkjermingsklientTest.kt",
-            ),
-        )
+        WireMockKunForWireFormat.assert(httpKlientTestscope(), tillatteFiler = tillatteWireMockTester)
+    }
+
+    @Test
+    fun `whitelisten for wiremock inneholder ingen ryddede filer`() {
+        assertWhitelistenErRyddet(tillatteWireMockTester, WireMockKunForWireFormat.brudd(httpKlientTestscope()))
     }
 
     @Test
@@ -156,7 +179,7 @@ internal class LibsArkitekturKonsistTest {
 
     @Test
     fun `domene-moduler importerer ikke infra`() {
-        InfraImport.assert(domeneModulScope(), infraSegmenter = setOf("infra", "infrastruktur"))
+        InfraImport.assert(domeneModulScope(), ekstraInfraSegmenter = setOf("infrastruktur"))
     }
 
     @Test
@@ -180,7 +203,7 @@ internal class LibsArkitekturKonsistTest {
                 "no.nav.tiltakspenger.libs.personklient",
                 "no.nav.tiltakspenger.libs.tiltaksdeltakelse",
             ),
-            infraSegmenter = setOf("infra", "infrastruktur"),
+            ekstraInfraSegmenter = setOf("infrastruktur"),
         )
     }
 
@@ -190,6 +213,9 @@ internal class LibsArkitekturKonsistTest {
      * [BoundaryKlasser] kjøres bevisst ikke i dette repoet: `*-dtos`-modulene publiserer kontraktstyper som selve leveransen, så DTO-er utenfor infra-pakker er by design her.
      */
     private fun domeneModulScope() = Konsist.scopeFromProduction().slice { file -> "-domene/" in file.path }
+
+    /** Testkoden utenom `httpklient-infrastruktur`, som tester sin egen transport og derfor er unntatt begge klientreglene. */
+    private fun httpKlientTestscope() = Konsist.scopeFromTest().slice { file -> "httpklient/httpklient-infrastruktur/" !in file.path }
 
     /** Testene kjører med arbeidskatalog i konsist-regler-modulen; repo-rota er katalogen over. */
     private fun repoRot(): Path = Path.of(System.getProperty("user.dir")).parent

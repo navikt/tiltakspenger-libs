@@ -1,3 +1,10 @@
+/*
+ * Delt fundament for reglene i modulen.
+ *
+ * Reglene som matcher på en liste av elementer (pakkesegmenter, forbudte navn, koordinater, markører) eksponerer lista som en public `standard…`-verdi, og tar et `ekstra…`-argument som legges til den.
+ * Kalleren kan altså utvide det flåten har blitt enige om, men ikke erstatte det: en delt regel skal ikke kunne svekkes stille fra ett repo.
+ * Trenger et repo å slippe unna et enkelttilfelle, er whitelisten (`unntatteFilstier`) veien — den er synlig, begrunnet på kallstedet og holdes ærlig av `assertWhitelistenErRyddet`.
+ */
 package no.nav.tiltakspenger.libs.konsist
 
 import com.lemonappdev.konsist.api.container.KoScope
@@ -18,6 +25,7 @@ val ekskluderteUtsjekker = setOf(".worktrees", ".worktree")
 
 /**
  * Kataloger som aldri inneholder kildekode eller konfigurasjon vi eier, og som de filbaserte reglene alltid hopper over.
+ * Et repo med en egen byggutdata-katalog legger den til med `ekstraEkskluderteKataloger`; settet kan ikke erstattes, slik at [ekskluderteUtsjekker] alltid blir med.
  */
 val standardEkskluderteKataloger = setOf("build", ".gradle", ".git", ".idea", "node_modules") + ekskluderteUtsjekker
 
@@ -51,12 +59,20 @@ fun KoScope.kildefiler(): List<KoFileDeclaration> = files.filterNot { file ->
  * Kommentarlinjer hoppes over, trailing-kommentarer strippes, og innholdet i inline-strengliteraler maskeres (tekst om et forbudt kall er ikke et kall).
  */
 internal fun KoFileDeclaration.kodelinjer(): List<Pair<Int, String>> =
+    kodelinjerMedStrenger().map { (linjenummer, kode) -> linjenummer to kode.replace(strengliteralRegex, "\"\"") }
+
+/**
+ * Som [kodelinjer], men uten maskering av strengliteraler.
+ * Brukes av reglene der innholdet i strengen *er* det som skal leses — SQL-en et repo skriver bor nettopp i strengliteraler, og maskeringen ville gjort en slik regel blind.
+ * Kommentarlinjer hoppes fortsatt over, slik at dokumentasjon som viser mønsteret den advarer mot ikke blir et brudd i seg selv.
+ */
+internal fun KoFileDeclaration.kodelinjerMedStrenger(): List<Pair<Int, String>> =
     text.lines().mapIndexedNotNull { index, linje ->
         val trimmet = linje.trim()
         if (trimmet.startsWith("//") || trimmet.startsWith("*") || trimmet.startsWith("/*")) {
             null
         } else {
-            index + 1 to linje.utenTrailingKommentar().replace(strengliteralRegex, "\"\"")
+            index + 1 to linje.utenTrailingKommentar()
         }
     }
 
@@ -88,3 +104,30 @@ fun assertIngenBrudd(brudd: List<String>, intro: String) {
         "$intro\nFant ${brudd.size} brudd:\n" + brudd.joinToString("\n") { "- $it" },
     )
 }
+
+/**
+ * Vakt mot en vakuøs grønn kjøring: en regel som ikke finner noen filer å se på, består trivielt.
+ * Et tomt eller feilrettet scope er ikke hypotetisk — `scopeFromProject()`/`scopeFromProduction()` leter etter en `.git`-*katalog*, og i et git-arbeidstre er `.git` en fil.
+ * Da skanner Konsist feil tre eller ingenting, og hele regelsettet er grønt uten å ha sett koden.
+ * En skrivefeil i pakkenavnet eller modulstien kalleren filtrerer på gir nøyaktig samme stillhet.
+ *
+ * Brukes av reglene som ser på et *utvalg* av scopet (én pakke, ett mønster), der utvalget kan bli tomt uten at noe annet slår ut.
+ * [minstAntall] er hva repoet vet at det har: velg et tall trygt under dagens antall, men over null.
+ */
+fun assertSkanningenTraff(antall: Int, minstAntall: Int, hva: String) = assertIngenBrudd(
+    listOfNotNull("fant $antall $hva".takeIf { antall < minstAntall }),
+    "Skanningen fant færre enn $minstAntall $hva, så regelen sier ingenting. Sjekk at scopet og filteret peker på riktig tre.",
+)
+
+/**
+ * Ratchet-en for reglene som tar en whitelist: en fil som ikke lenger bryter regelen, skal ut av whitelisten.
+ * Uten den blir en ryddet fil liggende som et unntak ingen ser, og dekker stilltiende over neste brudd i samme fil.
+ * Den fanger også oppføringer som aldri traff — en feilstavet eller utdatert sti er et unntak uten virkning, og whitelisten lyver om hva som gjenstår.
+ *
+ * [bruddUtenUnntak] er regelens egen `brudd()`-funksjon kalt med tom whitelist: differansen mot [unntatteFilstier] er nettopp oppføringene som ikke lenger trengs.
+ * Alle reglene i modulen rapporterer brudd som `<filsti>:...`, og sti-suffiksene sammenlignes mot det, så matchingen blir like presis som regelens egen `endsWith`.
+ */
+fun assertWhitelistenErRyddet(unntatteFilstier: Set<String>, bruddUtenUnntak: List<String>) = assertIngenBrudd(
+    unntatteFilstier.filterNot { sti -> bruddUtenUnntak.any { brudd -> "$sti:" in brudd } },
+    "Whitelisten inneholder stier som ikke bryter regelen. Ta dem ut — en oppføring uten virkning dekker over neste brudd i samme fil.",
+)

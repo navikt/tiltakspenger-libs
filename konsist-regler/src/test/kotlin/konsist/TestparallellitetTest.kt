@@ -14,10 +14,24 @@ internal class TestparallellitetTest {
     }
 
     @Test
-    fun `innstillingene er konfigurerbare`() {
-        val utvidet = Testparallellitet.standardInnstillinger + ("junit.jupiter.testinstance.lifecycle.default" to "per_class")
+    fun `ekstra innstillinger utvider standardsettet`() {
+        val ekstra = mapOf("junit.jupiter.testinstance.lifecycle.default" to "per_class")
 
-        Testparallellitet.brudd(fixturesti("testparallellitet/ren"), forventedeInnstillinger = utvidet).shouldBeEmpty()
+        Testparallellitet.brudd(fixturesti("testparallellitet/ren"), ekstraInnstillinger = ekstra).shouldBeEmpty()
+        Testparallellitet.brudd(fixturesti("testparallellitet/mangler"), ekstraInnstillinger = ekstra) shouldHaveSize 5
+    }
+
+    /** Uten denne kunne et repo skrudd av parallellkjøringen ved å «legge til» `enabled = false`, og regelen ville håndhevet sin egen avskrudde tilstand. */
+    @Test
+    fun `en ekstra innstilling kan ikke overstyre en standardnøkkel`() {
+        val feil = shouldThrow<IllegalArgumentException> {
+            Testparallellitet.brudd(
+                fixturesti("testparallellitet/ren"),
+                ekstraInnstillinger = mapOf("junit.jupiter.execution.parallel.enabled" to "false"),
+            )
+        }
+
+        feil.message shouldContain "junit.jupiter.execution.parallel.enabled"
     }
 
     @Test

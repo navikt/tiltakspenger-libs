@@ -18,6 +18,22 @@ internal class IngenJackson2Test {
     }
 
     @Test
+    fun `ekstra forbudte prefikser utvider standardsettet`() {
+        val brudd = IngenJackson2.brudd(scope, ekstraForbudtePrefikser = setOf("tools.jackson."))
+
+        brudd shouldHaveSize 3
+        brudd.joinToString("\n") shouldContain "tools.jackson.databind.ObjectMapper"
+    }
+
+    @Test
+    fun `ekstra tillatte prefikser utvider unntakene`() {
+        val brudd = IngenJackson2.brudd(scope, ekstraTillattePrefikser = setOf("com.fasterxml.jackson.module."))
+
+        brudd shouldHaveSize 1
+        brudd[0] shouldContain "com.fasterxml.jackson.databind.ObjectMapper"
+    }
+
+    @Test
     fun `assert kaster med lesbar melding ved brudd`() {
         val feil = shouldThrow<AssertionError> { IngenJackson2.assert(scope) }
         feil.message shouldContain "Bruk Jackson 3"

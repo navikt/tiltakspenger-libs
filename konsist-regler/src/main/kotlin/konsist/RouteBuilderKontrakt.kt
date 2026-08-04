@@ -24,12 +24,16 @@ object RouteBuilderKontrakt {
         scope: KoScope,
         builderFilPredikat: (KoFileDeclaration) -> Boolean = standardBuilderFilPredikat,
         unntatteFilstier: Set<String> = emptySet(),
-    ): List<String> = builderfiler(scope, builderFilPredikat, unntatteFilstier).flatMap { file ->
-        file
-            .functions(includeNested = true, includeLocal = true)
-            .flatMap { funksjon -> funksjon.parameters }
-            .filter { parameter -> parameter.name in forbudteForventetParametre }
-            .map { parameter -> "${parameter.location}: parameteren ${parameter.name} — uttrykk forventningen med forventet: ForventetRespons?" }
+        ekstraForbudteForventetParametre: Set<String> = emptySet(),
+    ): List<String> {
+        val forbudteParametre = standardForbudteForventetParametre + ekstraForbudteForventetParametre
+        return builderfiler(scope, builderFilPredikat, unntatteFilstier).flatMap { file ->
+            file
+                .functions(includeNested = true, includeLocal = true)
+                .flatMap { funksjon -> funksjon.parameters }
+                .filter { parameter -> parameter.name in forbudteParametre }
+                .map { parameter -> "${parameter.location}: parameteren ${parameter.name} — uttrykk forventningen med forventet: ForventetRespons?" }
+        }
     }
 
     fun returnerResponsFunksjoner(
@@ -57,8 +61,9 @@ object RouteBuilderKontrakt {
         scope: KoScope,
         builderFilPredikat: (KoFileDeclaration) -> Boolean = standardBuilderFilPredikat,
         unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudteForventetParametre: Set<String> = emptySet(),
     ) = assertIngenBrudd(
-        forventetParametre(scope, builderFilPredikat, unntatteFilstier),
+        forventetParametre(scope, builderFilPredikat, unntatteFilstier, ekstraForbudteForventetParametre),
         "Route-buildere tar forventet: ForventetRespons? — ikke flate forventetStatus-/forventetBody-parametre som gjenskaper typen på hvert kallsted.",
     )
 
@@ -89,5 +94,6 @@ object RouteBuilderKontrakt {
         .filter(builderFilPredikat)
         .filterNot { file -> unntatteFilstier.any { sti -> file.path.endsWith(sti) } }
 
-    private val forbudteForventetParametre = setOf("forventetStatus", "forventetBody", "forventetJsonBody")
+    /** Parameternavnene som skal uttrykkes med `forventet: ForventetRespons?`; et repo med flere egne varianter legger dem til. */
+    val standardForbudteForventetParametre = setOf("forventetStatus", "forventetBody", "forventetJsonBody")
 }

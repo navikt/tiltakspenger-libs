@@ -12,4 +12,13 @@ internal class InfraImportTest {
         brudd shouldHaveSize 1
         brudd.single() shouldContain "fixtures.domene.noe importerer fixtures.infra.EnKlient"
     }
+
+    /** Et repo som også kaller infrastrukturpakka si noe annet legger segmentet til; her står `util` som stedfortreder. */
+    @Test
+    fun `ekstra infra-segmenter utvider standardsettet`() {
+        val brudd = InfraImport.brudd(fixtureScope("infraimport"), ekstraInfraSegmenter = setOf("util"))
+
+        brudd shouldHaveSize 2
+        brudd.joinToString("\n") shouldContain "importerer fixtures.util.Greie"
+    }
 }

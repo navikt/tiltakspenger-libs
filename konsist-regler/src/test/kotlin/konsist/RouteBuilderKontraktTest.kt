@@ -62,6 +62,16 @@ internal class RouteBuilderKontraktTest {
         brudd.joinToString("\n") shouldContain "byggDomeneobjektReturnerRespons"
     }
 
+    /** Et repo med flere egne forventet-varianter legger navnene til; her står `sakId` som stedfortreder. */
+    @Test
+    fun `ekstra forbudte forventet-parametre utvider standardsettet`() {
+        val brudd = RouteBuilderKontrakt.forventetParametre(scope, ekstraForbudteForventetParametre = setOf("sakId"))
+
+        // De to standardparametrene, pluss `sakId` tre steder: to i BruddBuilder og ett i RenBuilder.
+        brudd shouldHaveSize 5
+        brudd.joinToString("\n") shouldContain "parameteren sakId"
+    }
+
     @Test
     fun `unntatte filstier flagges ikke`() {
         RouteBuilderKontrakt

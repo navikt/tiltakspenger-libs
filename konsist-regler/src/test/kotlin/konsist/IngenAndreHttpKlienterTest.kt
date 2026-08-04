@@ -55,6 +55,15 @@ internal class IngenAndreHttpKlienterTest {
     }
 
     @Test
+    fun `ekstra forbudte prefikser utvider standardsettet`() {
+        val brudd = IngenAndreHttpKlienter.klienterITestkode(testscope, ekstraForbudtePrefikser = listOf("io.ktor.client.request."))
+
+        val samlet = brudd.joinToString("\n")
+        samlet shouldContain "io.ktor.client.request.get"
+        samlet shouldContain "Ren.kt"
+    }
+
+    @Test
     fun `flagger klientavhengigheter i byggfiler, men ikke kommentarer, exclude eller ren omtale`() {
         val brudd = IngenAndreHttpKlienter.klientavhengigheter(fixturesti("byggfiler"))
 
@@ -65,6 +74,17 @@ internal class IngenAndreHttpKlienterTest {
         samlet shouldContain "gradle/libs.versions.toml:5: io.ktor:ktor-client"
         samlet shouldNotContain "retrofit"
         samlet shouldNotContain "ren/build.gradle.kts"
+    }
+
+    @Test
+    fun `ekstra forbudte koordinater utvider standardsettet`() {
+        val brudd = IngenAndreHttpKlienter.klientavhengigheter(
+            fixturesti("byggfiler"),
+            ekstraForbudteKoordinater = listOf("io.ktor:ktor-client-content-negotiation"),
+        )
+
+        brudd shouldHaveSize 4
+        brudd.joinToString("\n") shouldContain "ren/build.gradle.kts"
     }
 
     @Test

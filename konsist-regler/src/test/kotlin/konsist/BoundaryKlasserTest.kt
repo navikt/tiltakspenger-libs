@@ -1,7 +1,6 @@
 package no.nav.tiltakspenger.libs.konsist
 
 import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.Test
 
@@ -24,10 +23,17 @@ internal class BoundaryKlasserTest {
         brudd shouldHaveSize 0
     }
 
+    /** Med `domene` som infra-segment i tillegg regnes også bruddfila som infrastruktur, og da er det ingenting igjen å flagge. */
     @Test
-    fun `infra-segmentene er konfigurerbare`() {
-        val brudd = BoundaryKlasser.brudd(scope, infraSegmenter = setOf("domene"))
+    fun `ekstra infra-segmenter utvider hva som regnes som infrastruktur`() {
+        BoundaryKlasser.brudd(scope, ekstraInfraSegmenter = setOf("domene")) shouldHaveSize 0
+    }
 
-        brudd.count { it.contains("Ren.kt") } shouldBe 1
+    @Test
+    fun `ekstra boundary-suffikser utvider hva som regnes som en boundary-type`() {
+        val brudd = BoundaryKlasser.brudd(scope, ekstraBoundarySuffikser = setOf("Kommando"))
+
+        brudd shouldHaveSize 3
+        brudd.joinToString("\n") shouldContain "class OpprettKommando"
     }
 }

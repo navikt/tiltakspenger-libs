@@ -17,19 +17,34 @@ import kotlin.io.path.readLines
  */
 object Testparallellitet {
 
+    /** Innstillingene flåten krever; et repo som pinner flere junit-nøkler legger dem til med `ekstraInnstillinger`. */
     val standardInnstillinger = mapOf(
         "junit.jupiter.execution.parallel.enabled" to "true",
         "junit.jupiter.execution.parallel.mode.default" to "concurrent",
         "junit.jupiter.execution.parallel.mode.classes.default" to "concurrent",
     )
 
-    fun brudd(rot: Path, forventedeInnstillinger: Map<String, String> = standardInnstillinger): List<String> =
-        propertiesbrudd(rot, forventedeInnstillinger) + byggfilbrudd(rot, forventedeInnstillinger)
+    /**
+     * [ekstraInnstillinger] legges til [standardInnstillinger].
+     * En nøkkel som allerede står i standardsettet avvises: da ville et repo kunnet skru av parallellkjøringen ved å «legge til» `enabled = false`, og regelen ville håndhevet sin egen avskrudde tilstand.
+     */
+    fun brudd(rot: Path, ekstraInnstillinger: Map<String, String> = emptyMap()): List<String> {
+        val forventedeInnstillinger = standardInnstillinger + ekstraInnstillinger.utenKollisjoner()
+        return propertiesbrudd(rot, forventedeInnstillinger) + byggfilbrudd(rot, forventedeInnstillinger)
+    }
 
-    fun assert(rot: Path, forventedeInnstillinger: Map<String, String> = standardInnstillinger) = assertIngenBrudd(
-        brudd(rot, forventedeInnstillinger),
+    fun assert(rot: Path, ekstraInnstillinger: Map<String, String> = emptyMap()) = assertIngenBrudd(
+        brudd(rot, ekstraInnstillinger),
         "Parallellkjøring av tester er håndhevelsen av at tester ikke deler tilstand, og skal være likt konfigurert i build.gradle.kts og junit-platform.properties.",
     )
+
+    private fun Map<String, String>.utenKollisjoner(): Map<String, String> {
+        val kolliderende = keys.filter { nøkkel -> nøkkel in standardInnstillinger }
+        require(kolliderende.isEmpty()) {
+            "Kan ikke overstyre standardinnstillingene ${kolliderende.joinToString()} — ekstraInnstillinger legger til, den erstatter ikke."
+        }
+        return this
+    }
 
     private fun propertiesbrudd(rot: Path, innstillinger: Map<String, String>): List<String> {
         val fil = rot.resolve(propertiesSti)

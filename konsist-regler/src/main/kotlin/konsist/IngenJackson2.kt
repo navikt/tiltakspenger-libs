@@ -11,15 +11,33 @@ import com.lemonappdev.konsist.api.container.KoScope
  */
 object IngenJackson2 {
 
-    fun brudd(scope: KoScope): List<String> = scope.kildefiler().flatMap { file ->
-        file.imports
-            .filter { import -> import.name.startsWith("com.fasterxml.jackson.") }
-            .filterNot { import -> import.name.startsWith("com.fasterxml.jackson.annotation.") }
-            .map { import -> "${file.path}: ${import.name}" }
+    /** Importprefiksene som er Jackson 2; et repo som drar inn en annen Jackson 2-artefakt legger prefikset til. */
+    val standardForbudtePrefikser = setOf("com.fasterxml.jackson.")
+
+    /** Unntakene innenfor de forbudte prefiksene — annotasjons-artefakten deles mellom Jackson 2 og 3. */
+    val standardTillattePrefikser = setOf("com.fasterxml.jackson.annotation.")
+
+    fun brudd(
+        scope: KoScope,
+        ekstraForbudtePrefikser: Set<String> = emptySet(),
+        ekstraTillattePrefikser: Set<String> = emptySet(),
+    ): List<String> {
+        val forbudte = standardForbudtePrefikser + ekstraForbudtePrefikser
+        val tillatte = standardTillattePrefikser + ekstraTillattePrefikser
+        return scope.kildefiler().flatMap { file ->
+            file.imports
+                .filter { import -> forbudte.any { prefiks -> import.name.startsWith(prefiks) } }
+                .filterNot { import -> tillatte.any { prefiks -> import.name.startsWith(prefiks) } }
+                .map { import -> "${file.path}: ${import.name}" }
+        }
     }
 
-    fun assert(scope: KoScope) = assertIngenBrudd(
-        brudd(scope),
+    fun assert(
+        scope: KoScope,
+        ekstraForbudtePrefikser: Set<String> = emptySet(),
+        ekstraTillattePrefikser: Set<String> = emptySet(),
+    ) = assertIngenBrudd(
+        brudd(scope, ekstraForbudtePrefikser, ekstraTillattePrefikser),
         "Bruk Jackson 3 (tools.jackson.*). Følgende Jackson 2-importer (com.fasterxml.jackson.*, unntatt .annotation) er ikke tillatt.",
     )
 }

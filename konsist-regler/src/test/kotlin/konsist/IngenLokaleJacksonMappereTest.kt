@@ -26,4 +26,21 @@ internal class IngenLokaleJacksonMappereTest {
         brudd shouldHaveSize 3
         brudd.count { it.contains("BruddWhitelistet.kt") } shouldBe 0
     }
+
+    @Test
+    fun `ekstra forbudte mønstre utvider standardsettet`() {
+        val brudd = IngenLokaleJacksonMappere.brudd(scope, ekstraForbudteMønstre = listOf("writeValueAsString("))
+
+        brudd shouldHaveSize 5
+        brudd.joinToString("\n") shouldContain "RenKommentarOgBruk.kt"
+    }
+
+    /**
+     * Tillat-lista er den ene som svekker regelen når den utvides.
+     * Den finnes for et repo som selv eier en mapper-pakke; enkelttilfeller hører hjemme i `tillatteFiler`.
+     */
+    @Test
+    fun `ekstra tillatte pakker utvider unntakene`() {
+        IngenLokaleJacksonMappere.brudd(scope, ekstraTillattePakker = listOf("fixtures.mappere")) shouldHaveSize 0
+    }
 }

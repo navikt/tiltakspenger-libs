@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.konsist
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
 import org.junit.jupiter.api.Test
 
 internal class IngenNowUtenClockTest {
@@ -23,5 +24,16 @@ internal class IngenNowUtenClockTest {
         val brudd = IngenNowUtenClock.brudd(scope).filter { it.contains("Ren.kt") }
 
         brudd.shouldBeEmpty()
+    }
+
+    /** En egen tidstype med samme no-arg-mønster fanges først når repoet legger typenavnet til. */
+    @Test
+    fun `ekstra typer utvider standardsettet`() {
+        IngenNowUtenClock.brudd(scope).joinToString("\n") shouldNotContain "Virkedag"
+
+        val brudd = IngenNowUtenClock.brudd(scope, ekstraTyper = setOf("Virkedag"))
+
+        brudd shouldHaveSize 4
+        brudd.joinToString("\n") shouldContain "Virkedag.now()"
     }
 }

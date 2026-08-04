@@ -26,17 +26,26 @@ internal class IsolertDatabasetestKonvensjonTest {
         val brudd = IsolertDatabasetestKonvensjon.runIsolatedUtenAnnotasjon(scope, annotasjonsnavn = "EtAnnetNavn")
 
         // Med et annet annotasjonsnavn mangler alle bruksstedene i testene annotasjonen, også de i Ren.kt.
-        brudd shouldHaveSize 5
+        brudd shouldHaveSize 6
     }
 
     @Test
     fun `flagger runIsolated uten begrunnelse`() {
         val brudd = IsolertDatabasetestKonvensjon.runIsolatedUtenBegrunnelse(scope)
 
-        brudd shouldHaveSize 3
+        brudd shouldHaveSize 4
         val samlet = brudd.joinToString("\n")
         samlet shouldContain "uten begrunnelse"
         samlet shouldNotContain "Ren.kt"
+    }
+
+    /** Et repo med en egen kategori isolasjonsgjeld legger begrunnelsen til; den i EgenBegrunnelse.kt godtas først da. */
+    @Test
+    fun `ekstra begrunnelser utvider standardsettet`() {
+        val brudd = IsolertDatabasetestKonvensjon.runIsolatedUtenBegrunnelse(scope, ekstraBegrunnelser = listOf("Migrering pågår"))
+
+        brudd shouldHaveSize 3
+        brudd.joinToString("\n") shouldNotContain "EgenBegrunnelse.kt"
     }
 
     @Test

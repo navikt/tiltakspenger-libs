@@ -14,4 +14,12 @@ internal class IngenJupiterAssertsTest {
         brudd[1] shouldContain "org.junit.jupiter.api.Assertions.assertEquals"
         brudd[2] shouldContain "org.junit.jupiter.api.assertThrows"
     }
+
+    @Test
+    fun `ekstra forbudte prefikser utvider standardsettet`() {
+        val brudd = IngenJupiterAsserts.brudd(fixtureScope("jupiterasserts"), ekstraForbudtePrefikser = setOf("io.kotest.matchers.shouldBe"))
+
+        brudd shouldHaveSize 4
+        brudd.joinToString("\n") shouldContain "io.kotest.matchers.shouldBe"
+    }
 }

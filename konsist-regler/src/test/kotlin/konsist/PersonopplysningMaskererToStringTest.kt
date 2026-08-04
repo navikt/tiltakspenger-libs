@@ -1,7 +1,6 @@
 package no.nav.tiltakspenger.libs.konsist
 
 import io.kotest.assertions.throwables.shouldThrow
-import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
@@ -30,9 +29,15 @@ internal class PersonopplysningMaskererToStringTest {
         PersonopplysningMaskererToString.brudd(scope).joinToString("\n") shouldNotContain "Ren.kt"
     }
 
+    /** En markør et repo definerer selv arver ikke fra rot-interfacet, og fanges først når repoet legger den til. */
     @Test
-    fun `markørene kan overstyres`() {
-        PersonopplysningMaskererToString.brudd(scope, markører = setOf("NoeHeltAnnet")).shouldBeEmpty()
+    fun `ekstra markører utvider standardsettet`() {
+        PersonopplysningMaskererToString.brudd(scope).joinToString("\n") shouldNotContain "LekkerTelefonnummer"
+
+        val brudd = PersonopplysningMaskererToString.brudd(scope, ekstraMarkører = setOf("Kontaktopplysning"))
+
+        brudd shouldHaveSize 4
+        brudd.joinToString("\n") shouldContain "LekkerTelefonnummer"
     }
 
     @Test

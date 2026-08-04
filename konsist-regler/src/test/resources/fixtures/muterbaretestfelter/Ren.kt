@@ -18,6 +18,17 @@ internal class RenTest {
     }
 }
 
+// En muterbar testtype repoet definerer selv; standardsettet kjenner ikke navnet.
+internal class RenMedEgenTestkø {
+
+    private val hendelser = Hendelseskø()
+
+    @Test
+    fun `en test`() {
+        println(hendelser)
+    }
+}
+
 internal class RenFakeUtenTester {
 
     var svar: Boolean = true

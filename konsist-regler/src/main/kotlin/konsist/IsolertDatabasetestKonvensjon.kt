@@ -18,6 +18,7 @@ import com.lemonappdev.konsist.api.container.KoScope
  */
 object IsolertDatabasetestKonvensjon {
 
+    /** Begrunnelsene flåten godtar; et repo med en egen kategori isolasjonsgjeld legger den til med `ekstraBegrunnelser`. */
     val standardBegrunnelser = listOf(
         "Aggregert spørring på tvers av saker",
         "TODO: Kan flippes til runIsolated = false",
@@ -41,13 +42,16 @@ object IsolertDatabasetestKonvensjon {
 
     fun runIsolatedUtenBegrunnelse(
         scope: KoScope,
-        begrunnelser: List<String> = standardBegrunnelser,
+        ekstraBegrunnelser: List<String> = emptyList(),
         unntatteFilstier: Set<String> = emptySet(),
-    ): List<String> = bruksteder(scope, unntatteFilstier).mapNotNull { brukssted ->
-        if (begrunnelser.any { begrunnelse -> brukssted.harIOmråde(begrunnelse) }) {
-            null
-        } else {
-            "${brukssted.sti}:${brukssted.linjenummer}: runIsolated = true uten begrunnelse — forventet en linje med en av: ${begrunnelser.joinToString(" | ")}"
+    ): List<String> {
+        val begrunnelser = standardBegrunnelser + ekstraBegrunnelser
+        return bruksteder(scope, unntatteFilstier).mapNotNull { brukssted ->
+            if (begrunnelser.any { begrunnelse -> brukssted.harIOmråde(begrunnelse) }) {
+                null
+            } else {
+                "${brukssted.sti}:${brukssted.linjenummer}: runIsolated = true uten begrunnelse — forventet en linje med en av: ${begrunnelser.joinToString(" | ")}"
+            }
         }
     }
 
@@ -62,10 +66,10 @@ object IsolertDatabasetestKonvensjon {
 
     fun assertRunIsolatedHarBegrunnelse(
         scope: KoScope,
-        begrunnelser: List<String> = standardBegrunnelser,
+        ekstraBegrunnelser: List<String> = emptyList(),
         unntatteFilstier: Set<String> = emptySet(),
     ) = assertIngenBrudd(
-        runIsolatedUtenBegrunnelse(scope, begrunnelser, unntatteFilstier),
+        runIsolatedUtenBegrunnelse(scope, ekstraBegrunnelser, unntatteFilstier),
         "Tester med runIsolated = true skal begrunne isolasjonen eller ha en exit-plan-TODO, slik at gjelden er synlig der den bor.",
     )
 

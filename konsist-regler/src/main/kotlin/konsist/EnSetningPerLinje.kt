@@ -37,8 +37,8 @@ object EnSetningPerLinje {
             .map { kommentarlinje -> "${file.path}:${kommentarlinje.linjenummer}: ${kommentarlinje.tekst}" }
     }
 
-    fun flereSetningerIMarkdown(rot: Path, ekskluderteKataloger: Set<String> = standardEkskluderteKataloger): List<String> = rot
-        .markdownFiler(ekskluderteKataloger)
+    fun flereSetningerIMarkdown(rot: Path, ekstraEkskluderteKataloger: Set<String> = emptySet()): List<String> = rot
+        .markdownFiler(standardEkskluderteKataloger + ekstraEkskluderteKataloger)
         .flatMap { markdownFil ->
             markdownFil
                 .readLines()
@@ -47,8 +47,8 @@ object EnSetningPerLinje {
                 .map { markdownlinje -> "${rot.relativize(markdownFil)}:${markdownlinje.linjenummer}: ${markdownlinje.tekst}" }
         }.toList()
 
-    fun brukneSetningerIMarkdown(rot: Path, ekskluderteKataloger: Set<String> = standardEkskluderteKataloger): List<String> = rot
-        .markdownFiler(ekskluderteKataloger)
+    fun brukneSetningerIMarkdown(rot: Path, ekstraEkskluderteKataloger: Set<String> = emptySet()): List<String> = rot
+        .markdownFiler(standardEkskluderteKataloger + ekstraEkskluderteKataloger)
         .flatMap { markdownFil ->
             markdownFil
                 .readLines()
@@ -67,13 +67,13 @@ object EnSetningPerLinje {
         "Ikke brekk en setning over flere linjer i KDoc/kommentarer — slå sammen med forrige linje (se AGENTS-backend.md i monorepo-rota).",
     )
 
-    fun assertFlereSetningerIMarkdown(rot: Path, ekskluderteKataloger: Set<String> = standardEkskluderteKataloger) = assertIngenBrudd(
-        flereSetningerIMarkdown(rot, ekskluderteKataloger),
+    fun assertFlereSetningerIMarkdown(rot: Path, ekstraEkskluderteKataloger: Set<String> = emptySet()) = assertIngenBrudd(
+        flereSetningerIMarkdown(rot, ekstraEkskluderteKataloger),
         "Skriv én setning per linje i markdown (se AGENTS-backend.md i monorepo-rota).",
     )
 
-    fun assertBrukneSetningerIMarkdown(rot: Path, ekskluderteKataloger: Set<String> = standardEkskluderteKataloger) = assertIngenBrudd(
-        brukneSetningerIMarkdown(rot, ekskluderteKataloger),
+    fun assertBrukneSetningerIMarkdown(rot: Path, ekstraEkskluderteKataloger: Set<String> = emptySet()) = assertIngenBrudd(
+        brukneSetningerIMarkdown(rot, ekstraEkskluderteKataloger),
         "Ikke brekk en setning over flere linjer i markdown — slå sammen med forrige linje (se AGENTS-backend.md i monorepo-rota).",
     )
 

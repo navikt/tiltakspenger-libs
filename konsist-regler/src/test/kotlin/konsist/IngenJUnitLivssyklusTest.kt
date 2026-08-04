@@ -33,6 +33,14 @@ internal class IngenJUnitLivssyklusTest {
         IngenJUnitLivssyklus.brudd(scope, unntatteFilstier = setOf("junitlivssyklus/Brudd.kt")).shouldBeEmpty()
     }
 
+    /** Et repo med en egen livssyklus-annotasjon legger det fullkvalifiserte navnet til; her står `Test` som stedfortreder. */
+    @Test
+    fun `ekstra livssyklusannotasjoner utvider standardsettet`() {
+        val brudd = IngenJUnitLivssyklus.brudd(scope, ekstraLivssyklusAnnotasjoner = setOf("org.junit.jupiter.api.Test"))
+
+        brudd.joinToString("\n") shouldContain "Ren.kt"
+    }
+
     @Test
     fun `assert kaster med lesbar melding ved brudd`() {
         val feil = shouldThrow<AssertionError> { IngenJUnitLivssyklus.assert(scope) }

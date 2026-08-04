@@ -35,6 +35,15 @@ internal class IngenMuterbareTestfelterTest {
         IngenMuterbareTestfelter.brudd(scope, unntatteFilstier = setOf("muterbaretestfelter/Brudd.kt")).shouldBeEmpty()
     }
 
+    /** En muterbar testtype repoet definerer selv er ikke i standardsettet, og fanges først når navnet legges til. */
+    @Test
+    fun `ekstra muterbare initialisatorer utvider standardsettet`() {
+        val brudd = IngenMuterbareTestfelter.brudd(scope, ekstraMuterbareInitialisatorer = setOf("Hendelseskø"))
+
+        brudd shouldHaveSize 6
+        brudd.joinToString("\n") shouldContain "hendelser"
+    }
+
     @Test
     fun `assert kaster med lesbar melding ved brudd`() {
         val feil = shouldThrow<AssertionError> { IngenMuterbareTestfelter.assert(scope) }

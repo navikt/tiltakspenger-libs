@@ -15,8 +15,11 @@ import com.lemonappdev.konsist.api.container.KoScope
  */
 object IngenLokaleJacksonMappere {
 
-    /** Ordnet mest-spesifikk først, siden kun første treff per linje rapporteres (`ObjectMapper(` er substring av `jacksonObjectMapper(`). */
-    private val forbudteMønstre = listOf(
+    /**
+     * Ordnet mest-spesifikk først, siden kun første treff per linje rapporteres (`ObjectMapper(` er substring av `jacksonObjectMapper(`).
+     * `ekstraForbudteMønstre` sjekkes etter disse: er tillegget en spesialisering av et standardmønster, blir standardtreffet rapportert — meldingen peker uansett på riktig linje.
+     */
+    val standardForbudteMønstre = listOf(
         "JsonMapper.builder(",
         "JsonMapper.shared",
         "jacksonObjectMapper(",
@@ -26,25 +29,43 @@ object IngenLokaleJacksonMappere {
         "jackson {",
     )
 
-    private val tillattePakker = listOf(
+    /**
+     * Pakkene som eier den delte mapperen, og derfor må få konstruere en.
+     * Dette er en tillat-liste, så et tillegg fra kalleren svekker regelen — bruk `tillatteFiler` for enkelttilfeller, og `ekstraTillattePakker` kun for et repo som selv eier en mapper-pakke.
+     */
+    val standardTillattePakker = listOf(
         "no.nav.tiltakspenger.libs.json",
         "no.nav.tiltakspenger.libs.konsist",
     )
 
-    fun brudd(scope: KoScope, tillatteFiler: Set<String> = emptySet()): List<String> = scope.kildefiler()
-        .filterNot { file -> tillattePakker.any { pakke -> file.packagee?.name?.startsWith(pakke) == true } }
-        .filterNot { file -> tillatteFiler.any { tillatt -> file.path.endsWith(tillatt) } }
-        .flatMap { file ->
-            file.text.lines().mapIndexedNotNull { index, linje ->
-                val kode = linje.utenKommentarer() ?: return@mapIndexedNotNull null
-                forbudteMønstre
-                    .firstOrNull { mønster -> mønster in kode }
-                    ?.let { mønster -> "${file.path}:${index + 1}: $mønster" }
+    fun brudd(
+        scope: KoScope,
+        tillatteFiler: Set<String> = emptySet(),
+        ekstraForbudteMønstre: List<String> = emptyList(),
+        ekstraTillattePakker: List<String> = emptyList(),
+    ): List<String> {
+        val forbudteMønstre = standardForbudteMønstre + ekstraForbudteMønstre
+        val tillattePakker = standardTillattePakker + ekstraTillattePakker
+        return scope.kildefiler()
+            .filterNot { file -> tillattePakker.any { pakke -> file.packagee?.name?.startsWith(pakke) == true } }
+            .filterNot { file -> tillatteFiler.any { tillatt -> file.path.endsWith(tillatt) } }
+            .flatMap { file ->
+                file.text.lines().mapIndexedNotNull { index, linje ->
+                    val kode = linje.utenKommentarer() ?: return@mapIndexedNotNull null
+                    forbudteMønstre
+                        .firstOrNull { mønster -> mønster in kode }
+                        ?.let { mønster -> "${file.path}:${index + 1}: $mønster" }
+                }
             }
-        }
+    }
 
-    fun assert(scope: KoScope, tillatteFiler: Set<String> = emptySet()) = assertIngenBrudd(
-        brudd(scope, tillatteFiler),
+    fun assert(
+        scope: KoScope,
+        tillatteFiler: Set<String> = emptySet(),
+        ekstraForbudteMønstre: List<String> = emptyList(),
+        ekstraTillattePakker: List<String> = emptyList(),
+    ) = assertIngenBrudd(
+        brudd(scope, tillatteFiler, ekstraForbudteMønstre, ekstraTillattePakker),
         "Ikke konstruer Jackson-mappere lokalt — bruk den delte objectMapper fra tiltakspenger-libs/json (se navikt/tiltakspenger#30).",
     )
 

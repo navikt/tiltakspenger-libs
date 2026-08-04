@@ -33,6 +33,16 @@ internal class IngenGlobalMockingTest {
         IngenGlobalMocking.brudd(scope, unntatteFilstier = setOf("globalmocking/Brudd.kt")).shouldBeEmpty()
     }
 
+    /** Et repo med en egen hjelper som muterer global tilstand legger navnet til; her står `spyk` som stedfortreder. */
+    @Test
+    fun `ekstra forbudte funksjoner utvider standardsettet`() {
+        val brudd = IngenGlobalMocking.brudd(scope, ekstraForbudteFunksjoner = setOf("spyk"))
+
+        val samlet = brudd.joinToString("\n")
+        samlet shouldContain "io.mockk.spyk"
+        samlet shouldContain "Ren.kt"
+    }
+
     @Test
     fun `assert kaster med lesbar melding ved brudd`() {
         val feil = shouldThrow<AssertionError> { IngenGlobalMocking.assert(scope) }

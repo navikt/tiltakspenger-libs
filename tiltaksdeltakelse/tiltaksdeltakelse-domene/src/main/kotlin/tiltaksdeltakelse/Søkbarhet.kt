@@ -10,8 +10,9 @@ import java.time.LocalDate
  *
  * Begrunnelsene er statiske per regel og skal kunne leses av andre enn utviklere — samme mønster som `Personopplysning.begrunnelse` og [UkjentKildeverdi.hva].
  *
- * [KanSøkesPåVedUnntak] har ingen produsent ennå.
- * Varianten er modellert for feilregistrert-unntaket (Arena `IKKE_MOTT` kan være feilregistrert, og terskelen for å rette i Arena er høy), som aktiveres når fag har avklart søknadsretten — se tp-tilt-31 i planen.
+ * [KanSøkesPåVedUnntak] produseres av feilregistrert-unntaket for Arena `IKKE_MOTT`.
+ * Det er stedet de to aksene skiller lag med vilje: fag avklarte at «ikke møtt» ikke er deltakelse og derfor ikke gir rett til innvilgelse, men ingen har sagt at bruker skal miste retten til å *søke*.
+ * Å nekte søknaden ville flyttet en høy terskel — å få Arena til å rette en feilregistrering — over på bruker, før noen i det hele tatt har sett på saken.
  */
 sealed interface Søkbarhet {
     /** Kilden tilsier at bruker kan søke. */
@@ -63,11 +64,13 @@ private fun Tiltaksdeltakelse.søkbarhetForStatusen(påDato: LocalDate): Søkbar
     if (status !is Kildestatus.Kjent) {
         return Søkbarhet.KanIkkeSøkesPå(BEGRUNNELSE_UKJENT_KILDESTATUS)
     }
-    return if (status.deltakerstatus(fraOgMed = fraOgMed, påDato = påDato).girRettTilÅSøke) {
-        Søkbarhet.KanSøkesPå
-    } else {
-        Søkbarhet.KanIkkeSøkesPå(BEGRUNNELSE_STATUS_UTEN_RETT)
+    if (status.deltakerstatus(fraOgMed = fraOgMed, påDato = påDato).girRettTilÅSøke) {
+        return Søkbarhet.KanSøkesPå
     }
+    if (status is Arenastatus.Kjent && status.type == Arenastatus.Type.IKKE_MOTT) {
+        return Søkbarhet.KanSøkesPåVedUnntak(BEGRUNNELSE_ARENA_IKKE_MOTT)
+    }
+    return Søkbarhet.KanIkkeSøkesPå(BEGRUNNELSE_STATUS_UTEN_RETT)
 }
 
 private const val BEGRUNNELSE_UGYLDIGE_DATOER =
@@ -84,3 +87,6 @@ private const val BEGRUNNELSE_UKJENT_KILDESTATUS =
 
 private const val BEGRUNNELSE_STATUS_UTEN_RETT =
     "Statusen hos kilden tilsier at bruker hverken deltar eller har fått tildelt plass, og da gir deltakelsen ikke rett til å søke."
+
+private const val BEGRUNNELSE_ARENA_IKKE_MOTT =
+    "Arena har registrert at bruker ikke møtte. Det kan være feilregistrert, og terskelen for å få det rettet i Arena er høy, så bruker får søke og saksbehandler vurderer."

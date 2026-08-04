@@ -91,11 +91,12 @@ internal class TiltaksdeltakelserTest {
     @Test
     fun `uttrekket tar bare med kjente statuser som gir rett til å søke`() {
         val søkbar = testdeltakelse(id = "TA1")
-        val ikkeMøtt = testdeltakelse(id = "TA2", kildestatus = Arenastatus.Kjent(Arenastatus.Type.IKKE_MOTT))
+        // Takket nei, ikke «ikke møtt» — den siste er søkbar ved unntak, se SøkbarhetTest.
+        val takketNei = testdeltakelse(id = "TA2", kildestatus = Arenastatus.Kjent(Arenastatus.Type.TAKKET_NEI_TIL_TILBUD))
         val ukjentStatus = testdeltakelse(id = "TA3", kildestatus = Arenastatus.Ukjent("NY_KONTRAKTSVERDI"))
         val girIkkeRett = testdeltakelse(id = "TA4", tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"))
         val ugyldig = testdeltakelse(id = "TA5", fraOgMed = testSlutt, tilOgMed = testStart)
-        val samling = Tiltaksdeltakelser(listOf(søkbar, ikkeMøtt, ukjentStatus, girIkkeRett, ugyldig))
+        val samling = Tiltaksdeltakelser(listOf(søkbar, takketNei, ukjentStatus, girIkkeRett, ugyldig))
 
         val uttrekk = samling.somKildenTilsierManKanSøkePå(påDato)
 
@@ -106,11 +107,24 @@ internal class TiltaksdeltakelserTest {
 
     @Test
     fun `typen kan ikke bære en deltakelse som ikke passerer guarden`() {
-        val ikkeMøtt = testdeltakelse(kildestatus = Arenastatus.Kjent(Arenastatus.Type.IKKE_MOTT))
+        val takketNei = testdeltakelse(kildestatus = Arenastatus.Kjent(Arenastatus.Type.TAKKET_NEI_TIL_TILBUD))
             .shouldBeInstanceOf<Tiltaksdeltakelse.GirRett>()
 
         shouldThrow<IllegalArgumentException> {
-            TiltaksdeltakelserManKanSøkePå(deltakelser = listOf(ikkeMøtt), påDato = påDato)
+            TiltaksdeltakelserManKanSøkePå(deltakelser = listOf(takketNei), påDato = påDato)
         }
+    }
+
+    /**
+     * Unntaket er ikke en omgåelse av guarden — det er en del av den.
+     * En deltakelse som er søkbar ved unntak skal derfor kunne bæres av typen, på linje med en vanlig søkbar.
+     */
+    @Test
+    fun `typen bærer en deltakelse som er søkbar ved unntak`() {
+        val ikkeMøtt = testdeltakelse(kildestatus = Arenastatus.Kjent(Arenastatus.Type.IKKE_MOTT))
+            .shouldBeInstanceOf<Tiltaksdeltakelse.GirRett>()
+
+        TiltaksdeltakelserManKanSøkePå(deltakelser = listOf(ikkeMøtt), påDato = påDato)
+            .deltakelser shouldContainExactly listOf(ikkeMøtt)
     }
 }

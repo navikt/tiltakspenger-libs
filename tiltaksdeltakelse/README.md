@@ -40,6 +40,11 @@ Konsumenten har den konteksten, biblioteket har den ikke.
 `Søkbarhet` svarer om en deltakelse kan søkes på, med begrunnelse til visning — søknaden velger ut med dem, og saksbehandling-api viser dem, for eksempel ved manuell registrering.
 Unntak aktiveres i regelsettet her, aldri lokalt hos én konsument, slik at flatene aldri kan divergere.
 
+Det ene unntaket som finnes i dag er Arenas «ikke møtt».
+Fag avklarte at det ikke er deltakelse og derfor ikke gir rett til innvilgelse, men ingen har sagt at bruker skal miste retten til å *søke* — og en feilregistrering i Arena er tung å få rettet.
+Deltakelsen er derfor `KanSøkesPåVedUnntak`: den flyter inn i søknadsuttrekket, mens `Deltakerstatus` fortsatt sier `IkkeDeltatt`.
+De to aksene skiller lag her med vilje, og det er nettopp derfor de er to.
+
 ## Regler som gjelder her
 
 **Modulen svarer aldri på utfallet av en behandling.**

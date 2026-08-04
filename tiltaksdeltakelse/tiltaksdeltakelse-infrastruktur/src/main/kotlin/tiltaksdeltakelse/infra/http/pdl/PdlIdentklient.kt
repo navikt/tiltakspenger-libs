@@ -97,19 +97,20 @@ class PdlIdentklient(
     private fun GraphQLResponse<HentIdenterResponse>.tilIdenter(
         metadata: HttpKlientMetadata,
     ): Either<KanIkkeHenteIdenter, Nel<Fnr>> {
-        val graphQLFeil = errors.orEmpty()
-        if (graphQLFeil.isNotEmpty()) {
-            return KanIkkeHenteIdenter.GraphQLFeil(
-                feilmeldinger = graphQLFeil.map { it.message ?: "ukjent" },
+        // PDL kan svare med flere feil på én gang, og da bæres alle videre — den første sier sjelden hele historien.
+        val graphQLFeil = errors.orEmpty().map { it.message ?: "ukjent" }.toNonEmptyListOrNull()
+        if (graphQLFeil != null) {
+            return KanIkkeHenteIdenter.UtenBrukbareIdenter.GraphQLFeil(
+                feilmeldinger = graphQLFeil,
                 metadata = metadata,
             ).left()
         }
         val identer = data?.hentIdenter?.identer.orEmpty()
-            .map { Fnr.tryFromString(it.ident) ?: return KanIkkeHenteIdenter.UgyldigIdent(metadata).left() }
+            .map { Fnr.tryFromString(it.ident) ?: return KanIkkeHenteIdenter.UtenBrukbareIdenter.UgyldigIdent(metadata).left() }
         // Eksplisitt null-sjekk i stedet for `?.right() ?:` — safe-call pluss elvis på samme linje gir en gren kover ikke kan treffe.
         val ikkeTomListe = identer.toNonEmptyListOrNull()
         return if (ikkeTomListe == null) {
-            KanIkkeHenteIdenter.FantIngenIdenter(metadata).left()
+            KanIkkeHenteIdenter.UtenBrukbareIdenter.FantIngenIdenter(metadata).left()
         } else {
             ikkeTomListe.right()
         }

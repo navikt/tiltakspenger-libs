@@ -133,6 +133,10 @@ sealed interface HttpKlientError {
         override val metadata: HttpKlientMetadata,
     ) : ResponsMottatt {
         override val retryable = isRetryableStatusCode(statusCode)
+
+        /** [body] er rå respons og hører kun i sikkerlogg — samme begrunnelse som [HttpKlientMetadata.toString]. */
+        override fun toString(): String =
+            "UventetStatus(statusCode=$statusCode, body=<${body.length} tegn, maskert>, retryable=$retryable, metadata=$metadata)"
     }
 
     /**
@@ -147,6 +151,10 @@ sealed interface HttpKlientError {
         override val metadata: HttpKlientMetadata,
     ) : ResponsMottatt {
         override val retryable = false
+
+        /** [body] er rå respons og hører kun i sikkerlogg — samme begrunnelse som [HttpKlientMetadata.toString]. */
+        override fun toString(): String =
+            "DeserializationError(throwable=$throwable, body=<${body.length} tegn, maskert>, statusCode=$statusCode, metadata=$metadata)"
     }
 
     /**

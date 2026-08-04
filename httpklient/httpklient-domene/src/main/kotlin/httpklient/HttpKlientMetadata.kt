@@ -45,6 +45,23 @@ data class HttpKlientMetadata(
     init {
         require(attempts >= 0) { "attempts kan ikke være negativ, var $attempts" }
     }
+
+    /**
+     * Maskert med vilje.
+     *
+     * Den genererte `toString()`-en ville lagt hele request- og respons-bodyen inn i enhver logglinje som interpolerer en [HttpKlientMetadata] eller et [HttpKlientError] — og verre: [requestHeaders] bærer `Authorization: Bearer …` i klartekst.
+     * Én `log.error { "$feil" }` hos en konsument holdt til å legge både personopplysninger og et gyldig token i vanlig logg, og det er ikke noe konsumenten skal måtte huske på.
+     *
+     * Feltene som står igjen er trygge overalt; av headerne beholdes bare navnene, aldri verdiene.
+     * Rå innhold hentes eksplisitt via [rawRequestString]/[rawResponseString] og hører kun i sikkerlogg — `loggFeil` og `loggSuksess` gjør den delingen ferdig.
+     */
+    override fun toString(): String =
+        "HttpKlientMetadata(" +
+            "statusCode=$statusCode, attempts=$attempts, totalDuration=$totalDuration, " +
+            "requestHeaders=${requestHeaders.keys}, responseHeaders=${responseHeaders.keys}, " +
+            "rawRequestString=<${rawRequestString.length} tegn, maskert>, " +
+            "rawResponseString=${if (rawResponseString == null) "null" else "<${rawResponseString.length} tegn, maskert>"}" +
+            ")"
 }
 
 /**

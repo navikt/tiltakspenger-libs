@@ -31,6 +31,11 @@ Normaliseringen mellom dem er en faglig vurdering, ikke en teknisk oversettelse,
 Kompletthet bor på hentingen og ikke på `Tiltaksdeltakelser`, fordi samletypen også kan bygges fra lagrede rader — en tom meldingsliste der ville påstått et komplett svar den ikke kan garantere.
 `ukjenteKildeverdier` på hentingen samler alt som ikke lot seg tolke, på tvers av deltakelser, meldinger og deltakelsesformer.
 
+**Infrastrukturen logger ikke.**
+`TiltakshistorikkHenter` returnerer i stedet nok til at konsumenten kan gjøre det, på samme måte som `httpklient`: `KunneIkkeHenteTiltakshistorikk` bærer feilen med metadata, og `TiltakshistorikkResultat` bærer `HttpKlientResponse` (som gir `loggSuksess` og rå respons) sammen med `Identoppslag`, som sier om oppslaget måtte falle tilbake til innsendt fnr.
+Grunnen er at alvorligheten ikke er en egenskap ved hentingen, men ved hvem som venter på den: den samme feilen er en driftsfeil på den ekte veien og støy i en skyggekjøring.
+Konsumenten har den konteksten, biblioteket har den ikke.
+
 **Søknadsreglene er delt og forklarbare.**
 `Søkbarhet` svarer om en deltakelse kan søkes på, med begrunnelse til visning — søknaden velger ut med dem, og saksbehandling-api viser dem, for eksempel ved manuell registrering.
 Unntak aktiveres i regelsettet her, aldri lokalt hos én konsument, slik at flatene aldri kan divergere.

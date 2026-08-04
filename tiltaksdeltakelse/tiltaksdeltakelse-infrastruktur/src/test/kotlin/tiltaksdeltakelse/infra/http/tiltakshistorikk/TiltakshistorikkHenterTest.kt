@@ -1,23 +1,26 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk
 
+import arrow.core.nonEmptyListOf
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.common.nå
+import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltakshistorikkmelding
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltakskilde
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.UkjentDeltakelsesform
+import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.pdl.KanIkkeHenteIdenter
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.pdl.PdlIdentklient
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.testTokenProvider
-import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.TiltakshistorikkKlient
 import org.junit.jupiter.api.Test
 
 class TiltakshistorikkHenterTest {
@@ -120,7 +123,7 @@ class TiltakshistorikkHenterTest {
             )
         }
 
-        val historikk = henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).getOrFail()
+        val historikk = henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).getOrFail().tiltakshistorikk
 
         historikk.deltakelser.deltakelser.map { it.id.verdi } shouldBe listOf(
             "TA142536",
@@ -138,6 +141,23 @@ class TiltakshistorikkHenterTest {
         val kall = historikkTransport.mottatteKall.single()
         kall.bodyTekst shouldContain fnr.verdi
         kall.bodyTekst shouldContain historiskFnr.verdi
+    }
+
+    /**
+     * Konvolutten er hele grunnen til at tjenesten kan være stille: den bærer alt konsumenten trenger for å logge suksess selv.
+     * `HttpKlientResponse` er `httpklient` sin egen type, så `loggSuksess` og rå respons følger med uten at vi bygger et parallelt vokabular.
+     */
+    @Test
+    fun `resultatet bærer responsen og identene, slik at konsumenten kan logge selv`() = runTest {
+        val pdlTransport = FakeHttpTransport().apply { leggIKøJson(pdlJson(fnr, historiskFnr)) }
+        val historikkTransport = FakeHttpTransport().apply { leggIKøJson(responsJson(rader = listOf(arenaRadJson()))) }
+
+        val resultat = henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).getOrFail()
+
+        resultat.respons.statusCode shouldBe 200
+        resultat.respons.rawResponseString shouldContain "ArenaDeltakelse"
+        resultat.respons.body shouldBe resultat.tiltakshistorikk
+        resultat.identoppslag.shouldBeInstanceOf<Identoppslag.FraPdl>().identer shouldBe nonEmptyListOf(fnr, historiskFnr)
     }
 
     @Test
@@ -159,7 +179,8 @@ class TiltakshistorikkHenterTest {
 
         val feil = henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull()
 
-        feil shouldBe KunneIkkeHenteTiltakshistorikk.IdentoppslagFeilet
+        feil.shouldBeInstanceOf<KunneIkkeHenteTiltakshistorikk.IdentoppslagFeilet>()
+            .httpKlientError.shouldBeInstanceOf<HttpKlientError.UventetStatus>().statusCode shouldBe 500
         historikkTransport.mottatteKall.shouldBeEmpty()
     }
 
@@ -170,7 +191,13 @@ class TiltakshistorikkHenterTest {
         }
         val historikkTransport = FakeHttpTransport().apply { leggIKøJson(responsJson(emptyList())) }
 
-        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).getOrFail()
+        val resultat = henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).getOrFail()
+
+        val fallback = resultat.identoppslag.shouldBeInstanceOf<Identoppslag.FaltTilbakeTilInnsendtFnr>()
+        fallback.identer shouldBe nonEmptyListOf(fnr)
+        fallback.grunn.shouldBeInstanceOf<KanIkkeHenteIdenter.UtenBrukbareIdenter.GraphQLFeil>().feilmeldinger shouldBe nonEmptyListOf("feil")
+        // Metadataen følger med, slik at konsumenten kan legge rå PDL-respons i sikkerlogg uten at biblioteket har logget noe selv.
+        fallback.grunn.metadata.rawResponseString.shouldNotBeNull() shouldContain "errors"
 
         val body = historikkTransport.mottatteKall.single().bodyTekst
         body shouldContain fnr.verdi
@@ -184,8 +211,10 @@ class TiltakshistorikkHenterTest {
         }
         val historikkTransport = FakeHttpTransport().apply { leggIKøJson(responsJson(emptyList())) }
 
-        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).getOrFail()
+        val resultat = henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).getOrFail()
 
+        resultat.identoppslag.shouldBeInstanceOf<Identoppslag.FaltTilbakeTilInnsendtFnr>()
+            .grunn.shouldBeInstanceOf<KanIkkeHenteIdenter.UtenBrukbareIdenter.FantIngenIdenter>()
         historikkTransport.mottatteKall.single().bodyTekst shouldContain fnr.verdi
     }
 
@@ -196,8 +225,10 @@ class TiltakshistorikkHenterTest {
         }
         val historikkTransport = FakeHttpTransport().apply { leggIKøJson(responsJson(emptyList())) }
 
-        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).getOrFail()
+        val resultat = henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).getOrFail()
 
+        resultat.identoppslag.shouldBeInstanceOf<Identoppslag.FaltTilbakeTilInnsendtFnr>()
+            .grunn.shouldBeInstanceOf<KanIkkeHenteIdenter.UtenBrukbareIdenter.UgyldigIdent>()
         historikkTransport.mottatteKall.single().bodyTekst shouldContain fnr.verdi
     }
 
@@ -208,7 +239,8 @@ class TiltakshistorikkHenterTest {
 
         val feil = henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull()
 
-        feil shouldBe KunneIkkeHenteTiltakshistorikk.KallFeilet
+        feil.shouldBeInstanceOf<KunneIkkeHenteTiltakshistorikk.KallFeilet>()
+            .httpKlientError.shouldBeInstanceOf<HttpKlientError.UventetStatus>().statusCode shouldBe 500
     }
 
     @Test
@@ -218,8 +250,8 @@ class TiltakshistorikkHenterTest {
             leggIKøJson(responsJson(rader = listOf(arenaRadJson(status = " "))))
         }
 
-        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull() shouldBe
-            KunneIkkeHenteTiltakshistorikk.UgyldigRespons("Blank deltakerstatus fra Arena kan ikke bæres som ukjent kildeverdi")
+        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull()
+            .shouldBeInstanceOf<KunneIkkeHenteTiltakshistorikk.UgyldigRespons>().beskrivelse shouldBe "Blank deltakerstatus fra Arena kan ikke bæres som ukjent kildeverdi"
     }
 
     @Test
@@ -230,8 +262,8 @@ class TiltakshistorikkHenterTest {
             leggIKøJson(responsJson(rader = listOf(arenaRadJson(ident = fremmedFnr))))
         }
 
-        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull() shouldBe
-            KunneIkkeHenteTiltakshistorikk.UgyldigRespons("Svaret inneholder en rad for en ident det ikke ble spurt om")
+        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull()
+            .shouldBeInstanceOf<KunneIkkeHenteTiltakshistorikk.UgyldigRespons>().beskrivelse shouldBe "Svaret inneholder en rad for en ident det ikke ble spurt om"
     }
 
     @Test
@@ -240,8 +272,8 @@ class TiltakshistorikkHenterTest {
             val pdlTransport = FakeHttpTransport().apply { leggIKøJson(pdlJson(fnr)) }
             val historikkTransport = FakeHttpTransport().apply { leggIKøJson(responsJson(rader = listOf(rad))) }
 
-            henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull() shouldBe
-                KunneIkkeHenteTiltakshistorikk.UgyldigRespons("Svaret inneholder en deltakelse uten type-diskriminator")
+            henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull()
+                .shouldBeInstanceOf<KunneIkkeHenteTiltakshistorikk.UgyldigRespons>().beskrivelse shouldBe "Svaret inneholder en deltakelse uten type-diskriminator"
         }
     }
 
@@ -252,8 +284,8 @@ class TiltakshistorikkHenterTest {
             leggIKøJson(responsJson(rader = listOf(arenaRadJson(arenaId = 1), arenaRadJson(arenaId = 1))))
         }
 
-        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull() shouldBe
-            KunneIkkeHenteTiltakshistorikk.UgyldigRespons("Svaret inneholder dupliserte deltakelses-ider")
+        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull()
+            .shouldBeInstanceOf<KunneIkkeHenteTiltakshistorikk.UgyldigRespons>().beskrivelse shouldBe "Svaret inneholder dupliserte deltakelses-ider"
     }
 
     @Test
@@ -263,7 +295,7 @@ class TiltakshistorikkHenterTest {
             leggIKøJson(responsJson(rader = emptyList(), meldinger = listOf(" ")))
         }
 
-        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull() shouldBe
-            KunneIkkeHenteTiltakshistorikk.UgyldigRespons("Blank melding fra tiltakshistorikk kan ikke bæres som ukjent kildeverdi")
+        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull()
+            .shouldBeInstanceOf<KunneIkkeHenteTiltakshistorikk.UgyldigRespons>().beskrivelse shouldBe "Blank melding fra tiltakshistorikk kan ikke bæres som ukjent kildeverdi"
     }
 }

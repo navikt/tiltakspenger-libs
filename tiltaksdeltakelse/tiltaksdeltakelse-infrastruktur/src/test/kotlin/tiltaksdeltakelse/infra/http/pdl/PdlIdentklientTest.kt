@@ -99,7 +99,7 @@ class PdlIdentklientTest {
 
         val feil = klient(transport).hentNåværendeOgHistoriskeFnr(fnr).leftOrNull().shouldNotBeNull()
 
-        feil.shouldBeInstanceOf<KanIkkeHenteIdenter.GraphQLFeil>().feilmeldinger shouldBe listOf("Fant ikke person")
+        feil.shouldBeInstanceOf<KanIkkeHenteIdenter.UtenBrukbareIdenter.GraphQLFeil>().feilmeldinger shouldBe nonEmptyListOf("Fant ikke person")
     }
 
     @Test
@@ -110,7 +110,7 @@ class PdlIdentklientTest {
 
         val feil = klient(transport).hentNåværendeOgHistoriskeFnr(fnr).leftOrNull().shouldNotBeNull()
 
-        feil.shouldBeInstanceOf<KanIkkeHenteIdenter.GraphQLFeil>().feilmeldinger shouldBe listOf("ukjent")
+        feil.shouldBeInstanceOf<KanIkkeHenteIdenter.UtenBrukbareIdenter.GraphQLFeil>().feilmeldinger shouldBe nonEmptyListOf("ukjent")
     }
 
     @Test
@@ -122,7 +122,7 @@ class PdlIdentklientTest {
         klient(transport).hentNåværendeOgHistoriskeFnr(fnr)
             .leftOrNull()
             .shouldNotBeNull()
-            .shouldBeInstanceOf<KanIkkeHenteIdenter.FantIngenIdenter>()
+            .shouldBeInstanceOf<KanIkkeHenteIdenter.UtenBrukbareIdenter.FantIngenIdenter>()
     }
 
     @Test
@@ -134,7 +134,7 @@ class PdlIdentklientTest {
         klient(transport).hentNåværendeOgHistoriskeFnr(fnr)
             .leftOrNull()
             .shouldNotBeNull()
-            .shouldBeInstanceOf<KanIkkeHenteIdenter.FantIngenIdenter>()
+            .shouldBeInstanceOf<KanIkkeHenteIdenter.UtenBrukbareIdenter.FantIngenIdenter>()
     }
 
     @Test
@@ -144,7 +144,7 @@ class PdlIdentklientTest {
         klient(transport).hentNåværendeOgHistoriskeFnr(fnr)
             .leftOrNull()
             .shouldNotBeNull()
-            .shouldBeInstanceOf<KanIkkeHenteIdenter.FantIngenIdenter>()
+            .shouldBeInstanceOf<KanIkkeHenteIdenter.UtenBrukbareIdenter.FantIngenIdenter>()
     }
 
     @Test
@@ -156,7 +156,7 @@ class PdlIdentklientTest {
         klient(transport).hentNåværendeOgHistoriskeFnr(fnr)
             .leftOrNull()
             .shouldNotBeNull()
-            .shouldBeInstanceOf<KanIkkeHenteIdenter.UgyldigIdent>()
+            .shouldBeInstanceOf<KanIkkeHenteIdenter.UtenBrukbareIdenter.UgyldigIdent>()
     }
 
     @Test

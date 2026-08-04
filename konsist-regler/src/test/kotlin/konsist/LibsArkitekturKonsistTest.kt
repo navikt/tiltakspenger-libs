@@ -191,6 +191,9 @@ internal class LibsArkitekturKonsistTest {
                 "arrow.core",
                 "arrow.resilience",
                 "io.github.oshai.kotlinlogging",
+                // java.net.URI er en ren JDK-verditype på linje med java.time: HttpKlientMetadata modellerer hvilken URI kallet gikk mot.
+                // Bevisst kun URI og ikke hele java.net, som ville sluppet inn java.net.http-klienten.
+                "java.net.URI",
                 "java.time",
                 "java.util",
                 "kotlin",

@@ -20,8 +20,18 @@ import kotlin.time.toJavaDuration
  * Pipelinen fanger ikke-fatale exceptions i [no.nav.tiltakspenger.libs.httpklient.infra.runSingleAttempt] og mapper dem til [no.nav.tiltakspenger.libs.httpklient.HttpKlientError] i [no.nav.tiltakspenger.libs.httpklient.infra.finalize].
  * [java.util.concurrent.CancellationException] og andre fatale feil fanges bevisst _ikke_ — Arrow `Either.catch` re-kaster dem, slik at kansellering propagerer og strukturert kansellering bevares (en fake-transport skal derfor ikke bruke CancellationException til å simulere transportfeil).
  */
-fun interface HttpTransport {
+interface HttpTransport {
     suspend fun send(request: HttpRequest): TransportRespons
+
+    /**
+     * Oppkoblings-grensen transporten er bygget med, eller `null` for transporter som ikke kobler opp noe (testfakes).
+     *
+     * Ligger her og ikke i [no.nav.tiltakspenger.libs.httpklient.infra.HttpKlientConfig] fordi den er en egenskap ved selve `HttpClient`-instansen — en kopi i config ville vært en annen sannhetskilde enn den som faktisk gjelder, og en logglinje bygget på den kunne løyet.
+     * Pipelinen leser den kun for å legge den i [no.nav.tiltakspenger.libs.httpklient.HttpKlientMetadata], slik at en oppkoblings-timeout kan navngi grensen den brøt.
+     *
+     * Typen er bevisst ikke en `fun interface` lenger: ingen konsument bruker SAM-formen, og et default-implementert medlem ville gitt en syntetisk `DefaultImpls`-linje som aldri blir dekket.
+     */
+    val connectTimeout: Duration?
 }
 
 /**
@@ -55,7 +65,7 @@ fun JavaHttpTransport(connectTimeout: Duration = 10.seconds): HttpTransport = Ja
  * Bodyen leses som rå bytes (`BodyHandlers.ofByteArray`) slik at binært innhold (f.eks. PDF) ikke korrupteres av charset-dekoding.
  */
 private class JavaHttpClientTransport(
-    connectTimeout: Duration,
+    override val connectTimeout: Duration,
 ) : HttpTransport {
     private val client: HttpClient = HttpClient.newBuilder()
         .connectTimeout(connectTimeout.toJavaDuration())

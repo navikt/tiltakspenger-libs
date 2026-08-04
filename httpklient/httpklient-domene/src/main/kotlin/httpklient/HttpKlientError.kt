@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.httpklient
 import arrow.resilience.CircuitBreaker
 import io.github.oshai.kotlinlogging.KLogger
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
+import java.net.URI
 import kotlin.time.Duration
 
 /**
@@ -33,6 +34,13 @@ import kotlin.time.Duration
  */
 sealed interface HttpKlientError {
     val metadata: HttpKlientMetadata
+
+    /**
+     * Kort, PII-fri beskrivelse av hva som gikk galt, egnet som første setning i en logglinje (`"Timeout (oppkobling)"`, `"Kunne ikke hente token"`).
+     * Ligger på typen og ikke i en `when` hos konsumentene av to grunner: den skal være lik overalt, og kompilatoren skal kreve en beskrivelse av enhver ny variant.
+     * Beskriver kun feilarten — hvilket endepunkt og hvilken domenehandling det gjaldt kommer fra [HttpKlientMetadata.endepunkt] og kallerens `operasjon`/`kontekst` i [loggFeil].
+     */
+    val beskrivelse: String
 
     /**
      * `true` hvis et nytt forsøk på _samme_ request _kan_ gi et annet utfall.
@@ -73,13 +81,24 @@ sealed interface HttpKlientError {
     /**
      * Forsøket time-et ut.
      * Trigges av `java.net.http.HttpTimeoutException` fra JDK-klienten — enten request-timeout (`HttpKlientConfig.timeout`) eller transportens connect-timeout (`JavaHttpTransport(connectTimeout = ...)`).
+     * [fase] skiller de to, siden de peker på ulike årsaker og stacktracen ikke røper hvilken det var.
      * Forbigående, derfor `retryable = true`.
      */
     data class Timeout(
         override val throwable: Throwable,
+        val fase: Timeoutfase,
         override val metadata: HttpKlientMetadata,
     ) : IngenRespons {
         override val retryable = true
+
+        /**
+         * Navngir grensa som faktisk brøt, ikke bare at det ble en timeout.
+         * De to fasene har hver sin grense, og uten den i meldingen må leseren slå opp konfigurasjonen for å vite om 1 s var forventet eller altfor stramt.
+         */
+        override val beskrivelse = when (fase) {
+            Timeoutfase.Oppkobling -> "Timeout (oppkobling${metadata.tidsgrenser.oppkobling?.let { ", grense $it" } ?: ""})"
+            Timeoutfase.Svar -> "Timeout (svar, grense ${metadata.tidsgrenser.svar})"
+        }
     }
 
     /**
@@ -91,6 +110,7 @@ sealed interface HttpKlientError {
         override val metadata: HttpKlientMetadata,
     ) : IngenRespons {
         override val retryable = true
+        override val beskrivelse = "Nettverksfeil"
     }
 
     /**
@@ -103,6 +123,7 @@ sealed interface HttpKlientError {
         override val metadata: HttpKlientMetadata,
     ) : RequestIkkeSendt {
         override val retryable = false
+        override val beskrivelse = "Ugyldig request"
     }
 
     /**
@@ -115,6 +136,7 @@ sealed interface HttpKlientError {
         override val metadata: HttpKlientMetadata,
     ) : RequestIkkeSendt {
         override val retryable = false
+        override val beskrivelse = "Kunne ikke serialisere request-body"
     }
 
     /**
@@ -133,6 +155,7 @@ sealed interface HttpKlientError {
         override val metadata: HttpKlientMetadata,
     ) : ResponsMottatt {
         override val retryable = isRetryableStatusCode(statusCode)
+        override val beskrivelse = "Uventet HTTP-status $statusCode"
 
         /** [body] er rå respons og hører kun i sikkerlogg — samme begrunnelse som [HttpKlientMetadata.toString]. */
         override fun toString(): String =
@@ -151,6 +174,7 @@ sealed interface HttpKlientError {
         override val metadata: HttpKlientMetadata,
     ) : ResponsMottatt {
         override val retryable = false
+        override val beskrivelse = "Kunne ikke lese responsen (status $statusCode)"
 
         /** [body] er rå respons og hører kun i sikkerlogg — samme begrunnelse som [HttpKlientMetadata.toString]. */
         override fun toString(): String =
@@ -167,6 +191,7 @@ sealed interface HttpKlientError {
         override val metadata: HttpKlientMetadata,
     ) : RequestIkkeSendt {
         override val retryable = false
+        override val beskrivelse = "Kunne ikke hente token"
     }
 
     /**
@@ -179,6 +204,7 @@ sealed interface HttpKlientError {
         override val metadata: HttpKlientMetadata,
     ) : RequestIkkeSendt {
         override val retryable = false
+        override val beskrivelse = "Circuit breaker er åpen"
     }
 }
 
@@ -198,6 +224,11 @@ private val retryableStatusCodes = setOf(408, 425, 429, 500, 502, 503, 504)
  * `statusCode` eksponeres bevisst _ikke_ her — kun [HttpKlientError.ResponsMottatt] har en garantert non-null `statusCode`, mens de andre gruppene ikke har noen status.
  * Bruk `metadata.statusCode` hvis du trenger den generiske, nullable verdien.
  */
+val HttpKlientError.method: String get() = metadata.method
+val HttpKlientError.uri: URI get() = metadata.uri
+
+/** Endepunktet i PII-fri form, klar for vanlig logg — se [HttpKlientMetadata.endepunkt]. */
+val HttpKlientError.endepunkt: String get() = metadata.endepunkt
 val HttpKlientError.rawRequestString: String get() = metadata.rawRequestString
 val HttpKlientError.rawResponseString: String? get() = metadata.rawResponseString
 val HttpKlientError.requestHeaders: Map<String, List<String>> get() = metadata.requestHeaders
@@ -231,11 +262,24 @@ fun HttpKlientError.harStatus(vararg statuser: Int): Boolean =
 /**
  * Bygger en [HttpKlientError.AuthError] for token-feil som oppstår _før_ noe kall er gjort — typisk en OBO-veksling konsumenten gjør selv (tilgangsmaskinen).
  * Gir slike feil samme form som klientens egne, slik at felles feilmapping og [loggFeil] kan gjenbrukes uten en parallell feiltype.
+ *
+ * [method] og [uri] er kallet vekslingen skulle brukes til.
+ * De er påkrevd fordi en feillogg uten endepunkt ikke er til å feilsøke på: throwable-en fra en tokenveksling sier ingenting om hvem vi var på vei til.
  */
-fun authFeilUtenKall(throwable: Throwable): HttpKlientError.AuthError {
+fun authFeilUtenKall(
+    throwable: Throwable,
+    method: String,
+    uri: URI,
+    uriSynlighet: UriSynlighet = UriSynlighet.KunSikkerlogg,
+): HttpKlientError.AuthError {
     return HttpKlientError.AuthError(
         throwable = throwable,
         metadata = HttpKlientMetadata(
+            method = method,
+            uri = uri,
+            uriSynlighet = uriSynlighet,
+            // Vekslingen skjedde utenfor httpklient, så ingen av klientens tidsgrenser var i spill.
+            tidsgrenser = Tidsgrenser.INGEN,
             rawRequestString = "",
             rawResponseString = null,
             requestHeaders = emptyMap(),
@@ -258,6 +302,10 @@ fun authFeilUtenKall(throwable: Throwable): HttpKlientError.AuthError {
  *
  * En «logghendelse» er paret [logger].error (uten personopplysninger) + `Sikkerlogg.error` (med maskert request og lesbar respons), i tråd med resten av kodebasen.
  *
+ * Linja navngir feilarten ([beskrivelse]) og endepunktet ([HttpKlientMetadata.endepunkt]) eksplisitt.
+ * Det er ikke pynt: feil fra `java.net.http` oppstår asynkront på klientens I/O-tråd, så stacktracen inneholder null applikasjonsframes og kan hverken fortelle hvor kallet gikk eller hvem som gjorde det.
+ * Står det ikke i meldingen, finnes det ikke.
+ *
  * @param logger Kallerens egen logger, slik at logglinja får kallerens navnrom.
  * @param operasjon Kort beskrivelse av hva som feilet, f.eks. `"sending til datadeling"`.
  * @param kontekst Domenekontekst som bare kalleren har, f.eks. `"Sak abc, saksnummer 123"`.
@@ -270,10 +318,12 @@ fun HttpKlientError.loggFeil(
     sikkerlogg: Sikkerlogg = Sikkerlogg,
 ) {
     val throwable = throwableOrNull()
-    val logMelding =
-        "Feil ved $operasjon. $kontekst. Status: ${metadata.statusCode}, forsøk: ${metadata.attempts}. ${sikkerlogg.seSikkerlogg}"
+    // Status utelates når den ikke finnes: "Status: null" er støy, og fraværet er allerede sagt av beskrivelsen ("Timeout (oppkobling)").
+    val status = metadata.statusCode?.let { "status: $it, " } ?: ""
+    val start = "Feil ved $operasjon. $kontekst. $beskrivelse mot ${metadata.endepunkt}. ${status}forsøk: ${metadata.attempts}, brukt: ${metadata.totalDuration}."
+    val logMelding = "$start ${sikkerlogg.seSikkerlogg}"
     val sikkerMelding =
-        "Feil ved $operasjon. $kontekst. Status: ${metadata.statusCode}, forsøk: ${metadata.attempts}, request: ${metadata.rawRequestString}. response: ${metadata.rawResponseString}. responseHeaders: ${metadata.responseHeaders}."
+        "$start Request: ${metadata.rawRequestString}. Response: ${metadata.rawResponseString}. ResponseHeaders: ${metadata.responseHeaders}."
     if (throwable != null) {
         logger.error(throwable) { logMelding }
         sikkerlogg.error(throwable) { sikkerMelding }

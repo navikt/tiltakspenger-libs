@@ -7,6 +7,7 @@ import no.nav.tiltakspenger.libs.common.nå
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientMetadata
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientTidsstempler
+import no.nav.tiltakspenger.libs.httpklient.Tidsgrenser
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.AuthTokenProvider
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.KlientAuth
 import java.time.Clock
@@ -54,6 +55,7 @@ internal suspend fun HttpKlientRequest.resolveAuthToken(
     config: HttpKlientConfig,
     clock: Clock,
     skipCache: Boolean,
+    tidsgrenser: Tidsgrenser,
 ): Either<HttpKlientError.AuthError, ResolvedAuth> {
     authToken?.let { return ResolvedAuth(it, HttpKlientTidsstempler.INGEN).right() }
     val provider = effectiveAuthProvider(config) ?: return ResolvedAuth(null, HttpKlientTidsstempler.INGEN).right()
@@ -63,6 +65,10 @@ internal suspend fun HttpKlientRequest.resolveAuthToken(
         HttpKlientError.AuthError(
             throwable = e,
             metadata = HttpKlientMetadata(
+                method = method.name,
+                uri = uri,
+                uriSynlighet = config.uriSynlighet,
+                tidsgrenser = tidsgrenser,
                 rawRequestString = rawRequestString(requestHeaders = headers, bodyAsString = null),
                 rawResponseString = null,
                 requestHeaders = headers,

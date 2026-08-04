@@ -6,6 +6,8 @@ import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientMetadata
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientTidsstempler
+import no.nav.tiltakspenger.libs.httpklient.Tidsgrenser
+import no.nav.tiltakspenger.libs.httpklient.UriSynlighet
 import no.nav.tiltakspenger.libs.httpklient.infra.circuitbreaker.CircuitBreakerConfig
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.AuthTokenProvider
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.KlientAuth
@@ -13,6 +15,7 @@ import no.nav.tiltakspenger.libs.httpklient.infra.retry.Retry
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.HttpTransport
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.JavaHttpTransport
+import java.net.URI
 import java.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
@@ -91,12 +94,20 @@ internal fun testLogger(): KLogger = mockk(relaxed = true)
  * Vi har ingen defaults i [HttpKlientMetadata] med vilje, så denne fyller ut alle felter eksplisitt med "ikke utført"-verdier.
  */
 internal fun tomMetadata(
+    method: String = "GET",
+    uri: URI = URI.create("https://example.test/endepunkt"),
+    uriSynlighet: UriSynlighet = UriSynlighet.KunSikkerlogg,
+    tidsgrenser: Tidsgrenser = Tidsgrenser(svar = 30.seconds, oppkobling = 10.seconds),
     rawRequestString: String = "",
     rawResponseString: String? = null,
     requestHeaders: Map<String, List<String>> = emptyMap(),
     responseHeaders: Map<String, List<String>> = emptyMap(),
     statusCode: Int? = null,
 ): HttpKlientMetadata = HttpKlientMetadata(
+    method = method,
+    uri = uri,
+    uriSynlighet = uriSynlighet,
+    tidsgrenser = tidsgrenser,
     rawRequestString = rawRequestString,
     rawResponseString = rawResponseString,
     requestHeaders = requestHeaders,

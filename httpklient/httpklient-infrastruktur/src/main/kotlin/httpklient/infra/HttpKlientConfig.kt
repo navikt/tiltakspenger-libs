@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.httpklient.infra
 
+import no.nav.tiltakspenger.libs.httpklient.UriSynlighet
 import no.nav.tiltakspenger.libs.httpklient.infra.circuitbreaker.CircuitBreakerConfig
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.KlientAuth
 import no.nav.tiltakspenger.libs.httpklient.infra.retry.Retry
@@ -52,4 +53,13 @@ data class HttpKlientConfig(
      * Default er [TimeSource.Monotonic]; sett en [kotlin.time.TestTimeSource] for deterministiske tester.
      */
     val timeSource: TimeSource = TimeSource.Monotonic,
+
+    /**
+     * Om klientens URIer tåler å stå i vanlig logg.
+     * Se [UriSynlighet]; dette er den ene vurderingen `httpklient` ikke kan gjøre på vegne av klienten, siden bare klienten vet om path eller query kan bære en ident.
+     *
+     * Default er den trygge antagelsen ([UriSynlighet.KunSikkerlogg]).
+     * Klienter med faste, personopplysningsfrie endepunkter bør sette [UriSynlighet.VanligLogg] — da navngir feilloggene endepunktet i klartekst, som er den konteksten som mangler mest når noe feiler i prod.
+     */
+    val uriSynlighet: UriSynlighet = UriSynlighet.KunSikkerlogg,
 )

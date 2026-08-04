@@ -2,11 +2,16 @@ package no.nav.tiltakspenger.libs.httpklient
 
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
+import java.net.URI
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 internal class HttpKlientConvenienceAccessorsTest {
     private val metadata = HttpKlientMetadata(
+        method = "GET",
+        uri = URI.create("https://example.com/api"),
+        uriSynlighet = UriSynlighet.VanligLogg,
+        tidsgrenser = Tidsgrenser(svar = 30.seconds, oppkobling = 10.seconds),
         rawRequestString = "GET https://example.com/api",
         rawResponseString = "respons-body",
         requestHeaders = mapOf("Accept" to listOf("application/json")),
@@ -20,8 +25,12 @@ internal class HttpKlientConvenienceAccessorsTest {
 
     @Test
     fun `HttpKlientError eksponerer metadata-feltene via convenience-aksessorer`() {
-        val error: HttpKlientError = HttpKlientError.Timeout(throwable = RuntimeException("timeout"), metadata = metadata)
+        val error: HttpKlientError =
+            HttpKlientError.Timeout(throwable = RuntimeException("timeout"), fase = Timeoutfase.Svar, metadata = metadata)
 
+        error.method shouldBe metadata.method
+        error.uri shouldBe metadata.uri
+        error.endepunkt shouldBe metadata.endepunkt
         error.rawRequestString shouldBe metadata.rawRequestString
         error.rawResponseString shouldBe metadata.rawResponseString
         error.requestHeaders shouldBe metadata.requestHeaders
@@ -36,6 +45,9 @@ internal class HttpKlientConvenienceAccessorsTest {
     fun `HttpKlientResponse eksponerer metadata-feltene via convenience-aksessorer`() {
         val response = HttpKlientResponse(statusCode = 200, body = "body", metadata = metadata)
 
+        response.method shouldBe metadata.method
+        response.uri shouldBe metadata.uri
+        response.endepunkt shouldBe metadata.endepunkt
         response.rawRequestString shouldBe metadata.rawRequestString
         response.rawResponseString shouldBe metadata.rawResponseString
         response.requestHeaders shouldBe metadata.requestHeaders

@@ -10,8 +10,12 @@ import kotlinx.coroutines.runBlocking
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.common.withWireMockServer
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
+import no.nav.tiltakspenger.libs.httpklient.Timeoutfase
+import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
 import org.junit.jupiter.api.Test
 import java.net.URI
+import java.net.http.HttpConnectTimeoutException
+import java.net.http.HttpTimeoutException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTimedValue
@@ -105,5 +109,36 @@ internal class HttpKlientTimeoutTest {
             // Skal feile lenge før request-timeouten på 30s — bundet av connect-timeouten.
             elapsed shouldBeLessThan 10.seconds
         }
+    }
+
+    /**
+     * Pinner klassifiseringen av de to timeout-typene deterministisk, uten å være avhengig av hvordan nettverket oppfører seg.
+     * Testen over kan gi enten `Timeout` eller `NetworkError` avhengig av oppsett, så den kan ikke bære dekningen av oppkoblings-grenen alene.
+     *
+     * Rekkefølgen i klassifiseringen er det som testes: `HttpConnectTimeoutException` arver `HttpTimeoutException`, så en `when` med feil rekkefølge ville stemplet alt som [Timeoutfase.Svar].
+     */
+    @Test
+    fun `connect-timeout og request-timeout klassifiseres til hver sin fase`() = runBlocking {
+        val transport = FakeHttpTransport()
+        transport.leggIKøKast(HttpConnectTimeoutException("HTTP connect timed out"))
+        transport.leggIKøKast(HttpTimeoutException("request timed out"))
+        val klient = fakeHttpKlient(transport)
+
+        klient.getPdf(URI.create("http://test/en")).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.Timeout>().fase shouldBe Timeoutfase.Oppkobling
+
+        klient.getPdf(URI.create("http://test/to")).swap().getOrNull()!!
+            .shouldBeInstanceOf<HttpKlientError.Timeout>().fase shouldBe Timeoutfase.Svar
+    }
+
+    /** Grensa som brøt står i beskrivelsen, slik at logglinja ikke må leses sammen med konfigurasjonen for å gi mening. */
+    @Test
+    fun `timeout-beskrivelsen navngir grensa som brøt`() = runBlocking {
+        val transport = FakeHttpTransport()
+        transport.leggIKøKast(HttpTimeoutException("request timed out"))
+        val klient = fakeHttpKlient(transport)
+
+        klient.getPdf(URI.create("http://test/en")).swap().getOrNull()!!
+            .beskrivelse shouldBe "Timeout (svar, grense 10s)"
     }
 }

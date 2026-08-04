@@ -19,6 +19,8 @@ import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.common.withWireMockServer
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientTidsstempler
+import no.nav.tiltakspenger.libs.httpklient.Tidsgrenser
+import no.nav.tiltakspenger.libs.httpklient.Timeoutfase
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.HttpMethod
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.Statusregel
 import no.nav.tiltakspenger.libs.httpklient.infra.retry.AttemptOutcome
@@ -309,7 +311,13 @@ internal class HttpKlientRetryTest {
             body = HttpKlientRequest.Body.Ingen,
             responsFormat = ResponsFormat.IngenBody,
         )
-        val prepared = request.toJavaHttpRequest(1.seconds, request.headers, HttpKlientTidsstempler.INGEN).getOrNull()!!
+        val prepared = request.toJavaHttpRequest(
+            1.seconds,
+            request.headers,
+            HttpKlientTidsstempler.INGEN,
+            klient.config.uriSynlighet,
+            Tidsgrenser(svar = 1.seconds, oppkobling = null),
+        ).getOrNull()!!
 
         val result = no.nav.tiltakspenger.libs.httpklient.infra.retry.RetryExecutor(klient.clock, klient.config.timeSource)
             .execute(request, retryConfig, isSuccessfulResponse = request::erSuksessStatus) { klient.runSingleAttempt(prepared.request) }
@@ -336,7 +344,7 @@ internal class HttpKlientRetryTest {
     @Test
     fun `retryable-flagg på HttpKlientError`() {
         val md = tomMetadata()
-        HttpKlientError.Timeout(RuntimeException(), md).retryable shouldBe true
+        HttpKlientError.Timeout(RuntimeException(), Timeoutfase.Svar, md).retryable shouldBe true
         HttpKlientError.NetworkError(RuntimeException(), md).retryable shouldBe true
         HttpKlientError.InvalidRequest(RuntimeException(), md).retryable shouldBe false
         HttpKlientError.SerializationError(RuntimeException(), md).retryable shouldBe false
@@ -363,7 +371,7 @@ internal class HttpKlientRetryTest {
         AttemptOutcome.Status(429).retryable shouldBe true
         AttemptOutcome.Status(500).retryable shouldBe true
         AttemptOutcome.Status(503).retryable shouldBe true
-        AttemptOutcome.Timeout(RuntimeException()).retryable shouldBe true
+        AttemptOutcome.Timeout(RuntimeException(), Timeoutfase.Svar).retryable shouldBe true
         AttemptOutcome.NetworkError(RuntimeException()).retryable shouldBe true
     }
 

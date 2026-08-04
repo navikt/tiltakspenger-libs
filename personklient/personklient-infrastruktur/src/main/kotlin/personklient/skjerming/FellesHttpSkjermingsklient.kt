@@ -3,12 +3,11 @@ package no.nav.tiltakspenger.libs.personklient.skjerming
 import arrow.core.Either
 import arrow.core.NonEmptyList
 import arrow.core.flatMap
-import io.github.oshai.kotlinlogging.KLogger
-import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
+import no.nav.tiltakspenger.libs.httpklient.UriSynlighet
 import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient
 import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlientConfig
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.AuthTokenProvider
@@ -16,9 +15,7 @@ import no.nav.tiltakspenger.libs.httpklient.infra.kall.KlientAuth
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.NavHeadere
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.HttpTransport
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.JavaHttpTransport
-import no.nav.tiltakspenger.libs.httpklient.rawRequestString
 import no.nav.tiltakspenger.libs.httpklient.tryMap
-import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesSkjermingError
 import java.net.URI
 import java.time.Clock
@@ -34,18 +31,23 @@ import kotlin.time.Duration.Companion.seconds
  * Slack: #skjermingsløsningen
  * Teamkatalog: https://teamkatalogen.nav.no/tag/Skjermingsl%C3%B8sningen
  *
- * Requesten bærer fnr, så selve requesten logges aldri til vanlig logg — kun til sikkerlogg (samme regel som før migreringen til [HttpKlient]).
+ * Requesten bærer fnr, så den logges aldri til vanlig logg — kun til sikkerlogg.
+ * URIen er derimot frikjent ([UriSynlighet.VanligLogg]): begge endepunktene er faste stier, og identene ligger i bodyen.
+ *
+ * Klienten logger ikke selv; se [tilFellesSkjermingError].
  *
  * @param clock Klokken til metadata-tidsstempler i [HttpKlient].
  * Påkrevd; ingen default i produksjonskode (se AGENTS.md).
+ * @param connectTimeout Tid til å få opp forbindelsen.
+ * Sto på 1 s, som en kald TCP/TLS-oppkobling mot en ekstern host fint kan overskride — og siden klienten ikke retryer, veltet ett tregt oppkoblingsforsøk hele tilgangskontrollen.
+ * @param timeout Tid til å få svaret.
  */
 class FellesHttpSkjermingsklient(
     endepunkt: String,
     getToken: suspend () -> AccessToken,
     clock: Clock,
-    connectTimeout: Duration = 1.seconds,
-    timeout: Duration = 1.seconds,
-    private val logg: KLogger = KotlinLogging.logger {},
+    connectTimeout: Duration = 3.seconds,
+    timeout: Duration = 5.seconds,
     transport: HttpTransport = JavaHttpTransport(connectTimeout = connectTimeout),
 ) : FellesSkjermingsklient {
 
@@ -54,6 +56,9 @@ class FellesHttpSkjermingsklient(
         transport = transport,
         config = HttpKlientConfig(
             timeout = timeout,
+            // Begge endepunktene er faste stier uten path- eller query-parametre; identene ligger i request-bodyen.
+            // Da kan URIen stå i vanlig logg, og feillogger navngir endepunktet i klartekst.
+            uriSynlighet = UriSynlighet.VanligLogg,
             auth = KlientAuth.System(
                 object : AuthTokenProvider {
                     // getToken-lambdaen er frossen offentlig API og har ingen skip-cache-semantikk, så parameteren ignoreres bevisst.
@@ -82,7 +87,7 @@ class FellesHttpSkjermingsklient(
             body = SkjermetDataRequestDTO(personident = fnr.verdi),
             headere = listOf(NavHeadere.navCallId(correlationId.value)),
         ).map { respons -> respons.body }
-            .mapLeft { feil -> feil.tilFellesSkjermingErrorOgLogg(sikkerloggKontekstVedUkjentFeil = "for fnr: ${fnr.verdi}") }
+            .mapLeft { feil -> feil.tilFellesSkjermingError() }
     }
 
     override suspend fun erSkjermetPersoner(
@@ -94,11 +99,11 @@ class FellesHttpSkjermingsklient(
             body = SkjermetDataBolkRequestDTO(personidenter = fnrListe.distinct().map { it.verdi }),
             headere = listOf(NavHeadere.navCallId(correlationId.value)),
         ).mapLeft { feil ->
-            feil.tilFellesSkjermingErrorOgLogg(sikkerloggKontekstVedUkjentFeil = "")
+            feil.tilFellesSkjermingError()
         }.flatMap { respons ->
             // Fnr-mapping som feiler skal gi samme utfall som før: en DeserializationException med body og status.
             respons.tryMap { bolk -> bolk.mapKeys { (personident, _) -> Fnr.fromString(personident) } }
-                .mapLeft { feil -> feil.tilFellesSkjermingErrorOgLogg(sikkerloggKontekstVedUkjentFeil = "") }
+                .mapLeft { feil -> feil.tilFellesSkjermingError() }
         }
     }
 
@@ -119,45 +124,20 @@ class FellesHttpSkjermingsklient(
     )
 
     /**
-     * Mapper [HttpKlientError] til [FellesSkjermingError] og logger med samme meldinger og logg/sikkerlogg-splitt som før migreringen.
-     * [sikkerloggKontekstVedUkjentFeil] bevarer forskjellen i dagens sikkerlogg-meldinger mellom enkelt- og bulk-oppslag ved ukjente feil.
+     * Mapper [HttpKlientError] til [FellesSkjermingError] uten å logge.
+     *
+     * Loggingen lå her før, men klienten kjenner ikke domenekonteksten (sak, barn, saksbehandler), så linja måtte bli generisk — «Ukjent feil ved henting av skjerming» dekket alt fra en connect-timeout til at tokenhentingen kastet.
+     * Nå følger feilen med opp til konsumenten, som logger én gang med `HttpKlientError.loggFeil` og har både feilart, endepunkt og sin egen kontekst å skrive.
      */
-    private fun HttpKlientError.tilFellesSkjermingErrorOgLogg(sikkerloggKontekstVedUkjentFeil: String): FellesSkjermingError =
+    private fun HttpKlientError.tilFellesSkjermingError(): FellesSkjermingError =
         when (this) {
-            is HttpKlientError.ResponsMottatt -> when (this) {
-                is HttpKlientError.DeserializationError -> {
-                    logg.error(RuntimeException("Trigger stacktrace for debug.")) {
-                        "Kunne ikke parse skjermingssvar. status=$statusCode. Se sikkerlogg for mer kontekst."
-                    }
-                    Sikkerlogg.error(throwable) {
-                        "Kunne ikke parse skjermingssvar. status=$statusCode. response=$body. request=$rawRequestString"
-                    }
-                    FellesSkjermingError.DeserializationException(throwable, body, statusCode)
-                }
+            is HttpKlientError.DeserializationError -> FellesSkjermingError.DeserializationException(this)
 
-                is HttpKlientError.UventetStatus -> {
-                    logg.error(RuntimeException("Trigger stacktrace for debug.")) {
-                        "Uforventet http-status ved henting av skjerming. status=$statusCode. Se sikkerlogg for mer kontekst."
-                    }
-                    Sikkerlogg.error { "Uforventet http-status ved henting av skjerming. status=$statusCode. response=$body. request=$rawRequestString" }
-                    FellesSkjermingError.Ikke2xx(status = statusCode, body = body)
-                }
-            }
+            is HttpKlientError.UventetStatus -> FellesSkjermingError.Ikke2xx(this)
 
-            // Nettverk/timeout og feil før noe ble sendt (inkl. at getToken kaster) behandles likt som før: NetworkError.
-            is HttpKlientError.IngenRespons -> nettverksfeilOgLogg(throwable, sikkerloggKontekstVedUkjentFeil)
-
-            is HttpKlientError.RequestIkkeSendt -> nettverksfeilOgLogg(throwable, sikkerloggKontekstVedUkjentFeil)
+            // Nettverk/timeout og feil før noe ble sendt (inkl. at getToken kaster) samles som før i NetworkError; hvilken av dem det var står i httpKlientError.
+            is HttpKlientError.IngenRespons,
+            is HttpKlientError.RequestIkkeSendt,
+            -> FellesSkjermingError.NetworkError(this)
         }
-
-    private fun nettverksfeilOgLogg(
-        throwable: Throwable,
-        sikkerloggKontekst: String,
-    ): FellesSkjermingError.NetworkError {
-        logg.error(RuntimeException("Trigger stacktrace for debug.")) {
-            "Ukjent feil ved henting av skjerming. Se sikkerlogg for mer kontekst."
-        }
-        Sikkerlogg.error(throwable) { "Ukjent feil ved henting av skjerming${if (sikkerloggKontekst.isBlank()) "." else " $sikkerloggKontekst"}" }
-        return FellesSkjermingError.NetworkError(throwable)
-    }
 }

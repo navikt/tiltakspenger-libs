@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.httpklient.infra.retry
 
 import arrow.resilience.Schedule
+import no.nav.tiltakspenger.libs.httpklient.Timeoutfase
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.HttpMethod
 import no.nav.tiltakspenger.libs.httpklient.isRetryableStatusCode
 
@@ -54,8 +55,11 @@ internal sealed interface AttemptOutcome {
         val throwable: Throwable
     }
 
-    /** Forsøket time-et ut (request- eller connect-timeout). */
-    data class Timeout(override val throwable: Throwable) : Failure {
+    /**
+     * Forsøket time-et ut.
+     * [fase] settes der vi oversetter fra JDK-exceptionen ([no.nav.tiltakspenger.libs.httpklient.infra.toAttemptFailure]) og bæres videre herfra — skillet skal ikke utledes fra [throwable] på nytt lenger ut i kjeden.
+     */
+    data class Timeout(override val throwable: Throwable, val fase: Timeoutfase) : Failure {
         override val retryable: Boolean get() = true
     }
 

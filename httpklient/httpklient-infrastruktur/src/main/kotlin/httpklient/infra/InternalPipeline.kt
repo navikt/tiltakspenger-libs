@@ -8,6 +8,7 @@ import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientMetadata
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientResponse
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientTidsstempler
+import no.nav.tiltakspenger.libs.httpklient.Tidsgrenser
 import no.nav.tiltakspenger.libs.httpklient.infra.circuitbreaker.CircuitBreakerConfig
 import no.nav.tiltakspenger.libs.httpklient.infra.circuitbreaker.CircuitBreakerDecisionContext
 import no.nav.tiltakspenger.libs.httpklient.infra.circuitbreaker.cacheKey
@@ -35,12 +36,14 @@ private suspend fun HttpKlient.utførMedResolvedAuth(
     request: HttpKlientRequest,
     skipCache: Boolean,
 ): Either<HttpKlientError, HttpKlientResponse<ByteArray>> {
-    val resolvedAuth = request.resolveAuthToken(config, clock, skipCache).getOrElse { return it.left() }
+    // Tidsgrensene hentes ett sted og følger med i all metadata: svar-grensa fra config, oppkoblings-grensa fra transporten (som er den eneste som kjenner den).
+    val tidsgrenser = Tidsgrenser(svar = config.timeout, oppkobling = transport.connectTimeout)
+    val resolvedAuth = request.resolveAuthToken(config, clock, skipCache, tidsgrenser).getOrElse { return it.left() }
     val authToken = resolvedAuth.token
     val authTidsstempler = resolvedAuth.tidsstempler
     val requestHeaders = if (authToken != null) request.headers.withBearerToken(authToken) else request.headers
     val preparedRequest = request
-        .toJavaHttpRequest(config.timeout, requestHeaders, authTidsstempler)
+        .toJavaHttpRequest(config.timeout, requestHeaders, authTidsstempler, config.uriSynlighet, tidsgrenser)
         .getOrElse { return it.left() }
 
     val executeWithRetry = suspend {
@@ -58,6 +61,7 @@ private suspend fun HttpKlient.utførMedResolvedAuth(
             totalDuration = retryExecution.totalDuration,
             lastResult = retryExecution.lastResult,
             authTidsstempler = authTidsstempler,
+            tidsgrenser = tidsgrenser,
             requestSendt = retryExecution.requestSendt,
             responsMottatt = retryExecution.responsMottatt,
         )
@@ -71,6 +75,7 @@ private suspend fun HttpKlient.utførMedResolvedAuth(
             requestHeaders = requestHeaders,
             circuitBreakerConfig = circuitBreakerConfig,
             authTidsstempler = authTidsstempler,
+            tidsgrenser = tidsgrenser,
             execute = executeWithRetry,
         )
     }
@@ -89,6 +94,7 @@ internal suspend fun HttpKlient.executeWithCircuitBreaker(
     requestHeaders: Map<String, List<String>>,
     circuitBreakerConfig: CircuitBreakerConfig.Enabled,
     authTidsstempler: HttpKlientTidsstempler,
+    tidsgrenser: Tidsgrenser,
     execute: suspend () -> Either<HttpKlientError, HttpKlientResponse<ByteArray>>,
 ): Either<HttpKlientError, HttpKlientResponse<ByteArray>> {
     val circuitBreaker = circuitBreakers.computeIfAbsent(circuitBreakerConfig.cacheKey) {
@@ -113,6 +119,10 @@ internal suspend fun HttpKlient.executeWithCircuitBreaker(
                 HttpKlientError.CircuitBreakerOpen(
                     throwable = rejected,
                     metadata = HttpKlientMetadata(
+                        method = request.method.name,
+                        uri = request.uri,
+                        uriSynlighet = config.uriSynlighet,
+                        tidsgrenser = tidsgrenser,
                         rawRequestString = preparedRequest.rawRequestString,
                         rawResponseString = null,
                         requestHeaders = requestHeaders,
@@ -149,7 +159,6 @@ internal suspend fun HttpKlient.runSingleAttempt(request: java.net.http.HttpRequ
 /**
  * Mapper det endelige [AttemptResult] fra retry-kjøringen til en [HttpKlientError] eller en vellykket [HttpKlientResponse], og bygger [HttpKlientMetadata].
  */
-@Suppress("UnusedReceiverParameter")
 internal fun HttpKlient.finalize(
     request: HttpKlientRequest,
     preparedRequest: PreparedHttpKlientRequest,
@@ -159,6 +168,7 @@ internal fun HttpKlient.finalize(
     totalDuration: Duration,
     lastResult: AttemptResult,
     authTidsstempler: HttpKlientTidsstempler,
+    tidsgrenser: Tidsgrenser,
     requestSendt: LocalDateTime,
     responsMottatt: LocalDateTime,
 ): Either<HttpKlientError, HttpKlientResponse<ByteArray>> {
@@ -166,6 +176,10 @@ internal fun HttpKlient.finalize(
         { failure ->
             failure.toHttpKlientError(
                 metadata = HttpKlientMetadata(
+                    method = request.method.name,
+                    uri = request.uri,
+                    uriSynlighet = config.uriSynlighet,
+                    tidsgrenser = tidsgrenser,
                     rawRequestString = preparedRequest.rawRequestString,
                     rawResponseString = null,
                     requestHeaders = requestHeaders,
@@ -185,6 +199,10 @@ internal fun HttpKlient.finalize(
             // rawResponseString og UventetStatus.body skal være lesbar tekst (de havner typisk i konsumentens sikkerlogg): tekstlig innhold dekodes, binært innhold blir en placeholder.
             val lesbarResponsString = response.body.tilLesbarResponsString(responseHeaders)
             val metadata = HttpKlientMetadata(
+                method = request.method.name,
+                uri = request.uri,
+                uriSynlighet = config.uriSynlighet,
+                tidsgrenser = tidsgrenser,
                 rawRequestString = preparedRequest.rawRequestString,
                 rawResponseString = lesbarResponsString,
                 requestHeaders = requestHeaders,

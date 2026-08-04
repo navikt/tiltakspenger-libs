@@ -11,12 +11,16 @@ import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.withWireMockServer
+import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
+import no.nav.tiltakspenger.libs.httpklient.Timeoutfase
+import no.nav.tiltakspenger.libs.httpklient.endepunkt
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.DeserializationException
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.UkjentFeil
 import org.junit.jupiter.api.Test
 import java.io.IOException
 import java.net.URI
+import java.net.http.HttpConnectTimeoutException
 import java.time.Instant
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -189,7 +193,7 @@ internal class FellesHttpPersonklientTest {
     }
 
     @Test
-    fun `401 mappes til Ikke2xx og logges med egen auth-melding`() = runTest {
+    fun `401 mappes til Ikke2xx med status og lesbar body`() = runTest {
         val transport = FakeHttpTransport()
         transport.leggIKøStatus(statusCode = 401, body = "unauthorized")
         val pdlClient = FellesHttpPersonklient(
@@ -198,10 +202,11 @@ internal class FellesHttpPersonklientTest {
             transport = transport,
         )
 
-        pdlClient.graphqlRequest(token, "{}").swap().getOrNull()!! shouldBe FellesPersonklientError.Ikke2xx(
-            status = 401,
-            body = "unauthorized",
-        )
+        pdlClient.graphqlRequest(token, "{}").swap().getOrNull()!!.also {
+            it.shouldBeTypeOf<FellesPersonklientError.Ikke2xx>()
+            it.status shouldBe 401
+            it.body shouldBe "unauthorized"
+        }
     }
 
     @Test
@@ -240,10 +245,11 @@ internal class FellesHttpPersonklientTest {
             transport = transport,
         )
 
-        pdlClient.graphqlRequest(token, "{}").swap().getOrNull()!! shouldBe FellesPersonklientError.Ikke2xx(
-            status = 500,
-            body = "intern serverfeil",
-        )
+        pdlClient.graphqlRequest(token, "{}").swap().getOrNull()!!.also {
+            it.shouldBeTypeOf<FellesPersonklientError.Ikke2xx>()
+            it.status shouldBe 500
+            it.body shouldBe "intern serverfeil"
+        }
     }
 
     @Test
@@ -258,7 +264,29 @@ internal class FellesHttpPersonklientTest {
 
         pdlClient.graphqlRequest(token, "{}").swap().getOrNull()!!.also {
             it.shouldBeTypeOf<FellesPersonklientError.NetworkError>()
-            it.exception.message shouldBe "simulert nettverksfeil"
+            it.exception?.message shouldBe "simulert nettverksfeil"
         }
+    }
+
+    /**
+     * Klienten logger ikke selv lenger, så alt konsumenten trenger for å skrive én god feillinje må ligge i feilen.
+     * Testen pinner nettopp det: feilart og endepunkt, som stacktracen fra en asynkron transportfeil aldri kan gi oss.
+     */
+    @Test
+    fun `feilen bærer feilart og endepunkt videre til konsumentens logging`() = runTest {
+        val transport = FakeHttpTransport()
+        transport.leggIKøKast(HttpConnectTimeoutException("HTTP connect timed out"))
+        val pdlClient = FellesHttpPersonklient(
+            endepunkt = "http://pdl.test/graphql",
+            clock = fixedClock,
+            transport = transport,
+        )
+
+        val feil = pdlClient.graphqlRequest(token, "{}").swap().getOrNull()!!
+        feil.shouldBeTypeOf<FellesPersonklientError.NetworkError>()
+
+        feil.httpKlientError.shouldBeTypeOf<HttpKlientError.Timeout>().fase shouldBe Timeoutfase.Oppkobling
+        feil.httpKlientError.beskrivelse shouldBe "Timeout (oppkobling)"
+        feil.httpKlientError.endepunkt shouldBe "POST http://pdl.test/graphql"
     }
 }

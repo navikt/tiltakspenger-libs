@@ -2,18 +2,15 @@ package no.nav.tiltakspenger.libs.personklient.pdl
 
 import arrow.core.Either
 import arrow.core.left
-import io.github.oshai.kotlinlogging.KLogger
-import io.github.oshai.kotlinlogging.KotlinLogging
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
+import no.nav.tiltakspenger.libs.httpklient.UriSynlighet
 import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient
 import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlientConfig
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.NavHeadere
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.SerialisertJson
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.HttpTransport
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.JavaHttpTransport
-import no.nav.tiltakspenger.libs.httpklient.rawRequestString
-import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklientError.Ikke2xx
 import java.net.URI
 import java.time.Clock
@@ -45,11 +42,16 @@ internal class FellesHttpPersonklient(
     tema: String = "IND",
     connectTimeout: Duration = 10.seconds,
     timeout: Duration = 10.seconds,
-    private val logg: KLogger = KotlinLogging.logger {},
     transport: HttpTransport = JavaHttpTransport(connectTimeout = connectTimeout),
 ) : FellesPersonklient {
     private val httpKlient: HttpKlient =
-        HttpKlient(clock, HttpKlientConfig(timeout = timeout), transport)
+        HttpKlient(
+            clock,
+            // GraphQL-endepunktet er én fast sti uten path- eller query-parametre; identen ligger i spørringens variabler.
+            // Da kan URIen stå i vanlig logg.
+            HttpKlientConfig(timeout = timeout, uriSynlighet = UriSynlighet.VanligLogg),
+            transport,
+        )
 
     private val uri = URI.create(endepunkt)
 
@@ -67,50 +69,25 @@ internal class FellesHttpPersonklient(
             headere = headere,
             bearerToken = token,
         ).fold(
-            ifLeft = { feil -> feil.tilFellesPersonklientErrorOgLogg().left() },
+            ifLeft = { feil -> feil.tilFellesPersonklientError().left() },
             ifRight = { respons -> respons.body.extractData() },
         )
     }
 
     /**
-     * Mapper [HttpKlientError] til [FellesPersonklientError] og logger med samme meldinger og logg/sikkerlogg-splitt som før migreringen.
-     * Vanlig logg får aldri request/respons (requesten bærer fnr); sikkerlogg får maskert request og lesbar respons fra metadataen.
+     * Mapper [HttpKlientError] til [FellesPersonklientError] uten å logge.
+     *
+     * Loggingen lå her før, men klienten kjenner ikke domenekonteksten (sak, behandling), så linja måtte bli generisk — «Ukjent feil ved henting av person fra PDL» dekket alt fra en connect-timeout til at tokenhentingen kastet.
+     * Nå følger feilen med opp til konsumenten, som logger én gang med `HttpKlientError.loggFeil` og har både feilart, endepunkt og sin egen kontekst å skrive.
      */
-    private fun HttpKlientError.tilFellesPersonklientErrorOgLogg(): FellesPersonklientError = when (this) {
-        is HttpKlientError.ResponsMottatt -> when (this) {
-            is HttpKlientError.DeserializationError -> {
-                logg.error(RuntimeException("Trigger stacktrace for debug.")) {
-                    "Feil ved deserialisering av PDL-respons. status=$statusCode. Se sikkerlogg for mer kontekst."
-                }
-                Sikkerlogg.error(throwable) { "Feil ved deserialisering av PDL-respons. status=$statusCode. response=$body. request=$rawRequestString" }
-                FellesPersonklientError.DeserializationException(throwable)
-            }
+    private fun HttpKlientError.tilFellesPersonklientError(): FellesPersonklientError = when (this) {
+        is HttpKlientError.DeserializationError -> FellesPersonklientError.DeserializationException(this)
 
-            is HttpKlientError.UventetStatus -> {
-                logg.error(RuntimeException("Trigger stacktrace for debug.")) {
-                    "Feil status ved henting av person fra PDL. status=$statusCode. Se sikkerlogg for mer kontekst."
-                }
-                Sikkerlogg.error(RuntimeException("Trigger stacktrace for debug.")) {
-                    "Feil status ved henting av person fra PDL. status=$statusCode. response=$body. request=$rawRequestString"
-                }
-                if (statusCode == 401 || statusCode == 403) {
-                    logg.error(RuntimeException("Trigger stacktrace for debug.")) { "Mottok $statusCode fra PDL." }
-                }
-                Ikke2xx(status = statusCode, body = body)
-            }
-        }
+        is HttpKlientError.UventetStatus -> Ikke2xx(this)
 
-        // Nettverk/timeout og feil før noe ble sendt behandles likt som før: alt som ikke er en respons fra PDL er en NetworkError.
-        is HttpKlientError.IngenRespons -> nettverksfeilOgLogg(throwable)
-
-        is HttpKlientError.RequestIkkeSendt -> nettverksfeilOgLogg(throwable)
-    }
-
-    private fun HttpKlientError.nettverksfeilOgLogg(throwable: Throwable): FellesPersonklientError.NetworkError {
-        logg.error(RuntimeException("Trigger stacktrace for debug.")) {
-            "Ukjent feil ved henting av person fra PDL. Se sikkerlogg for mer kontekst."
-        }
-        Sikkerlogg.error(throwable) { "Ukjent feil ved henting av person fra PDL. request: $rawRequestString" }
-        return FellesPersonklientError.NetworkError(throwable)
+        // Nettverk/timeout og feil før noe ble sendt samles som før i NetworkError; hvilken av dem det var står i httpKlientError.
+        is HttpKlientError.IngenRespons,
+        is HttpKlientError.RequestIkkeSendt,
+        -> FellesPersonklientError.NetworkError(this)
     }
 }

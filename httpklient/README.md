@@ -222,13 +222,51 @@ Konsumentens egen klientklasse skal derfor heller ikke logge — den returnerer 
 Vanlig `logger` skal aldri inneholde PII, mens `Sikkerlogg` kan.
 `loggFeil` og `loggSuksess` håndhever delingen:
 
-- **Vanlig logg** får `operasjon`, `kontekst`, `statusCode`, `attempts` og henvisningen til sikkerloggen — ingenting fra selve requesten eller responsen.
+- **Vanlig logg** får `operasjon`, `kontekst`, feilartens `beskrivelse`, `endepunkt`, `attempts`, `totalDuration`, `statusCode` når serveren svarte, og henvisningen til sikkerloggen — ingenting fra selve requesten eller responsen.
+  `loggSuksess` setter i tillegg `tidsgrenser.svar` ved siden av varigheten, slik at «brukt: 4.8s av 5s per forsøk» blir en tidlig varsling lenge før kallet begynner å time ut.
 - **Sikkerlogg** får i tillegg `rawRequestString`, `rawResponseString` og `responseHeaders`.
 - **Sensitive headere** (`Authorization`, `Proxy-Authorization`, `Cookie`, `Set-Cookie`) er allerede maskert til `***` i `rawRequestString`, så heller ikke sikkerloggen ser bearer-tokens.
 - **Binært innhold** gjengis som `<binær respons, N bytes>` og lignende, aldri som dekodet tekst.
 
 Kalleren styrer altså PII-grensen gjennom `kontekst`-strengen: den havner i vanlig logg, så bruk ID-er (`sakId`, saksnummer, periode) og ikke fødselsnummer eller navn.
 Skriver du en egen logglinje ved siden av, bruk `metadata.rawRequestString` — ikke `metadata.requestHeaders`, som har umaskerte verdier.
+
+### `UriSynlighet`: den ene vurderingen klienten må gjøre selv
+
+URIen er ofte den mest nyttige konteksten i en feillogg, men den kan bære en ident i en path-variabel eller et query-parameter.
+`httpklient` kan ikke vite hvilket av tilfellene det er, så klienten tar stilling én gang i `HttpKlientConfig`:
+
+| Verdi | `metadata.endepunkt` blir | Når |
+| --- | --- | --- |
+| `KunSikkerlogg` (default) | `POST https://host/<skjult>` | Klienten har ikke tatt stilling, eller path/query kan bære personopplysninger. Hele URIen finnes i `rawRequestString`, altså i sikkerlogg. |
+| `VanligLogg` | `POST https://host/full/sti` | Faste endepunkter der identen ligger i request-bodyen — skjermings- og PDL-klientene er eksempler. |
+
+Defaulten er den trygge antagelsen, men den avkortede formen navngir fortsatt hvilken integrasjon som feilet, siden host aldri er en personopplysning.
+
+### Hvorfor `beskrivelse` og `endepunkt` står i meldingen
+
+Feil fra `java.net.http` oppstår asynkront: exceptionen lages på klientens `SelectorManager`-tråd, ikke på tråden som gjorde kallet.
+Stacktracen inneholder derfor ingen applikasjonsframes og kan hverken fortelle hvilket endepunkt eller hvilken flyt det gjaldt — en `HttpConnectTimeoutException` ser identisk ut uansett hvem den gjaldt.
+Alt som skal være til hjelp i prod må derfor stå i selve logglinja.
+
+Av samme grunn skiller `HttpKlientError.Timeout` på `Timeoutfase.Oppkobling` og `Timeoutfase.Svar`.
+JDK-en skiller dem i typen (`HttpConnectTimeoutException` vs. `HttpTimeoutException`), og det er eneste sted skillet finnes: meldingen er «HTTP connect timed out» i begge tilfeller.
+En oppkoblings-timeout peker på nettverk, DNS eller en mottaker som ikke tar imot forbindelser; en svar-timeout peker på en treg mottaker.
+
+Fasen avgjøres én gang, i `toAttemptFailure`, der vi oversetter fra JDK-exception til `AttemptOutcome`, og bæres derfra hele veien til `HttpKlientError.Timeout`.
+Klassifiserer man ikke ved grensa, må skillet gjettes tilbake fra `throwable` lenger ut i kjeden — spesialisert → generalisert → spesialisert, der mellomtypen kastet informasjon den fikk inn.
+`AttemptOutcome` finnes fordi et enkelt forsøk ikke kan være en `HttpKlientError`: den krever `HttpKlientMetadata`, og `attempts`/`attemptDurations`/`totalDuration` er summer som først finnes når retry-loopen er ferdig.
+Prisen for den mellomtypen er at hver variant må bære alt den korresponderende feilen trenger.
+
+### Tidsgrensene i metadataen
+
+`HttpKlientMetadata.tidsgrenser` bærer budsjettet kallet kjørte under, fordi en varighet uten grensen ved siden av ikke er til å tolke — «brukt: 1.003s» kan være en klient som akkurat brøt 1 s, eller en som brukte en brøkdel av 30 s.
+
+- `svar` kommer fra `HttpKlientConfig.timeout` og gjelder per forsøk.
+- `oppkobling` kommer fra **transporten**, ikke fra config: `connectTimeout` er en egenskap ved selve `HttpClient`-instansen, og en kopi i config ville vært en annen sannhetskilde enn den som faktisk gjelder.
+  Den er `null` for transporter som ikke kobler opp noe, altså testfakes.
+
+Merk at grensene gjelder per forsøk, mens `totalDuration` dekker alle forsøk pluss backoff — de to skal ikke sammenlignes direkte når `attempts > 1`.
 
 ## Suksess-statuser
 

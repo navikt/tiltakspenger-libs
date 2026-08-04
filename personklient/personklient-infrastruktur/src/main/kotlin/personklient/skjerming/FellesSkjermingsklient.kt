@@ -26,8 +26,8 @@ interface FellesSkjermingsklient {
             endepunkt: String,
             getToken: suspend () -> AccessToken,
             clock: Clock,
-            connectTimeout: Duration = 1.seconds,
-            timeout: Duration = 1.seconds,
+            connectTimeout: Duration = 3.seconds,
+            timeout: Duration = 5.seconds,
         ): FellesSkjermingsklient = FellesHttpSkjermingsklient(
             endepunkt = endepunkt,
             getToken = getToken,

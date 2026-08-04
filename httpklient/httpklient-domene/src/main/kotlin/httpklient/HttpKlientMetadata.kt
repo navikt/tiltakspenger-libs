@@ -1,11 +1,18 @@
 package no.nav.tiltakspenger.libs.httpklient
 
+import java.net.URI
 import kotlin.time.Duration
 
 /**
  * Beskrivelse av en faktisk utført request/response (eller forsøk på dette).
  * Skal fylles ut eksplisitt av produsenten — det finnes ingen "fornuftige" default-verdier for denne typen informasjon, og defaults vil bare maskere bugs hvor felter ikke blir satt riktig.
  *
+ * @property method HTTP-metoden requesten ble sendt med, som ren tekst (`"POST"`).
+ *   Bevisst en `String` og ikke `no.nav.tiltakspenger.libs.httpklient.infra.kall.HttpMethod`: den typen hører til request-APIet i infrastruktur-modulen, og domenet skal ikke kjenne det.
+ * @property uri URIen kallet gikk mot, komplett med query.
+ *   Sammen med [method] identifiserer den endepunktet, som er den viktigste konteksten i en feillogg — men den kan bære personopplysninger, så bruk [endepunkt] når verdien skal til vanlig logg.
+ * @property uriSynlighet Klientens egen vurdering av om [uri] tåler vanlig logg.
+ *   Se [UriSynlighet]; styrer kun [endepunkt], aldri hva som sendes på tråden.
  * @property rawResponseString Lesbar tekst-representasjon av respons-bodyen, eller `null` når det ikke finnes noen respons.
  *   Tekstlig innhold (`Content-Type` med `text/`-prefiks, JSON eller XML — eller manglende `Content-Type`) er dekodet med charset fra `Content-Type` (default UTF-8) og trunkert ved 100 000 tegn.
  *   Binært innhold (f.eks. `application/pdf`) representeres som placeholderen `<binær respons, N bytes>` — rå binærdata havner aldri her, slik at verdien trygt kan sendes til sikkerlogg.
@@ -22,6 +29,14 @@ import kotlin.time.Duration
  *   Se [HttpKlientTidsstempler].
  */
 data class HttpKlientMetadata(
+    val method: String,
+    val uri: URI,
+    val uriSynlighet: UriSynlighet,
+    /**
+     * Tidsbudsjettet kallet kjørte under: [Tidsgrenser.svar] per forsøk og [Tidsgrenser.oppkobling] for å få opp forbindelsen.
+     * Uten dem sier ikke [totalDuration] om vi lå på grensa eller langt under den — og en timeout kan ikke navngi grensa den brøt.
+     */
+    val tidsgrenser: Tidsgrenser,
     val rawRequestString: String,
     val rawResponseString: String?,
     val requestHeaders: Map<String, List<String>>,
@@ -47,6 +62,17 @@ data class HttpKlientMetadata(
     }
 
     /**
+     * Endepunktet slik det trygt kan stå i vanlig logg, f.eks. `POST https://skjermede-personer-pip.intern.nav.no/skjermet`.
+     * Dette er konteksten en feillogg trenger mest: en asynkron feil fra `java.net.http` lages på klientens egen I/O-tråd og har ingen applikasjonsframes i stacktracen, så hvilket endepunkt som feilet må stå i selve meldingen.
+     * Har ikke klienten frikjent URIen ([UriSynlighet.KunSikkerlogg]), kuttes den til metode og host; hele URIen finnes uansett i [rawRequestString], som hører hjemme i sikkerlogg.
+     */
+    val endepunkt: String
+        get() = when (uriSynlighet) {
+            UriSynlighet.VanligLogg -> "$method $uri"
+            UriSynlighet.KunSikkerlogg -> "$method ${uri.scheme}://${uri.host ?: "<ukjent host>"}/<skjult>"
+        }
+
+    /**
      * Maskert med vilje.
      *
      * Den genererte `toString()`-en ville lagt hele request- og respons-bodyen inn i enhver logglinje som interpolerer en [HttpKlientMetadata] eller et [HttpKlientError] — og verre: [requestHeaders] bærer `Authorization: Bearer …` i klartekst.
@@ -57,6 +83,7 @@ data class HttpKlientMetadata(
      */
     override fun toString(): String =
         "HttpKlientMetadata(" +
+            "endepunkt=$endepunkt, " +
             "statusCode=$statusCode, attempts=$attempts, totalDuration=$totalDuration, " +
             "requestHeaders=${requestHeaders.keys}, responseHeaders=${responseHeaders.keys}, " +
             "rawRequestString=<${rawRequestString.length} tegn, maskert>, " +

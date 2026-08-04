@@ -6,7 +6,10 @@ import arrow.core.left
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientMetadata
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientTidsstempler
+import no.nav.tiltakspenger.libs.httpklient.Tidsgrenser
+import no.nav.tiltakspenger.libs.httpklient.UriSynlighet
 import no.nav.tiltakspenger.libs.json.serialize
+import java.net.URI
 import java.net.http.HttpRequest
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
@@ -16,6 +19,8 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
     timeout: Duration,
     requestHeaders: Map<String, List<String>>,
     authTidsstempler: HttpKlientTidsstempler,
+    uriSynlighet: UriSynlighet,
+    tidsgrenser: Tidsgrenser,
 ): Either<HttpKlientError, PreparedHttpKlientRequest> {
     val materialisertBody = when (val requestBody = body) {
         HttpKlientRequest.Body.Ingen -> MaterialisertBody(bytes = null, visningstekst = null)
@@ -25,6 +30,10 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
                 return HttpKlientError.SerializationError(
                     throwable = e,
                     metadata = preFlightMetadata(
+                        method = method.name,
+                        uri = uri,
+                        uriSynlighet = uriSynlighet,
+                        tidsgrenser = tidsgrenser,
                         rawRequestString = rawRequestString(
                             requestHeaders = requestHeaders,
                             bodyAsString = "<json-serialisering feilet>",
@@ -76,6 +85,10 @@ internal fun HttpKlientRequest.toJavaHttpRequest(
         HttpKlientError.InvalidRequest(
             throwable = e,
             metadata = preFlightMetadata(
+                method = method.name,
+                uri = uri,
+                uriSynlighet = uriSynlighet,
+                tidsgrenser = tidsgrenser,
                 rawRequestString = rawRequestString,
                 requestHeaders = requestHeaders,
                 tidsstempler = authTidsstempler,
@@ -101,10 +114,18 @@ private class MaterialisertBody(val bytes: ByteArray?, val visningstekst: String
  * [tidsstempler] kan likevel inneholde auth-tidsstempler dersom en [no.nav.tiltakspenger.libs.httpklient.infra.kall.AuthTokenProvider] rakk å bli kalt før feilen.
  */
 private fun preFlightMetadata(
+    method: String,
+    uri: URI,
+    uriSynlighet: UriSynlighet,
+    tidsgrenser: Tidsgrenser,
     rawRequestString: String,
     requestHeaders: Map<String, List<String>>,
     tidsstempler: HttpKlientTidsstempler,
 ): HttpKlientMetadata = HttpKlientMetadata(
+    method = method,
+    uri = uri,
+    uriSynlighet = uriSynlighet,
+    tidsgrenser = tidsgrenser,
     rawRequestString = rawRequestString,
     rawResponseString = null,
     requestHeaders = requestHeaders,

@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.httpklient
 import arrow.core.Either
 import io.github.oshai.kotlinlogging.KLogger
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
+import java.net.URI
 import kotlin.time.Duration
 
 data class HttpKlientResponse<out Body>(
@@ -18,6 +19,11 @@ data class HttpKlientResponse<out Body>(
      * Convenience-aksessorer som peker rett inn i [metadata].
      * Lar konsumenter slippe å skrive `response.metadata.requestHeaders` osv., samtidig som vi beholder [HttpKlientMetadata] som eneste datatype og sannhetskilde for disse feltene.
      */
+    val method: String get() = metadata.method
+    val uri: URI get() = metadata.uri
+
+    /** Endepunktet i PII-fri form, klar for vanlig logg — se [HttpKlientMetadata.endepunkt]. */
+    val endepunkt: String get() = metadata.endepunkt
     val rawRequestString: String get() = metadata.rawRequestString
 
     /**
@@ -44,7 +50,9 @@ data class HttpKlientResponse<out Body>(
  * @param sikkerlogg Sikkerlogg-instansen henvisningen og sikkerlogg-linja går gjennom; default er companion-objektet (ren tekst-henvisning), injiser appens instans for klikkbar lenke.
  */
 fun HttpKlientResponse<*>.loggSuksess(logger: KLogger, melding: String, sikkerlogg: Sikkerlogg = Sikkerlogg) {
-    val start = "$melding Status: $statusCode, forsøk: $attempts."
+    // Grensa står ved siden av varigheten fordi «brukt: 4.8s» alene ikke sier om vi er trygt innenfor eller i ferd med å begynne å time ut.
+    val start =
+        "$melding $endepunkt. Status: $statusCode, forsøk: $attempts, brukt: $totalDuration av ${metadata.tidsgrenser.svar} per forsøk."
     logger.info { "$start ${sikkerlogg.seSikkerlogg}" }
     // Bruker invariant-aksessorene (ikke metadata direkte): et invariant-brudd skal feile tydelig, ikke bli et stille «Response: null» i sikkerlogg.
     sikkerlogg.info { "$start Request: $rawRequestString. Response: $rawResponseString." }

@@ -132,10 +132,11 @@ internal class FellesHttpSkjermingsklientTest {
             }
 
             runTest {
-                klient(wiremock.baseUrl()).erSkjermetPerson(fnr, correlationId).swap().getOrNull()!! shouldBe FellesSkjermingError.Ikke2xx(
-                    status = 503,
-                    body = "utilgjengelig",
-                )
+                klient(wiremock.baseUrl()).erSkjermetPerson(fnr, correlationId).swap().getOrNull()!!.also {
+                    it.shouldBeTypeOf<FellesSkjermingError.Ikke2xx>()
+                    it.status shouldBe 503
+                    it.body shouldBe "utilgjengelig"
+                }
             }
         }
     }
@@ -213,7 +214,7 @@ internal class FellesHttpSkjermingsklientTest {
                     .getOrNull()!!
 
                 feil.shouldBeTypeOf<FellesSkjermingError.NetworkError>()
-                feil.exception.message shouldBe "token-feil"
+                feil.exception?.message shouldBe "token-feil"
             }
         }
     }
@@ -242,7 +243,7 @@ internal class FellesHttpSkjermingsklientTest {
                     .getOrNull()!!
 
                 feil.shouldBeTypeOf<FellesSkjermingError.NetworkError>()
-                feil.exception.message shouldBe "token-feil"
+                feil.exception?.message shouldBe "token-feil"
             }
         }
     }

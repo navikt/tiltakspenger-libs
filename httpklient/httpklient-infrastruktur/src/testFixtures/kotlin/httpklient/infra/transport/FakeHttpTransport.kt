@@ -8,6 +8,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Flow
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
 
 /**
  * Kø-basert [HttpTransport] for tester: svarer med køede responser/exceptions og tar opp kallene den mottar.
@@ -24,6 +25,9 @@ import java.util.concurrent.TimeUnit
  * Ikke bruk `CancellationException` til dette — den fanges bevisst ikke av pipelinen (se kontrakten på [HttpTransport]).
  */
 class FakeHttpTransport : HttpTransport {
+    /** Faken kobler ikke opp noe, så det finnes ingen oppkoblings-grense å rapportere. */
+    override val connectTimeout: Duration? = null
+
     private val lock = Any()
     private val kø = ArrayDeque<KøetSvar>()
     private val mutableMottatteKall = mutableListOf<MottattKall>()

@@ -1,6 +1,6 @@
 pluginManagement {
     // Konvensjonspluginene bor i et eget inkludert bygg, ikke i buildSrc: buildSrc invaliderer hele bygget ved hver
-    // endring, og kan aldri publiseres videre slik app-repoene skal konsumere dem. Selve jaren publiseres ikke ennå.
+    // endring, og kan aldri publiseres videre slik app-repoene konsumerer dem.
     includeBuild("build-logic")
     repositories {
         gradlePluginPortal()

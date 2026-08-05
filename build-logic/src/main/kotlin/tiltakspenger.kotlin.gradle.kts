@@ -125,17 +125,19 @@ tasks.named("check") { dependsOn(verifiserHttpKlienter) }
 // artefakt og hører hjemme i CI, ikke i hvert lokale bygg. Den skriver kun stier — `gh` gjør selve jobben.
 //
 // Grunnen til at Gradle må peke dem ut, og ikke et `find` i Gradle-cachen: cachen samler opp alle versjoner
-// som noen gang er lastet ned (834 på en utviklermaskin her), mens bygget bruker én av dem.
+// som noen gang er lastet ned - flere hundre på en utviklermaskin - mens bygget bruker én av dem.
 tasks.register("skrivLibsArtefakter") {
     group = "verification"
     description = "Skriver stiene til tiltakspenger-libs-artefaktene på runtime- og test-classpathen, for attestasjonssjekk i CI."
     val utfil = layout.buildDirectory.file("reports/libs-artefakter.txt")
     outputs.file(utfil)
+    // Compile-variantene er med fordi en `compileOnly`-avhengighet aldri havner på runtime-classpathen,
+    // men like fullt er kode vi bygger mot.
     val classpaths =
-        listOf("runtimeClasspath", "testRuntimeClasspath")
+        listOf("runtimeClasspath", "testRuntimeClasspath", "compileClasspath", "testCompileClasspath")
             .filter { navn -> configurations.findByName(navn) != null }
             .map { navn -> configurations.named(navn).get().incoming.artifacts }
-    classpaths.forEach { artefakter -> inputs.files(artefakter.artifactFiles) }
+    classpaths.forEachIndexed { indeks, artefakter -> inputs.files(artefakter.artifactFiles).withPropertyName("classpath$indeks") }
     val filer =
         providers.provider {
             classpaths

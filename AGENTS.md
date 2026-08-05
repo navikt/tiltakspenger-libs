@@ -17,7 +17,7 @@ Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tilta
   Hver submodul er et fokusert bibliotek (ID-er, DTO-er, klienter, hjelpere).
 - **Convention-plugins**: Delt build-logikk ligger i det inkluderte bygget `build-logic/`, ikke i `buildSrc`.
   `buildSrc` invaliderer hele bygget ved hver endring, og kan aldri publiseres videre til app-repoene slik et inkludert bygg kan.
-  Selve `build-logic`-jaren publiseres ikke i dag — muligheten er poenget, siden app-repoene skal ta i bruk de samme pluginene.
+  `build-logic` publiseres til GitHub Packages med plugin-markører, slik at app-repoene kan skrive `id("tiltakspenger.kotlin")`.
   Pluginene komponeres, slik at en modul bare tar i bruk det den faktisk er:
   - `tiltakspenger.kotlin` — grunnkonvensjonen: Kotlin/JVM-target og toolchain, compiler-flagg, Spotless med pinnet ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5-oppsett, ekskludering av JUnit 4 og gaten `verifiserHttpKlienter`.
   - `tiltakspenger.bibliotek` — grunnkonvensjonen pluss `java-library`, sources-jar og publisering til GitHub Packages.

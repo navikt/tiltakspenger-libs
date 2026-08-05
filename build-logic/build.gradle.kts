@@ -9,11 +9,33 @@ plugins {
 // `kotlin-dsl` drar inn `java-gradle-plugin`, som sammen med `maven-publish` lager både hovedpublikasjonen
 // og en markør per prekompilert skript-plugin, slik at app-repoene kan skrive `id("tiltakspenger.kotlin")`.
 group = "com.github.navikt.tiltakspenger-libs"
+version = providers.gradleProperty("version").getOrElse("0.0.0-lokal")
+
+// Nekter å publisere en lokal utviklingsversjon: GitHub Packages er immutable, og et feilaktig
+// versjonsnummer kan verken overskrives eller trekkes tilbake.
+tasks.withType<PublishToMavenRepository>().configureEach {
+    doFirst {
+        require(!project.version.toString().endsWith("-lokal")) {
+            "build-logic må publiseres med -Pversion=<versjon>. Nekter å publisere ${project.version}."
+        }
+    }
+}
 
 // Samme reproduserbarhet som `tiltakspenger.kotlin` gir modulene; build-logic bruker ikke sin egen konvensjon.
 tasks.withType<AbstractArchiveTask>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
+}
+
+// Samme SBOM-konvensjoner som `tiltakspenger.sbom` gir modulene; build-logic kan ikke bruke sin egen plugin.
+// Uten componentGroup får rotnoden en uoppslåelig `pkg:maven/unspecified/...`-purl, og uten avgrensningen
+// beskriver SBOM-en også avhengigheter som aldri havner på konsumentens buildscript-classpath.
+tasks.named<org.cyclonedx.gradle.BaseCyclonedxTask>("cyclonedxBom") {
+    componentGroup = "com.github.navikt.tiltakspenger-libs"
+    projectType = org.cyclonedx.model.Component.Type.LIBRARY
+}
+tasks.withType<org.cyclonedx.gradle.CyclonedxDirectTask>().configureEach {
+    includeConfigs = listOf("runtimeClasspath")
 }
 
 publishing {

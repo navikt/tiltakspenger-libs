@@ -1,3 +1,18 @@
+// Cyclonedx-pluginen i plugins-blokka under drar inn jackson 2 på build-logics EGEN buildscript-classpath.
+// Det er en egen konfigurasjon som jackson2-bom-løftet i dependencies-blokka lenger ned ikke når - det løftet
+// gjelder artefaktet konsumentene henter, mens dette gjelder bygget av build-logic selv (inkludert som del av
+// rotbygget, og dermed med i avhengighetsgrafen repoet sender inn).
+// Versjonene er skrevet ut fordi buildscript-blokka evalueres før katalog-accessorene finnes; hold dem i sync med `jackson2` i katalogen.
+buildscript {
+    dependencies {
+        constraints {
+            // Åpne advisories på 2.20.1 (bl.a. GHSA-j3rv-43j4-c7qm); samme mønster som avro-repoenes buildscript-pinning.
+            add("classpath", "com.fasterxml.jackson.core:jackson-core:2.22.1")
+            add("classpath", "com.fasterxml.jackson.core:jackson-databind:2.22.1")
+        }
+    }
+}
+
 plugins {
     `kotlin-dsl`
     `maven-publish`

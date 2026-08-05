@@ -52,6 +52,10 @@ publishing {
 }
 
 dependencies {
+    // Runtime-classpathen her blir konsumentenes buildscript-classpath, og cyclonedx-pluginen drar inn
+    // Jackson 2 med åpne advisories (databind/core 2.20.1, bl.a. GHSA-j3rv-43j4-c7qm). Bom-en løfter dem
+    // over de patchede versjonene — samme grep som `plattform` gjør for app-classpathene.
+    implementation(platform(libs.jackson2.bom))
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.spotless.gradle.plugin)
     implementation(libs.kover.gradle.plugin)

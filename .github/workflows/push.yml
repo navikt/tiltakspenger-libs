@@ -87,10 +87,10 @@ jobs:
         run: ./gradlew --console=plain -p build-logic -Pversion=${{ steps.tag.outputs.version }} build
         env:
           # Egen Gradle-kjøring: uten dette overskrives den filtrerte avhengighetsgrafen fra byggesteget.
-          # Kostnaden er at build-logics avhengighetsgraf ikke sendes inn, så transitive avhengigheter av
-          # Kotlin-, spotless-, kover- og cyclonedx-pluginene får ikke Dependabot-alerts denne veien.
-          # De deklarerte versjonene dekkes fortsatt, siden de bor i gradle/libs.versions.toml som Dependabot skanner direkte.
-          # TODO jah: vurder egen job-correlator i stedet, slik at begge grafene sendes inn side om side.
+          # Ingen dekningskostnad: build-logics runtime-avhengigheter fanges likevel som settings-classpath -
+          # via includeBuild i byggesteget over, og via modulresolusjonen hos konsumentene - så transitivene
+          # deres får Dependabot-alerts på settings.gradle.kts med scope development.
+          # Jackson 2-alertene 2026-08-05 (fra cyclonedx-core-java) kom nettopp den veien, i både libs og tiltak.
           GITHUB_DEPENDENCY_GRAPH_ENABLED: 'false'
       # SBOM over alt som følger med konsumentene, bygget fra avhengighetsgrafen (ikke ved å skanne jar-ene, som for tynne bibliotek-jar-er ville sett nesten ingenting).
       # Kjøres før publiseringen, sammen med attesteringen: alt bindes til filenes digest, som ikke endres av opplastingen.

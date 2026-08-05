@@ -2,14 +2,10 @@ plugins {
     `kotlin-dsl`
 }
 
-repositories {
-    mavenCentral()
-    gradlePluginPortal()
-}
-
 dependencies {
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.spotless.gradle.plugin)
-    // Makes version catalog type-safe accessors available in precompiled script plugins
+    implementation(libs.kover.gradle.plugin)
+    // Gjør versjonskatalogens type-sikre accessors (`libs.*`) tilgjengelige i de prekompilerte skript-pluginene.
     implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
 }

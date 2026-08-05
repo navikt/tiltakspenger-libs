@@ -1,6 +1,6 @@
 plugins {
-    id("tiltakspenger-lib-conventions")
-    alias(libs.plugins.kover)
+    id("tiltakspenger.bibliotek")
+    id("tiltakspenger.dekning")
 }
 
 dependencies {
@@ -58,16 +58,6 @@ val sjekkIngenJackson2 by tasks.registering {
 }
 
 tasks.named("check") {
-    dependsOn("koverVerify", sjekkIngenJackson2)
-}
-
-kover {
-    reports {
-        verify {
-            rule {
-                minBound(100)
-            }
-        }
-    }
+    dependsOn(sjekkIngenJackson2)
 }
 

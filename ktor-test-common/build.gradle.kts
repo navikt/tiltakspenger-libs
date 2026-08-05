@@ -1,6 +1,6 @@
 plugins {
-    id("tiltakspenger-lib-conventions")
-    alias(libs.plugins.kover)
+    id("tiltakspenger.bibliotek")
+    id("tiltakspenger.dekning")
 }
 
 dependencies {
@@ -26,16 +26,8 @@ dependencies {
     testImplementation(libs.ktor.server.test.host)
 }
 
-kover {
-    reports {
-        verify {
-            rule {
-                minBound(100)
-            }
-        }
-    }
-}
-
-tasks.check {
-    dependsOn(tasks.koverVerify)
+// WireMock og Testcontainers bruker selv Apache HttpClient 5, og modulen eksponerer dem videre.
+// Det er testinfrastruktur, ikke en klient vi kaller ut med, og den følger kun testscope videre til konsumentene — appenes egen runtimeClasspath er verifisert ren.
+httpKlientGuard {
+    tillat("org.apache.httpcomponents", "WireMock og Testcontainers bruker Apache HttpClient 5 internt; modulen er testinfrastruktur.")
 }

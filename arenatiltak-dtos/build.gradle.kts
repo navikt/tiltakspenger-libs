@@ -1,6 +1,6 @@
 plugins {
-    id("tiltakspenger-lib-conventions")
-    alias(libs.plugins.kover)
+    id("tiltakspenger.bibliotek")
+    id("tiltakspenger.dekning")
 }
 
 dependencies {

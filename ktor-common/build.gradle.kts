@@ -1,6 +1,6 @@
 plugins {
-    id("tiltakspenger-lib-conventions")
-    alias(libs.plugins.kover)
+    id("tiltakspenger.bibliotek")
+    id("tiltakspenger.dekning")
 }
 
 dependencies {
@@ -29,18 +29,4 @@ dependencies {
     // Netty trengs i test for å låse Netty sin "event executor terminated"-streng (DefaultEventExecutor).
     testImplementation(libs.ktor.server.netty)
     testImplementation(libs.kotlinx.coroutines.test.jvm)
-}
-
-kover {
-    reports {
-        verify {
-            rule {
-                minBound(100)
-            }
-        }
-    }
-}
-
-tasks.check {
-    dependsOn(tasks.koverVerify)
 }

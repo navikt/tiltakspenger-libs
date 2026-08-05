@@ -1,5 +1,5 @@
 plugins {
-    id("tiltakspenger-lib-conventions")
+    id("tiltakspenger.bibliotek")
 }
 
 dependencies {

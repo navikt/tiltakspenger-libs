@@ -1,6 +1,6 @@
 plugins {
-    id("tiltakspenger-lib-conventions")
-    alias(libs.plugins.kover)
+    id("tiltakspenger.bibliotek")
+    id("tiltakspenger.dekning")
     // FakeHttpTransport publiseres som testFixtures-variant slik at konsumentene tester mot den ekte pipelinen med byttet transport.
     `java-test-fixtures`
 }
@@ -23,20 +23,6 @@ dependencies {
 
     testImplementation(project(":test-common"))
     testImplementation(testFixtures(project(":httpklient:httpklient-infrastruktur")))
-}
-
-kover {
-    reports {
-        verify {
-            rule {
-                minBound(100)
-            }
-        }
-    }
-}
-
-tasks.check {
-    dependsOn(tasks.koverVerify)
 }
 
 tasks.withType<Jar> {

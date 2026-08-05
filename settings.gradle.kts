@@ -1,3 +1,21 @@
+pluginManagement {
+    // Konvensjonspluginene bor i et eget inkludert bygg, ikke i buildSrc: buildSrc invaliderer hele bygget ved
+    // hver endring, og kan ikke publiseres videre til app-repoene.
+    includeBuild("build-logic")
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+dependencyResolutionManagement {
+    // Repositories deklareres her, ikke i den enkelte modulen; en modul som legger til sitt eget feiler bygget.
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        mavenCentral()
+    }
+}
+
 rootProject.name = "tiltakspenger-libs"
 
 include(

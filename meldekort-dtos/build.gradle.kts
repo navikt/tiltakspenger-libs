@@ -1,6 +1,6 @@
 plugins {
-    id("tiltakspenger-lib-conventions")
-    alias(libs.plugins.kover)
+    id("tiltakspenger.bibliotek")
+    id("tiltakspenger.dekning")
 }
 
 dependencies {
@@ -8,19 +8,5 @@ dependencies {
     implementation(project(":periodisering"))
 
     testImplementation(project(":test-common"))
-}
-
-kover {
-    reports {
-        verify {
-            rule {
-                minBound(100)
-            }
-        }
-    }
-}
-
-tasks.named("check") {
-    dependsOn("koverVerify")
 }
 

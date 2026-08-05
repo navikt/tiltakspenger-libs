@@ -111,8 +111,9 @@ ulid-kotlin = { module = "com.aallam.ulid:ulid-kotlin", version.ref = "ulid" }
 # jetty12-varianten fordi standardartefakten bygger på EOL Jetty 11 uten sikkerhetsfikser.
 wiremock = { module = "org.wiremock:wiremock-jetty12", version.ref = "wiremock" }
 
-# Gradle plugin artifacts (used as dependencies in buildSrc)
+# Gradle-plugin-artefakter, brukt som avhengigheter i build-logic
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kover-gradle-plugin = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
 spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 
 [plugins]

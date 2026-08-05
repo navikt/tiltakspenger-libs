@@ -1,6 +1,6 @@
 plugins {
-    id("tiltakspenger-lib-conventions")
-    alias(libs.plugins.kover)
+    id("tiltakspenger.bibliotek")
+    id("tiltakspenger.dekning")
 }
 
 dependencies {
@@ -50,14 +50,9 @@ kover {
                 }
             }
         }
-        verify {
-            rule {
-                minBound(100)
-            }
-        }
     }
 }
 
 tasks.check {
-    dependsOn(tasks.koverVerify, tasks.named("koverVerifyHttpklientKlienter"))
+    dependsOn(tasks.named("koverVerifyHttpklientKlienter"))
 }

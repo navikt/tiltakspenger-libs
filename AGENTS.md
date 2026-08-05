@@ -15,11 +15,31 @@ Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tilta
 
 - **Gradle-submoduler** — se `settings.gradle.kts`.
   Hver submodul er et fokusert bibliotek (ID-er, DTO-er, klienter, hjelpere).
-- **Convention-plugin**: Delt build-logikk ligger i `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts`.
-  Alle submoduler tar den i bruk via `plugins { id("tiltakspenger-lib-conventions") }`.
-  Den konfigurerer Kotlin/JVM-target, Spotless med pinnet ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5, publisering og ekskludering av JUnit 4.
-  Plugin- og bibliotekversjoner er sentralisert i `gradle/libs.versions.toml`.
-  Enkeltmoduler kan slå på JetBrains Kover for coverage (nå: `arenatiltak-dtos`, `httpklient-domene`, `httpklient-infrastruktur`, `jobber`, `json`, `kafka-avro`, `ktor-common`, `ktor-test-common`, `meldekort-dtos`, `personklient-infrastruktur` og `texas`).
+- **Convention-plugins**: Delt build-logikk ligger i det inkluderte bygget `build-logic/`, ikke i `buildSrc`.
+  `buildSrc` invaliderer hele bygget ved hver endring og kan ikke publiseres videre til app-repoene; et inkludert bygg kan begge deler.
+  Pluginene komponeres, slik at en modul bare tar i bruk det den faktisk er:
+  - `tiltakspenger.kotlin` — grunnkonvensjonen: Kotlin/JVM-target og toolchain, compiler-flagg, Spotless med pinnet ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5-oppsett, ekskludering av JUnit 4 og gaten `verifiserHttpKlienter`.
+  - `tiltakspenger.bibliotek` — grunnkonvensjonen pluss `java-library`, sources-jar og publisering til GitHub Packages.
+    Alle submoduler bruker denne.
+  - `tiltakspenger.dekning` — Kover med krav om full linjedekning, koblet på `check`.
+    Brukes av `arenatiltak-dtos`, `httpklient-domene`, `httpklient-infrastruktur`, `jobber`, `json`, `kafka-avro`, `ktor-common`, `ktor-test-common`, `meldekort-dtos`, `personklient-infrastruktur`, `texas` og begge `tiltaksdeltakelse`-modulene.
+    Grendekning trappes opp per modul, se under.
+  - `tiltakspenger.githooks` — installerer `.gitHooks/` i `.git/hooks/`.
+    Ligger på rotprosjektet, siden hooks er per utsjekk.
+
+  **Grendekning** legges på i tillegg til linjedekningen, aldri i stedet for: full linjedekning sier ingenting om hvilken vei et vilkår ble tatt, og full grendekning sier ingenting om en linje uten grener.
+  Modulen trapper opp i sitt eget tempo med `dekning { grener = ... }`:
+  - `Grendekning.AV` (standard) — ingen grenregel.
+  - `Grendekning.RAPPORTER` — avviket logges som advarsel, bygget forblir grønt.
+    Bruk dette til å se gapet før gaten smekker igjen.
+  - `Grendekning.KREVES` — gate, bygget feiler under terskelen.
+
+  `dekning { grenterskel = 90 }` senker terskelen fra 100 og gir en skralle: det modulen allerede har oppnådd, kan ikke falle tilbake mens gapet lukkes.
+  Grenregelen ligger i rapportvarianten `grendekning` med egen task `koverVerifyGrendekning`, fordi Kovers `warningInsteadOfFailure` gjelder hele verify-blokka — lå den sammen med linjeregelen, ville `RAPPORTER` myket opp linjegaten også.
+
+  Plugin- og bibliotekversjoner er sentralisert i `gradle/libs.versions.toml`, som `build-logic` leser fra samme fil.
+  Repositories deklareres i `settings.gradle.kts` med `FAIL_ON_PROJECT_REPOS` — en modul som legger til sitt eget feiler bygget.
+  Unntak fra HTTP-klientgaten deklareres i modulen selv, med begrunnelse: `httpKlientGuard { tillat("<koordinatprefiks>", "<begrunnelse>") }`.
 - **Kildelayout**: standard Kotlin/Gradle-layout.
   Per [Kotlins kodekonvensjoner](https://kotlinlang.org/docs/coding-conventions.html#directory-structure) utelates den felles rotpakka `no.nav.tiltakspenger.libs` fra mappestrukturen (f.eks. `common/src/main/kotlin/common/SakId.kt` for pakka `no.nav.tiltakspenger.libs.common`).
 - **Domene/infrastruktur-splitt**: Moduler med eksterne avhengigheter (HTTP-klienter, DB) deles i `*-domene` (rent domene, ingen eksterne deps) og `*-infrastruktur` (eksterne deps tillatt).
@@ -131,7 +151,7 @@ Skjer det samme på GitHub-bygget, slett Gradle build-cachen for repoet (depende
 ```bash
 for id in $(gh cache list --limit 100 --json id,key -q '.[] | select(.key | contains("build-cache")) | .id'); do gh cache delete "$id"; done
 ```
-- Delt build-konfig (Kotlin/JVM-versjon, spotless-konfig, compiler-flagg, JUnit 4-ekskludering, `per_class`-testlivssyklus) ligger i `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts` — sjekk der før du endrer build-oppførsel i enkeltmoduler.
+- Delt build-konfig (Kotlin/JVM-versjon, spotless-konfig, compiler-flagg, JUnit 4-ekskludering, `per_class`-testlivssyklus) ligger i `build-logic/src/main/kotlin/tiltakspenger.kotlin.gradle.kts` — sjekk der før du endrer build-oppførsel i enkeltmoduler.
 
 ## CI og publisering
 

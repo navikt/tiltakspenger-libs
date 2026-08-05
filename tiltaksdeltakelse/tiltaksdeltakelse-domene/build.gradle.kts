@@ -1,8 +1,8 @@
-import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+import no.nav.tiltakspenger.byggelogikk.Grendekning
 
 plugins {
-    id("tiltakspenger-lib-conventions")
-    alias(libs.plugins.kover)
+    id("tiltakspenger.bibliotek")
+    id("tiltakspenger.dekning")
     // Byggerne publiseres som testFixtures-variant slik at konsumentene og skyggekjøringen bygger deltakelser gjennom fabrikken, ikke egne kopier.
     `java-test-fixtures`
 }
@@ -18,19 +18,8 @@ dependencies {
     testImplementation(testFixtures(project(":tiltaksdeltakelse:tiltaksdeltakelse-domene")))
 }
 
-kover {
-    reports {
-        verify {
-            rule {
-                minBound(100)
-                minBound(100, CoverageUnit.BRANCH)
-            }
-        }
-    }
-}
-
-tasks.named("check") {
-    dependsOn("koverVerify")
+dekning {
+    grener = Grendekning.KREVES
 }
 
 tasks.withType<Jar> {

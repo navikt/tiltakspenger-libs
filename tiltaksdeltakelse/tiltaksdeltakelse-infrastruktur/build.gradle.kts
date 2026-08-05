@@ -1,8 +1,8 @@
-import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+import no.nav.tiltakspenger.byggelogikk.Grendekning
 
 plugins {
-    id("tiltakspenger-lib-conventions")
-    alias(libs.plugins.kover)
+    id("tiltakspenger.bibliotek")
+    id("tiltakspenger.dekning")
 }
 
 dependencies {
@@ -24,19 +24,8 @@ dependencies {
     testImplementation(project(":tiltak-dtos"))
 }
 
-kover {
-    reports {
-        verify {
-            rule {
-                minBound(100)
-                minBound(100, CoverageUnit.BRANCH)
-            }
-        }
-    }
-}
-
-tasks.named("check") {
-    dependsOn("koverVerify")
+dekning {
+    grener = Grendekning.KREVES
 }
 
 tasks.withType<Jar> {

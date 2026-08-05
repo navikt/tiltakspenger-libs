@@ -73,6 +73,16 @@ tasks.withType<Jar>().configureEach {
     duplicatesStrategy = DuplicatesStrategy.FAIL
 }
 
+// Reproduserbare arkiver: uten dette skriver Gradle byggetidspunktet inn i hver zip-oppføring og lar
+// filrekkefølgen følge filsystemet, slik at to bygg av samme kildekode gir ulik SHA-256.
+// Da kan ingen sjekke at artefaktet i registeret er det som ble bygget fra taggen — attestasjonen binder
+// en digest, men digesten kan ikke gjenskapes. Med dette normaliseres begge, og hvem som helst kan bygge
+// på nytt fra commiten og sammenligne bytes.
+tasks.withType<AbstractArchiveTask>().configureEach {
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+}
+
 // --- Ingen andre HTTP-klienter enn libs sin httpklient ---------------------------
 // Se KDoc-en på HttpKlientGuard for hvorfor gaten finnes og hvorfor ktor-klienten ikke står på lista.
 // Unntak deklareres i modulen selv med `httpKlientGuard { tillat("<koordinatprefiks>", "<begrunnelse>") }`.
@@ -106,3 +116,38 @@ val verifiserHttpKlienter =
     }
 
 tasks.named("check") { dependsOn(verifiserHttpKlienter) }
+
+// --- Attestasjon på libs-artefaktene -------------------------------------------
+// Skriver ut hvilke tiltakspenger-libs-artefakter som faktisk ligger på classpathen, slik at CI kan verifisere
+// at hver enkelt kommer fra libs' publiseringsworkflow (`gh attestation verify --signer-workflow ...`).
+//
+// Tasken gjør bevisst ingen nettverkskall og henges ikke på `check`: verifiseringen koster et API-kall per
+// artefakt og hører hjemme i CI, ikke i hvert lokale bygg. Den skriver kun stier — `gh` gjør selve jobben.
+//
+// Grunnen til at Gradle må peke dem ut, og ikke et `find` i Gradle-cachen: cachen samler opp alle versjoner
+// som noen gang er lastet ned (834 på en utviklermaskin her), mens bygget bruker én av dem.
+tasks.register("skrivLibsArtefakter") {
+    group = "verification"
+    description = "Skriver stiene til tiltakspenger-libs-artefaktene på runtime- og test-classpathen, for attestasjonssjekk i CI."
+    val utfil = layout.buildDirectory.file("reports/libs-artefakter.txt")
+    outputs.file(utfil)
+    val classpaths =
+        listOf("runtimeClasspath", "testRuntimeClasspath")
+            .filter { navn -> configurations.findByName(navn) != null }
+            .map { navn -> configurations.named(navn).get().incoming.artifacts }
+    classpaths.forEach { artefakter -> inputs.files(artefakter.artifactFiles) }
+    val filer =
+        providers.provider {
+            classpaths
+                .flatMap { artefakter -> artefakter.resolvedArtifacts.get() }
+                .filter { artefakt -> "com.github.navikt.tiltakspenger-libs" in artefakt.id.componentIdentifier.displayName }
+                .map { artefakt -> artefakt.file.absolutePath }
+                .distinct()
+                .sorted()
+        }
+    doLast {
+        val mål = utfil.get().asFile
+        mål.parentFile.mkdirs()
+        mål.writeText(filer.get().joinToString("\n", postfix = "\n"))
+    }
+}

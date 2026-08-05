@@ -79,17 +79,40 @@ jobs:
           DEPENDENCY_GRAPH_EXCLUDE_CONFIGURATIONS: 'detachedConfiguration.*'
           # Kun modulenes runtimeClasspath scopes som runtime; test- og verktøyavhengigheter får scope development, som kan filtreres i Dependabot-alerts.
           DEPENDENCY_GRAPH_RUNTIME_INCLUDE_CONFIGURATIONS: '^runtimeClasspath$'
-      # SLSA-provenance for de publiserte jar-ene, se navikt/tiltakspenger-libs#528.
-      # Attestasjonen binder hver jar (inkl. sources- og testFixtures-jar-er) kryptografisk til commit og workflow-kjøring via GitHubs artifact attestations.
-      # Konsumenter verifiserer med `gh attestation verify <jar> --repo navikt/tiltakspenger-libs` - se README.
+      # SBOM over alt som følger med konsumentene, bygget fra avhengighetsgrafen (ikke ved å skanne jar-ene, som for tynne bibliotek-jar-er ville sett nesten ingenting).
+      # Kjøres etter publiseringen, slik at den beskriver nøyaktig de artefaktene som ble sendt.
+      - name: Generer SBOM
+        run: ./gradlew --console=plain -Pversion=${{ steps.tag.outputs.version }} cyclonedxBom
+        env:
+          # setup-gradle skriver en avhengighetsgraf per Gradle-kjøring, til samme filnavn (job-correlator = workflow+jobb).
+          # Uten dette ville denne kjøringen overskrevet den filtrerte grafen fra byggesteget med en ufiltrert én, og
+          # gjeninnført nettopp de falske Dependabot-alertene filtrene over finnes for å hindre.
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: 'false'
+      # SLSA-provenance for de publiserte artefaktene, se navikt/tiltakspenger-libs#528.
+      # Attestasjonen binder hvert artefakt kryptografisk til commit og workflow-kjøring via GitHubs artifact attestations.
+      # Konsumenter verifiserer med `gh attestation verify <fil> --repo navikt/tiltakspenger-libs` - se README.
+      # Versjonskatalogen er en toml, ikke en jar, og må derfor listes for seg.
+      # TODO jah: `plattform` publiserer kun POM og modulmetadata, og har derfor ingen fil under build/libs som denne globbingen fanger.
+      # Den er dermed det eneste publiserte artefaktet uten proveniens — samtidig som det er nettopp den som pinner versjonene i hvert app-repo.
+      # Attestering av POM-en er ikke verifisert lokalt; det må testes mot en ekte kjøring.
       # build-logic-jaren er et internt byggeprodukt som aldri publiseres, så den ekskluderes.
       # Feiler attesteringen, lages ingen tag/release - samme delvis-feilet-historie som ved feilet publisering over, og neste kjøring får ny versjon.
-      - name: Attester publiserte jar-er (SLSA-provenance)
+      - name: Attester publiserte artefakter (SLSA-provenance)
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
         with:
           subject-path: |
             **/build/libs/*.jar
+            versjonskatalog/build/version-catalog/*.toml
             !build-logic/**
+      # Binder SBOM-en til de samme artefaktene, slik at en konsument kan hente ut innholdsfortegnelsen og se at den hører til nettopp denne byggkjøringen.
+      - name: Attester SBOM
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: |
+            **/build/libs/*.jar
+            versjonskatalog/build/version-catalog/*.toml
+            !build-logic/**
+          sbom-path: build/reports/cyclonedx/bom.json
       - name: Create release
         uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
         env:

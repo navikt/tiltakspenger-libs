@@ -1,6 +1,6 @@
 pluginManagement {
-    // Konvensjonspluginene bor i et eget inkludert bygg, ikke i buildSrc: buildSrc invaliderer hele bygget ved
-    // hver endring, og kan ikke publiseres videre til app-repoene.
+    // Konvensjonspluginene bor i et eget inkludert bygg, ikke i buildSrc: buildSrc invaliderer hele bygget ved hver
+    // endring, og kan aldri publiseres videre slik app-repoene skal konsumere dem. Selve jaren publiseres ikke ennå.
     includeBuild("build-logic")
     repositories {
         gradlePluginPortal()
@@ -19,6 +19,9 @@ dependencyResolutionManagement {
 rootProject.name = "tiltakspenger-libs"
 
 include(
+    // Delt byggoppsett publisert til konsumentene: koordinatene i "versjonskatalog", de transitive constraintsene i "plattform".
+    "versjonskatalog",
+    "plattform",
     "person-dtos",
     "arenatiltak-dtos",
     "tiltak-dtos",

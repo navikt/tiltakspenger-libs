@@ -16,11 +16,12 @@ Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tilta
 - **Gradle-submoduler** — se `settings.gradle.kts`.
   Hver submodul er et fokusert bibliotek (ID-er, DTO-er, klienter, hjelpere).
 - **Convention-plugins**: Delt build-logikk ligger i det inkluderte bygget `build-logic/`, ikke i `buildSrc`.
-  `buildSrc` invaliderer hele bygget ved hver endring og kan ikke publiseres videre til app-repoene; et inkludert bygg kan begge deler.
+  `buildSrc` invaliderer hele bygget ved hver endring, og kan aldri publiseres videre til app-repoene slik et inkludert bygg kan.
+  Selve `build-logic`-jaren publiseres ikke i dag — muligheten er poenget, siden app-repoene skal ta i bruk de samme pluginene.
   Pluginene komponeres, slik at en modul bare tar i bruk det den faktisk er:
   - `tiltakspenger.kotlin` — grunnkonvensjonen: Kotlin/JVM-target og toolchain, compiler-flagg, Spotless med pinnet ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5-oppsett, ekskludering av JUnit 4 og gaten `verifiserHttpKlienter`.
   - `tiltakspenger.bibliotek` — grunnkonvensjonen pluss `java-library`, sources-jar og publisering til GitHub Packages.
-    Alle submoduler bruker denne.
+    Alle bibliotekmodulene bruker denne; `versjonskatalog` og `plattform` publiserer andre artefakttyper og bruker `tiltakspenger.publisering` direkte.
   - `tiltakspenger.dekning` — Kover med krav om full linjedekning, koblet på `check`.
     Brukes av `arenatiltak-dtos`, `httpklient-domene`, `httpklient-infrastruktur`, `jobber`, `json`, `kafka-avro`, `ktor-common`, `ktor-test-common`, `meldekort-dtos`, `personklient-infrastruktur`, `texas` og begge `tiltaksdeltakelse`-modulene.
     Grendekning trappes opp per modul, se under.
@@ -38,6 +39,16 @@ Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tilta
   Grenregelen ligger i rapportvarianten `grendekning` med egen task `koverVerifyGrendekning`, fordi Kovers `warningInsteadOfFailure` gjelder hele verify-blokka — lå den sammen med linjeregelen, ville `RAPPORTER` myket opp linjegaten også.
 
   Plugin- og bibliotekversjoner er sentralisert i `gradle/libs.versions.toml`, som `build-logic` leser fra samme fil.
+- **Delt byggoppsett for app-repoene** publiseres fra to egne moduler, fordi de to lagene kan ulike ting:
+  - `versjonskatalog` — publiserer `gradle/libs.versions.toml` som en versjonskatalog.
+    Den deklarerer koordinater og versjoner, og ikke noe mer: en katalog kan verken uttrykke constraints eller `exclude`.
+    Konsumeres i app-repoets `settings.gradle.kts` med `versionCatalogs { create("libs") { from("com.github.navikt.tiltakspenger-libs:versjonskatalog:<versjon>") } }`.
+  - `plattform` — en `java-platform`-BOM med constraints som virker transitivt, altså det versjonskatalogen ikke kan.
+    Den pinner libs-modulene til sin egen versjon, slik at app-repoene skriver libs-koordinatene uten versjon, og styrer de transitive versjonene vi ikke deklarerer selv (netty, jackson 2, kafka-clients med `strictly`, lz4, scram).
+    Konsumeres med `implementation(platform("com.github.navikt.tiltakspenger-libs:plattform:<versjon>"))`.
+
+  Modullista i plattformen utledes fra prosjektstrukturen, ikke fra en navneliste, så en ny libs-modul er med automatisk.
+  `strictly` finnes ikke i Maven-POM-formatet og bæres av Gradle-metadataen ved siden av — det virker for Gradle-konsumenter, som er de eneste vi har.
   Repositories deklareres i `settings.gradle.kts` med `FAIL_ON_PROJECT_REPOS` — en modul som legger til sitt eget feiler bygget.
   Unntak fra HTTP-klientgaten deklareres i modulen selv, med begrunnelse: `httpKlientGuard { tillat("<koordinatprefiks>", "<begrunnelse>") }`.
 - **Kildelayout**: standard Kotlin/Gradle-layout.

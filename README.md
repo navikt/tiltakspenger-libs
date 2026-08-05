@@ -53,7 +53,7 @@ Vi genererer bevisst **ikke** egen SBOM per jar:
 ## Struktur
 
 - Gradle multi-modul prosjekt — se `settings.gradle.kts` for full liste.
-- Felles byggekonfig i `buildSrc/src/main/kotlin/tiltakspenger-lib-conventions.gradle.kts`.
+- Felles byggekonfig i convention-pluginene under `build-logic/src/main/kotlin/` (`tiltakspenger.kotlin` er grunnkonvensjonen).
 - Versjoner sentralisert i `gradle/libs.versions.toml`.
 - Moduler med eksterne avhengigheter splittes i `*-domene` (ren domene) og `*-infrastruktur`.
 - Standard layout: `src/main/kotlin/`, `src/test/kotlin/`.

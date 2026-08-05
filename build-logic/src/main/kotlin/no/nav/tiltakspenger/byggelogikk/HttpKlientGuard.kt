@@ -28,6 +28,11 @@ abstract class HttpKlientGuard {
         require(begrunnelse.isNotBlank()) {
             "Unntaket for $koordinatprefiks mangler begrunnelse."
         }
+        // Nøkkelen må treffe en oppføring i forbudteKlienter eksakt.
+        // Uten denne sjekken blir en skrivefeil — eller et forsøk på å presisere unntaket til ett artefakt — et unntak uten virkning, og gaten feiler med en melding som ikke røper at noen prøvde å deklarere et.
+        require(koordinatprefiks in forbudteKlienter) {
+            "Ukjent koordinatprefiks \"$koordinatprefiks\". Unntak må navngi en oppføring fra lista eksakt: ${forbudteKlienter.joinToString()}"
+        }
         tillatte.put(koordinatprefiks, begrunnelse)
     }
 

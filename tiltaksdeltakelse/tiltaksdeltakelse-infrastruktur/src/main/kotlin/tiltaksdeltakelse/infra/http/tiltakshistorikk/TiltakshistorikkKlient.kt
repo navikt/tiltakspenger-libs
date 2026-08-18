@@ -45,8 +45,6 @@ import kotlin.time.Duration.Companion.seconds
  * Regnestykket her er 3 forsøk × 7 s + 2 × 100 ms backoff = 21,2 s, som med PDLs 5 s gir ~26 s og lar ~4 s stå igjen til Texas-token, introspeksjon og mapping.
  * Budsjettet er summert for hånd fordi `httpklient` ikke har en deadline over hele kallet.
  *
- * Kontraktens `maxAgeYears` brukes bevisst ikke — klienten sender alltid `null`, og begrunnelsen står på feltet i [TiltakshistorikkV1Request].
- *
  * @param timeout Per-forsøk timeout, ikke totalbudsjett — se tidsbudsjettet over.
  * Tiltakshistorikk sammenstiller flere kildesystemer (Arena er den tregeste), men det hjelper ikke å vente lenger enn konsumentene våre gjør.
  * @param transport Det eneste stedet klienten rører nettverket; default er produksjonstransporten, tester sender inn `FakeHttpTransport` slik at hele den reelle pipelinen kjører.
@@ -82,8 +80,6 @@ class TiltakshistorikkKlient(
             uri = historikkUri,
             body = TiltakshistorikkV1Request(
                 identer = identer.map { NorskIdentDto(it.verdi) },
-                // Bevisst ubrukt — se begrunnelsen på feltet.
-                maxAgeYears = null,
             ),
             headere = listOf(NavHeadere.navCallId(correlationId.value)),
             godta = Statusregel.Eksakt(200),

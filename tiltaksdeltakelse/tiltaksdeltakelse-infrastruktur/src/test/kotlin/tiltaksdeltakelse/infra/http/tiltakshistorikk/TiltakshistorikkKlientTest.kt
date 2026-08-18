@@ -83,7 +83,7 @@ class TiltakshistorikkKlientTest {
     }
 
     @Test
-    fun `henter historikken, sender identene og kall-id, og maxAgeYears-nøkkelen står i bodyen som null`() = runTest {
+    fun `henter historikken, sender identene og kall-id`() = runTest {
         val deltakelseId = UUID.fromString("0190c9a2-1111-7000-8000-000000000001")
         val gjennomføringId = UUID.fromString("0190c9a2-2222-7000-8000-000000000002")
         val transport = FakeHttpTransport().apply { leggIKøJson(responsJson(deltakelseId, gjennomføringId)) }
@@ -97,7 +97,7 @@ class TiltakshistorikkKlientTest {
         val kall = transport.mottatteKall.single()
         kall.metode shouldBe "POST"
         kall.uri.toString() shouldBe "$baseUrl/api/v1/historikk"
-        kall.bodyTekst shouldBe """{"identer":["12345678901"],"maxAgeYears":null}"""
+        kall.bodyTekst shouldBe """{"identer":["12345678901"]}"""
         kall.request.headers().firstValue("Authorization").get() shouldBe "Bearer token"
         kall.request.headers().firstValue("Nav-Call-Id").get() shouldBe "test-kall-id"
     }

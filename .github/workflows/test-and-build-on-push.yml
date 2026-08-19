@@ -52,6 +52,9 @@ jobs:
       # Biblioteksrepo: ingen installDist (defaulten er for appene), og spotless håndheves i byggegaten.
       gradle-kommando: ./gradlew spotlessCheck build
       bygg-image: false
+      # Modulene her er prosjektavhengigheter - det finnes ingen publiserte libs-artefakter på classpathen
+      # å verifisere, og attestasjonene lages først av push.yml på main i dette repoet.
+      verifiser-libs-attestasjon: false
     secrets:
       SLACK_VARSEL_WEBHOOK_URL: ${{ secrets.SLACK_VARSEL_WEBHOOK_URL }}
       GRADLE_ENCRYPTION_KEY: ${{ secrets.GRADLE_ENCRYPTION_KEY }}

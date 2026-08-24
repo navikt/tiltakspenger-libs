@@ -16,7 +16,7 @@ flyway = "12.11.0"
 handlebars = "4.5.4"
 hamcrest = "3.0"
 hikaricp = "7.1.0"
-jackson = "3.2.1"
+jackson = "3.2.2"
 jackson-annotations = "2.22"
 # Jackson 2 brukes ikke direkte, men kommer transitivt via WireMock og java-jwt; bom-en løfter dem over de patchede versjonene (bl.a. GHSA-j3rv-43j4-c7qm).
 jackson2 = "2.22.1"

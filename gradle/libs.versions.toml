@@ -73,7 +73,7 @@ tms-mikrofrontend-selector = "3.0.0"
 tms-varsel = "2.2.0"
 ulid = "1.6.0"
 wiremock = "3.13.2"
-xmlunit = "2.12.0"
+xmlunit = "2.13.0"
 
 [libraries]
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }

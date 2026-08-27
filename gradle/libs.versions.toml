@@ -47,7 +47,7 @@ logstash-logback-encoder = "9.0"
 # LZ4 brukes ikke direkte, men kafka-clients drar inn 1.10.2, der de native XXHash-implementasjonene kan krasje JVM-en på ugyldige byte-intervaller (GHSA-xx22-p4ch-683r).
 # Vi styrer derfor versjonen selv, på samme måte som netty- og scram-linjene under.
 lz4 = "1.11.2"
-micrometer = "1.17.0"
+micrometer = "1.17.1"
 mockk = "1.14.11"
 # Netty brukes ikke direkte, men er en hyppig kilde til sikkerhetshull; vi styrer derfor de transitive versjonene selv med bom-er per linje.
 # 4.1-linja kommer fra r2dbc-postgresql 1.1.2 (nyeste), som drar inn sårbar 4.1.112 (bl.a. GHSA-c653-97m9-rcg9).

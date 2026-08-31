@@ -13,6 +13,7 @@ enum class Saksbehandlerrolle : Rolle {
     STRENGT_FORTROLIG_ADRESSE,
     SKJERMING,
 
-    DRIFT,
     VEILEDER,
+    UTVIKLER,
+    TILBAKEKREVING,
 }

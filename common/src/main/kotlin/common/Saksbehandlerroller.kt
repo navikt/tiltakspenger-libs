@@ -23,7 +23,9 @@ data class Saksbehandlerroller(
     fun erSaksbehandlerEllerBeslutter(): Boolean =
         any { it == Saksbehandlerrolle.SAKSBEHANDLER || it == Saksbehandlerrolle.BESLUTTER }
 
-    fun erDrift(): Boolean = value.contains(Saksbehandlerrolle.DRIFT)
-
     fun erVeileder(): Boolean = value.contains(Saksbehandlerrolle.VEILEDER)
+
+    fun erUtvikler(): Boolean = value.contains(Saksbehandlerrolle.UTVIKLER)
+
+    fun erTilbakekreving(): Boolean = value.contains(Saksbehandlerrolle.TILBAKEKREVING)
 }

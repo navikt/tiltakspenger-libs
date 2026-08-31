@@ -141,7 +141,7 @@ class TexasAuthenticationProviderTest {
                     jwt = jwtGenerator.createJwtForSaksbehandler(),
                 ).apply {
                     statusCode shouldBe 200
-                    body shouldBe """{"navIdent":"$navIdent","brukernavn":"Sak Behandler","epost":"$epost","roller":["SAKSBEHANDLER"],"scopes":[],"klientId":"saksbehandling-id","klientnavn":"saksbehandling"}"""
+                    body shouldBe """{"navIdent":"Z12345","brukernavn":"Sak Behandler","epost":"Sak.Behandler@nav.no","roller":["SAKSBEHANDLER"],"scopes":[],"klientId":"saksbehandling-id","klientnavn":"saksbehandling","erBeslutter":false,"erSaksbehandler":true,"erSaksbehandlerEllerBeslutter":true}"""
                 }
             }
         }

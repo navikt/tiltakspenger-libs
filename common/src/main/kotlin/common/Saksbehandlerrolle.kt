@@ -14,4 +14,5 @@ enum class Saksbehandlerrolle : Rolle {
     SKJERMING,
 
     DRIFT,
+    VEILEDER,
 }

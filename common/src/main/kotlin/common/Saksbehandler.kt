@@ -15,11 +15,6 @@ data class Saksbehandler(
     override val klientId: String,
     override val klientnavn: String,
 ) : Bruker<Saksbehandlerrolle, Saksbehandlerroller> {
-    fun erSaksbehandler() = roller.erSaksbehandler()
-
-    fun erBeslutter() = roller.erBeslutter()
-
-    fun erSaksbehandlerEllerBeslutter() = roller.erSaksbehandlerEllerBeslutter()
 
     override fun toString(): String =
         "Saksbehandler(navIdent='$navIdent', brukernavn='*****', epost='*****', roller=$roller)"

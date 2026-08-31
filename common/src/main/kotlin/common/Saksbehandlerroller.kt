@@ -8,24 +8,19 @@ data class Saksbehandlerroller(
     constructor(vararg roller: Saksbehandlerrolle) : this(roller.toSet())
     constructor(roller: Collection<Saksbehandlerrolle>) : this(roller.toSet())
 
-    override fun harRolle(rolle: Saksbehandlerrolle): Boolean = contains(rolle)
+    override fun harRolle(rolle: Saksbehandlerrolle): Boolean = value.contains(rolle)
 
-    fun harSkjerming(): Boolean = value.contains(Saksbehandlerrolle.SKJERMING)
+    val erSaksbehandler: Boolean by lazy { value.contains(Saksbehandlerrolle.SAKSBEHANDLER) }
 
-    fun harFortroligAdresse(): Boolean = value.contains(Saksbehandlerrolle.FORTROLIG_ADRESSE)
+    val erBeslutter: Boolean by lazy { value.contains(Saksbehandlerrolle.BESLUTTER) }
 
-    fun harStrengtFortroligAdresse(): Boolean = value.contains(Saksbehandlerrolle.STRENGT_FORTROLIG_ADRESSE)
+    val erSaksbehandlerEllerBeslutter: Boolean by lazy {
+        value.any { it == Saksbehandlerrolle.SAKSBEHANDLER || it == Saksbehandlerrolle.BESLUTTER }
+    }
 
-    fun erSaksbehandler(): Boolean = value.contains(Saksbehandlerrolle.SAKSBEHANDLER)
+    val erVeileder: Boolean by lazy { value.contains(Saksbehandlerrolle.VEILEDER) }
 
-    fun erBeslutter(): Boolean = value.contains(Saksbehandlerrolle.BESLUTTER)
+    val erUtvikler: Boolean by lazy { value.contains(Saksbehandlerrolle.UTVIKLER) }
 
-    fun erSaksbehandlerEllerBeslutter(): Boolean =
-        any { it == Saksbehandlerrolle.SAKSBEHANDLER || it == Saksbehandlerrolle.BESLUTTER }
-
-    fun erVeileder(): Boolean = value.contains(Saksbehandlerrolle.VEILEDER)
-
-    fun erUtvikler(): Boolean = value.contains(Saksbehandlerrolle.UTVIKLER)
-
-    fun erTilbakekreving(): Boolean = value.contains(Saksbehandlerrolle.TILBAKEKREVING)
+    val erTilbakekreving: Boolean by lazy { value.contains(Saksbehandlerrolle.TILBAKEKREVING) }
 }

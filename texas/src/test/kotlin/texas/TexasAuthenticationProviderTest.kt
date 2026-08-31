@@ -92,7 +92,6 @@ class TexasAuthenticationProviderTest {
         val alleAdRoller = listOf(
             AdRolle(Saksbehandlerrolle.SAKSBEHANDLER, "1b3a2c4d-d620-4fcf-a29b-a6cdadf29680"),
             AdRolle(Saksbehandlerrolle.BESLUTTER, "79985315-b2de-40b8-a740-9510796993c6"),
-            AdRolle(Saksbehandlerrolle.FORTROLIG_ADRESSE, "ea930b6b-9397-44d9-b9e6-f4cf527a632a"),
         )
         val epost = "Sak.Behandler@nav.no"
         val navIdent = "Z12345"

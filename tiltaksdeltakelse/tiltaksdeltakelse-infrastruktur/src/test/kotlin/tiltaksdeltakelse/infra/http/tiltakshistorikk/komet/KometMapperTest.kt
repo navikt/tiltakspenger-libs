@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.
 
 import arrow.core.left
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Kometstatus
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Kometårsak
@@ -18,6 +19,7 @@ class KometMapperTest {
     private val deltakelseId = UUID.fromString("0190c9a2-1111-7000-8000-000000000001")
     private val gjennomføringId = UUID.fromString("0190c9a2-2222-7000-8000-000000000002")
     private val opprettet = LocalDateTime.of(2026, 1, 15, 9, 30)
+    private val fnr = FnrGenerator().generer().verdi
 
     private fun kometDto(
         status: String = "DELTAR",
@@ -25,7 +27,7 @@ class KometMapperTest {
         tiltakskode: String = "ARBEIDSFORBEREDENDE_TRENING",
         hovedenhetsnavn: String? = null,
     ) = TiltakshistorikkV1Dto.TeamKometDeltakelse(
-        norskIdent = NorskIdentDto("12345678901"),
+        norskIdent = NorskIdentDto(fnr),
         startDato = LocalDate.of(2024, 3, 4),
         sluttDato = null,
         id = deltakelseId,

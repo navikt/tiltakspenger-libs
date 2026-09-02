@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.
 
 import arrow.core.left
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.common.tilknytningstittel
 import no.nav.tiltakspenger.libs.common.virksomhetsnavn
@@ -22,12 +23,13 @@ import java.util.UUID
 class TeamTiltakMapperTest {
 
     private val deltakelseId = UUID.fromString("0190c9a2-4444-7000-8000-000000000004")
+    private val fnr = FnrGenerator().generer().verdi
 
     private fun teamTiltakDto(
         status: String = "GJENNOMFORES",
         tiltakskode: String = "ARBEIDSTRENING",
     ) = TiltakshistorikkV1Dto.TeamTiltakAvtale(
-        norskIdent = NorskIdentDto("10987654321"),
+        norskIdent = NorskIdentDto(fnr),
         startDato = LocalDate.of(2025, 1, 1),
         sluttDato = null,
         id = deltakelseId,

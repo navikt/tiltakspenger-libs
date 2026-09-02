@@ -86,7 +86,7 @@ internal class PersonopplysningTest {
             is Tilknytningstittel -> opplysning.begrunnelse
         }
 
-        begrunnelsen(Fnr.fromString("12345678901")).isNotBlank() shouldBe true
+        begrunnelsen(FnrGenerator().generer()).isNotBlank() shouldBe true
         begrunnelsen(Virksomhetsnavn("Arrangør AS")).isNotBlank() shouldBe true
         begrunnelsen(Tilknytningstittel("Oppfølging hos Arrangør AS")).isNotBlank() shouldBe true
     }

@@ -14,6 +14,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import kotlinx.coroutines.test.runTest
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.common.withWireMockServer
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.Header
@@ -117,20 +118,21 @@ internal class HttpKlientHeadersTest {
         val transport = FakeHttpTransport()
         transport.leggIKøJson(okJson)
         val klient = fakeHttpKlient(transport)
+        val fnr = FnrGenerator().generer().verdi
 
         val metadata = klient.getJson<TestResponseDto>(
             uri = uri,
-            headere = listOf(Header("ident", "12345678901", sensitiv = true), Header("X-Vanlig", "synlig")),
+            headere = listOf(Header("ident", fnr, sensitiv = true), Header("X-Vanlig", "synlig")),
         ).getOrFail().metadata
 
         // rawRequestString er beregnet for logging og maskerer derfor sensitive verdier.
         metadata.rawRequestString shouldContain "ident: ***"
         metadata.rawRequestString shouldContain "X-Vanlig: synlig"
-        metadata.rawRequestString shouldNotContain "12345678901"
+        metadata.rawRequestString shouldNotContain fnr
         // Den strukturerte mappen beholder ekte verdier slik at kallere kan inspisere dem programmatisk.
-        metadata.requestHeaders["ident"] shouldBe listOf("12345678901")
+        metadata.requestHeaders["ident"] shouldBe listOf(fnr)
         // Og transporten (wire) får alltid den ekte verdien.
-        transport.mottatteKall.single().request.headers().firstValue("ident").orElse(null) shouldBe "12345678901"
+        transport.mottatteKall.single().request.headers().firstValue("ident").orElse(null) shouldBe fnr
     }
 
     @Test
@@ -190,6 +192,7 @@ internal class HttpKlientHeadersTest {
 
     @Test
     fun `NavHeadere bruker de eksakte stavemåtene nedstrømstjenestene krever`() {
+        val fnr = FnrGenerator().generer().verdi
         NavHeadere.xCorrelationId("id") shouldBe Header("X-Correlation-ID", "id")
         NavHeadere.navCallId("id") shouldBe Header("Nav-Call-Id", "id")
         NavHeadere.navCallid("id") shouldBe Header("Nav-Callid", "id")
@@ -197,6 +200,6 @@ internal class HttpKlientHeadersTest {
         NavHeadere.tema("IND") shouldBe Header("Tema", "IND")
         NavHeadere.behandlingsnummer("B123") shouldBe Header("behandlingsnummer", "B123")
         // Fnr i klartekst — skal alltid maskeres i rawRequestString.
-        NavHeadere.ident("12345678901") shouldBe Header("ident", "12345678901", sensitiv = true)
+        NavHeadere.ident(fnr) shouldBe Header("ident", fnr, sensitiv = true)
     }
 }

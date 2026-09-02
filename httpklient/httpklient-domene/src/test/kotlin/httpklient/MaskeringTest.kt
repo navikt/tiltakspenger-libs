@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.httpklient
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import org.junit.jupiter.api.Test
 
 /**
@@ -10,8 +11,9 @@ import org.junit.jupiter.api.Test
  * Derfor pinnes maskeringen her, med de faktiske verdiene vi er redde for — et fødselsnummer og et bearer-token.
  */
 internal class MaskeringTest {
-    private val fnrIRequest = """{"ident": "12345678901"}"""
-    private val personIRespons = """{"navn": "Ola Nordmann", "fnr": "12345678901"}"""
+    private val fnr = FnrGenerator().generer().verdi
+    private val fnrIRequest = """{"ident": "$fnr"}"""
+    private val personIRespons = """{"navn": "Ola Nordmann", "fnr": "$fnr"}"""
 
     private fun metadata() = tomMetadata(
         rawRequestString = fnrIRequest,
@@ -26,7 +28,7 @@ internal class MaskeringTest {
     fun `metadata lekker hverken innhold eller headerverdier i toString`() {
         val tekst = metadata().toString()
 
-        tekst shouldNotContain "12345678901"
+        tekst shouldNotContain fnr
         tekst shouldNotContain "Ola Nordmann"
         tekst shouldNotContain "et-gyldig-token"
         // Navnene på headerne er trygge, og er det eneste som trengs for å se hva som faktisk ble sendt.
@@ -47,7 +49,7 @@ internal class MaskeringTest {
         val tekst = HttpKlientError.UventetStatus(statusCode = 500, body = personIRespons, metadata = metadata()).toString()
 
         tekst shouldNotContain "Ola Nordmann"
-        tekst shouldNotContain "12345678901"
+        tekst shouldNotContain fnr
         tekst shouldContain "statusCode=500"
         tekst shouldContain "retryable=true"
     }

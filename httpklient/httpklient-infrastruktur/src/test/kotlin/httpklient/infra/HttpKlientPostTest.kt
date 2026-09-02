@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.common.withWireMockServer
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.Header
@@ -192,14 +193,15 @@ internal class HttpKlientPostTest {
         withWireMockServer { wiremock ->
             wiremock.stubFor(post(urlEqualTo("/tekst-unit")).willReturn(aResponse().withStatus(204)))
             val klient = testHttpKlient()
+            val fnr = FnrGenerator().generer().verdi
 
-            val response = klient.postTekst<Unit>(URI.create("${wiremock.baseUrl()}/tekst-unit"), tekst = "12345678901").getOrFail()
+            val response = klient.postTekst<Unit>(URI.create("${wiremock.baseUrl()}/tekst-unit"), tekst = fnr).getOrFail()
 
             response.statusCode shouldBe 204
             wiremock.verify(
                 postRequestedFor(urlEqualTo("/tekst-unit"))
                     .withoutHeader("Accept")
-                    .withRequestBody(equalTo("12345678901")),
+                    .withRequestBody(equalTo(fnr)),
             )
         }
     }

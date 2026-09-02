@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.dto
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.json.deserialize
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -8,6 +9,8 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 class TiltakshistorikkV1DtoTest {
+    private val fnr = FnrGenerator().generer().verdi
+    private val historiskFnr = FnrGenerator(start = 1).generer().verdi
 
     /**
      * JSON-en er pinnet mot kontraktens wire-format, inkludert feltene vi bevisst utelater fra kopien (`organisasjonsnummer`, `gjennomforing.navn`).
@@ -20,7 +23,7 @@ class TiltakshistorikkV1DtoTest {
               "historikk": [
                 {
                   "type": "ArenaDeltakelse",
-                  "norskIdent": "12345678901",
+                  "norskIdent": "$fnr",
                   "startDato": "2024-01-01",
                   "sluttDato": "2024-06-30",
                   "id": "019018e5-6461-74a0-9d66-70d0bf3d0b8b",
@@ -38,7 +41,7 @@ class TiltakshistorikkV1DtoTest {
                 },
                 {
                   "type": "TeamKometDeltakelse",
-                  "norskIdent": "12345678901",
+                  "norskIdent": "$fnr",
                   "startDato": "2024-03-04",
                   "sluttDato": null,
                   "id": "0190c9a2-2222-7000-8000-000000000002",
@@ -55,7 +58,7 @@ class TiltakshistorikkV1DtoTest {
                 },
                 {
                   "type": "TeamTiltakAvtale",
-                  "norskIdent": "10987654321",
+                  "norskIdent": "$historiskFnr",
                   "startDato": "2025-01-01",
                   "sluttDato": null,
                   "id": "0190c9a2-4444-7000-8000-000000000004",
@@ -74,7 +77,7 @@ class TiltakshistorikkV1DtoTest {
         deserialize<TiltakshistorikkV1Response>(json) shouldBe TiltakshistorikkV1Response(
             historikk = listOf(
                 TiltakshistorikkV1Dto.ArenaDeltakelse(
-                    norskIdent = NorskIdentDto("12345678901"),
+                    norskIdent = NorskIdentDto(fnr),
                     startDato = LocalDate.of(2024, 1, 1),
                     sluttDato = LocalDate.of(2024, 6, 30),
                     id = UUID.fromString("019018e5-6461-74a0-9d66-70d0bf3d0b8b"),
@@ -94,7 +97,7 @@ class TiltakshistorikkV1DtoTest {
                     dagerPerUke = 5.0f,
                 ),
                 TiltakshistorikkV1Dto.TeamKometDeltakelse(
-                    norskIdent = NorskIdentDto("12345678901"),
+                    norskIdent = NorskIdentDto(fnr),
                     startDato = LocalDate.of(2024, 3, 4),
                     sluttDato = null,
                     id = UUID.fromString("0190c9a2-2222-7000-8000-000000000002"),
@@ -120,7 +123,7 @@ class TiltakshistorikkV1DtoTest {
                     dagerPerUke = null,
                 ),
                 TiltakshistorikkV1Dto.TeamTiltakAvtale(
-                    norskIdent = NorskIdentDto("10987654321"),
+                    norskIdent = NorskIdentDto(historiskFnr),
                     startDato = LocalDate.of(2025, 1, 1),
                     sluttDato = null,
                     id = UUID.fromString("0190c9a2-4444-7000-8000-000000000004"),
@@ -143,7 +146,7 @@ class TiltakshistorikkV1DtoTest {
               "historikk": [
                 {
                   "type": "TeamKometDeltakelse",
-                  "norskIdent": "12345678901",
+                  "norskIdent": "$fnr",
                   "startDato": null,
                   "sluttDato": null,
                   "id": "0190c9a2-5555-7000-8000-000000000005",
@@ -205,7 +208,7 @@ class TiltakshistorikkV1DtoTest {
         fun kometJson(tidspunktfelt: String) = """
             {
               "type": "TeamKometDeltakelse",
-              "norskIdent": "12345678901",
+              "norskIdent": "$fnr",
               "startDato": null,
               "sluttDato": null,
               "id": "0190c9a2-9999-7000-8000-000000000009",

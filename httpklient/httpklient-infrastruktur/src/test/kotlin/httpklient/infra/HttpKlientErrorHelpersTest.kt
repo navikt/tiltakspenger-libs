@@ -5,6 +5,7 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.harStatus
@@ -30,8 +31,9 @@ internal class HttpKlientErrorHelpersTest {
         val transport = FakeHttpTransport()
         transport.leggIKøStatus(403, """{"begrunnelse":"mangler rolle","regel":"ABAC-1"}""")
         val klient = fakeHttpKlient(transport)
+        val fnr = FnrGenerator().generer().verdi
 
-        val error = klient.postTekst<Unit>(uri, tekst = "12345678901", sensitiv = true, godta = Statusregel.Eksakt(204)).swap().getOrNull()!!
+        val error = klient.postTekst<Unit>(uri, tekst = fnr, sensitiv = true, godta = Statusregel.Eksakt(204)).swap().getOrNull()!!
 
         error.harStatus(403).shouldBeTrue()
         val avvist = error.shouldBeInstanceOf<HttpKlientError.UventetStatus>().bodySomJson<AvvistDto>().getOrFail()

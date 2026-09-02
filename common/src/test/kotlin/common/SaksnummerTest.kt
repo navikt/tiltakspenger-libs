@@ -62,7 +62,7 @@ internal class SaksnummerTest {
     @Test
     fun `feiler dersom saksnummer er for kort`() {
         shouldThrowWithMessage<IllegalArgumentException>("Saksnummer må være 12 tegn eller lengre") {
-            Saksnummer("20210101100")
+            Saksnummer("2021010110")
         }
     }
 

@@ -110,6 +110,11 @@ internal class LibsArkitekturKonsistTest {
     }
 
     @Test
+    fun `ingen ellevesifrede tall er hardkodet`() {
+        IngenHardkodedeFnr.assert(repoRot())
+    }
+
+    @Test
     fun `backticks rundt navn kun for testnavn med mellomrom`() {
         IngenBackticksUtenMellomrom.assert(Konsist.scopeFromProject())
     }

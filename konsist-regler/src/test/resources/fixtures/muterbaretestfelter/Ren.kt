@@ -6,7 +6,7 @@ val toppnivåKonstant = "fast verdi"
 
 internal class RenTest {
 
-    private val fnr = "12345678901"
+    private val fnr = "12845678901"
 
     // Muterbar tilstand bygges inne i hver test og deles aldri via felter.
     @Test

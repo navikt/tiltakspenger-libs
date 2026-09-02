@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.common
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -11,7 +12,7 @@ import org.junit.jupiter.api.Test
 class FnrGeneratorTest {
 
     @Test
-    fun `ingen duplikater ved parallell generering`() = runBlocking {
+    fun `ingen duplikater ved parallell generering`(): Unit = runBlocking {
         val generator = FnrGenerator()
         val antall = 1000
 
@@ -19,7 +20,7 @@ class FnrGeneratorTest {
             .map { async(Dispatchers.Default) { generator.generer() } }
             .awaitAll()
 
-        assertEquals(antall, fnrs.toSet().size, "Forventet ingen duplikater")
+        antall shouldBe fnrs.toSet().size
     }
 
     @Test

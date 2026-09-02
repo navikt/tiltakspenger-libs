@@ -16,6 +16,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.HttpMethod
 import org.junit.jupiter.api.Test
 
@@ -341,17 +342,18 @@ internal class DefaultRequestTest {
 
     @Test
     fun `bodyContentType styrer content-type for bodyen`() {
+        val fnr = FnrGenerator().generer().verdi
         testApplication {
             testRoutes()
             defaultRequestWithAssertions(
                 method = HttpMethod.POST,
                 uri = "/ekko-content-type",
                 jwt = "jwt-for-test",
-                body = "fnr=12345678901&fom=2024-01-01",
+                body = "fnr=$fnr&fom=2024-01-01",
                 bodyContentType = "application/x-www-form-urlencoded",
                 forventet = ForventetRespons.eksakt(
                     200,
-                    "application/x-www-form-urlencoded: fnr=12345678901&fom=2024-01-01",
+                    "application/x-www-form-urlencoded: fnr=$fnr&fom=2024-01-01",
                 ),
             )
         }

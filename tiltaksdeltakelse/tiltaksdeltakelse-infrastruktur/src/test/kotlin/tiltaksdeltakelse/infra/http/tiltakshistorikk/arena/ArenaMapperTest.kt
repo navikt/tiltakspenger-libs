@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.
 import arrow.core.left
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.common.tilknytningstittel
 import no.nav.tiltakspenger.libs.common.virksomhetsnavn
@@ -26,6 +27,7 @@ class ArenaMapperTest {
 
     private val deltakelseId = UUID.fromString("0190c9a2-1111-7000-8000-000000000001")
     private val gjennomføringId = UUID.fromString("0190c9a2-2222-7000-8000-000000000002")
+    private val fnr = FnrGenerator().generer().verdi
 
     private fun arenaDto(
         startDato: LocalDate? = LocalDate.of(2024, 1, 1),
@@ -34,7 +36,7 @@ class ArenaMapperTest {
         tiltakskode: String = "INDOPPFAG",
         hovedenhetsnavn: String? = "Arrangør AS",
     ) = TiltakshistorikkV1Dto.ArenaDeltakelse(
-        norskIdent = NorskIdentDto("12345678901"),
+        norskIdent = NorskIdentDto(fnr),
         startDato = startDato,
         sluttDato = sluttDato,
         id = deltakelseId,

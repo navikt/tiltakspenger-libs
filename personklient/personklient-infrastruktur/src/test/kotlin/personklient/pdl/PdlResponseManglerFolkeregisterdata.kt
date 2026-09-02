@@ -1,11 +1,15 @@
 package no.nav.tiltakspenger.libs.personklient.pdl
 
-internal val pdlResponseManglerFolkeregisterdata = """
+import no.nav.tiltakspenger.libs.common.FnrGenerator
+
+// language=JSON
+internal val pdlResponseManglerFolkeregisterdata = FnrGenerator().let { generator ->
+    """
 {
   "data": {
     "hentGeografiskTilknytning": {
       "gtType": "KOMMUNE",
-      "gtKommune": "3807",
+      "gtKommune": "5444",
       "gtBydel": null,
       "gtLand": null,
       "regel": "2"
@@ -14,23 +18,35 @@ internal val pdlResponseManglerFolkeregisterdata = """
       "adressebeskyttelse": [],
       "forelderBarnRelasjon": [
         {
-          "relatertPersonsIdent": "10051981176",
+          "relatertPersonsIdent": "${generator.generer().verdi}",
           "relatertPersonsRolle": "BARN",
-          "minRolleForPerson": "FAR",
+          "minRolleForPerson": "MOR",
           "relatertPersonUtenFolkeregisteridentifikator": null,
-          "folkeregistermetadata": {
-            "aarsak": null,
-            "ajourholdstidspunkt": "2022-08-08T11:54:52",
-            "gyldighetstidspunkt": "2022-08-08T11:54:52",
-            "kilde": "FREG",
-            "opphoerstidspunkt": null,
-            "sekvens": null
-          },
+          "folkeregistermetadata": null,
           "metadata": {
             "endringer": [
               {
-                "kilde": "FREG",
-                "registrert": "2022-08-08T11:55:03",
+                "kilde": "Dolly",
+                "registrert": "2022-06-17T09:32:16",
+                "registrertAv": "Folkeregisteret",
+                "systemkilde": "FREG",
+                "type": "OPPRETT"
+              }
+            ],
+            "master": "FREG"
+          }
+        },
+        {
+          "relatertPersonsIdent": "${generator.generer().verdi}",
+          "relatertPersonsRolle": "BARN",
+          "minRolleForPerson": "MOR",
+          "relatertPersonUtenFolkeregisteridentifikator": null,
+          "folkeregistermetadata": null,
+          "metadata": {
+            "endringer": [
+              {
+                "kilde": "Dolly",
+                "registrert": "2022-06-17T09:32:16",
                 "registrertAv": "Folkeregisteret",
                 "systemkilde": "FREG",
                 "type": "OPPRETT"
@@ -42,40 +58,15 @@ internal val pdlResponseManglerFolkeregisterdata = """
       ],
       "navn": [
         {
-          "fornavn": "ABDI",
+          "fornavn": "Lykkelig",
           "mellomnavn": "",
-          "etternavn": "MAHAMMED ARTAN",
+          "etternavn": "Eksamen",
           "folkeregistermetadata": null,
           "metadata": {
             "endringer": [
               {
-                "kilde": "TPS",
-                "registrert": "2019-12-04T00:00",
-                "registrertAv": "P149480",
-                "systemkilde": "BI00",
-                "type": "OPPRETT"
-              }
-            ],
-            "master": "PDL"
-          }
-        },
-        {
-          "fornavn": "ABDI MOHAMED",
-          "mellomnavn": null,
-          "etternavn": "ARTAN",
-          "folkeregistermetadata": {
-            "aarsak": "Innflytting",
-            "ajourholdstidspunkt": "2022-05-23T14:39:09",
-            "gyldighetstidspunkt": "2022-05-23T00:00",
-            "kilde": "utlendingsdirektoratet",
-            "opphoerstidspunkt": null,
-            "sekvens": null
-          },
-          "metadata": {
-            "endringer": [
-              {
-                "kilde": "utlendingsdirektoratet",
-                "registrert": "2022-05-23T14:39:20",
+                "kilde": "Dolly",
+                "registrert": "2022-06-17T09:32:15",
                 "registrertAv": "Folkeregisteret",
                 "systemkilde": "FREG",
                 "type": "OPPRETT"
@@ -85,22 +76,22 @@ internal val pdlResponseManglerFolkeregisterdata = """
           }
         }
       ],
-      "foedsel": [
+      "foedselsdato": [
         {
-          "foedselsdato": "1997-06-15",
+          "foedselsdato": "1984-07-04",
           "folkeregistermetadata": {
-            "aarsak": "Innflytting",
-            "ajourholdstidspunkt": "2022-05-23T14:39:09",
-            "gyldighetstidspunkt": "2022-05-23T00:00",
-            "kilde": "utlendingsdirektoratet",
+            "aarsak": null,
+            "ajourholdstidspunkt": "2022-06-17T09:32:15",
+            "gyldighetstidspunkt": "2022-06-17T09:32:15",
+            "kilde": "Dolly",
             "opphoerstidspunkt": null,
             "sekvens": null
           },
           "metadata": {
             "endringer": [
               {
-                "kilde": "utlendingsdirektoratet",
-                "registrert": "2022-05-23T14:39:20",
+                "kilde": "Dolly",
+                "registrert": "2022-06-17T09:32:15",
                 "registrertAv": "Folkeregisteret",
                 "systemkilde": "FREG",
                 "type": "OPPRETT"
@@ -113,5 +104,5 @@ internal val pdlResponseManglerFolkeregisterdata = """
     }
   }
 }
-
-""".trimIndent()
+    """.trimIndent()
+}

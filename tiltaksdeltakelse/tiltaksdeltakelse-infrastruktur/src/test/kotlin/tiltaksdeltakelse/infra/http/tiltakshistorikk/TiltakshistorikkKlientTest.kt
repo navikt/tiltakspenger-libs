@@ -6,7 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.CorrelationId
-import no.nav.tiltakspenger.libs.common.Fnr
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
@@ -23,7 +23,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class TiltakshistorikkKlientTest {
     private val baseUrl = "http://tiltakshistorikk.test"
-    private val fnr = Fnr.fromString("12345678901")
+    private val fnr = FnrGenerator().generer()
     private val correlationId = CorrelationId("test-kall-id")
 
     private fun klient(transport: FakeHttpTransport) = TiltakshistorikkKlient(
@@ -41,7 +41,7 @@ class TiltakshistorikkKlientTest {
           "historikk": [
             {
               "type": "TeamKometDeltakelse",
-              "norskIdent": "12345678901",
+              "norskIdent": "${fnr.verdi}",
               "startDato": "2024-03-04",
               "sluttDato": null,
               "id": "$deltakelseId",
@@ -97,7 +97,7 @@ class TiltakshistorikkKlientTest {
         val kall = transport.mottatteKall.single()
         kall.metode shouldBe "POST"
         kall.uri.toString() shouldBe "$baseUrl/api/v1/historikk"
-        kall.bodyTekst shouldBe """{"identer":["12345678901"]}"""
+        kall.bodyTekst shouldBe """{"identer":["${fnr.verdi}"]}"""
         kall.request.headers().firstValue("Authorization").get() shouldBe "Bearer token"
         kall.request.headers().firstValue("Nav-Call-Id").get() shouldBe "test-kall-id"
     }

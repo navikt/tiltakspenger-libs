@@ -6,6 +6,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.auth.test.core.JwtGenerator
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
 import no.nav.tiltakspenger.libs.json.deserialize
@@ -30,7 +31,7 @@ internal class TexasHttpClientTest {
 
     @Test
     fun `ekstern bruker, gyldig token - riktige claims`() = runTest {
-        val fnr = "12345678910"
+        val fnr = FnrGenerator().generer().verdi
         val response = """
             {
                 "active": true,

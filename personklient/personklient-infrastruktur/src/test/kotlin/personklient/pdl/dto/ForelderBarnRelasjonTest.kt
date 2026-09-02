@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.personklient.pdl.dto
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.nå
 import no.nav.tiltakspenger.libs.person.BarnUtenFolkeregisteridentifikator
@@ -9,6 +10,10 @@ import java.time.LocalDate
 
 internal class ForelderBarnRelasjonTest {
     private val nå = nå(fixedClock)
+    private val fnr = FnrGenerator().generer().verdi
+    private val annetFnr = FnrGenerator(start = 1).generer().verdi
+    private val farFnr = FnrGenerator(start = 2).generer().verdi
+    private val medmorFnr = FnrGenerator(start = 3).generer().verdi
 
     private fun relasjon(
         rolle: ForelderBarnRelasjonRolle,
@@ -37,16 +42,16 @@ internal class ForelderBarnRelasjonTest {
     @Test
     fun `plukker ut unike identer for barn i folkeregisteret`() {
         val relasjoner = listOf(
-            relasjon(ForelderBarnRelasjonRolle.BARN, ident = "12345678910"),
-            relasjon(ForelderBarnRelasjonRolle.BARN, ident = "12345678910"),
-            relasjon(ForelderBarnRelasjonRolle.BARN, ident = "10987654321"),
+            relasjon(ForelderBarnRelasjonRolle.BARN, ident = fnr),
+            relasjon(ForelderBarnRelasjonRolle.BARN, ident = fnr),
+            relasjon(ForelderBarnRelasjonRolle.BARN, ident = annetFnr),
             // Barn uten ident og andre roller enn BARN skal ikke med.
             relasjon(ForelderBarnRelasjonRolle.BARN, ident = null),
-            relasjon(ForelderBarnRelasjonRolle.FAR, ident = "11111111111"),
-            relasjon(ForelderBarnRelasjonRolle.MEDMOR, ident = "22222222222"),
+            relasjon(ForelderBarnRelasjonRolle.FAR, ident = farFnr),
+            relasjon(ForelderBarnRelasjonRolle.MEDMOR, ident = medmorFnr),
         )
 
-        relasjoner.toIdenterForBarnIFolkeregisteret() shouldBe listOf("12345678910", "10987654321")
+        relasjoner.toIdenterForBarnIFolkeregisteret() shouldBe listOf(fnr, annetFnr)
     }
 
     @Test
@@ -66,7 +71,7 @@ internal class ForelderBarnRelasjonTest {
                 utenFolkeregisteridentifikator = RelatertBiPerson(foedselsdato = LocalDate.of(2021, 5, 6)),
             ),
             // Barn med ident og relasjoner som ikke er barn skal ikke med.
-            relasjon(ForelderBarnRelasjonRolle.BARN, ident = "12345678910"),
+            relasjon(ForelderBarnRelasjonRolle.BARN, ident = fnr),
             relasjon(
                 ForelderBarnRelasjonRolle.MOR,
                 utenFolkeregisteridentifikator = RelatertBiPerson(statsborgerskap = "SWE"),

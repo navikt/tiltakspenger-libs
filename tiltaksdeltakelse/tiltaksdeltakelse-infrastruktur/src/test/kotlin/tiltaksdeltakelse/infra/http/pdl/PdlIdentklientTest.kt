@@ -6,7 +6,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
-import no.nav.tiltakspenger.libs.common.Fnr
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
@@ -19,8 +19,8 @@ import kotlin.time.Duration.Companion.seconds
 
 class PdlIdentklientTest {
     private val baseUrl = "http://pdl.test"
-    private val fnr = Fnr.fromString("12345678901")
-    private val historiskFnr = Fnr.fromString("10987654321")
+    private val fnr = FnrGenerator().generer()
+    private val historiskFnr = FnrGenerator(start = 1).generer()
 
     private fun klient(transport: FakeHttpTransport) = PdlIdentklient(
         baseUrl = baseUrl,

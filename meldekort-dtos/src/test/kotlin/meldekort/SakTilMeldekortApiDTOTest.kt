@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.meldekort
 import io.kotest.assertions.json.shouldEqualJson
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.json.deserialize
 import no.nav.tiltakspenger.libs.json.serialize
 import no.nav.tiltakspenger.libs.periode.Periode
@@ -14,6 +15,7 @@ import java.time.LocalDateTime
 class SakTilMeldekortApiDTOTest {
 
     private val now = LocalDateTime.of(2024, 1, 23, 12, 0)
+    private val fnr = FnrGenerator().generer().verdi
 
     // En meldeperiode (mandag-søndag, 14 dager)
     private val periode1 = Periode(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 14))
@@ -42,7 +44,7 @@ class SakTilMeldekortApiDTOTest {
         )
 
         val sak = SakTilMeldekortApiDTO(
-            fnr = "12345678910",
+            fnr = fnr,
             sakId = "SAKID456",
             saksnummer = "SAK123",
             meldeperioder = listOf(meldeperiode),
@@ -84,7 +86,7 @@ class SakTilMeldekortApiDTOTest {
         // language=JSON
         val expectedJson = """
             {
-                "fnr": "12345678910",
+                "fnr": "$fnr",
                 "sakId": "SAKID456",
                 "saksnummer": "SAK123",
                 "meldeperioder": [{
@@ -163,7 +165,7 @@ class SakTilMeldekortApiDTOTest {
         // language=JSON
         val gammelJson = """
             {
-                "fnr": "12345678910",
+                "fnr": "$fnr",
                 "sakId": "SAKID456",
                 "saksnummer": "SAK123",
                 "meldeperioder": [],

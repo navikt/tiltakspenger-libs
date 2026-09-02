@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.httpklient.infra
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.Header
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.HttpMethod
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.Statusregel
@@ -59,9 +60,10 @@ internal class HttpKlientTest {
 
     @Test
     fun `sensitive headernavn samles lowercase for maskeringen`() {
+        val fnr = FnrGenerator().generer().verdi
         val request = bygg(
             headere = listOf(
-                Header("Ident", "12345678901", sensitiv = true),
+                Header("Ident", fnr, sensitiv = true),
                 Header("X-Vanlig", "synlig"),
             ),
         )

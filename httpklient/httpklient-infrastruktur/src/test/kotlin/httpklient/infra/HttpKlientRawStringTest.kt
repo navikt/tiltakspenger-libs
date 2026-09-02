@@ -6,6 +6,7 @@ import io.kotest.matchers.string.shouldEndWith
 import io.kotest.matchers.string.shouldNotContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.test.runTest
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.SerialisertJson
@@ -100,12 +101,13 @@ internal class HttpKlientRawStringTest {
         val transport = FakeHttpTransport()
         transport.leggIKøTomRespons()
         val klient = fakeHttpKlient(transport)
+        val fnr = FnrGenerator().generer().verdi
 
-        val response = klient.postTekst<Unit>(uri, tekst = "12345678901", sensitiv = true).getOrFail()
+        val response = klient.postTekst<Unit>(uri, tekst = fnr, sensitiv = true).getOrFail()
 
         response.metadata.rawRequestString shouldContain "***"
-        response.metadata.rawRequestString shouldNotContain "12345678901"
-        transport.mottatteKall.single().bodyTekst shouldBe "12345678901"
+        response.metadata.rawRequestString shouldNotContain fnr
+        transport.mottatteKall.single().bodyTekst shouldBe fnr
     }
 
     @Test

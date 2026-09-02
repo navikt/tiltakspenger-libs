@@ -114,13 +114,14 @@ Da kjører hele den reelle pipelinen — auth-materialisering, retry-gates, stat
 En køet `500` gir dermed `Left(UventetStatus)` fordi produksjonens statusregel faktisk evalueres, ikke fordi faken emulerer den.
 
 ```kotlin
+val fnr = FnrGenerator().generer()
 val transport = FakeHttpTransport()
 transport.leggIKøJson(SaksnummerResponse(saksnummer = "202501011001"))
 
 val klient = MinKlient(baseUrl = "http://localhost", clock = fixedClock, transport = transport)
 klient.hentSaksnummer(fnr).getOrFail().saksnummer shouldBe "202501011001"
 
-transport.mottatteKall.single().bodyTekst shouldBe """{"fnr":"12345678901"}"""
+transport.mottatteKall.single().bodyTekst shouldBe """{"fnr":"${fnr.verdi}"}"""
 ```
 
 Køen er FIFO uavhengig av URI, og retry konsumerer ett køet svar per forsøk.
@@ -460,4 +461,3 @@ Trenger du domenespesifikke tellere (f.eks. per nedstrøms-tjeneste eller per re
   Streaming rett til eller fra fil (`BodyPublishers.ofFile` / `BodyHandlers.ofFile`) er TODO og legges til ved behov.
 - **`Retry-After`**: klienten respekterer foreløpig ikke `Retry-After`-headeren på `429`/`503`; backoff styres kun av den konfigurerte `Schedule`.
   Å lese `Retry-After` for retryable responser er TODO.
-

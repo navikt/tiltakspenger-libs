@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.httpklient.infra
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.MultipartDel
 import no.nav.tiltakspenger.libs.httpklient.infra.kall.MultipartDeler
@@ -83,7 +84,12 @@ internal class HttpKlientGuardsTest {
     fun `Eksakt med 204 er lovlig når responstypen er Unit`() = runTest {
         // Tilgangsmaskinen svarer 204 uten body, og postTekst<Unit> er den riktige måten å uttrykke det på — guarden over må ikke ta denne.
         val transport = FakeHttpTransport().apply { leggIKøTomRespons(204) }
-        val respons = fakeHttpKlient(transport).postTekst<Unit>(uri, tekst = "12345678910", sensitiv = true, godta = Statusregel.Eksakt(204)).getOrFail()
+        val respons = fakeHttpKlient(transport).postTekst<Unit>(
+            uri,
+            tekst = FnrGenerator().generer().verdi,
+            sensitiv = true,
+            godta = Statusregel.Eksakt(204),
+        ).getOrFail()
         respons.statusCode shouldBe 204
     }
 

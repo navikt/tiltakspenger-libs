@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.personklient.pdl.dto
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.json.deserialize
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -9,6 +10,8 @@ import java.time.LocalDate
  * DTO-ene speiler PDL sitt GraphQL-svar, så testene deserialiserer den formen konsumentene faktisk får.
  */
 internal class PdlPersonTest {
+    private val fnr = FnrGenerator().generer().verdi
+
     @Test
     fun `deserialiserer en person med alle feltene`() {
         val person = deserialize<PdlPerson>(
@@ -37,7 +40,7 @@ internal class PdlPersonTest {
               ],
               "forelderBarnRelasjon": [
                 {
-                  "relatertPersonsIdent": "12345678910",
+                  "relatertPersonsIdent": "$fnr",
                   "relatertPersonsRolle": "BARN",
                   "minRolleForPerson": "MOR",
                   "metadata": { "master": "FREG", "endringer": [] }
@@ -63,16 +66,16 @@ internal class PdlPersonTest {
     @Test
     fun `deserialiserer bolk-svar med kodene PDL bruker`() {
         val ok = deserialize<PdlPersonBolk>(
-            """{ "ident": "12345678910", "person": {}, "code": "ok" }""",
+            """{ "ident": "$fnr", "person": {}, "code": "ok" }""",
         )
-        ok shouldBe PdlPersonBolk(ident = "12345678910", person = PdlPerson(), code = PdlPersonBolkCode.OK)
+        ok shouldBe PdlPersonBolk(ident = fnr, person = PdlPerson(), code = PdlPersonBolkCode.OK)
 
         deserialize<PdlPersonBolk>(
-            """{ "ident": "12345678910", "person": null, "code": "not_found" }""",
+            """{ "ident": "$fnr", "person": null, "code": "not_found" }""",
         ).code shouldBe PdlPersonBolkCode.NOT_FOUND
 
         deserialize<PdlPersonBolk>(
-            """{ "ident": "12345678910", "person": null, "code": "bad_request" }""",
+            """{ "ident": "$fnr", "person": null, "code": "bad_request" }""",
         ).code shouldBe PdlPersonBolkCode.BAD_REQUEST
     }
 

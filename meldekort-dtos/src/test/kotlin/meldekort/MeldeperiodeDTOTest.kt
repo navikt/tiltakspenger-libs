@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.meldekort
 
 import io.kotest.assertions.json.shouldEqualJson
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.json.deserialize
 import no.nav.tiltakspenger.libs.json.serialize
 import no.nav.tiltakspenger.libs.periode.Periode
@@ -18,6 +19,7 @@ class MeldeperiodeDTOTest {
         val endDate = LocalDate.of(2024, 1, 14)
         val periode = Periode(startDate, endDate)
         val antallDagerForPeriode = 10
+        val fnr = FnrGenerator().generer().verdi
 
         val girRettMap: Map<LocalDate, Boolean> = buildMap {
             put(periode.fraOgMed, false)
@@ -30,7 +32,7 @@ class MeldeperiodeDTOTest {
             id = "01HMWNSTVP8XB3QR6GYKR2E7AE",
             kjedeId = "2024-01-01/2024-01-14",
             versjon = 1,
-            fnr = "12345678901",
+            fnr = fnr,
             saksnummer = "SAK123",
             sakId = "SAKID456",
             opprettet = now,
@@ -45,7 +47,7 @@ class MeldeperiodeDTOTest {
                 "id": "01HMWNSTVP8XB3QR6GYKR2E7AE",
                 "kjedeId": "2024-01-01/2024-01-14",
                 "versjon": 1,
-                "fnr": "12345678901",
+                "fnr": "$fnr",
                 "saksnummer": "SAK123",
                 "sakId": "SAKID456",
                 "opprettet": "2024-01-23T12:00:00",

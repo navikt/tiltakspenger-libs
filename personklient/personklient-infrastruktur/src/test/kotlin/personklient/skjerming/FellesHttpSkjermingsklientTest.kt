@@ -13,7 +13,7 @@ import io.kotest.matchers.types.shouldBeTypeOf
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
-import no.nav.tiltakspenger.libs.common.Fnr
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.fixedClock
 import no.nav.tiltakspenger.libs.common.stoppedServerUri
 import no.nav.tiltakspenger.libs.common.withWireMockServer
@@ -28,8 +28,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalTo as headerEqualTo
 internal class FellesHttpSkjermingsklientTest {
 
     private val token = AccessToken("skjerming-token", Instant.now(fixedClock).plusSeconds(3600))
-    private val fnr = Fnr.fromString("12345678901")
-    private val annetFnr = Fnr.fromString("10987654321")
+    private val fnr = FnrGenerator().generer()
+    private val annetFnr = FnrGenerator(start = 1).generer()
     private val correlationId = CorrelationId("test-correlation-id")
 
     private fun klient(baseUrl: String, getToken: suspend () -> AccessToken = { token }) = FellesHttpSkjermingsklient(
@@ -77,7 +77,7 @@ internal class FellesHttpSkjermingsklientTest {
                     .withHeader("Nav-Call-Id", headerEqualTo("test-correlation-id"))
                     .withHeader("Authorization", headerEqualTo("Bearer skjerming-token"))
                     .withHeader("Content-Type", headerEqualTo("application/json"))
-                    .withRequestBody(equalToJson("""{"personident":"12345678901"}""")),
+                    .withRequestBody(equalToJson("""{"personident":"${fnr.verdi}"}""")),
             )
         }
     }
@@ -149,7 +149,7 @@ internal class FellesHttpSkjermingsklientTest {
             } returns {
                 statusCode = 200
                 header = "Content-Type" to "application/json"
-                body = """{"12345678901":true,"10987654321":false}"""
+                body = """{"${fnr.verdi}":true,"${annetFnr.verdi}":false}"""
             }
 
             runTest {
@@ -159,7 +159,7 @@ internal class FellesHttpSkjermingsklientTest {
 
             wiremock.verify(
                 postRequestedFor(urlEqualTo("/skjermetBulk"))
-                    .withRequestBody(equalToJson("""{"personidenter":["12345678901","10987654321"]}""")),
+                    .withRequestBody(equalToJson("""{"personidenter":["${fnr.verdi}","${annetFnr.verdi}"]}""")),
             )
         }
     }

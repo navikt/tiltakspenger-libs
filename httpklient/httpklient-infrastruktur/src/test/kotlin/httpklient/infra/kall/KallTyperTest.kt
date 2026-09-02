@@ -6,6 +6,7 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
 import no.nav.tiltakspenger.libs.common.AccessToken
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import org.junit.jupiter.api.Test
 import java.time.Instant
 
@@ -33,13 +34,14 @@ internal class KallTyperTest {
 
     @Test
     fun `NavHeadere bruker de eksakte stavemåtene nedstrømstjenestene krever`() {
+        val fnr = FnrGenerator().generer().verdi
         NavHeadere.xCorrelationId("abc") shouldBe Header("X-Correlation-ID", "abc")
         NavHeadere.navCallId("abc") shouldBe Header("Nav-Call-Id", "abc")
         NavHeadere.navCallid("abc") shouldBe Header("Nav-Callid", "abc")
         NavHeadere.navConsumerId("app") shouldBe Header("Nav-Consumer-Id", "app")
         NavHeadere.tema("IND") shouldBe Header("Tema", "IND")
         NavHeadere.behandlingsnummer("B470") shouldBe Header("behandlingsnummer", "B470")
-        NavHeadere.ident("12345678901") shouldBe Header("ident", "12345678901", sensitiv = true)
+        NavHeadere.ident(fnr) shouldBe Header("ident", fnr, sensitiv = true)
     }
 
     @Test

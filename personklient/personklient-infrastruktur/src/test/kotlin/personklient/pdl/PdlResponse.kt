@@ -1,6 +1,10 @@
 package no.nav.tiltakspenger.libs.personklient.pdl
+
+import no.nav.tiltakspenger.libs.common.FnrGenerator
+
 // language=JSON
-internal val pdlResponse = """
+internal val pdlResponse = FnrGenerator().let { generator ->
+    """
 {
   "data": {
     "hentGeografiskTilknytning": {
@@ -14,7 +18,7 @@ internal val pdlResponse = """
       "adressebeskyttelse": [],
       "forelderBarnRelasjon": [
         {
-          "relatertPersonsIdent": "10020662730",
+          "relatertPersonsIdent": "${generator.generer().verdi}",
           "relatertPersonsRolle": "BARN",
           "minRolleForPerson": "MOR",
           "relatertPersonUtenFolkeregisteridentifikator": null,
@@ -40,7 +44,7 @@ internal val pdlResponse = """
           }
         },
         {
-          "relatertPersonsIdent": "07070676243",
+          "relatertPersonsIdent": "${generator.generer().verdi}",
           "relatertPersonsRolle": "BARN",
           "minRolleForPerson": "MOR",
           "relatertPersonUtenFolkeregisteridentifikator": null,
@@ -121,4 +125,5 @@ internal val pdlResponse = """
     }
   }
 }
-""".trimIndent()
+    """.trimIndent()
+}

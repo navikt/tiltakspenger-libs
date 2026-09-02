@@ -9,6 +9,7 @@ import io.kotest.matchers.shouldBe
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import org.junit.jupiter.api.Test
 import java.io.IOException
 import java.net.URI
@@ -143,13 +144,14 @@ internal class FeilmodellTest {
     fun `loggFeil tar med status når serveren faktisk svarte, og skjuler URIen når klienten ikke har frikjent den`() {
         val logger = testLogger()
         val melding = slot<() -> Any?>()
+        val fnr = FnrGenerator().generer().verdi
 
         HttpKlientError.UventetStatus(
             statusCode = 503,
             body = "tjenesten er nede",
             metadata = tomMetadata(
                 method = "GET",
-                uri = URI.create("https://pdl.test/graphql?ident=12345678901"),
+                uri = URI.create("https://pdl.test/graphql?ident=$fnr"),
                 statusCode = 503,
                 attempts = 3,
             ),

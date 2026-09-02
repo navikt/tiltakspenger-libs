@@ -6,7 +6,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class FnrGeneratorTest {
@@ -27,7 +26,7 @@ class FnrGeneratorTest {
     fun `genererer fnr til og med øvre grense`() {
         val generator = FnrGenerator(start = 99_999_900_000L)
 
-        assertEquals("99999900000", generator.generer().verdi)
+        generator.generer().verdi shouldBe "99999900000"
         shouldThrow<IllegalStateException> {
             generator.generer()
         }

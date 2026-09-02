@@ -23,8 +23,19 @@ class FnrGeneratorTest {
     }
 
     @Test
+    fun `genererer bare fnr der tredje siffer er 8 eller 9`() {
+        val overgangenTilNi = FnrGenerator(start = 99_999_999L)
+        overgangenTilNi.generer().verdi shouldBe "00899999999"
+        overgangenTilNi.generer().verdi shouldBe "00900000000"
+
+        val overgangenTilNyPrefiks = FnrGenerator(start = 199_999_999L)
+        overgangenTilNyPrefiks.generer().verdi shouldBe "00999999999"
+        overgangenTilNyPrefiks.generer().verdi shouldBe "01800000000"
+    }
+
+    @Test
     fun `genererer fnr til og med øvre grense`() {
-        val generator = FnrGenerator(start = 99_999_900_000L)
+        val generator = FnrGenerator(start = 19_999_900_000L)
 
         generator.generer().verdi shouldBe "99999900000"
         shouldThrow<IllegalStateException> {

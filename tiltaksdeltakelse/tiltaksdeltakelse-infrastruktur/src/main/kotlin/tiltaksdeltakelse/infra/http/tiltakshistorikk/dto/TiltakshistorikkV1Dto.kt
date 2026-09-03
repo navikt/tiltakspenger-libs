@@ -13,7 +13,7 @@ import java.util.UUID
  * Kontrakt: https://github.com/navikt/mulighetsrommet/blob/main/common/tiltakshistorikk-client/src/main/kotlin/no/nav/tiltak/historikk/TiltakshistorikkV1Dto.kt
  *
  * Kopien speiler kontrakten felt for felt, og hvert bevisst utelatt felt står som kommentar med begrunnelse — et avvik fra kontrakten skal være et synlig valg, ikke et stille tap.
- * Status, tiltakskoder, Komet-årsak og meldinger deserialiseres som `String`: tillegg hos kilden er forventet driftsmodus og skal aldri velte deserialiseringen.
+ * Status, tiltakskoder og Komet-årsak deserialiseres som `String`: tillegg hos kilden er forventet driftsmodus og skal aldri velte deserialiseringen.
  * Klassifiseringen til domenets kjente/ukjente verdier skjer i mapperen, ikke her.
  *
  * Kontraktens `opphav`-felt finnes ikke på wiren — det settes i klassekroppen hos kilden og er ikke med i kotlinx-serialiseringen deres.

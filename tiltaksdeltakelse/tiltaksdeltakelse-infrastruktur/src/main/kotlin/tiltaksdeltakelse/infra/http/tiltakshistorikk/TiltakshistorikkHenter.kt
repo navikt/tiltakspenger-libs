@@ -14,7 +14,6 @@ import no.nav.tiltakspenger.libs.common.nå
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientResponse
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltaksdeltakelser
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltakshistorikk
-import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltakshistorikkmeldinger
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.UkjentDeltakelsesform
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.UkjenteDeltakelsesformer
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.pdl.KanIkkeHenteIdenter
@@ -24,7 +23,6 @@ import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.a
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.dto.NorskIdentDto
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.dto.TiltakshistorikkV1Dto
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.dto.TiltakshistorikkV1Response
-import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.felles.tiltakshistorikkmelding
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.komet.tilTiltaksdeltakelse
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.teamtiltak.tilTiltaksdeltakelse
 import java.time.Clock
@@ -126,13 +124,8 @@ class TiltakshistorikkHenter(
                 ugyldig("Svaret inneholder dupliserte deltakelses-ider")
             }
 
-            val meldinger = body.meldinger.map { kode ->
-                tiltakshistorikkmelding(kode).mapLeft { ugyldig(it.beskrivelse) }.bind()
-            }
-
             Tiltakshistorikk(
                 deltakelser = Tiltaksdeltakelser(deltakelser),
-                meldinger = Tiltakshistorikkmeldinger(meldinger),
                 ukjenteDeltakelsesformer = UkjenteDeltakelsesformer(ukjenteFormer),
                 hentetTidspunkt = nå(clock),
             )

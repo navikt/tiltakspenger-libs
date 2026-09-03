@@ -69,8 +69,7 @@ class TiltakshistorikkV1DtoTest {
                   "dagerPerUke": 4.0,
                   "arbeidsgiver": { "organisasjonsnummer": "999888777", "navn": "Butikken AS" }
                 }
-              ],
-              "meldinger": ["MANGLER_HISTORIKK_FRA_TEAM_TILTAK"]
+              ]
             }
         """.trimIndent()
 
@@ -135,12 +134,11 @@ class TiltakshistorikkV1DtoTest {
                     arbeidsgiver = TiltakshistorikkV1Dto.Virksomhet(navn = "Butikken AS"),
                 ),
             ),
-            meldinger = setOf("MANGLER_HISTORIKK_FRA_TEAM_TILTAK"),
         )
     }
 
     @Test
-    fun `ukjente statuser, koder, årsaker, meldinger og felter flyter gjennom uten å velte`() {
+    fun `ukjente statuser, koder, årsaker og felter flyter gjennom uten å velte`() {
         val json = """
             {
               "historikk": [
@@ -159,8 +157,7 @@ class TiltakshistorikkV1DtoTest {
                   "dagerPerUke": null,
                   "nyttFeltViIkkeKjenner": true
                 }
-              ],
-              "meldinger": ["HELT_NY_MELDING"]
+              ]
             }
         """.trimIndent()
 
@@ -170,7 +167,6 @@ class TiltakshistorikkV1DtoTest {
         deltakelse.status.type shouldBe "HELT_NY_STATUS"
         deltakelse.status.aarsak shouldBe "HELT_NY_AARSAK"
         deltakelse.tiltakstype.tiltakskode shouldBe "HELT_NY_TILTAKSKODE"
-        respons.meldinger shouldBe setOf("HELT_NY_MELDING")
     }
 
     @Test
@@ -179,8 +175,7 @@ class TiltakshistorikkV1DtoTest {
             {
               "historikk": [
                 { "type": "NyDeltakelsesform", "id": "0190c9a2-7777-7000-8000-000000000007", "noeAnnet": 42 }
-              ],
-              "meldinger": []
+              ]
             }
         """.trimIndent()
 
@@ -194,8 +189,7 @@ class TiltakshistorikkV1DtoTest {
             {
               "historikk": [
                 { "id": "0190c9a2-8888-7000-8000-000000000008" }
-              ],
-              "meldinger": []
+              ]
             }
         """.trimIndent()
 

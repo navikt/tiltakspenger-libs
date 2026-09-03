@@ -11,19 +11,17 @@ class TiltakshistorikkTest {
     private val hentetTidspunkt = LocalDateTime.of(2026, 3, 1, 8, 30)
 
     @Test
-    fun `aggregatet samler ukjente verdier fra deltakelsene, meldingene og deltakelsesformene`() {
+    fun `aggregatet samler ukjente verdier fra deltakelsene og deltakelsesformene`() {
         val ukjentStatus = Arenastatus.Ukjent("HELT_NY_STATUS")
-        val ukjentMelding = Tiltakshistorikkmelding.Ukjent("HELT_NY_MELDING")
         val ukjentForm = UkjentDeltakelsesform("NyDeltakelsesform")
 
         val historikk = Tiltakshistorikk(
             deltakelser = Tiltaksdeltakelser(listOf(testdeltakelse(kildestatus = ukjentStatus))),
-            meldinger = Tiltakshistorikkmeldinger(listOf(Tiltakshistorikkmelding.ManglerHistorikkFraTeamTiltak, ukjentMelding)),
             ukjenteDeltakelsesformer = UkjenteDeltakelsesformer(listOf(ukjentForm)),
             hentetTidspunkt = hentetTidspunkt,
         )
 
-        historikk.ukjenteKildeverdier shouldBe listOf(ukjentStatus, ukjentMelding, ukjentForm)
+        historikk.ukjenteKildeverdier shouldBe listOf(ukjentStatus, ukjentForm)
         historikk.hentetTidspunkt shouldBe hentetTidspunkt
     }
 
@@ -31,32 +29,11 @@ class TiltakshistorikkTest {
     fun `en henting der alt lot seg tolke har ingen ukjente kildeverdier`() {
         val historikk = Tiltakshistorikk(
             deltakelser = Tiltaksdeltakelser(listOf(testdeltakelse())),
-            meldinger = Tiltakshistorikkmeldinger(emptyList()),
             ukjenteDeltakelsesformer = UkjenteDeltakelsesformer(emptyList()),
             hentetTidspunkt = hentetTidspunkt,
         )
 
         historikk.ukjenteKildeverdier.shouldBeEmpty()
-    }
-
-    @Test
-    fun `meldingene utleder hvilke kilder som mangler, og ukjente meldinger peker ikke på noen kilde`() {
-        Tiltakshistorikkmeldinger(listOf(Tiltakshistorikkmelding.ManglerHistorikkFraTeamTiltak)).manglendeKilder shouldBe
-            setOf(Tiltakskilde.TeamTiltak)
-        Tiltakshistorikkmeldinger(listOf(Tiltakshistorikkmelding.Ukjent("HELT_NY_MELDING"))).manglendeKilder.shouldBeEmpty()
-        Tiltakshistorikkmeldinger(emptyList()).manglendeKilder.shouldBeEmpty()
-    }
-
-    @Test
-    fun `meldingene må ha unike koder`() {
-        shouldThrowWithMessage<IllegalArgumentException>("Meldingene må ha unike koder — kontrakten sender dem som et sett") {
-            Tiltakshistorikkmeldinger(
-                listOf(
-                    Tiltakshistorikkmelding.Ukjent("SAMME_KODE"),
-                    Tiltakshistorikkmelding.Ukjent("SAMME_KODE"),
-                ),
-            )
-        }
     }
 
     @Test

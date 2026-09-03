@@ -8,7 +8,7 @@ import no.nav.tiltakspenger.libs.periode.Periode
  * Wrapperen er stedet for invarianter og fellesfunksjoner — aldri en naken liste.
  * Ingenting er filtrert bort på vei inn: også [Tiltaksdeltakelse.Ugyldig], ukjente tiltakskoder og ukjente kildestatuser er med, og konsumentene snevrer inn med uttrekkene.
  *
- * Kompletthet hører ikke hjemme her: om svaret manglet en kilde ([Tiltakshistorikkmelding]) og når det ble hentet er egenskaper ved *hentingen*, og bæres av hente-resultatet når infrastrukturen kommer.
+ * Kompletthet hører ikke hjemme her: når det ble hentet er en egenskap ved *hentingen*, og bæres av hente-resultatet når infrastrukturen kommer.
  */
 data class Tiltaksdeltakelser(
     val deltakelser: List<Tiltaksdeltakelse>,

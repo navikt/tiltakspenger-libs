@@ -7,15 +7,14 @@ import java.time.LocalDateTime
  *
  * [hentetTidspunkt] ligger ytterst fordi det gjelder hele svaret, og er grunnlaget for et senere utdatert-flagg sammen med kildens eget statustidspunkt.
  * Produsenten tar alltid klokken som parameter — aldri systemklokke, aldri default-verdi.
- * Kompletthet bor her og ikke på [Tiltaksdeltakelser]: samletypen kan bygges fra lagrede rader, mens meldingene og de ukjente formene bare finnes i selve hentingen — en samletype med tom meldingsliste ville påstått et komplett svar den ikke kan garantere.
+ * Kompletthet bor her og ikke på [Tiltaksdeltakelser]: samletypen kan bygges fra lagrede rader, mens de ukjente formene bare finnes i selve hentingen.
  */
 data class Tiltakshistorikk(
     val deltakelser: Tiltaksdeltakelser,
-    val meldinger: Tiltakshistorikkmeldinger,
     val ukjenteDeltakelsesformer: UkjenteDeltakelsesformer,
     val hentetTidspunkt: LocalDateTime,
 ) {
-    /** Alt ved hentingen som ikke lot seg tolke — deltakelsenes ukjente verdier, ukjente meldinger og ukjente deltakelsesformer — til varsling og visning. */
+    /** Alt ved hentingen som ikke lot seg tolke — deltakelsenes ukjente verdier og ukjente deltakelsesformer — til varsling og visning. */
     val ukjenteKildeverdier: List<UkjentKildeverdi>
-        get() = deltakelser.ukjenteKildeverdier + meldinger.ukjenteKildeverdier + ukjenteDeltakelsesformer.ukjenteKildeverdier
+        get() = deltakelser.ukjenteKildeverdier + ukjenteDeltakelsesformer.ukjenteKildeverdier
 }

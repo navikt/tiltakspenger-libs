@@ -14,7 +14,6 @@ internal class UkjentKildeverdiTest {
         Kometstatus.Ukjent("X", årsak = null, opprettet = testStatusOpprettet).hva shouldBe "deltakerstatus fra Komet"
         TeamTiltakstatus.Ukjent("X").hva shouldBe "avtalestatus fra Team Tiltak"
         Kometårsak.Ukjent("X").hva shouldBe "årsak fra Komet"
-        Tiltakshistorikkmelding.Ukjent("X").hva shouldBe "melding fra tiltakshistorikk"
         Tiltakstype.Ukjent("X").hva shouldBe "tiltakskode fra kilden"
     }
 

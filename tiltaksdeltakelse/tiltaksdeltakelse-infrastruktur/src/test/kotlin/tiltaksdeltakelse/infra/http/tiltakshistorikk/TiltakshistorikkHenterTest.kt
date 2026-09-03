@@ -16,8 +16,6 @@ import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.common.nå
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.infra.transport.FakeHttpTransport
-import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltakshistorikkmelding
-import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltakskilde
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.UkjentDeltakelsesform
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.pdl.KanIkkeHenteIdenter
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.pdl.PdlIdentklient
@@ -103,8 +101,8 @@ class TiltakshistorikkHenterTest {
         }
     """.trimIndent()
 
-    private fun responsJson(rader: List<String>, meldinger: List<String> = emptyList()) = """
-        {"historikk": [${rader.joinToString(",")}], "meldinger": [${meldinger.joinToString(",") { "\"$it\"" }}]}
+    private fun responsJson(rader: List<String>) = """
+        {"historikk": [${rader.joinToString(",")}]}
     """.trimIndent()
 
     @Test
@@ -119,7 +117,6 @@ class TiltakshistorikkHenterTest {
                         teamTiltakRadJson(ident = fnr),
                         """{ "type": "NyDeltakelsesform", "noe": 1 }""",
                     ),
-                    meldinger = listOf("MANGLER_HISTORIKK_FRA_TEAM_TILTAK", "HELT_NY_MELDING"),
                 ),
             )
         }
@@ -131,11 +128,6 @@ class TiltakshistorikkHenterTest {
             "0190c9a2-2222-7000-8000-000000000002",
             "0190c9a2-4444-7000-8000-000000000004",
         )
-        historikk.meldinger.verdi shouldBe listOf(
-            Tiltakshistorikkmelding.ManglerHistorikkFraTeamTiltak,
-            Tiltakshistorikkmelding.Ukjent("HELT_NY_MELDING"),
-        )
-        historikk.meldinger.manglendeKilder shouldBe setOf(Tiltakskilde.TeamTiltak)
         historikk.ukjenteDeltakelsesformer.verdi shouldBe listOf(UkjentDeltakelsesform("NyDeltakelsesform"))
         historikk.hentetTidspunkt shouldBe nå(fixedClock)
 
@@ -287,16 +279,5 @@ class TiltakshistorikkHenterTest {
 
         henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull()
             .shouldBeInstanceOf<KunneIkkeHenteTiltakshistorikk.UgyldigRespons>().beskrivelse shouldBe "Svaret inneholder dupliserte deltakelses-ider"
-    }
-
-    @Test
-    fun `en blank melding feller hentingen`() = runTest {
-        val pdlTransport = FakeHttpTransport().apply { leggIKøJson(pdlJson(fnr)) }
-        val historikkTransport = FakeHttpTransport().apply {
-            leggIKøJson(responsJson(rader = emptyList(), meldinger = listOf(" ")))
-        }
-
-        henter(pdlTransport, historikkTransport).hentTiltakshistorikk(fnr, correlationId).leftOrNull().shouldNotBeNull()
-            .shouldBeInstanceOf<KunneIkkeHenteTiltakshistorikk.UgyldigRespons>().beskrivelse shouldBe "Blank melding fra tiltakshistorikk kan ikke bæres som ukjent kildeverdi"
     }
 }

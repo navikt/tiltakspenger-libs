@@ -56,8 +56,7 @@ class TiltakshistorikkKlientTest {
               "deltidsprosent": 60.0,
               "dagerPerUke": null
             }
-          ],
-          "meldinger": []
+          ]
         }
     """.trimIndent()
 
@@ -92,7 +91,6 @@ class TiltakshistorikkKlientTest {
 
         respons.historikk.map { (it as TiltakshistorikkV1Dto.TeamKometDeltakelse).id } shouldBe listOf(deltakelseId)
         respons.historikk.map { (it as TiltakshistorikkV1Dto.TeamKometDeltakelse).startDato } shouldBe listOf(LocalDate.of(2024, 3, 4))
-        respons.meldinger shouldBe emptySet()
 
         val kall = transport.mottatteKall.single()
         kall.metode shouldBe "POST"
@@ -104,7 +102,7 @@ class TiltakshistorikkKlientTest {
 
     @Test
     fun `andre 2xx enn 200 godtas ikke`() = runTest {
-        val transport = FakeHttpTransport().apply { leggIKøStatus(statusCode = 202, body = """{"historikk":[],"meldinger":[]}""") }
+        val transport = FakeHttpTransport().apply { leggIKøStatus(statusCode = 202, body = """{"historikk":[]}""") }
 
         val feil = klient(transport).hentTiltakshistorikk(nonEmptyListOf(fnr), correlationId).leftOrNull().shouldNotBeNull()
 

@@ -27,9 +27,9 @@ Normaliseringen mellom dem er en faglig vurdering, ikke en teknisk oversettelse,
 **Samlingen.** `Tiltaksdeltakelser` er wrapperen rundt alt vi mottok for en person, med narrowing (`girRett`, `ugyldige`, `medUkjentKildestatus`), overlappsvar som `Overlapp { Ja, Nei, Kanskje }`, og uttrekket `somKildenTilsierManKanSøkePå(påDato)` — en egen type som bærer datoen utvalget gjaldt.
 `UkjentKildeverdi` samler alt kilden sa som vi ikke kjenner igjen — med `hva` («deltakerstatus fra Arena», «årsak fra Komet», …) og `kodeIKontrakten` — slik at varsling og visning slipper å kjenne hver akse.
 
-**Hentingen.** `Tiltakshistorikk` er resultatet av én henting: deltakelsene, kompletthet (`Tiltakshistorikkmeldinger` med `manglendeKilder`, og `UkjenteDeltakelsesformer` for kontraktsvarianter vi ikke har), og `hentetTidspunkt` ytterst.
-Kompletthet bor på hentingen og ikke på `Tiltaksdeltakelser`, fordi samletypen også kan bygges fra lagrede rader — en tom meldingsliste der ville påstått et komplett svar den ikke kan garantere.
-`ukjenteKildeverdier` på hentingen samler alt som ikke lot seg tolke, på tvers av deltakelser, meldinger og deltakelsesformer.
+**Hentingen.** `Tiltakshistorikk` er resultatet av én henting: deltakelsene, `UkjenteDeltakelsesformer` for kontraktsvarianter vi ikke har, og `hentetTidspunkt` ytterst.
+Kompletthet bor på hentingen og ikke på `Tiltaksdeltakelser`, fordi samletypen også kan bygges fra lagrede rader.
+`ukjenteKildeverdier` på hentingen samler alt som ikke lot seg tolke, på tvers av deltakelser og deltakelsesformer.
 
 **Infrastrukturen logger ikke.**
 `TiltakshistorikkHenter` returnerer i stedet nok til at konsumenten kan gjøre det, på samme måte som `httpklient`: `KunneIkkeHenteTiltakshistorikk` bærer feilen med metadata, og `TiltakshistorikkResultat` bærer `HttpKlientResponse` (som gir `loggSuksess` og rå respons) sammen med `Identoppslag`, som sier om oppslaget måtte falle tilbake til innsendt fnr.

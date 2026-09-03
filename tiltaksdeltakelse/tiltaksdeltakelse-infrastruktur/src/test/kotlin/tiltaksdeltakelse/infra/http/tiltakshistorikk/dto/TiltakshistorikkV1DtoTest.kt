@@ -13,7 +13,7 @@ class TiltakshistorikkV1DtoTest {
     private val historiskFnr = FnrGenerator(start = 1).generer().verdi
 
     /**
-     * JSON-en er pinnet mot kontraktens wire-format, inkludert feltene vi bevisst utelater fra kopien (`organisasjonsnummer`, `gjennomforing.navn`).
+     * JSON-en er pinnet mot kontraktens wire-format, inkludert feltene vi bevisst utelater fra kopien (`organisasjonsnummer`, `gjennomforing.navn`, `meldinger`).
      * At de står i JSON-en og ikke i forventningsobjektet beviser at utelatelsene tolereres i stedet for å velte deserialiseringen.
      */
     @Test
@@ -69,7 +69,8 @@ class TiltakshistorikkV1DtoTest {
                   "dagerPerUke": 4.0,
                   "arbeidsgiver": { "organisasjonsnummer": "999888777", "navn": "Butikken AS" }
                 }
-              ]
+              ],
+              "meldinger": ["MANGLER_HISTORIKK_FRA_TEAM_TILTAK"]
             }
         """.trimIndent()
 
@@ -157,7 +158,8 @@ class TiltakshistorikkV1DtoTest {
                   "dagerPerUke": null,
                   "nyttFeltViIkkeKjenner": true
                 }
-              ]
+              ],
+              "meldinger": ["HELT_NY_MELDING"]
             }
         """.trimIndent()
 

@@ -28,7 +28,8 @@ Normaliseringen mellom dem er en faglig vurdering, ikke en teknisk oversettelse,
 `UkjentKildeverdi` samler alt kilden sa som vi ikke kjenner igjen — med `hva` («deltakerstatus fra Arena», «årsak fra Komet», …) og `kodeIKontrakten` — slik at varsling og visning slipper å kjenne hver akse.
 
 **Hentingen.** `Tiltakshistorikk` er resultatet av én henting: deltakelsene, `UkjenteDeltakelsesformer` for kontraktsvarianter vi ikke har, og `hentetTidspunkt` ytterst.
-Kompletthet bor på hentingen og ikke på `Tiltaksdeltakelser`, fordi samletypen også kan bygges fra lagrede rader.
+De ukjente formene og hentetidspunktet bor på hentingen og ikke på `Tiltaksdeltakelser`, fordi samletypen også kan bygges fra lagrede rader.
+Kontraktens `meldinger` (i dag kun `MANGLER_HISTORIKK_FRA_TEAM_TILTAK`) er bevisst ikke modellert: manglende historikk fra Team Tiltak er ikke lenger et særtilfelle vi håndterer, og feltet ignoreres på vei inn.
 `ukjenteKildeverdier` på hentingen samler alt som ikke lot seg tolke, på tvers av deltakelser og deltakelsesformer.
 
 **Infrastrukturen logger ikke.**

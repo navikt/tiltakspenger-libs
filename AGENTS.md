@@ -44,7 +44,7 @@ Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tilta
       Den deklarerer koordinater og versjoner, og ikke noe mer: en katalog kan verken uttrykke constraints eller `exclude`.
       Konsumeres i app-repoets `settings.gradle.kts` med `versionCatalogs { create("libs") { from("com.github.navikt.tiltakspenger-libs:versjonskatalog:<versjon>") } }`.
     - `plattform` — en `java-platform`-BOM med constraints som virker transitivt, altså det versjonskatalogen ikke kan.
-      Den pinner libs-modulene til sin egen versjon, slik at app-repoene skriver libs-koordinatene uten versjon, og styrer de transitive versjonene vi ikke deklarerer selv (netty, jackson 2, kafka-clients med `strictly`, lz4, scram).
+      Den pinner libs-modulene til sin egen versjon, slik at app-repoene skriver libs-koordinatene uten versjon, og styrer de transitive versjonene vi ikke deklarerer selv (netty, jackson 2, kafka-clients med `strictly`, lz4, scram, httpclient5/httpcore5).
       Konsumeres med `implementation(platform("com.github.navikt.tiltakspenger-libs:plattform:<versjon>"))`.
 
   Modullista i plattformen utledes fra prosjektstrukturen, ikke fra en navneliste, så en ny libs-modul er med automatisk.

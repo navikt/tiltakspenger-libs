@@ -1,0 +1,7 @@
+[versions]
+httpcore5 = "5.4.3"
+
+[libraries]
+# Markøren unntar kun sin egen linje, så oppføringen under den skal fortsatt flagges.
+httpcore5 = { module = "org.apache.httpcomponents.core5:httpcore5", version.ref = "httpcore5" } # httpklient-unntak: kun constraint, aldri på classpath
+httpcore5-h2 = { module = "org.apache.httpcomponents.core5:httpcore5-h2", version.ref = "httpcore5" }

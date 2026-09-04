@@ -38,7 +38,13 @@ import kotlin.time.Duration.Companion.seconds
 class AppTest {
     private val log = KotlinLogging.logger { }
 
-    private val ventetimeoutMs = 2_000L
+    /**
+     * Frist for venting på noe som skal skje: latchen på ServerReady og join-en etter at serveren er stoppet.
+     * Fristen er romslig fordi en kald JVM på en delt CI-runner kan bruke flere sekunder på å få opp en ekte Ktor-app.
+     * En grønn test venter aldri hele fristen, den slipper videre idet hendelsen kommer.
+     * Fristen er derfor kun en øvre grense som skiller «treg» fra «henger».
+     */
+    private val ventetimeoutMs = 30_000L
 
     private val clock = Clock.systemUTC()
 

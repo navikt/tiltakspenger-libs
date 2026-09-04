@@ -44,8 +44,9 @@ class OppstartTest {
     /**
      * Sjenerøs øvre grense for å vente på at en bakgrunnstråd/-coroutine starter eller fullfører i de concurrency-testene under.
      * Disse er ventegrenser (ikke sleeps), så normal kjøring berører dem aldri.
+     * Fristen er romslig fordi en kald JVM på en delt CI-runner kan bruke flere sekunder på å få opp en ekte Ktor-app.
      */
-    private val ventetimeoutMs = 2_000L
+    private val ventetimeoutMs = 30_000L
 
     @Test
     fun `markerer appen klar fra ServerReady til shutdown`() = testApplication {

@@ -34,7 +34,7 @@ class TiltakshistorikkKlientTest {
     )
 
     /**
-     * JSON-en er kontraktens wire-format, med feltene kopien bevisst utelater (`organisasjonsnummer`, `gjennomforing.navn`) til stede.
+     * JSON-en er kontraktens wire-format, med feltene kopien bevisst utelater (`organisasjonsnummer`, `gjennomforing.navn`, `meldinger`) til stede.
      */
     private fun responsJson(deltakelseId: UUID, gjennomføringId: UUID) = """
         {
@@ -56,7 +56,8 @@ class TiltakshistorikkKlientTest {
               "deltidsprosent": 60.0,
               "dagerPerUke": null
             }
-          ]
+          ],
+          "meldinger": ["MANGLER_HISTORIKK_FRA_TEAM_TILTAK"]
         }
     """.trimIndent()
 

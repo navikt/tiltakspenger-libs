@@ -87,6 +87,23 @@ internal class IngenAndreHttpKlienterTest {
         brudd.joinToString("\n") shouldContain "ren/build.gradle.kts"
     }
 
+    /**
+     * Markøren finnes for constraints som pinner en forbudt klient bort fra en sårbarhet, slik plattform-BOM-en gjør for HttpComponents.
+     * Begge halvdelene av kontrakten testes her: en markør med begrunnelse unntar sin egen linje, og en markør uten begrunnelse unntar ingenting.
+     */
+    @Test
+    fun `unntaksmarkør med begrunnelse unntar linja, uten begrunnelse gjør den ikke`() {
+        val brudd = IngenAndreHttpKlienter.klientavhengigheter(fixturesti("byggfilerunntak"))
+
+        brudd shouldHaveSize 2
+        val samlet = brudd.joinToString("\n")
+        // Markør uten tekst etter kolonet, og en oppføring uten markør på linja under en som har den.
+        samlet shouldContain "appen/build.gradle.kts:3: com.squareup.okhttp3"
+        samlet shouldContain "gradle/libs.versions.toml:7: org.apache.httpcomponents"
+        samlet shouldNotContain "appen/build.gradle.kts:7"
+        samlet shouldNotContain "gradle/libs.versions.toml:6"
+    }
+
     @Test
     fun `unntatte filstier flagges ikke i byggfiler`() {
         IngenAndreHttpKlienter

@@ -1,27 +1,33 @@
 [versions]
 arrow = "2.2.3"
 atomicfu = "0.33.0"
-auth0-jwt = "4.5.2"
+auth0-jwt = "4.6.0"
 auth0-jwks = "0.24.1"
 avro = "1.12.2"
 # Avro-pluginen drar inn avro-tools på buildscript-classpathen. Oppføringen er forberedt for at build-logic skal eie pluginen; i dag deklarerer avro-repoene den selv.
 avro-gradle-plugin = "0.0.12"
 caffeine = "3.2.4"
 # commons-lang3 kommer transitivt fra avro-tools på buildscript-classpathen, og pinnes mot ukontrollert rekursjon på lange inndata (GHSA-j288-q9x7-2f5v).
-commons-lang3 = "3.18.0"
+commons-lang3 = "3.20.0"
 commons-text = "1.15.0"
-confluent = "8.1.1"
-cyclonedx-gradle-plugin = "3.3.0"
-flyway = "12.11.0"
+confluent = "8.3.1"
+cyclonedx-gradle-plugin = "3.4.1"
+flyway = "13.4.0"
 handlebars = "4.5.4"
 hamcrest = "3.0"
 hikaricp = "7.1.0"
+# HttpComponents brukes ikke direkte, men kafka-schema-registry-client (via kafka-avro-serializer) drar inn httpclient5 5.5 og httpcore5 5.3.4.
+# httpcore5 5.3.4 lar HTTP/1-headere spise minne til tjenesten går ned (CVE-2026-54399), og httpcore5-h2 5.3.4 tar imot ubegrenset HPACK-headerliste før SETTINGS-ACK (CVE-2026-54428); begge er fikset i 5.4.3.
+# httpclient5 5.5 lekker forbindelser når dekoding av Content-Encoding feiler, til poolen er tom (CVE-2026-64607); fikset i 5.6.3.
+# Vi tar 5.6.4, som er nyeste og bygger på httpcore5 5.4.3.
+httpclient5 = "5.6.4"
+httpcore5 = "5.4.3"
 jackson = "3.2.2"
 jackson-annotations = "2.22"
 # Jackson 2 brukes ikke direkte, men kommer transitivt via WireMock og java-jwt; bom-en løfter dem over de patchede versjonene (bl.a. GHSA-j3rv-43j4-c7qm).
-jackson2 = "2.22.1"
+jackson2 = "2.22.2"
 # Jetty 11 er EOL og får ikke fiks for bl.a. GHSA-355h-qmc2-wpwf; jetty12-varianten av WireMock + denne bom-en gir patchet Jetty.
-jetty = "12.0.37"
+jetty = "12.1.12"
 jetbrains-annotations = "26.1.0"
 jsonassert = "1.5.3"
 junit = "6.1.3"
@@ -41,7 +47,7 @@ kotlinx-io = "0.9.1"
 kotliquery = "1.9.1"
 # Låst til 3.4-linja på grunn av en alvorlig klientbug i 3.5.x - se ignore-blokken i .github/dependabot.yml.
 ktor = "3.4.3"
-logback = "1.5.38"
+logback = "1.6.3"
 logback-syslog4j = "1.0.0"
 logstash-logback-encoder = "9.0"
 # LZ4 brukes ikke direkte, men kafka-clients drar inn 1.10.2, der de native XXHash-implementasjonene kan krasje JVM-en på ugyldige byte-intervaller (GHSA-xx22-p4ch-683r).
@@ -51,9 +57,9 @@ micrometer = "1.17.1"
 mockk = "1.14.11"
 # Netty brukes ikke direkte, men er en hyppig kilde til sikkerhetshull; vi styrer derfor de transitive versjonene selv med bom-er per linje.
 # 4.1-linja kommer fra r2dbc-postgresql 1.1.2 (nyeste), som drar inn sårbar 4.1.112 (bl.a. GHSA-c653-97m9-rcg9).
-netty41 = "4.1.136.Final"
+netty41 = "4.1.137.Final"
 # 4.2-linja kommer fra ktor-server-netty 3.4.3, som drar inn sårbar 4.2.12 (bl.a. GHSA-x4gw-5cx5-pgmh).
-netty42 = "4.2.16.Final"
+netty42 = "4.2.17.Final"
 nimbus-jose-jwt = "10.9.1"
 ojdbc = "23.26.3.0.0"
 pdfbox = "3.0.8"
@@ -65,15 +71,15 @@ r2dbc-postgresql = "1.1.2.RELEASE"
 scram = "3.4"
 slf4j = "2.0.18"
 snakeyaml = "2.6"
-spotless = "8.8.0"
+spotless = "8.10.1"
 swagger-parser = "2.1.47"
 testcontainers = "2.0.5"
-tika = "3.3.2"
+tika = "4.0.0"
 tms-mikrofrontend-selector = "3.0.0"
 tms-varsel = "2.2.0"
 ulid = "1.6.0"
 wiremock = "3.13.2"
-xmlunit = "2.12.0"
+xmlunit = "2.13.0"
 
 [libraries]
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
@@ -93,6 +99,13 @@ flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql
 handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
+# De tre oppføringene under er kun constraints i plattform-BOM-en.
+# De gir en transitiv avhengighet vi ikke deklarerer en trygg versjon, og legger ingenting på noen classpath.
+# `httpklient-unntak:` unntar linja fra Konsist-regelen IngenAndreHttpKlienter, som ellers leser koordinaten som en klientavhengighet.
+# Den harde grensen ligger fortsatt i Gradle-gaten verifiserHttpKlienter, som ser runtimeClasspath og ikke påvirkes av markøren.
+httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version.ref = "httpclient5" } # httpklient-unntak: kun constraint, aldri på classpath
+httpcore5 = { module = "org.apache.httpcomponents.core5:httpcore5", version.ref = "httpcore5" } # httpklient-unntak: kun constraint, aldri på classpath
+httpcore5-h2 = { module = "org.apache.httpcomponents.core5:httpcore5-h2", version.ref = "httpcore5" } # httpklient-unntak: kun constraint, aldri på classpath
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson-annotations" }
 jackson2-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson2" }
 # Jackson 2-artefaktene under er kun til buildscript-classpathen, der `platform(...)` fra dependencies-blokka ikke når fram.

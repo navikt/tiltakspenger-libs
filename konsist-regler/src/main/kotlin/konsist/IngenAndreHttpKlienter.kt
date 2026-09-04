@@ -20,8 +20,21 @@ import kotlin.io.path.readLines
  * HTTP-vokabular utenfor klientpakkene er bevisst tillatt — f.eks. `io.ktor.http.ContentType`, `io.ktor.http.HttpHeaders` og `java.net.URI`.
  * Legitime unntak er implementasjonen selv (`httpklient`-infrastrukturen bygger transporten på JDK-klienten) og testhjelpere mot ktor sin `testApplication`.
  * Kalleren velger scope (typisk `scopeFromProduction()`) og unntar slike filer via scope-slicing eller `unntatteFilstier` (sti-suffikser), f.eks. for klienter som ennå ikke er migrert.
+ *
+ * Byggfilsjekken har i tillegg en markør per linje, [HTTPKLIENT_UNNTAK], for det ene tilfellet en sti-basert unntaksliste ikke treffer.
+ * Den er ment for en constraint som pinner en forbudt klient bort fra en sårbarhet, ikke for å ta klienten i bruk.
+ * Å gi noen andres transitive avhengighet en trygg versjon er det motsatte av å skaffe seg en HTTP-klient, men står i byggfila på samme form som en deklarasjon.
+ * Den harde grensen ligger fortsatt i Gradle-gaten `verifiserHttpKlienter`, som ser `runtimeClasspath`, og et unntak her flytter ingenting der.
  */
 object IngenAndreHttpKlienter {
+
+    /**
+     * Markøren som unntar én enkelt linje i en byggfil fra [klientavhengigheter].
+     * Den skrives som etterstilt kommentar på linja den gjelder: `# httpklient-unntak: <begrunnelse>` i en toml, `// httpklient-unntak: <begrunnelse>` i en kts.
+     * Begrunnelsen er påkrevd, og en markør uten tekst etter kolonet unntar ingenting — et unntak ingen har begrunnet er heller ikke til å etterprøve.
+     * Motstykket i Gradle-gaten er `httpKlientGuard { tillat("<koordinatprefiks>", "<begrunnelse>") }`, som stiller samme krav.
+     */
+    const val HTTPKLIENT_UNNTAK = "httpklient-unntak:"
 
     /**
      * Klientbiblioteker fra tredjepart, forbudt i all kildekode.
@@ -119,6 +132,10 @@ object IngenAndreHttpKlienter {
      * Kommentarlinjer og `exclude(...)`-linjer hoppes over av samme grunn: å nevne en koordinat for å utelate den er nettopp det vi vil ha.
      * Filer under `src/<sourceSet>/resources` er data (f.eks. testfixturene til denne regelen), ikke byggfiler, og hoppes alltid over — samme prinsipp som [kildefiler].
      *
+     * Linjer merket med [HTTPKLIENT_UNNTAK] og en begrunnelse hoppes også over.
+     * Det er unntaket for en constraint som pinner en forbudt klient bort fra en sårbarhet uten å legge den på noen classpath, slik plattform-BOM-en gjør for HttpComponents.
+     * Unntaket gjelder kun denne tekstsjekken; Gradle-gaten `verifiserHttpKlienter` ser `runtimeClasspath` og kan ikke myknes opp herfra.
+     *
      * Begrensning: koordinaten må stå på samme linje som konfigurasjonsnavnet, altså `implementation("gruppe:artefakt:versjon")`, som er formen hele flåten bruker.
      */
     fun klientavhengigheter(
@@ -135,7 +152,12 @@ object IngenAndreHttpKlienter {
             .flatMap { fil ->
                 fil.readLines().mapIndexedNotNull { index, linje ->
                     val trimmet = linje.trim()
-                    if (trimmet.startsWith("//") || trimmet.startsWith("#") || "exclude(" in trimmet || !deklarasjonsRegex.containsMatchIn(trimmet)) {
+                    if (trimmet.startsWith("//") ||
+                        trimmet.startsWith("#") ||
+                        "exclude(" in trimmet ||
+                        trimmet.erUnntatt() ||
+                        !deklarasjonsRegex.containsMatchIn(trimmet)
+                    ) {
                         null
                     } else {
                         (standardForbudteKoordinater + ekstraForbudteKoordinater)
@@ -211,6 +233,15 @@ object IngenAndreHttpKlienter {
     }
 
     private val nettverksåpningRegex = Regex("""\.open(Connection|Stream)\(""")
+
+    /**
+     * Om linja bærer [HTTPKLIENT_UNNTAK] med en begrunnelse etter kolonet.
+     * Kravet om tekst etter markøren er det som skiller et begrunnet unntak fra en stille avskrudd regel.
+     */
+    private fun String.erUnntatt(): Boolean = unntaksRegex.containsMatchIn(this)
+
+    /** Markøren fulgt av minst ett synlig tegn, altså en begrunnelse. */
+    private val unntaksRegex = Regex(Regex.escape(HTTPKLIENT_UNNTAK) + """\s*\S""")
 
     /** En avhengighetsdeklarasjon: et Gradle-konfigurasjonsnavn med parentes, eller `module = ` i en versjonskatalog. */
     private val deklarasjonsRegex =

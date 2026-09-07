@@ -89,19 +89,31 @@ internal class IngenAndreHttpKlienterTest {
 
     /**
      * Markøren finnes for constraints som pinner en forbudt klient bort fra en sårbarhet, slik plattform-BOM-en gjør for HttpComponents.
-     * Begge halvdelene av kontrakten testes her: en markør med begrunnelse unntar sin egen linje, og en markør uten begrunnelse unntar ingenting.
+     * Hele kontrakten testes her: en markør med begrunnelse unntar sin egen linje i katalogen og inne i `constraints { ... }`, mens en markør uten begrunnelse, eller på en vanlig avhengighetslinje uansett scope, unntar ingenting.
      */
     @Test
-    fun `unntaksmarkør med begrunnelse unntar linja, uten begrunnelse gjør den ikke`() {
+    fun `unntaksmarkør unntar kun begrunnede linjer i katalogen og i constraints-blokker`() {
         val brudd = IngenAndreHttpKlienter.klientavhengigheter(fixturesti("byggfilerunntak"))
 
-        brudd shouldHaveSize 2
         val samlet = brudd.joinToString("\n")
-        // Markør uten tekst etter kolonet, og en oppføring uten markør på linja under en som har den.
+        // Markør uten tekst etter kolonet, i kts og i katalogen.
         samlet shouldContain "appen/build.gradle.kts:3: com.squareup.okhttp3"
+        samlet shouldContain "gradle/libs.versions.toml:9: org.apache.httpcomponents"
+        // Begrunnet markør på en avhengighetslinje: før blokka, etter den, og på linjene som åpner og lukker den.
+        samlet shouldContain "appen/build.gradle.kts:5: com.squareup.retrofit2"
+        samlet shouldContain "appen/build.gradle.kts:20: io.ktor:ktor-client-core"
+        samlet shouldContain "appen/build.gradle.kts:22: com.squareup.retrofit2"
+        samlet shouldContain "appen/build.gradle.kts:28: io.ktor:ktor-client-cio"
+        // Forbudt koordinat uten markør inne i constraints, og oppføring uten markør under en som har den.
+        samlet shouldContain "appen/build.gradle.kts:16: com.squareup.okhttp3"
         samlet shouldContain "gradle/libs.versions.toml:7: org.apache.httpcomponents"
-        samlet shouldNotContain "appen/build.gradle.kts:7"
+        // Begrunnede constraints, også etter en nøstet `version { strictly(...) }`-blokk.
+        samlet shouldNotContain "appen/build.gradle.kts:9"
+        samlet shouldNotContain "appen/build.gradle.kts:14"
+        // Begrunnet constraint i en blokk åpnet på samme linje som `dependencies {`.
+        samlet shouldNotContain "appen/build.gradle.kts:27"
         samlet shouldNotContain "gradle/libs.versions.toml:6"
+        brudd shouldHaveSize 8
     }
 
     @Test

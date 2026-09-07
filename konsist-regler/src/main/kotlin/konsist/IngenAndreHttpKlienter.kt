@@ -32,6 +32,8 @@ object IngenAndreHttpKlienter {
      * Markøren som unntar én enkelt linje i en byggfil fra [klientavhengigheter].
      * Den skrives som etterstilt kommentar på linja den gjelder: `# httpklient-unntak: <begrunnelse>` i en toml, `// httpklient-unntak: <begrunnelse>` i en kts.
      * Begrunnelsen er påkrevd, og en markør uten tekst etter kolonet unntar ingenting — et unntak ingen har begrunnet er heller ikke til å etterprøve.
+     * Den virker bare der en constraint kan stå: på en oppføring i versjonskatalogen, og inne i `constraints { ... }` i en kts.
+     * På en vanlig avhengighetslinje, uansett scope, blir den ignorert og linja flagget som før — ellers kunne en `compileOnly`- eller test-avhengighet, som Gradle-gaten ikke ser, skjules med en kommentar.
      * Motstykket i Gradle-gaten er `httpKlientGuard { tillat("<koordinatprefiks>", "<begrunnelse>") }`, som stiller samme krav.
      */
     const val HTTPKLIENT_UNNTAK = "httpklient-unntak:"
@@ -132,8 +134,9 @@ object IngenAndreHttpKlienter {
      * Kommentarlinjer og `exclude(...)`-linjer hoppes over av samme grunn: å nevne en koordinat for å utelate den er nettopp det vi vil ha.
      * Filer under `src/<sourceSet>/resources` er data (f.eks. testfixturene til denne regelen), ikke byggfiler, og hoppes alltid over — samme prinsipp som [kildefiler].
      *
-     * Linjer merket med [HTTPKLIENT_UNNTAK] og en begrunnelse hoppes også over.
+     * Linjer merket med [HTTPKLIENT_UNNTAK] og en begrunnelse hoppes også over, men bare i versjonskatalogen og inne i `constraints { ... }` i en kts.
      * Det er unntaket for en constraint som pinner en forbudt klient bort fra en sårbarhet uten å legge den på noen classpath, slik plattform-BOM-en gjør for HttpComponents.
+     * Katalogen kan ikke skille en constraint fra en avhengighet, så der gjelder markøren hver oppføring; det er kts-fila som avgjør hva oppføringen brukes til.
      * Unntaket gjelder kun denne tekstsjekken; Gradle-gaten `verifiserHttpKlienter` ser `runtimeClasspath` og kan ikke myknes opp herfra.
      *
      * Begrensning: koordinaten må stå på samme linje som konfigurasjonsnavnet, altså `implementation("gruppe:artefakt:versjon")`, som er formen hele flåten bruker.
@@ -150,21 +153,12 @@ object IngenAndreHttpKlienter {
                 "src/main/resources/" in relativStreng || "src/test/resources/" in relativStreng
             }.filterNot { fil -> unntatteFilstier.any { sti -> fil.toString().endsWith(sti) } }
             .flatMap { fil ->
-                fil.readLines().mapIndexedNotNull { index, linje ->
-                    val trimmet = linje.trim()
-                    if (trimmet.startsWith("//") ||
-                        trimmet.startsWith("#") ||
-                        "exclude(" in trimmet ||
-                        trimmet.erUnntatt() ||
-                        !deklarasjonsRegex.containsMatchIn(trimmet)
-                    ) {
-                        null
-                    } else {
-                        (standardForbudteKoordinater + ekstraForbudteKoordinater)
-                            .firstOrNull { koordinat -> koordinat in trimmet }
-                            ?.let { koordinat -> "${rot.relativize(fil)}:${index + 1}: $koordinat" }
-                    }
-                }
+                fil
+                    .readLines()
+                    .klientdeklarasjoner(
+                        forbudteKoordinater = standardForbudteKoordinater + ekstraForbudteKoordinater,
+                        markørGjelderOveralt = fil.name == "libs.versions.toml",
+                    ).map { (linjenummer, koordinat) -> "${rot.relativize(fil)}:$linjenummer: $koordinat" }
             }.toList()
 
     fun assertIngenKlienterIProduksjonskode(
@@ -235,10 +229,49 @@ object IngenAndreHttpKlienter {
     private val nettverksåpningRegex = Regex("""\.open(Connection|Stream)\(""")
 
     /**
+     * Linjenummer (1-basert) og forbudt koordinat for hver avhengighetsdeklarasjon i byggfila.
+     * [markørGjelderOveralt] er sant for versjonskatalogen, der hver oppføring bare gir en koordinat et navn.
+     * I en kts gjelder [HTTPKLIENT_UNNTAK] kun på linjer inne i `constraints { ... }`, som følges med klammetelling: en constraint med egen blokk (`api(...) { version { strictly(...) } }`) skal ikke lukke den for tidlig.
+     * En linje er inne i blokka bare når den både starter og slutter der, så linjene som åpner og lukker `constraints { ... }` får ikke unntak selv om de bærer en deklarasjon.
+     * Tellingen er en heuristikk over tekst, ikke en parser: klammer før `constraints` og i etterstilte `//`-kommentarer hoppes over, mens klammer i strenger og blokk-kommentarer teller med, og dybden går aldri under null.
+     */
+    private fun List<String>.klientdeklarasjoner(forbudteKoordinater: List<String>, markørGjelderOveralt: Boolean): List<Pair<Int, String>> {
+        var constraintsDybde = 0
+        return mapIndexedNotNull { index, linje ->
+            val trimmet = linje.trim()
+            val dybdeFør = constraintsDybde
+            if (!markørGjelderOveralt) {
+                val kode = trimmet.substringBefore("//")
+                val start = constraintsStartRegex.find(kode)
+                if (dybdeFør > 0 || start != null) {
+                    val telles = if (dybdeFør > 0) kode else kode.substring(start!!.range.first)
+                    constraintsDybde = maxOf(0, dybdeFør + telles.count { it == '{' } - telles.count { it == '}' })
+                }
+            }
+            val iConstraints = dybdeFør > 0 && constraintsDybde > 0
+            if (trimmet.startsWith("//") ||
+                trimmet.startsWith("#") ||
+                "exclude(" in trimmet ||
+                ((markørGjelderOveralt || iConstraints) && trimmet.erUnntatt()) ||
+                !deklarasjonsRegex.containsMatchIn(trimmet)
+            ) {
+                null
+            } else {
+                forbudteKoordinater
+                    .firstOrNull { koordinat -> koordinat in trimmet }
+                    ?.let { koordinat -> index + 1 to koordinat }
+            }
+        }
+    }
+
+    /**
      * Om linja bærer [HTTPKLIENT_UNNTAK] med en begrunnelse etter kolonet.
      * Kravet om tekst etter markøren er det som skiller et begrunnet unntak fra en stille avskrudd regel.
      */
     private fun String.erUnntatt(): Boolean = unntaksRegex.containsMatchIn(this)
+
+    /** Starten på en `constraints { ... }`-blokk i en kts. */
+    private val constraintsStartRegex = Regex("""\bconstraints\s*\{""")
 
     /** Markøren fulgt av minst ett synlig tegn, altså en begrunnelse. */
     private val unntaksRegex = Regex(Regex.escape(HTTPKLIENT_UNNTAK) + """\s*\S""")

@@ -7,8 +7,8 @@ buildscript {
     dependencies {
         constraints {
             // Åpne advisories på 2.20.1 (bl.a. GHSA-j3rv-43j4-c7qm); samme mønster som avro-repoenes buildscript-pinning.
-            add("classpath", "com.fasterxml.jackson.core:jackson-core:2.22.1")
-            add("classpath", "com.fasterxml.jackson.core:jackson-databind:2.22.1")
+            add("classpath", "com.fasterxml.jackson.core:jackson-core:2.22.2")
+            add("classpath", "com.fasterxml.jackson.core:jackson-databind:2.22.2")
         }
     }
 }

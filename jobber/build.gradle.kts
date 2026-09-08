@@ -13,7 +13,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core.jvm)
     implementation(libs.arrow.core)
     implementation(libs.atomicfu)
+    api(libs.micrometer.core)
 
     testImplementation(project(":test-common"))
     testImplementation(testFixtures(project(":httpklient:httpklient-infrastruktur")))
+    testImplementation(libs.micrometer.registry.prometheus)
 }

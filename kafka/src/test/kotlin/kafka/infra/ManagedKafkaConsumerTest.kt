@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.kafka.infra
 
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.matchers.shouldBe
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import no.nav.tiltakspenger.libs.kafka.test.SingletonKafkaProvider
@@ -20,6 +21,7 @@ import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.kafka.common.serialization.UUIDDeserializer
 import org.apache.kafka.common.serialization.UUIDSerializer
 import org.junit.jupiter.api.Test
+import java.time.Clock
 import java.time.Duration
 import java.util.Properties
 import java.util.UUID
@@ -27,6 +29,8 @@ import kotlin.time.Duration.Companion.seconds
 
 class ManagedKafkaConsumerTest {
     private val topic = "test.topic"
+    private val clock = Clock.systemUTC()
+    private fun nyttMeterRegistry() = SimpleMeterRegistry()
 
     /** Fast poll + backoff settings for tests to avoid unnecessary waiting. */
     private val testPollDuration = Duration.ofMillis(100)
@@ -61,6 +65,8 @@ class ManagedKafkaConsumerTest {
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
             log = null,
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
         ) { k: String, v: String ->
             cache[k] = v
         }
@@ -99,6 +105,8 @@ class ManagedKafkaConsumerTest {
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
             log = null,
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
         ) { k: UUID, v: ByteArray ->
             cache[k] = v
         }
@@ -130,6 +138,8 @@ class ManagedKafkaConsumerTest {
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
             log = null,
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
         ) { _, _ ->
             antallGangerKallt++
             error("skal feile noen ganger")
@@ -166,6 +176,8 @@ class ManagedKafkaConsumerTest {
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
             log = null,
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
         ) { k, _ ->
             if (k in failures) {
                 failures.remove(k)
@@ -215,6 +227,8 @@ class ManagedKafkaConsumerTest {
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
             log = null,
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
         ) { k, v ->
             if (k in failures) {
                 failures.remove(k)
@@ -276,6 +290,8 @@ class ManagedKafkaConsumerTest {
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
             log = null,
             onRecordsPolled = { count -> if (count > 0) pollBatchSizes.add(count) },
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
         ) { k, _ ->
             consumed.add(k)
         }
@@ -306,6 +322,8 @@ class ManagedKafkaConsumerTest {
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
             log = null,
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
         ) { _: String, _: String -> }
 
         try {
@@ -341,6 +359,8 @@ class ManagedKafkaConsumerTest {
             baseBackoffDelayMillis = testBaseBackoffDelayMillis,
             initialBackoffDelayMillis = testInitialBackoffDelayMillis,
             log = null,
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
         ) { _: String, _: String ->
             processingStarted = true
             // Simuler litt arbeid som må få fullføre selv om stop() kalles underveis.

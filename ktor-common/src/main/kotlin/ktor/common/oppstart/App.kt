@@ -2,14 +2,16 @@ package no.nav.tiltakspenger.libs.ktor.common.oppstart
 
 import io.github.oshai.kotlinlogging.KLogger
 import io.ktor.server.application.Application
+import io.micrometer.core.instrument.MeterRegistry
 import no.nav.tiltakspenger.libs.jobber.TaskGruppe
 import java.time.Clock
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Samler de skedulerte jobbene og det de trenger for å kjøre: leader election, MDC-nøkkel og klokka schedulereren måler mot.
+ * Samler de skedulerte jobbene og det de trenger for å kjøre: leader election, MDC-nøkkel, klokka schedulereren måler mot og registeret schedulereren fører målingene i.
  *
- * De tre feltene hører til jobbene og ingenting annet: [electorPath] og [clock] brukes av leader-election-oppsettet ([runCheckFactory]), [mdcCallIdKey] og [clock] av schedulereren ([stoppbarSkedulerteJobber]).
+ * De fire feltene hører til jobbene og ingenting annet: [electorPath] og [clock] brukes av leader-election-oppsettet ([runCheckFactory]), mens [mdcCallIdKey], [clock] og [meterRegistry] brukes av schedulereren ([stoppbarSkedulerteJobber]).
+ * Registeret hører til jobbene på samme måte som klokka, siden det er schedulereren som fører målingene.
  * Derfor bor de her og ikke på [Bakgrunnsprosessoppsett] – en app som kun har Kafka-consumere skal hverken sette opp leader election eller finne på en `ELECTOR_PATH`.
  *
  * Merk den bevisste asymmetrien mellom [tasks] og [taskGrupper] – den speiler hvordan de faktisk kjøres:
@@ -25,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  *   Kun lest i NAIS; lokalt/test blir lambdaen aldri evaluert, men den må sendes inn (bruk gjerne en guard som feiler hvis den kalles lokalt).
  * @param clock Klokka schedulereren måler intervaller mot.
  *   Leveres av konsumenten (typisk appens egen `Clock`), slik at libs ikke defaulter klokka i prod.
+ * @param meterRegistry Registeret som mottar målinger fra de skedulerte jobbene.
  * @param tasks Skedulerte jobber; hver [Task] kjøres seriellt på sitt eget intervall (tom liste = ingen).
  * @param taskGrupper Eksplisitte task-grupper for finkornet styring (batching/parallell/drenering) (tom liste = ingen).
  */
@@ -32,6 +35,7 @@ class Jobboppsett(
     val mdcCallIdKey: String,
     val electorPath: () -> String,
     val clock: Clock,
+    val meterRegistry: MeterRegistry,
     val tasks: List<Task> = emptyList(),
     val taskGrupper: List<TaskGruppe> = emptyList(),
 )
@@ -129,6 +133,7 @@ fun Application.konfigurerOppstart(
  *             mdcCallIdKey = CALL_ID_MDC_KEY,
  *             electorPath = Configuration::electorPath,
  *             clock = ctx.clock,
+ *             meterRegistry = ctx.meterRegistry,
  *             tasks = listOf(Task(navn = "gjør-noe", utfør = { ctx.someService.gjørNoe(); TaskResultat.Ferdig })),
  *         ),
  *         kafkaConsumers = if (isNais) listOf(KafkaConsumerOppsett("min-consumer", { ctx.consumer.run() }, { ctx.consumer.stop() })) else emptyList(),
@@ -138,7 +143,7 @@ fun Application.konfigurerOppstart(
  * }
  * ```
  *
- * En app uten skedulerte jobber utelater `jobber` og sender kun `kafkaConsumers`; da trengs verken `electorPath`, MDC-nøkkel eller klokke.
+ * En app uten skedulerte jobber utelater `jobber` og sender kun `kafkaConsumers`; da trengs verken `electorPath`, MDC-nøkkel, klokke eller register.
  *
  * @param host Nettverksgrensesnittet serveren binder til, se [startKtorServer].
  *   Lokale kjøringer bør sende `127.0.0.1`; default `0.0.0.0` er nødvendig i Nais og containere.

@@ -167,6 +167,7 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "lo
 logback-syslog4j = { module = "com.papertrailapp:logback-syslog4j", version.ref = "logback-syslog4j" }
 logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
 lz4-java = { module = "at.yawk.lz4:lz4-java", version.ref = "lz4" }
+micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-dsl-jvm = { module = "io.mockk:mockk-dsl-jvm", version.ref = "mockk" }

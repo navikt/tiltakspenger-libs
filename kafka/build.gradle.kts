@@ -13,7 +13,9 @@ dependencies {
 
     api(libs.kafka.clients)
     api(libs.kotlinx.coroutines.core)
+    api(libs.micrometer.core)
 
     testImplementation(project(":test-common"))
     testImplementation(project(":kafka-test"))
+    testImplementation(libs.micrometer.registry.prometheus)
 }

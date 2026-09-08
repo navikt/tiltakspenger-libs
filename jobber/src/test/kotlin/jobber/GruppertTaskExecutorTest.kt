@@ -15,6 +15,7 @@ import io.kotest.matchers.collections.shouldHaveAtLeastSize
 import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
 import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
 import io.kotest.matchers.shouldBe
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import no.nav.tiltakspenger.libs.common.CorrelationId
@@ -34,6 +35,7 @@ import kotlin.time.Duration.Companion.seconds
 internal class GruppertTaskExecutorTest {
 
     private val clock = Clock.systemUTC()
+    private fun nyttMeterRegistry() = SimpleMeterRegistry()
 
     private fun alltidLeder(): RunCheckFactory = RunCheckFactory(
         leaderPodLookup = object : LeaderPodLookup {
@@ -81,6 +83,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             grupper = nonEmptyListOf(
                 TaskGruppe(navn = "A", intervall = 20.milliseconds, tasks = nonEmptyListOf(task()), initialDelay = 5.milliseconds),
                 TaskGruppe(navn = "B", intervall = 35.milliseconds, tasks = nonEmptyListOf(task()), initialDelay = 5.milliseconds),
@@ -124,6 +127,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             grupper = nonEmptyListOf(
                 TaskGruppe(navn = "treg", intervall = 20.milliseconds, tasks = nonEmptyListOf(tregSeriell), initialDelay = 5.milliseconds),
                 TaskGruppe(navn = "rask", intervall = 20.milliseconds, tasks = nonEmptyListOf(parallell), initialDelay = 5.milliseconds, kjøremodus = Kjøremodus.PARALLELT),
@@ -153,6 +157,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             grupper = nonEmptyListOf(
                 // Stort intervall: uten drenering ville vi bare fått 1 kjøring i vinduet under.
                 TaskGruppe(
@@ -194,6 +199,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             grupper = nonEmptyListOf(
                 TaskGruppe(navn = "gruppe", intervall = 30.milliseconds, tasks = nonEmptyListOf(taskA, taskB), initialDelay = 5.milliseconds),
             ),
@@ -228,6 +234,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             grupper = nonEmptyListOf(
                 TaskGruppe(navn = "gruppe", intervall = 30.milliseconds, tasks = nonEmptyListOf(taskA, taskB), initialDelay = 5.milliseconds),
             ),
@@ -260,6 +267,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = ikkeLeder,
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             grupper = nonEmptyListOf(
                 TaskGruppe(
                     navn = "gruppe",
@@ -308,6 +316,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             grupper = nonEmptyListOf(
                 TaskGruppe(navn = "parallell", intervall = 20.milliseconds, tasks = nonEmptyListOf(task), initialDelay = 5.milliseconds, kjøremodus = Kjøremodus.PARALLELT),
             ),
@@ -341,6 +350,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             grupper = nonEmptyListOf(
                 TaskGruppe(
                     navn = "drener",
@@ -380,6 +390,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             logger = logger,
             grupper = nonEmptyListOf(
                 TaskGruppe(navn = "A", intervall = 25.milliseconds, tasks = nonEmptyListOf(ingenArbeid), initialDelay = 5.milliseconds),
@@ -407,6 +418,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             logger = logger,
             grupper = nonEmptyListOf(
                 TaskGruppe(navn = "medArbeid", intervall = 20.milliseconds, tasks = nonEmptyListOf(medArbeid), initialDelay = 5.milliseconds),
@@ -436,6 +448,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             logger = logger,
             grupper = nonEmptyListOf(
                 TaskGruppe(navn = "gruppe", intervall = 20.milliseconds, tasks = nonEmptyListOf(feiler, ingenArbeid), initialDelay = 5.milliseconds),
@@ -464,6 +477,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             logger = logger,
             grupper = nonEmptyListOf(
                 TaskGruppe(navn = "gruppe", intervall = 20.milliseconds, tasks = nonEmptyListOf(feilet, ingenArbeid), initialDelay = 5.milliseconds),
@@ -487,6 +501,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             logger = logger,
             grupper = nonEmptyListOf(
                 TaskGruppe(navn = "p", intervall = 20.milliseconds, tasks = nonEmptyListOf(ingenArbeid), initialDelay = 5.milliseconds, kjøremodus = Kjøremodus.PARALLELT),
@@ -517,6 +532,7 @@ internal class GruppertTaskExecutorTest {
                 ),
                 mdcCallIdKey = "test",
                 clock = clock,
+                meterRegistry = nyttMeterRegistry(),
             )
         }
         shouldThrow<IllegalArgumentException> {
@@ -525,6 +541,7 @@ internal class GruppertTaskExecutorTest {
                 grupper = nonEmptyListOf(TaskGruppe("a", 0.milliseconds, nonEmptyListOf(ferdig))),
                 mdcCallIdKey = "test",
                 clock = clock,
+                meterRegistry = nyttMeterRegistry(),
             )
         }
         shouldThrow<IllegalArgumentException> {
@@ -533,6 +550,7 @@ internal class GruppertTaskExecutorTest {
                 grupper = nonEmptyListOf(TaskGruppe("a", 10.milliseconds, nonEmptyListOf(ferdig), initialDelay = (-1).milliseconds)),
                 mdcCallIdKey = "test",
                 clock = clock,
+                meterRegistry = nyttMeterRegistry(),
             )
         }
     }
@@ -551,6 +569,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = ikkeKlar,
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             grupper = nonEmptyListOf(
                 TaskGruppe(
                     "a",
@@ -584,6 +603,7 @@ internal class GruppertTaskExecutorTest {
             runCheckFactory = alltidLeder(),
             mdcCallIdKey = "test",
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
             runJobCheck = listOf(nekt),
             grupper = nonEmptyListOf(
                 TaskGruppe(

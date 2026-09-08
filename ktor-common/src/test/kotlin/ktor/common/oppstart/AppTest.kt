@@ -12,6 +12,7 @@ import io.ktor.server.application.ApplicationStopping
 import io.ktor.server.application.ServerReady
 import io.ktor.server.routing.routing
 import io.ktor.server.testing.testApplication
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import no.nav.tiltakspenger.libs.jobber.JobbSkalIkkeKjøre
 import no.nav.tiltakspenger.libs.jobber.TaskGruppe
@@ -47,6 +48,8 @@ class AppTest {
     private val ventetimeoutMs = 30_000L
 
     private val clock = Clock.systemUTC()
+
+    private fun nyttMeterRegistry() = SimpleMeterRegistry()
 
     /** Tom skedulert jobb som aldri gjør noe; vi tester oppkobling/livssyklus, ikke selve jobben. */
     private val tomTask: suspend (CorrelationId) -> TaskResultat = { TaskResultat.Ferdig }
@@ -95,6 +98,7 @@ class AppTest {
             mdcCallIdKey = "call-id",
             grupper = nonEmptyListOf(TaskGruppe(navn = "test", intervall = 1.seconds, tasks = nonEmptyListOf(tomTask))),
             clock = clock,
+            meterRegistry = nyttMeterRegistry(),
         )
 
         prosess.navn.startsWith("skedulerte jobber") shouldBe true
@@ -136,6 +140,7 @@ class AppTest {
                 mdcCallIdKey = "call-id",
                 electorPath = { error("electorPath skal ikke leses uten jobber") },
                 clock = clock,
+                meterRegistry = nyttMeterRegistry(),
             ),
             kafkaConsumers = emptyList(),
         )
@@ -175,6 +180,7 @@ class AppTest {
                 mdcCallIdKey = "call-id",
                 electorPath = { error("ikke lokalt") },
                 clock = clock,
+                meterRegistry = nyttMeterRegistry(),
                 taskGrupper = listOf(TaskGruppe(navn = "egen", intervall = 1.seconds, tasks = nonEmptyListOf(tomTask))),
             ),
             kafkaConsumers = emptyList(),
@@ -195,6 +201,7 @@ class AppTest {
                 mdcCallIdKey = "call-id",
                 electorPath = { error("ikke lokalt") },
                 clock = clock,
+                meterRegistry = nyttMeterRegistry(),
                 tasks = listOf(
                     Task(
                         navn = "rask-lokalt",
@@ -230,6 +237,7 @@ class AppTest {
                         mdcCallIdKey = "call-id",
                         electorPath = { error("electorPath skal ikke leses lokalt") },
                         clock = clock,
+                        meterRegistry = nyttMeterRegistry(),
                         tasks = listOf(Task(navn = "tom", utfør = tomTask)),
                     ),
                     kafkaConsumers = listOf(
@@ -269,7 +277,7 @@ class AppTest {
                 isNais = false,
                 readiness = readiness,
                 oppsett = Bakgrunnsprosessoppsett(
-                    jobber = Jobboppsett(mdcCallIdKey = "call-id", electorPath = { error("electorPath skal ikke leses lokalt") }, clock = clock),
+                    jobber = Jobboppsett(mdcCallIdKey = "call-id", electorPath = { error("electorPath skal ikke leses lokalt") }, clock = clock, meterRegistry = nyttMeterRegistry()),
                 ),
             )
         }
@@ -336,6 +344,7 @@ class AppTest {
                         mdcCallIdKey = "call-id",
                         electorPath = { error("electorPath skal ikke leses uten jobber, heller ikke i NAIS") },
                         clock = clock,
+                        meterRegistry = nyttMeterRegistry(),
                     ),
                     kafkaConsumers = listOf(
                         KafkaConsumerOppsett(

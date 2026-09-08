@@ -6,6 +6,7 @@ import arrow.core.right
 import arrow.core.toNonEmptyListOrNull
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.micrometer.core.instrument.MeterRegistry
 import no.nav.tiltakspenger.libs.jobber.GruppertTaskExecutor
 import no.nav.tiltakspenger.libs.jobber.LeaderPodLookup
 import no.nav.tiltakspenger.libs.jobber.LeaderPodLookupClient
@@ -74,6 +75,7 @@ internal object LokalAlltidLeder : LeaderPodLookup {
  *
  * @param mdcCallIdKey MDC-nøkkel for correlation id (samme som `callIdMdc(...)` i konsumentens Ktor-oppsett).
  * @param clock Klokka som schedulereren måler intervaller mot; leveres av konsumenten (settes ikke som default her).
+ * @param meterRegistry Registeret som mottar målinger fra de skedulerte jobbene; leveres av konsumenten (settes ikke som default her).
  */
 fun stoppbarSkedulerteJobber(
     log: KLogger,
@@ -81,6 +83,7 @@ fun stoppbarSkedulerteJobber(
     mdcCallIdKey: String,
     grupper: NonEmptyList<TaskGruppe>,
     clock: Clock,
+    meterRegistry: MeterRegistry,
     navn: String = "skedulerte jobber",
 ): StoppbarBakgrunnsprosess {
     log.info { "Starter $navn (${grupper.size} gruppe(r))" }
@@ -89,6 +92,7 @@ fun stoppbarSkedulerteJobber(
         grupper = grupper,
         mdcCallIdKey = mdcCallIdKey,
         clock = clock,
+        meterRegistry = meterRegistry,
         logger = log,
     )
     log.info { "$navn startet: ${taskExecutor.jobName}" }
@@ -125,6 +129,7 @@ internal fun bakgrunnsprosessSteg(
                     mdcCallIdKey = jobber.mdcCallIdKey,
                     grupper = grupper,
                     clock = jobber.clock,
+                    meterRegistry = jobber.meterRegistry,
                 )
             }
         }

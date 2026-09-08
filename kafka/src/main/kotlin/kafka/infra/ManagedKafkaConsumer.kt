@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.kafka.infra
 
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -14,6 +15,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.consumer.ConsumerRecords
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.common.errors.WakeupException
+import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
@@ -31,6 +33,10 @@ class ManagedKafkaConsumer<K, V>(
     initialBackoffDelayMillis: Long = 1000L,
     private val log: KLogger? = KotlinLogging.logger {},
     private val onRecordsPolled: (Int) -> Unit = {},
+    /** Klokke som brukes til å registrere tidspunktet for siste vellykkede poll som epoch-sekunder. */
+    clock: Clock,
+    /** Register som mottar målingene for siste vellykkede poll og pollintervallet. */
+    meterRegistry: MeterRegistry,
     private val consume: suspend (key: K, value: V) -> Unit,
 ) {
     private val job = Job()
@@ -40,6 +46,9 @@ class ManagedKafkaConsumer<K, V>(
     private var running = false
 
     private val started = AtomicBoolean(false)
+    private val målinger = Bakgrunnsprosessmålinger(meterRegistry, clock).also {
+        it.registrer(topic, pollDuration)
+    }
 
     /** Job-en til den kjørende konsument-loopen, slik at [stop] kan vente på at den blir ferdig. */
     @Volatile
@@ -160,6 +169,7 @@ class ManagedKafkaConsumer<K, V>(
         if (records.isEmpty) {
             // En vellykket (tom) poll betyr at ev. tidligere feil er over -> nullstill backoff.
             status.success()
+            målinger.registrerVellykketKjøring(topic)
             return
         }
 
@@ -170,6 +180,7 @@ class ManagedKafkaConsumer<K, V>(
             // det er viktig at committing av offset først skjer når alle records er behandlet ok, hvis ikke risikerer vi at records som har feilet ikke blir forsøkt på nytt hvis vi har lest flere records i en poll
             consumer.commitSync()
             status.success()
+            målinger.registrerVellykketKjøring(topic)
         } catch (e: WakeupException) {
             throw e
         } catch (e: CancellationException) {

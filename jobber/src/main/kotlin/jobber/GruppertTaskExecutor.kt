@@ -4,6 +4,7 @@ import arrow.core.Either
 import arrow.core.NonEmptyList
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.micrometer.core.instrument.MeterRegistry
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -33,6 +34,9 @@ import kotlin.time.Duration.Companion.seconds
  *  5. Ved [stop] kjøres pågående gruppesyklus ferdig (task-kjøringen er [NonCancellable]); kun ventingen mellom kjøringer avbrytes.
  *  6. Melder samtlige tasks i en kjøringsrunde [TaskResultat.IngenArbeid], logges maks én felles debuglinje for runden i stedet for at hver jobb logger sin egen tomme runde.
  *     En task som feiler (kaster eller melder [TaskResultat.Feilet]) eller melder [TaskResultat.Ferdig]/[TaskResultat.MerArbeid] regnes som at runden hadde arbeid, og da logger ikke executoren noe (jobbene logger selv arbeidet og feilene sine).
+ *  7. Tidspunktet for siste vellykkede kjøring settes per gruppe.
+ *     En runde der alle tasks melder [TaskResultat.IngenArbeid] teller som vellykket.
+ *     En runde som hoppes over av [runJobCheck] fordi poden ikke er leder eller ikke er klar, teller ikke som vellykket.
  *
  * [runJobCheck] (readiness + leder) evalueres kun når minst én gruppe faktisk har forfalt, slik at vi ikke gjør leder-oppslag på hvert tikk.
  * For de serielle gruppene evalueres [runJobCheck] én gang per oppvåkning, felles for alle due grupper.
@@ -44,14 +48,17 @@ class GruppertTaskExecutor private constructor(
     private val serielleGrupper: List<TaskGruppe>,
     private val parallelleGrupper: List<TaskGruppe>,
     private val clock: Clock,
+    meterRegistry: MeterRegistry,
     private val enableDebuggingLogging: Boolean,
 ) {
 
     val jobName: String = "gruppertTaskExecutor"
 
     private val scope = Skeduleringsscope(jobName, log)
+    private val målinger = Bakgrunnsprosessmålinger(meterRegistry, clock)
 
     private fun start() {
+        (serielleGrupper + parallelleGrupper).forEach { målinger.registrer(it.navn, it.intervall) }
         if (serielleGrupper.isNotEmpty()) {
             scope.start { seriellLoop() }
         }
@@ -133,8 +140,14 @@ class GruppertTaskExecutor private constructor(
     private suspend fun kjørMedDrenering(gruppe: TaskGruppe): Boolean {
         var kjøring = kjørTasks(gruppe)
         val ingenArbeid = kjøring.ingenArbeid
+        if (!kjøring.feilet) {
+            målinger.registrerVellykketKjøring(gruppe.navn)
+        }
         while (gruppe.kjørKontinuerligTilTom && kjøring.merArbeid && currentCoroutineContext().isActive) {
             kjøring = kjørTasks(gruppe)
+            if (!kjøring.feilet) {
+                målinger.registrerVellykketKjøring(gruppe.navn)
+            }
         }
         return ingenArbeid
     }
@@ -144,8 +157,9 @@ class GruppertTaskExecutor private constructor(
      *
      * @param merArbeid Om minst én task meldte [TaskResultat.MerArbeid].
      * @param ingenArbeid Om samtlige tasks meldte [TaskResultat.IngenArbeid].
+     * @param feilet Om minst én task kastet eller meldte [TaskResultat.Feilet].
      */
-    private data class GruppeKjøring(val merArbeid: Boolean, val ingenArbeid: Boolean)
+    private data class GruppeKjøring(val merArbeid: Boolean, val ingenArbeid: Boolean, val feilet: Boolean)
 
     /**
      * Kjører taskene i gruppen serielt og returnerer utfallet som [GruppeKjøring].
@@ -155,6 +169,7 @@ class GruppertTaskExecutor private constructor(
     private suspend fun kjørTasks(gruppe: TaskGruppe): GruppeKjøring = withContext(NonCancellable) {
         var merArbeid = false
         var ingenArbeid = true
+        var feilet = false
         withCorrelationIdSuspend(log, mdcCallIdKey) { correlationId ->
             gruppe.tasks.forEach { task ->
                 Either.catch {
@@ -164,17 +179,23 @@ class GruppertTaskExecutor private constructor(
                             ingenArbeid = false
                         }
 
-                        TaskResultat.Ferdig, TaskResultat.Feilet -> ingenArbeid = false
+                        TaskResultat.Ferdig -> ingenArbeid = false
+
+                        TaskResultat.Feilet -> {
+                            ingenArbeid = false
+                            feilet = true
+                        }
 
                         TaskResultat.IngenArbeid -> Unit
                     }
                 }.onLeft { throwable ->
                     ingenArbeid = false
+                    feilet = true
                     log.error(throwable) { "Feil ved kjøring av task i gruppe '${gruppe.navn}'. correlationId: $correlationId" }
                 }
             }
         }
-        GruppeKjøring(merArbeid = merArbeid, ingenArbeid = ingenArbeid)
+        GruppeKjøring(merArbeid = merArbeid, ingenArbeid = ingenArbeid, feilet = feilet)
     }
 
     companion object {
@@ -194,6 +215,7 @@ class GruppertTaskExecutor private constructor(
             mdcCallIdKey: String,
             runJobCheck: List<RunJobCheck> = listOf(runCheckFactory.isReady(), runCheckFactory.leaderPod()),
             clock: Clock,
+            meterRegistry: MeterRegistry,
             logger: KLogger = KotlinLogging.logger { },
             enableDebuggingLogging: Boolean = true,
         ): GruppertTaskExecutor {
@@ -215,6 +237,7 @@ class GruppertTaskExecutor private constructor(
                 serielleGrupper = serielle,
                 parallelleGrupper = parallelle,
                 clock = clock,
+                meterRegistry = meterRegistry,
                 enableDebuggingLogging = enableDebuggingLogging,
             ).also { it.start() }
         }

@@ -98,34 +98,35 @@ fun stoppbarSkedulerteJobber(
 /**
  * Setter sammen oppstartsstegene for bakgrunnsprosessene (skedulerte task-grupper + Kafka-consumere) som [startMedOpprydding] kjører i rekkefølge.
  *
- * Hver [Task] blir sin egen serielle [TaskGruppe] (via [Task.tilTaskGruppe]) og slås sammen med [taskGrupper], og kjøres av samme [GruppertTaskExecutor] i ett steg.
+ * Hver [Task] blir sin egen serielle [TaskGruppe] (via [Task.tilTaskGruppe]) og slås sammen med [Jobboppsett.taskGrupper], og kjøres av samme [GruppertTaskExecutor] i ett steg.
  * Hver [KafkaConsumerOppsett] blir et steg som starter consumeren og pakker den i [stoppbarKafkaConsumer].
  * Trukket ut som en egen, ren funksjon slik at sammensetningen kan testes uten å starte en ekte server.
  *
  * @param runCheckFactory Bygges lat ([runCheckFactory]) slik at leader-election/electorPath kun hentes ut når det faktisk finnes skedulerte jobber.
+ *   Får [Jobboppsett] inn, siden det er der leader-election-oppsettet bor.
  * @param isNais Om appen kjører i NAIS; brukes til å resolve [Task] sine miljøavhengige verdier ([Miljøverdi]).
+ * @param jobber Skedulerte jobber med sitt leader-election-oppsett; `null` (eller tomme lister) gir ingen skedulerte steg.
  */
 internal fun bakgrunnsprosessSteg(
     log: KLogger,
-    runCheckFactory: () -> RunCheckFactory,
-    mdcCallIdKey: String,
+    runCheckFactory: (Jobboppsett) -> RunCheckFactory,
     isNais: Boolean,
-    clock: Clock,
-    tasks: List<Task>,
-    taskGrupper: List<TaskGruppe>,
+    jobber: Jobboppsett?,
     kafkaConsumers: List<KafkaConsumerOppsett>,
 ): List<() -> StoppbarBakgrunnsprosess?> = buildList {
-    val grupper = (tasks.map { it.tilTaskGruppe(isNais) } + taskGrupper).toNonEmptyListOrNull()
-    if (grupper != null) {
-        val factory = runCheckFactory()
-        add {
-            stoppbarSkedulerteJobber(
-                log = log,
-                runCheckFactory = factory,
-                mdcCallIdKey = mdcCallIdKey,
-                grupper = grupper,
-                clock = clock,
-            )
+    if (jobber != null) {
+        val grupper = (jobber.tasks.map { it.tilTaskGruppe(isNais) } + jobber.taskGrupper).toNonEmptyListOrNull()
+        if (grupper != null) {
+            val factory = runCheckFactory(jobber)
+            add {
+                stoppbarSkedulerteJobber(
+                    log = log,
+                    runCheckFactory = factory,
+                    mdcCallIdKey = jobber.mdcCallIdKey,
+                    grupper = grupper,
+                    clock = jobber.clock,
+                )
+            }
         }
     }
     kafkaConsumers.forEach { consumer ->

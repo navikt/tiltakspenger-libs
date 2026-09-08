@@ -111,16 +111,36 @@ class AppTest {
                 factoryBygget = true
                 runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness(), clock = clock)
             },
-            mdcCallIdKey = "call-id",
             isNais = false,
-            clock = clock,
-            tasks = emptyList(),
-            taskGrupper = emptyList(),
+            jobber = null,
             kafkaConsumers = emptyList(),
         )
 
         steg.isEmpty() shouldBe true
         // Uten jobber skal vi ikke bygge runCheckFactory (og dermed ikke hente ut electorPath/leader-election).
+        factoryBygget shouldBe false
+    }
+
+    @Test
+    fun `bakgrunnsprosessSteg med tomt Jobboppsett gir ingen steg og leser ikke electorPath`() {
+        var factoryBygget = false
+        val steg = bakgrunnsprosessSteg(
+            log = log,
+            runCheckFactory = {
+                factoryBygget = true
+                runCheckFactory(isNais = false, electorPath = it.electorPath, readiness = Readiness(), clock = it.clock)
+            },
+            isNais = false,
+            // Tomme lister er lovlig: konsumentene bygger ofte `tasks = if (isNais) ... else emptyList()`.
+            jobber = Jobboppsett(
+                mdcCallIdKey = "call-id",
+                electorPath = { error("electorPath skal ikke leses uten jobber") },
+                clock = clock,
+            ),
+            kafkaConsumers = emptyList(),
+        )
+
+        steg.isEmpty() shouldBe true
         factoryBygget shouldBe false
     }
 
@@ -131,13 +151,11 @@ class AppTest {
             log = log,
             runCheckFactory = {
                 factoryBygget = true
-                runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness(), clock = clock)
+                runCheckFactory(isNais = false, electorPath = it.electorPath, readiness = Readiness(), clock = it.clock)
             },
-            mdcCallIdKey = "call-id",
             isNais = false,
-            clock = clock,
-            tasks = emptyList(),
-            taskGrupper = emptyList(),
+            // En app med kun Kafka har ingen Jobboppsett, og trenger dermed ingen electorPath-lambda i det hele tatt.
+            jobber = null,
             kafkaConsumers = listOf(KafkaConsumerOppsett(navn = "kun-kafka", start = {}, stopp = {})),
         )
 
@@ -151,12 +169,14 @@ class AppTest {
     fun `bakgrunnsprosessSteg med eksplisitte taskGrupper gir ett skedulert steg`() {
         val steg = bakgrunnsprosessSteg(
             log = log,
-            runCheckFactory = { runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness(), clock = clock) },
-            mdcCallIdKey = "call-id",
+            runCheckFactory = { runCheckFactory(isNais = false, electorPath = it.electorPath, readiness = Readiness(), clock = it.clock) },
             isNais = false,
-            clock = clock,
-            tasks = emptyList(),
-            taskGrupper = listOf(TaskGruppe(navn = "egen", intervall = 1.seconds, tasks = nonEmptyListOf(tomTask))),
+            jobber = Jobboppsett(
+                mdcCallIdKey = "call-id",
+                electorPath = { error("ikke lokalt") },
+                clock = clock,
+                taskGrupper = listOf(TaskGruppe(navn = "egen", intervall = 1.seconds, tasks = nonEmptyListOf(tomTask))),
+            ),
             kafkaConsumers = emptyList(),
         )
 
@@ -169,19 +189,21 @@ class AppTest {
     fun `bakgrunnsprosessSteg bygger én seriell gruppe per Task med miljøavhengige verdier`() {
         val steg = bakgrunnsprosessSteg(
             log = log,
-            runCheckFactory = { runCheckFactory(isNais = false, electorPath = { error("ikke lokalt") }, readiness = Readiness(), clock = clock) },
-            mdcCallIdKey = "call-id",
+            runCheckFactory = { runCheckFactory(isNais = false, electorPath = it.electorPath, readiness = Readiness(), clock = it.clock) },
             isNais = false,
-            clock = clock,
-            tasks = listOf(
-                Task(
-                    navn = "rask-lokalt",
-                    intervall = Miljøverdi.ulik(nais = 1.minutes, lokal = 1.seconds),
-                    initialDelay = Miljøverdi.lik(1.seconds),
-                    utfør = tomTask,
+            jobber = Jobboppsett(
+                mdcCallIdKey = "call-id",
+                electorPath = { error("ikke lokalt") },
+                clock = clock,
+                tasks = listOf(
+                    Task(
+                        navn = "rask-lokalt",
+                        intervall = Miljøverdi.ulik(nais = 1.minutes, lokal = 1.seconds),
+                        initialDelay = Miljøverdi.lik(1.seconds),
+                        utfør = tomTask,
+                    ),
                 ),
             ),
-            taskGrupper = emptyList(),
             kafkaConsumers = emptyList(),
         )
 
@@ -204,10 +226,12 @@ class AppTest {
                 isNais = false,
                 readiness = readiness,
                 oppsett = Bakgrunnsprosessoppsett(
-                    mdcCallIdKey = "call-id",
-                    clock = clock,
-                    electorPath = { error("electorPath skal ikke leses lokalt") },
-                    tasks = listOf(Task(navn = "tom", utfør = tomTask)),
+                    jobber = Jobboppsett(
+                        mdcCallIdKey = "call-id",
+                        electorPath = { error("electorPath skal ikke leses lokalt") },
+                        clock = clock,
+                        tasks = listOf(Task(navn = "tom", utfør = tomTask)),
+                    ),
                     kafkaConsumers = listOf(
                         KafkaConsumerOppsett(
                             navn = "test-consumer",
@@ -239,18 +263,96 @@ class AppTest {
             app = this
             val readiness = Readiness()
             routing { healthRoutes(readiness::erKlar) }
-            // Utelater tasks og kafkaConsumers for å dekke default-verdiene.
+            // Utelater tasks, taskGrupper og kafkaConsumers for å dekke default-verdiene.
             konfigurerOppstart(
                 log = log,
                 isNais = false,
                 readiness = readiness,
-                oppsett = Bakgrunnsprosessoppsett(mdcCallIdKey = "call-id", clock = clock, electorPath = { error("electorPath skal ikke leses lokalt") }),
+                oppsett = Bakgrunnsprosessoppsett(
+                    jobber = Jobboppsett(mdcCallIdKey = "call-id", electorPath = { error("electorPath skal ikke leses lokalt") }, clock = clock),
+                ),
             )
         }
 
         client.get("/isready").status shouldBe HttpStatusCode.ServiceUnavailable
         app.monitor.raise(ServerReady, app.environment)
         client.get("/isready").status shouldBe HttpStatusCode.OK
+    }
+
+    @Test
+    fun `konfigurerOppstart med kun Kafka-consumere trenger ingen Jobboppsett`() = testApplication {
+        val kafkaStartet = AtomicBoolean(false)
+        val kafkaStoppet = AtomicBoolean(false)
+        lateinit var app: Application
+        application {
+            app = this
+            val readiness = Readiness()
+            routing { healthRoutes(readiness::erKlar) }
+            // Utelater jobber for å dekke default-verdien: en app med kun Kafka trenger verken electorPath, MDC-nøkkel eller klokke.
+            konfigurerOppstart(
+                log = log,
+                isNais = false,
+                readiness = readiness,
+                oppsett = Bakgrunnsprosessoppsett(
+                    kafkaConsumers = listOf(
+                        KafkaConsumerOppsett(
+                            navn = "kun-kafka-consumer",
+                            start = { kafkaStartet.set(true) },
+                            stopp = { kafkaStoppet.set(true) },
+                        ),
+                    ),
+                ),
+            )
+        }
+
+        client.get("/isready").status shouldBe HttpStatusCode.ServiceUnavailable
+
+        app.monitor.raise(ServerReady, app.environment)
+
+        client.get("/isready").status shouldBe HttpStatusCode.OK
+        kafkaStartet.get() shouldBe true
+
+        app.monitor.raise(ApplicationStopping, app)
+
+        client.get("/isready").status shouldBe HttpStatusCode.ServiceUnavailable
+        kafkaStoppet.get() shouldBe true
+    }
+
+    @Test
+    fun `konfigurerOppstart i NAIS uten jobber leser aldri electorPath`() = testApplication {
+        val kafkaStartet = AtomicBoolean(false)
+        lateinit var app: Application
+        application {
+            app = this
+            val readiness = Readiness()
+            routing { healthRoutes(readiness::erKlar) }
+            // Produksjonsgarantien: med isNais = true og et Jobboppsett uten jobber skal leader-election aldri bygges, så electorPath-lambdaen får kaste.
+            konfigurerOppstart(
+                log = log,
+                isNais = true,
+                readiness = readiness,
+                oppsett = Bakgrunnsprosessoppsett(
+                    jobber = Jobboppsett(
+                        mdcCallIdKey = "call-id",
+                        electorPath = { error("electorPath skal ikke leses uten jobber, heller ikke i NAIS") },
+                        clock = clock,
+                    ),
+                    kafkaConsumers = listOf(
+                        KafkaConsumerOppsett(
+                            navn = "kun-kafka-i-nais",
+                            start = { kafkaStartet.set(true) },
+                            stopp = {},
+                        ),
+                    ),
+                ),
+            )
+        }
+
+        client.get("/isready").status shouldBe HttpStatusCode.ServiceUnavailable
+        app.monitor.raise(ServerReady, app.environment)
+
+        client.get("/isready").status shouldBe HttpStatusCode.OK
+        kafkaStartet.get() shouldBe true
     }
 
     @Test

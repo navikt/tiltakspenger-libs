@@ -77,7 +77,8 @@ dependencies {
         // httpcore5 5.3.4 lar HTTP/1-headere spise minne til tjenesten går ned (CVE-2026-54399), og httpcore5-h2 5.3.4
         // tar imot ubegrenset HPACK-headerliste før SETTINGS-ACK (CVE-2026-54428); begge er fikset i 5.4.3.
         // httpclient5 5.5 lekker forbindelser når dekoding av Content-Encoding feiler, til poolen er tom (CVE-2026-64607); fikset i 5.6.3.
-        // Ingen libs-modul har dem på classpath, men app-repoene får dem via avro-konsumentene, og BOM-en styrer versjonen for dem på samme måte som lz4 og scram.
+        // App-repoene får dem via avro-konsumentene og via wiremock i test-common, og BOM-en styrer versjonen for dem på samme måte som lz4 og scram.
+        // BOM-en gjelder ikke libs' eget bygg; der pinner test-common dem selv med de samme katalogoppføringene.
         api(libs.httpclient5)
         api(libs.httpcore5)
         api(libs.httpcore5.h2)

@@ -70,7 +70,7 @@ r2dbc-postgresql = "1.1.2.RELEASE"
 # SCRAM brukes ikke direkte, men r2dbc-postgresql drar inn 3.2 med auth-nedgraderingssårbarhet (GHSA-p9jg-fcr6-3mhf, patchet i 3.3).
 scram = "3.4"
 slf4j = "2.0.18"
-snakeyaml = "2.6"
+snakeyaml = "2.7"
 spotless = "8.10.1"
 swagger-parser = "2.1.47"
 testcontainers = "2.0.5"

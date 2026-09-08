@@ -108,6 +108,7 @@ class TestDatabaseManager<T>(
             maximumPoolSize = 2
             username = postgres.username
             password = postgres.password
+            initializationFailTimeout = config.initializationFailTimeout
         }.use { bootstrapDs ->
             sessionOf(bootstrapDs).use { session ->
                 session.run(sqlQuery("CREATE SCHEMA IF NOT EXISTS $schemaName").asUpdate)

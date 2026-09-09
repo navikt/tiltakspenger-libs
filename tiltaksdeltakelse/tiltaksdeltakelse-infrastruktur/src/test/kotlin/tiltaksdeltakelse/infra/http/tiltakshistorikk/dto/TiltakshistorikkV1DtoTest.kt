@@ -4,6 +4,7 @@ import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.json.deserialize
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -13,7 +14,7 @@ class TiltakshistorikkV1DtoTest {
     private val historiskFnr = FnrGenerator(start = 1).generer().verdi
 
     /**
-     * JSON-en er pinnet mot kontraktens wire-format, inkludert feltene vi bevisst utelater fra kopien (`organisasjonsnummer`, `gjennomforing.navn`, `meldinger`).
+     * JSON-en er pinnet mot kontraktens wire-format, inkludert feltene vi bevisst utelater fra kopien (`organisasjonsnummer`, `gjennomforing.navn`).
      * At de står i JSON-en og ikke i forventningsobjektet beviser at utelatelsene tolereres i stedet for å velte deserialiseringen.
      */
     @Test
@@ -26,6 +27,8 @@ class TiltakshistorikkV1DtoTest {
                   "norskIdent": "$fnr",
                   "startDato": "2024-01-01",
                   "sluttDato": "2024-06-30",
+                  "opprettetTidspunkt": "2024-03-01T08:30:00Z",
+                  "oppdatertTidspunkt": "2024-03-15T10:00:00Z",
                   "id": "019018e5-6461-74a0-9d66-70d0bf3d0b8b",
                   "tittel": "Oppfølging hos Arrangør AS",
                   "arenaId": 142536,
@@ -44,9 +47,11 @@ class TiltakshistorikkV1DtoTest {
                   "norskIdent": "$fnr",
                   "startDato": "2024-03-04",
                   "sluttDato": null,
+                  "opprettetTidspunkt": "2024-03-01T08:30:00Z",
+                  "oppdatertTidspunkt": "2024-03-15T10:00:00Z",
                   "id": "0190c9a2-2222-7000-8000-000000000002",
                   "tittel": "Arbeidsforberedende trening hos Arrangør AS",
-                  "status": { "type": "DELTAR", "aarsak": null, "opprettetDato": "2024-03-01T09:30:00" },
+                  "status": { "type": "DELTAR", "aarsak": null, "opprettetTidspunkt": "2024-03-01T09:30:00" },
                   "tiltakstype": { "tiltakskode": "ARBEIDSFORBEREDENDE_TRENING", "navn": "Arbeidsforberedende trening" },
                   "gjennomforing": { "id": "0190c9a2-3333-7000-8000-000000000003", "navn": null, "deltidsprosent": null },
                   "arrangor": {
@@ -61,6 +66,8 @@ class TiltakshistorikkV1DtoTest {
                   "norskIdent": "$historiskFnr",
                   "startDato": "2025-01-01",
                   "sluttDato": null,
+                  "opprettetTidspunkt": "2024-03-01T08:30:00Z",
+                  "oppdatertTidspunkt": "2024-03-15T10:00:00Z",
                   "id": "0190c9a2-4444-7000-8000-000000000004",
                   "tittel": "Arbeidstrening hos Butikken AS",
                   "tiltakstype": { "tiltakskode": "ARBEIDSTRENING", "navn": "Arbeidstrening" },
@@ -69,8 +76,7 @@ class TiltakshistorikkV1DtoTest {
                   "dagerPerUke": 4.0,
                   "arbeidsgiver": { "organisasjonsnummer": "999888777", "navn": "Butikken AS" }
                 }
-              ],
-              "meldinger": ["MANGLER_HISTORIKK_FRA_TEAM_TILTAK"]
+              ]
             }
         """.trimIndent()
 
@@ -80,6 +86,8 @@ class TiltakshistorikkV1DtoTest {
                     norskIdent = NorskIdentDto(fnr),
                     startDato = LocalDate.of(2024, 1, 1),
                     sluttDato = LocalDate.of(2024, 6, 30),
+                    opprettetTidspunkt = Instant.parse("2024-03-01T08:30:00Z"),
+                    oppdatertTidspunkt = Instant.parse("2024-03-15T10:00:00Z"),
                     id = UUID.fromString("019018e5-6461-74a0-9d66-70d0bf3d0b8b"),
                     tittel = "Oppfølging hos Arrangør AS",
                     arenaId = 142536,
@@ -100,12 +108,14 @@ class TiltakshistorikkV1DtoTest {
                     norskIdent = NorskIdentDto(fnr),
                     startDato = LocalDate.of(2024, 3, 4),
                     sluttDato = null,
+                    opprettetTidspunkt = Instant.parse("2024-03-01T08:30:00Z"),
+                    oppdatertTidspunkt = Instant.parse("2024-03-15T10:00:00Z"),
                     id = UUID.fromString("0190c9a2-2222-7000-8000-000000000002"),
                     tittel = "Arbeidsforberedende trening hos Arrangør AS",
                     status = TiltakshistorikkV1Dto.TeamKometDeltakelse.Status(
                         type = "DELTAR",
                         aarsak = null,
-                        opprettetDato = LocalDateTime.of(2024, 3, 1, 9, 30, 0),
+                        opprettetTidspunkt = LocalDateTime.of(2024, 3, 1, 9, 30, 0),
                     ),
                     tiltakstype = TiltakshistorikkV1Dto.Tiltakstype(
                         tiltakskode = "ARBEIDSFORBEREDENDE_TRENING",
@@ -126,6 +136,8 @@ class TiltakshistorikkV1DtoTest {
                     norskIdent = NorskIdentDto(historiskFnr),
                     startDato = LocalDate.of(2025, 1, 1),
                     sluttDato = null,
+                    opprettetTidspunkt = Instant.parse("2024-03-01T08:30:00Z"),
+                    oppdatertTidspunkt = Instant.parse("2024-03-15T10:00:00Z"),
                     id = UUID.fromString("0190c9a2-4444-7000-8000-000000000004"),
                     tittel = "Arbeidstrening hos Butikken AS",
                     tiltakstype = TiltakshistorikkV1Dto.Tiltakstype(tiltakskode = "ARBEIDSTRENING", navn = "Arbeidstrening"),
@@ -148,9 +160,11 @@ class TiltakshistorikkV1DtoTest {
                   "norskIdent": "$fnr",
                   "startDato": null,
                   "sluttDato": null,
+                  "opprettetTidspunkt": "2024-03-01T08:30:00Z",
+                  "oppdatertTidspunkt": "2024-03-15T10:00:00Z",
                   "id": "0190c9a2-5555-7000-8000-000000000005",
                   "tittel": "Nytt tiltak hos Arrangør AS",
-                  "status": { "type": "HELT_NY_STATUS", "aarsak": "HELT_NY_AARSAK", "opprettetDato": "2026-01-15T12:00:00" },
+                  "status": { "type": "HELT_NY_STATUS", "aarsak": "HELT_NY_AARSAK", "opprettetTidspunkt": "2026-01-15T12:00:00" },
                   "tiltakstype": { "tiltakskode": "HELT_NY_TILTAKSKODE", "navn": "Nytt tiltak" },
                   "gjennomforing": { "id": "0190c9a2-6666-7000-8000-000000000006", "deltidsprosent": null },
                   "arrangor": { "hovedenhet": null, "underenhet": { "navn": null } },
@@ -159,7 +173,7 @@ class TiltakshistorikkV1DtoTest {
                   "nyttFeltViIkkeKjenner": true
                 }
               ],
-              "meldinger": ["HELT_NY_MELDING"]
+              "nyttToppnivaafeltViIkkeKjenner": true
             }
         """.trimIndent()
 
@@ -200,13 +214,15 @@ class TiltakshistorikkV1DtoTest {
     }
 
     @Test
-    fun `komet-tidspunktet leses fra både opprettetDato og det varslede opprettetTidspunkt`() {
+    fun `komet-tidspunktet leses fra opprettetTidspunkt og det gamle navnet opprettetDato`() {
         fun kometJson(tidspunktfelt: String) = """
             {
               "type": "TeamKometDeltakelse",
               "norskIdent": "$fnr",
               "startDato": null,
               "sluttDato": null,
+              "opprettetTidspunkt": "2024-03-01T08:30:00Z",
+              "oppdatertTidspunkt": "2024-03-15T10:00:00Z",
               "id": "0190c9a2-9999-7000-8000-000000000009",
               "tittel": "Avklaring hos Arrangør AS",
               "status": { "type": "VENTER_PA_OPPSTART", "aarsak": null, "$tidspunktfelt": "2026-02-01T08:00:00" },
@@ -221,7 +237,7 @@ class TiltakshistorikkV1DtoTest {
         val forventet = LocalDateTime.of(2026, 2, 1, 8, 0, 0)
         listOf("opprettetDato", "opprettetTidspunkt").forEach { felt ->
             val deltakelse = deserialize<TiltakshistorikkV1Dto>(kometJson(felt)) as TiltakshistorikkV1Dto.TeamKometDeltakelse
-            deltakelse.status.opprettetDato shouldBe forventet
+            deltakelse.status.opprettetTidspunkt shouldBe forventet
         }
     }
 }

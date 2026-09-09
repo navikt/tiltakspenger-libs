@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.
 import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -79,6 +80,16 @@ sealed interface TiltakshistorikkV1Dto {
         val startDato: LocalDate?,
         val sluttDato: LocalDate?,
         /**
+         * Når deltakelsen ble opprettet i kildesystemet.
+         * Speiles fra kontrakten; domenet bruker det ikke ennå.
+         */
+        val opprettetTidspunkt: Instant,
+        /**
+         * Siste endring av deltakelsen i kildesystemet.
+         * Speiles fra kontrakten; domenet bruker det ikke ennå.
+         */
+        val oppdatertTidspunkt: Instant,
+        /**
          * Kontraktens id er tiltakshistorikk-intern for Arena-deltakelser (kontraktens egen KDoc sier det).
          * Nøkkelen vår er `TA<arenaId>`, som ligger i konsumentenes databaser og sendes fra søknadsfronten — mapperen bruker [arenaId].
          */
@@ -97,6 +108,16 @@ sealed interface TiltakshistorikkV1Dto {
         val norskIdent: NorskIdentDto,
         val startDato: LocalDate?,
         val sluttDato: LocalDate?,
+        /**
+         * Når deltakelsen ble opprettet i kildesystemet.
+         * Speiles fra kontrakten; domenet bruker det ikke ennå.
+         */
+        val opprettetTidspunkt: Instant,
+        /**
+         * Siste endring av deltakelsen i kildesystemet.
+         * Speiles fra kontrakten; domenet bruker det ikke ennå.
+         */
+        val oppdatertTidspunkt: Instant,
         val id: UUID,
         val tittel: String,
         val status: Status,
@@ -111,10 +132,11 @@ sealed interface TiltakshistorikkV1Dto {
             val type: String,
             val aarsak: String?,
             /**
-             * Kontrakten heter feltet `opprettetDato` i dag og har varslet omdøping til `opprettetTidspunkt` — aliaset leser begge.
+             * Når kilden satte statusen.
+             * Kontrakten døpte feltet om fra `opprettetDato` til `opprettetTidspunkt` i august 2026 — aliaset leser fortsatt det gamle navnet.
              */
-            @JsonAlias("opprettetTidspunkt")
-            val opprettetDato: LocalDateTime,
+            @JsonAlias("opprettetDato")
+            val opprettetTidspunkt: LocalDateTime,
         )
     }
 
@@ -122,6 +144,16 @@ sealed interface TiltakshistorikkV1Dto {
         val norskIdent: NorskIdentDto,
         val startDato: LocalDate?,
         val sluttDato: LocalDate?,
+        /**
+         * Når deltakelsen ble opprettet i kildesystemet.
+         * Speiles fra kontrakten; domenet bruker det ikke ennå.
+         */
+        val opprettetTidspunkt: Instant,
+        /**
+         * Siste endring av deltakelsen i kildesystemet.
+         * Speiles fra kontrakten; domenet bruker det ikke ennå.
+         */
+        val oppdatertTidspunkt: Instant,
         val id: UUID,
         val tittel: String,
         val tiltakstype: Tiltakstype,

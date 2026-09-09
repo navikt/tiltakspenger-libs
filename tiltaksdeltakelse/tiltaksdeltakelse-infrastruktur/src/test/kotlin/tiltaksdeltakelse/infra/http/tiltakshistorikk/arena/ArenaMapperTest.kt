@@ -20,6 +20,7 @@ import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.d
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.felles.UgyldigKontraktsverdi
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.tiltaksdeltakelse
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 
@@ -39,6 +40,8 @@ class ArenaMapperTest {
         norskIdent = NorskIdentDto(fnr),
         startDato = startDato,
         sluttDato = sluttDato,
+        opprettetTidspunkt = Instant.parse("2024-03-01T08:30:00Z"),
+        oppdatertTidspunkt = Instant.parse("2024-03-15T10:00:00Z"),
         id = deltakelseId,
         tittel = "Oppfølging hos Arrangør AS",
         arenaId = 142536,

@@ -36,7 +36,7 @@ sealed interface Kometstatus : Kildestatus {
 
     /**
      * Når kilden satte statusen — kildens eget tidspunkt, ikke når vi hentet.
-     * Kontrakten kaller feltet `opprettetDato` og har varslet omdøping til `opprettetTidspunkt`.
+     * Kontraktens `opprettetTidspunkt` (het `opprettetDato` fram til august 2026).
      */
     val opprettet: LocalDateTime
 

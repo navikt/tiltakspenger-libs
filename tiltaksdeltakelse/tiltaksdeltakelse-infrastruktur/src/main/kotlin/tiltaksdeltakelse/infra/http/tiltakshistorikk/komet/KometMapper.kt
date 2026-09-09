@@ -22,7 +22,7 @@ internal fun TiltakshistorikkV1Dto.TeamKometDeltakelse.tilTiltaksdeltakelse(): E
         kildestatus = kometstatus(
             kodeIKontrakten = status.type,
             årsakskode = status.aarsak,
-            opprettet = status.opprettetDato,
+            opprettet = status.opprettetTidspunkt,
         ).bind(),
         tiltakstype = kometTiltakstype(tiltakstype.tiltakskode).bind(),
         tiltakstypenavn = tiltakstype.navn,

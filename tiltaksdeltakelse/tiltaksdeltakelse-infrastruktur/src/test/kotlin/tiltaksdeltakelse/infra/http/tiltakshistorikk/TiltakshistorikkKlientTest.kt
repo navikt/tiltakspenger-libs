@@ -34,7 +34,7 @@ class TiltakshistorikkKlientTest {
     )
 
     /**
-     * JSON-en er kontraktens wire-format, med feltene kopien bevisst utelater (`organisasjonsnummer`, `gjennomforing.navn`, `meldinger`) til stede.
+     * JSON-en er kontraktens wire-format, med feltene kopien bevisst utelater (`organisasjonsnummer`, `gjennomforing.navn`) til stede.
      */
     private fun responsJson(deltakelseId: UUID, gjennomføringId: UUID) = """
         {
@@ -44,9 +44,11 @@ class TiltakshistorikkKlientTest {
               "norskIdent": "${fnr.verdi}",
               "startDato": "2024-03-04",
               "sluttDato": null,
+              "opprettetTidspunkt": "2024-03-01T08:30:00Z",
+              "oppdatertTidspunkt": "2024-03-15T10:00:00Z",
               "id": "$deltakelseId",
               "tittel": "Arbeidsforberedende trening hos Arrangør AS",
-              "status": { "type": "DELTAR", "aarsak": null, "opprettetDato": "2024-03-01T09:30:00" },
+              "status": { "type": "DELTAR", "aarsak": null, "opprettetTidspunkt": "2024-03-01T09:30:00" },
               "tiltakstype": { "tiltakskode": "ARBEIDSFORBEREDENDE_TRENING", "navn": "Arbeidsforberedende trening" },
               "gjennomforing": { "id": "$gjennomføringId", "navn": "AFT 2024", "deltidsprosent": null },
               "arrangor": {
@@ -56,8 +58,7 @@ class TiltakshistorikkKlientTest {
               "deltidsprosent": 60.0,
               "dagerPerUke": null
             }
-          ],
-          "meldinger": ["MANGLER_HISTORIKK_FRA_TEAM_TILTAK"]
+          ]
         }
     """.trimIndent()
 

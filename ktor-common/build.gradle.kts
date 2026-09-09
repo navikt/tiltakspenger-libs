@@ -14,6 +14,8 @@ dependencies {
     implementation(libs.arrow.core)
     implementation(libs.kotlinx.coroutines.core.jvm)
     api(libs.micrometer.core)
+    // Registeret komposisjonsroten lager med prometheusMeterRegistry() er en Prometheus-type, så konsumentene trenger den på compile-classpathen.
+    api(libs.micrometer.registry.prometheus)
 
     // Vi ønsker at konsumentene bruker sine egne versjoner av ktor
     compileOnly(libs.ktor.server.core)
@@ -30,5 +32,4 @@ dependencies {
     // Netty trengs i test for å låse Netty sin "event executor terminated"-streng (DefaultEventExecutor).
     testImplementation(libs.ktor.server.netty)
     testImplementation(libs.kotlinx.coroutines.test.jvm)
-    testImplementation(libs.micrometer.registry.prometheus)
 }

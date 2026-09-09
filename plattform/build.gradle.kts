@@ -39,13 +39,11 @@ val bibliotekmoduler =
 
 dependencies {
     // BOM-er vi videreformidler til konsumentene.
-    // Netty: r2dbc-postgresql/reactor-netty drar inn 4.1.x mens ktor-server-netty bruker 4.2.x, og uten justering havner
-    // begge på classpath med duplikate baseklasser (ByteToMessageDecoder m.fl.), som med `-cp lib/*` lastes i feil
-    // rekkefølge og brekker HTTP-pipelinen.
-    //
-    // TODO jah: Dette pinnet står i konflikt med `persistering-suspending`, som bevisst pinner netty 4.1-linja for r2dbc/reactor-netty.
-    // Constraintet her vinner, så en app som tar i bruk den modulen vil kjøre reactor-netty mot en Netty-linje den ikke er bygget for.
-    // Latent i dag, siden ingen app-repoer bruker `persistering-suspending` — avklar før den får sin første konsument.
+    // Netty: ktor-server-netty drar inn 4.2-linja, og bom-en løfter den forbi de sårbare versjonene til den patchede.
+    // 4.2 flyttet klasser til nye artefakter: `ByteToMessageDecoder` m.fl. bor i `netty-codec-base`, komprimeringskodekene i
+    // `netty-codec-compression`, mens 4.1 har alt i `netty-codec`. Gradle velger én versjon per koordinat, men kan ikke slå sammen
+    // ulike koordinater, så en 4.1-avhengighet ved siden av 4.2 gir samme klasser i to jar-er, som med `-cp lib/*` lastes i feil
+    // rekkefølge og brekker HTTP-pipelinen. Derfor skal alt Netty stå på én linje.
     api(platform(libs.netty42.bom))
     // Jackson 2 brukes ikke direkte — koden vår er på jackson3 (tools.jackson) — men kommer transitivt via Confluent,
     // tms-bibliotekene og com.auth0. Bom-en løfter dem over de patchede versjonene.
@@ -70,14 +68,11 @@ dependencies {
         // Apache kafka-clients drar inn lz4-java 1.10.2, der de native XXHash-implementasjonene kan krasje JVM-en
         // på ugyldige byte-intervaller (GHSA-xx22-p4ch-683r).
         api(libs.lz4.java)
-        // r2dbc-postgresql drar inn scram 3.2 med auth-nedgraderingssårbarhet (GHSA-p9jg-fcr6-3mhf, patchet i 3.3).
-        api(libs.scram.client)
-        api(libs.scram.common)
         // kafka-schema-registry-client, som kafka-avro-serializer drar inn, pinner httpclient5 5.5 og får med httpcore5 5.3.4.
         // httpcore5 5.3.4 lar HTTP/1-headere spise minne til tjenesten går ned (CVE-2026-54399), og httpcore5-h2 5.3.4
         // tar imot ubegrenset HPACK-headerliste før SETTINGS-ACK (CVE-2026-54428); begge er fikset i 5.4.3.
         // httpclient5 5.5 lekker forbindelser når dekoding av Content-Encoding feiler, til poolen er tom (CVE-2026-64607); fikset i 5.6.3.
-        // App-repoene får dem via avro-konsumentene og via wiremock i test-common, og BOM-en styrer versjonen for dem på samme måte som lz4 og scram.
+        // App-repoene får dem via avro-konsumentene og via wiremock i test-common, og BOM-en styrer versjonen for dem på samme måte som lz4.
         // BOM-en gjelder ikke libs' eget bygg; der pinner test-common dem selv med de samme katalogoppføringene.
         api(libs.httpclient5)
         api(libs.httpcore5)

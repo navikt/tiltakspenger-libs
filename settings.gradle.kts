@@ -34,7 +34,6 @@ include(
     "test-common",
     "persistering:persistering-infrastruktur",
     "persistering:persistering-domene",
-    "persistering:persistering-suspending",
     "persistering:persistering-test-common",
     "tiltaksdeltakelse:tiltaksdeltakelse-infrastruktur",
     "tiltaksdeltakelse:tiltaksdeltakelse-domene",

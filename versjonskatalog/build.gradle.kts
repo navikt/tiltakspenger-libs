@@ -20,7 +20,7 @@ plugins {
 }
 
 // TODO jah: Gradle genererer den publiserte toml-en på nytt og stripper alle kommentarer.
-// Sikkerhetsbegrunnelsene i katalogen — hvorfor netty, lz4, scram og jetty er pinnet, og hvorfor ktor er låst til 3.4-linja —
+// Sikkerhetsbegrunnelsene i katalogen — hvorfor netty, lz4 og jetty er pinnet, og hvorfor ktor er låst til 3.4-linja —
 // følger derfor ikke med til konsumentene, som ser versjonene uten å se hvorfor de står der.
 // Vurder å speile begrunnelsene i README, eller å la plattformen bære dem.
 catalog {

@@ -52,13 +52,11 @@ logback = "1.6.3"
 logback-syslog4j = "1.0.0"
 logstash-logback-encoder = "9.0"
 # LZ4 brukes ikke direkte, men kafka-clients drar inn 1.10.2, der de native XXHash-implementasjonene kan krasje JVM-en på ugyldige byte-intervaller (GHSA-xx22-p4ch-683r).
-# Vi styrer derfor versjonen selv, på samme måte som netty- og scram-linjene under.
+# Vi styrer derfor versjonen selv, på samme måte som netty-linja under.
 lz4 = "1.11.2"
 micrometer = "1.17.1"
 mockk = "1.14.11"
-# Netty brukes ikke direkte, men er en hyppig kilde til sikkerhetshull; vi styrer derfor de transitive versjonene selv med bom-er per linje.
-# 4.1-linja kommer fra r2dbc-postgresql 1.1.2 (nyeste), som drar inn sårbar 4.1.112 (bl.a. GHSA-c653-97m9-rcg9).
-netty41 = "4.1.137.Final"
+# Netty brukes ikke direkte, men er en hyppig kilde til sikkerhetshull; vi styrer derfor den transitive versjonen selv med en bom.
 # 4.2-linja kommer fra ktor-server-netty 3.4.3, som drar inn sårbar 4.2.12 (bl.a. GHSA-x4gw-5cx5-pgmh).
 netty42 = "4.2.17.Final"
 nimbus-jose-jwt = "10.9.1"
@@ -67,9 +65,6 @@ pdfbox = "3.0.8"
 postgresql = "42.7.13"
 # Simpleclient er avviklet oppstrøms til fordel for micrometer; kun soknad-api bruker den, og linja fjernes når den er migrert.
 prometheus-simpleclient = "0.16.0"
-r2dbc-postgresql = "1.1.2.RELEASE"
-# SCRAM brukes ikke direkte, men r2dbc-postgresql drar inn 3.2 med auth-nedgraderingssårbarhet (GHSA-p9jg-fcr6-3mhf, patchet i 3.3).
-scram = "3.4"
 slf4j = "2.0.18"
 snakeyaml = "2.7"
 spotless = "8.10.1"
@@ -172,7 +167,6 @@ micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "mic
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-dsl-jvm = { module = "io.mockk:mockk-dsl-jvm", version.ref = "mockk" }
-netty41-bom = { module = "io.netty:netty-bom", version.ref = "netty41" }
 netty42-bom = { module = "io.netty:netty-bom", version.ref = "netty42" }
 nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus-jose-jwt" }
 ojdbc11 = { module = "com.oracle.database.jdbc:ojdbc11", version.ref = "ojdbc" }
@@ -182,9 +176,6 @@ postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" 
 prometheus-simpleclient = { module = "io.prometheus:simpleclient", version.ref = "prometheus-simpleclient" }
 prometheus-simpleclient-common = { module = "io.prometheus:simpleclient_common", version.ref = "prometheus-simpleclient" }
 prometheus-simpleclient-hotspot = { module = "io.prometheus:simpleclient_hotspot", version.ref = "prometheus-simpleclient" }
-r2dbc-postgresql = { module = "org.postgresql:r2dbc-postgresql", version.ref = "r2dbc-postgresql" }
-scram-client = { module = "com.ongres.scram:scram-client", version.ref = "scram" }
-scram-common = { module = "com.ongres.scram:scram-common", version.ref = "scram" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jcl-over-slf4j = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j" }
 slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
@@ -196,7 +187,6 @@ testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-jun
 testcontainers-kafka = { module = "org.testcontainers:testcontainers-kafka", version.ref = "testcontainers" }
 testcontainers-oracle-free = { module = "org.testcontainers:testcontainers-oracle-free", version.ref = "testcontainers" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
-testcontainers-r2dbc = { module = "org.testcontainers:testcontainers-r2dbc", version.ref = "testcontainers" }
 tika-core = { module = "org.apache.tika:tika-core", version.ref = "tika" }
 tms-mikrofrontend-selector-builder = { module = "no.nav.tms.mikrofrontend.selector:builder", version.ref = "tms-mikrofrontend-selector" }
 tms-varsel-kotlin-builder = { module = "no.nav.tms.varsel:kotlin-builder", version.ref = "tms-varsel" }

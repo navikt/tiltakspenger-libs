@@ -8,7 +8,7 @@ import java.time.LocalDateTime
  * [hentetTidspunkt] ligger ytterst fordi det gjelder hele svaret, og er grunnlaget for et senere utdatert-flagg sammen med kildens eget statustidspunkt.
  * Produsenten tar alltid klokken som parameter — aldri systemklokke, aldri default-verdi.
  * De ukjente formene bor her og ikke på [Tiltaksdeltakelser]: samletypen kan bygges fra lagrede rader, mens formene vi ikke kjenner bare finnes i selve hentingen.
- * Kontraktens `meldinger` er bevisst ikke modellert: manglende historikk fra Team Tiltak er ikke lenger et særtilfelle vi håndterer, så svaret bærer ikke noe kompletthetssignal.
+ * Svaret bærer ikke noe kompletthetssignal: kontraktens `meldinger` (manglende historikk fra Team Tiltak) ble fjernet i september 2026, og var aldri et særtilfelle vi håndterte.
  */
 data class Tiltakshistorikk(
     val deltakelser: Tiltaksdeltakelser,

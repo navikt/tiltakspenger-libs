@@ -10,6 +10,7 @@ import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.d
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.dto.TiltakshistorikkV1Dto
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.felles.UgyldigKontraktsverdi
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -30,9 +31,11 @@ class KometMapperTest {
         norskIdent = NorskIdentDto(fnr),
         startDato = LocalDate.of(2024, 3, 4),
         sluttDato = null,
+        opprettetTidspunkt = Instant.parse("2024-03-01T08:30:00Z"),
+        oppdatertTidspunkt = Instant.parse("2024-03-15T10:00:00Z"),
         id = deltakelseId,
         tittel = "Arbeidsforberedende trening hos Arrangør AS",
-        status = TiltakshistorikkV1Dto.TeamKometDeltakelse.Status(type = status, aarsak = aarsak, opprettetDato = opprettet),
+        status = TiltakshistorikkV1Dto.TeamKometDeltakelse.Status(type = status, aarsak = aarsak, opprettetTidspunkt = opprettet),
         tiltakstype = TiltakshistorikkV1Dto.Tiltakstype(tiltakskode = tiltakskode, navn = "Arbeidsforberedende trening"),
         gjennomforing = TiltakshistorikkV1Dto.Gjennomforing(id = gjennomføringId, deltidsprosent = null),
         arrangor = TiltakshistorikkV1Dto.Arrangor(

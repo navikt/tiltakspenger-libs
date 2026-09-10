@@ -9,6 +9,10 @@ buildscript {
             // Åpne advisories på 2.20.1 (bl.a. GHSA-j3rv-43j4-c7qm); samme mønster som avro-repoenes buildscript-pinning.
             add("classpath", "com.fasterxml.jackson.core:jackson-core:2.22.2")
             add("classpath", "com.fasterxml.jackson.core:jackson-databind:2.22.2")
+            // `kotlin-dsl` (versjonen følger Gradle-distribusjonen) drar kotlin-gradle-plugin 2.4.0 med CVE-2026-53914
+            // (usikker deserialisering i build cache). Hold i sync med `kotlin` i katalogen; kan fjernes når Gradle
+            // selv leverer en kotlin-dsl som bygger på Kotlin >= 2.4.20 (sjekk med `./gradlew -p build-logic buildEnvironment`).
+            add("classpath", "org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.20")
         }
     }
 }

@@ -65,7 +65,7 @@ pdfbox = "3.0.8"
 postgresql = "42.7.13"
 # Simpleclient er avviklet oppstrøms til fordel for micrometer; kun soknad-api bruker den, og linja fjernes når den er migrert.
 prometheus-simpleclient = "0.16.0"
-slf4j = "2.0.18"
+slf4j = "2.0.19"
 snakeyaml = "2.7"
 spotless = "8.10.1"
 swagger-parser = "2.1.48"

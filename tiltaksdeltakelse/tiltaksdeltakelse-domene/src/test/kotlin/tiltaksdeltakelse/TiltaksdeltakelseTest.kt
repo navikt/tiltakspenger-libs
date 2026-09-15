@@ -3,8 +3,8 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import no.nav.tiltakspenger.libs.common.Tilknytningstittel
-import no.nav.tiltakspenger.libs.common.Virksomhetsnavn
+import no.nav.tiltakspenger.libs.common.personopplysning.Tilknytningstittel
+import no.nav.tiltakspenger.libs.common.personopplysning.Virksomhetsnavn
 import no.nav.tiltakspenger.libs.periode.Periode
 import org.junit.jupiter.api.Test
 import java.time.LocalDate

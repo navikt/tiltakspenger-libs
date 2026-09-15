@@ -2,11 +2,11 @@ package no.nav.tiltakspenger.libs.texas
 
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.principal
-import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.common.GenerellSystembruker
 import no.nav.tiltakspenger.libs.common.GenerellSystembrukerrolle
 import no.nav.tiltakspenger.libs.common.GenerellSystembrukerroller
 import no.nav.tiltakspenger.libs.common.Saksbehandler
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 import no.nav.tiltakspenger.libs.ktor.common.respond403Forbidden
 import no.nav.tiltakspenger.libs.ktor.common.respond500InternalServerError
 

@@ -1,6 +1,6 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
-import no.nav.tiltakspenger.libs.common.Tilknytningstittel
+import no.nav.tiltakspenger.libs.common.personopplysning.Tilknytningstittel
 import no.nav.tiltakspenger.libs.periode.Periode
 import java.time.LocalDate
 

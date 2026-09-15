@@ -1,6 +1,6 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
-import no.nav.tiltakspenger.libs.common.Virksomhetsnavn
+import no.nav.tiltakspenger.libs.common.personopplysning.Virksomhetsnavn
 
 /**
  * Arrangøren som gjennomfører tiltaket.

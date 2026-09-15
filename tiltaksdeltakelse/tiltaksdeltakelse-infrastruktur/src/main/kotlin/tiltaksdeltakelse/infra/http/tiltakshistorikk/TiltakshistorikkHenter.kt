@@ -9,8 +9,8 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import arrow.core.right
 import no.nav.tiltakspenger.libs.common.CorrelationId
-import no.nav.tiltakspenger.libs.common.Fnr
 import no.nav.tiltakspenger.libs.common.nå
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientResponse
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltaksdeltakelser
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltakshistorikk

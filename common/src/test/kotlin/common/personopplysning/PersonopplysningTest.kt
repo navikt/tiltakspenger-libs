@@ -1,8 +1,9 @@
-package no.nav.tiltakspenger.libs.common
+package no.nav.tiltakspenger.libs.common.personopplysning
 
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
+import no.nav.tiltakspenger.libs.common.FnrGenerator
 import org.junit.jupiter.api.Test
 
 internal class PersonopplysningTest {
@@ -84,11 +85,15 @@ internal class PersonopplysningTest {
             is Fnr -> opplysning.begrunnelse
             is Virksomhetsnavn -> opplysning.begrunnelse
             is Tilknytningstittel -> opplysning.begrunnelse
+            is Organisasjonsnummer -> opplysning.begrunnelse
+            is Samhandlerident -> opplysning.begrunnelse
         }
 
         begrunnelsen(FnrGenerator().generer()).isNotBlank() shouldBe true
         begrunnelsen(Virksomhetsnavn("Arrangør AS")).isNotBlank() shouldBe true
         begrunnelsen(Tilknytningstittel("Oppfølging hos Arrangør AS")).isNotBlank() shouldBe true
+        begrunnelsen(Organisasjonsnummer("000000000")).isNotBlank() shouldBe true
+        begrunnelsen(Samhandlerident("alle nitall")).isNotBlank() shouldBe true
     }
 
     /**

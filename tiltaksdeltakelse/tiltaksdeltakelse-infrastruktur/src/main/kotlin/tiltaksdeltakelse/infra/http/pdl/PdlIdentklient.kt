@@ -6,7 +6,7 @@ import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.right
 import arrow.core.toNonEmptyListOrNull
-import no.nav.tiltakspenger.libs.common.Fnr
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientMetadata
 import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient
 import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlientConfig

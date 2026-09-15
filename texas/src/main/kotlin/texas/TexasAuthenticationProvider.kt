@@ -9,7 +9,7 @@ import io.ktor.server.auth.AuthenticationFailedCause
 import io.ktor.server.auth.AuthenticationProvider
 import io.ktor.server.auth.parseAuthorizationHeader
 import io.ktor.server.response.respond
-import no.nav.tiltakspenger.libs.common.Fnr
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 import no.nav.tiltakspenger.libs.texas.client.TexasClient
 
 val tillatteInnloggingsnivaer = listOf("idporten-loa-high", "Level4")

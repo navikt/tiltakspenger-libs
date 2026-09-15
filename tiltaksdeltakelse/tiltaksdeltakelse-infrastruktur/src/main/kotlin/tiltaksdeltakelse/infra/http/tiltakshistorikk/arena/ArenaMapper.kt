@@ -2,8 +2,8 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.
 
 import arrow.core.Either
 import arrow.core.raise.either
-import no.nav.tiltakspenger.libs.common.tilknytningstittel
-import no.nav.tiltakspenger.libs.common.virksomhetsnavn
+import no.nav.tiltakspenger.libs.common.personopplysning.tilknytningstittel
+import no.nav.tiltakspenger.libs.common.personopplysning.virksomhetsnavn
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Arrangør
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Deltakelsesomfang
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.EksternDeltakelseId

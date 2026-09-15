@@ -5,7 +5,7 @@ import arrow.core.NonEmptyList
 import arrow.core.flatMap
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
-import no.nav.tiltakspenger.libs.common.Fnr
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.UriSynlighet
 import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient

@@ -2,7 +2,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldNotContain
-import no.nav.tiltakspenger.libs.common.Virksomhetsnavn
+import no.nav.tiltakspenger.libs.common.personopplysning.Virksomhetsnavn
 import org.junit.jupiter.api.Test
 
 internal class ArrangørTest {

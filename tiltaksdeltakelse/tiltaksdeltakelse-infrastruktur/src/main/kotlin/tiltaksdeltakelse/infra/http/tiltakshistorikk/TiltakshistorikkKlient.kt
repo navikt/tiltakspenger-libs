@@ -3,7 +3,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk
 import arrow.core.Either
 import arrow.core.Nel
 import no.nav.tiltakspenger.libs.common.CorrelationId
-import no.nav.tiltakspenger.libs.common.Fnr
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientError
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientResponse
 import no.nav.tiltakspenger.libs.httpklient.infra.HttpKlient

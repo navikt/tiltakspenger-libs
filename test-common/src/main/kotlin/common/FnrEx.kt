@@ -1,5 +1,7 @@
 package no.nav.tiltakspenger.libs.common
 
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
+
 /**
  * 11 tilfeldige sifre mellom 0 og 9.
  * Gir sjeldent gyldige fødselsnumre :)

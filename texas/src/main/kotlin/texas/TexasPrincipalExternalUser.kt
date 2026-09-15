@@ -1,6 +1,6 @@
 package no.nav.tiltakspenger.libs.texas
 
-import no.nav.tiltakspenger.libs.common.Fnr
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 
 data class TexasPrincipalExternalUser(
     val claims: Map<String, Any?>,

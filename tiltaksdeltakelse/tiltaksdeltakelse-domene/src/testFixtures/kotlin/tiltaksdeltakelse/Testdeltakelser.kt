@@ -1,7 +1,7 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
-import no.nav.tiltakspenger.libs.common.Tilknytningstittel
-import no.nav.tiltakspenger.libs.common.Virksomhetsnavn
+import no.nav.tiltakspenger.libs.common.personopplysning.Tilknytningstittel
+import no.nav.tiltakspenger.libs.common.personopplysning.Virksomhetsnavn
 import java.time.LocalDate
 import java.time.LocalDateTime
 

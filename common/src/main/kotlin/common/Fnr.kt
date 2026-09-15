@@ -1,50 +1,13 @@
 package no.nav.tiltakspenger.libs.common
 
-data class Fnr private constructor(
-    val verdi: String,
-) : Personopplysning {
-    init {
-        validate(verdi)
-    }
+@Deprecated(
+    "Flyttet til no.nav.tiltakspenger.libs.common.personopplysning.Fnr",
+    ReplaceWith("Fnr", "no.nav.tiltakspenger.libs.common.personopplysning.Fnr"),
+)
+typealias Fnr = no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 
-    override val begrunnelse: String
-        get() =
-            "Fødselsnummer identifiserer en person entydig, og selve nummeret koder i tillegg fødselsdato i de seks første sifrene og kjønn i personnummeret. " +
-                "Et fødselsnummer på avveie utleverer derfor mer enn identiteten alene, også når mottakeren ikke har oppslag mot Folkeregisteret. " +
-                "Oppbygning: https://www.skatteetaten.no/person/folkeregister/fodsel-og-navnevalg/barn-fodt-i-norge/fodselsnummer/"
-
-    override fun toString(): String = "***********"
-
-    companion object {
-        private val FNR_PATTERN = Regex("[0-9]{11}")
-
-        private fun validate(fnr: String) {
-            if (!fnr.matches(FNR_PATTERN)) throw UgyldigFnrException(fnr)
-        }
-
-        /**
-         * @return null hvis fnr er ugyldig.
-         * Regel: [FNR_PATTERN]
-         */
-        @Suppress("unused")
-        fun tryFromString(fnr: String): Fnr? {
-            return try {
-                Fnr(fnr)
-            } catch (e: UgyldigFnrException) {
-                null
-            }
-        }
-
-        /**
-         * @throws UgyldigFnrException hvis fnr er ugyldig.
-         * Regel: [FNR_PATTERN]
-         */
-        fun fromString(fnr: String): Fnr {
-            return Fnr(fnr)
-        }
-    }
-}
-
-data class UgyldigFnrException(@Suppress("unused") val unparsed: String) : RuntimeException("Ugyldig fnr.") {
-    override fun toString(): String = "***********"
-}
+@Deprecated(
+    "Flyttet til no.nav.tiltakspenger.libs.common.personopplysning.UgyldigFnrException",
+    ReplaceWith("UgyldigFnrException", "no.nav.tiltakspenger.libs.common.personopplysning.UgyldigFnrException"),
+)
+typealias UgyldigFnrException = no.nav.tiltakspenger.libs.common.personopplysning.UgyldigFnrException

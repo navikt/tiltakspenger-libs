@@ -1,7 +1,7 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk
 
 import arrow.core.Nel
-import no.nav.tiltakspenger.libs.common.Fnr
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 import no.nav.tiltakspenger.libs.httpklient.HttpKlientResponse
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltakshistorikk
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.pdl.KanIkkeHenteIdenter

@@ -4,7 +4,7 @@ import arrow.core.Either
 import arrow.core.NonEmptyList
 import no.nav.tiltakspenger.libs.common.AccessToken
 import no.nav.tiltakspenger.libs.common.CorrelationId
-import no.nav.tiltakspenger.libs.common.Fnr
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 import no.nav.tiltakspenger.libs.personklient.pdl.FellesSkjermingError
 import java.time.Clock
 import kotlin.time.Duration

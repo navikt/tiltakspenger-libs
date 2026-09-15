@@ -4,8 +4,8 @@ import arrow.core.left
 import io.kotest.matchers.shouldBe
 import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.getOrFail
-import no.nav.tiltakspenger.libs.common.tilknytningstittel
-import no.nav.tiltakspenger.libs.common.virksomhetsnavn
+import no.nav.tiltakspenger.libs.common.personopplysning.tilknytningstittel
+import no.nav.tiltakspenger.libs.common.personopplysning.virksomhetsnavn
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Arrangør
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Deltakelsesomfang
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.EksternDeltakelseId

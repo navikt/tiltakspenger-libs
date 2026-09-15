@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.common
 
 import arrow.atomic.Atomic
+import no.nav.tiltakspenger.libs.common.personopplysning.Fnr
 
 /**
  * Trådsikker.

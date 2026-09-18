@@ -1,12 +1,13 @@
 /*
  * Delt fundament for reglene i modulen.
  *
- * Reglene som matcher på en liste av elementer (pakkesegmenter, forbudte navn, koordinater, markører) eksponerer lista som en public `standard…`-verdi, og tar et `ekstra…`-argument som legges til den.
- * Kalleren kan altså utvide det flåten har blitt enige om, men ikke erstatte det: en delt regel skal ikke kunne svekkes stille fra ett repo.
- * Trenger et repo å slippe unna et enkelttilfelle, er whitelisten (`unntatteFilstier`) veien — den er synlig, begrunnet på kallstedet og holdes ærlig av `assertWhitelistenErRyddet`.
+ * Regler som matcher på en liste av pakkesegmenter, forbudte navn, koordinater eller markører eksponerer lista som en public `standard…`-verdi og tar et `ekstra…`-argument i tillegg.
+ * Kalleren kan utvide lista, men ikke erstatte den, slik at et enkelt repo ikke kan svekke en delt regel.
+ * Enkelttilfeller tas ut med whitelisten `unntatteFilstier`, som står på kallstedet og holdes ryddig av `assertWhitelistenErRyddet`.
  */
 package no.nav.tiltakspenger.libs.konsist
 
+import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.container.KoScope
 import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
 import java.nio.file.Files
@@ -14,25 +15,28 @@ import java.nio.file.Path
 import kotlin.streams.asSequence
 
 /**
- * Kataloger som inneholder en annen utsjekk av repoet, typisk et git-arbeidstre lagt under repo-rota (`.worktrees/<gren>/`).
- * Filene der tilhører en annen gren, og skal aldri påvirke reglene i arbeidskopien de tilfeldigvis ligger inni.
- * Begge skrivemåtene er med fordi repoenes `.gitignore` allerede ignorerer begge.
+ * Kataloger som inneholder en annen utsjekk av repoet, typisk et git-arbeidstre under repo-rota (`.worktrees/<gren>/`).
+ * Filene der hører til en annen gren og skal ikke påvirke reglene i utsjekken som kjører.
+ * Begge skrivemåtene er med fordi `.gitignore` i repoene ignorerer begge.
  *
- * Uten dette henter `Konsist.scopeFromProject()` inn arbeidstreets kildesett som om det var en egen modul.
- * En regel som ble skjerpet på hovedgrenen feiler da lokalt på et arbeidstre som ennå ikke er rebaset, mens CI er grønn — og hovedtreet er blokkert av kode det ikke eier.
+ * Uten filteret tar `Konsist.scopeFromProject()` med arbeidstreets kilder som om de var en egen modul.
+ * En regel som er skjerpet på hovedgrenen feiler da lokalt på et arbeidstre som ikke er rebaset ennå, mens CI er grønn.
+ *
+ * Katalognavnene måles fra skanningsrota og ikke i den absolutte stien, se [kildefiler].
  */
 val ekskluderteUtsjekker = setOf(".worktrees", ".worktree")
 
 /**
- * Kataloger som aldri inneholder kildekode eller konfigurasjon vi eier, og som de filbaserte reglene alltid hopper over.
- * Et repo med en egen byggutdata-katalog legger den til med `ekstraEkskluderteKataloger`; settet kan ikke erstattes, slik at [ekskluderteUtsjekker] alltid blir med.
+ * Kataloger de filbaserte reglene hopper over, fordi de ikke inneholder kildekode eller konfigurasjon teamet eier.
+ * Et repo med egen byggutdata-katalog legger den til med `ekstraEkskluderteKataloger`.
+ * Settet kan ikke erstattes, så [ekskluderteUtsjekker] blir med uansett.
  */
 val standardEkskluderteKataloger = setOf("build", ".gradle", ".git", ".idea", "node_modules") + ekskluderteUtsjekker
 
 /**
  * Filene under rota som [predikat] godtar, minus alt under [ekskluderteKataloger].
- * Ekskluderingen er segmentbasert slik at også nestede kataloger treffes (f.eks. `<modul>/build/` når rota er repo-rota, ikke bare `build/` på toppnivå).
- * Brukes av reglene som leser filer direkte fra disk i stedet for gjennom et Konsist-scope (markdown og byggfiler).
+ * Ekskluderingen ser på hvert segment i den relative stien, så `<modul>/build/` treffer og ikke bare `build/` på toppnivå.
+ * Brukes av reglene som leser markdown og byggfiler fra disk i stedet for gjennom et Konsist-scope.
  */
 internal fun Path.filerUnder(ekskluderteKataloger: Set<String>, predikat: (Path) -> Boolean): Sequence<Path> =
     Files
@@ -42,29 +46,87 @@ internal fun Path.filerUnder(ekskluderteKataloger: Set<String>, predikat: (Path)
         .filterNot { path -> relativize(path).any { segment -> segment.toString() in ekskluderteKataloger } }
 
 /**
- * Kildefilene i scopet, uten `.kt`-filer som ligger under resources, og uten filer som tilhører en annen utsjekk ([ekskluderteUtsjekker]).
- * Konsist tar med `.kt`-filer under `src/<sourceSet>/resources` i prosjekt-scopene, men slike filer er data (f.eks. testfixturene til reglene i denne modulen), ikke kildekode.
- * Alle reglene i modulen går via denne, så filtreringen gjelder uansett hvilket scope kalleren sender inn.
+ * Kildefilene i scopet, uten `.kt`-filer under resources og uten filer fra en annen utsjekk ([ekskluderteUtsjekker]).
+ * Konsist tar med `.kt`-filer under `src/<sourceSet>/resources` i prosjekt-scopene, men i denne modulen er de testfixturer og ikke kildekode.
+ * Alle reglene går via denne, så filtreringen gjelder uansett hvilket scope kalleren sender inn.
  *
- * Merk at `build` bevisst ikke filtreres her: Konsist-scopene inneholder ikke byggutdata, og testfixturene i denne modulen leses nettopp fra `build/resources/test`.
+ * `build` filtreres ikke bort, fordi Konsist-scopene ikke inneholder byggutdata og testfixturene leses fra `build/resources/test`.
  */
-fun KoScope.kildefiler(): List<KoFileDeclaration> = files.filterNot { file ->
-    "/src/test/resources/" in file.path ||
-        "/src/main/resources/" in file.path ||
-        ekskluderteUtsjekker.any { katalog -> "/$katalog/" in file.path }
+fun KoScope.kildefiler(): List<KoFileDeclaration> = kildefiler(skanningsrot())
+
+/**
+ * Som [kildefiler], men med rota oppgitt av kalleren, slik at begge retningene kan testes.
+ *
+ * Stien måles fra [rot] og ikke i absolutt form.
+ * Kjører bygget fra et arbeidstre på `<repo>/.worktrees/<gren>/`, ligger `.worktrees` over rota, og bare utsjekker under rota skal utelates.
+ * Et substring-søk i den absolutte stien så ikke forskjellen og tømte hele scopet.
+ *
+ * Ligger fila utenfor [rot], som i et [com.lemonappdev.konsist.api.Konsist.scopeFromExternalDirectory]-scope, finnes det ingen rot å måle mot, og hele den absolutte stien brukes.
+ */
+internal fun KoScope.kildefiler(rot: Path): List<KoFileDeclaration> {
+    val kildefiler = files.filterNot { file ->
+        val relativ = Path.of(file.path).ekteSti().settFra(rot)
+        val sti = "/" + relativ.joinToString("/")
+        "/src/test/resources/" in sti ||
+            "/src/main/resources/" in sti ||
+            relativ.any { segment -> segment.toString() in ekskluderteUtsjekker }
+    }
+    assertFilteretIkkeTømteScopet(antallFør = files.size, antallEtter = kildefiler.size, rot = rot, eksempelfil = files.firstOrNull()?.path)
+    return kildefiler
+}
+
+/**
+ * Rota Konsist bygde scopet fra.
+ * `Konsist.projectRootPath` er offentlig API og gir repo-rota også i et flermodul-repo, der testtaskens arbeidskatalog er modulkatalogen.
+ */
+private fun skanningsrot(): Path = Path.of(Konsist.projectRootPath).ekteSti()
+
+/**
+ * Absolutt og normalisert sti med symlenker løst opp, slik at rot og fil kan sammenlignes.
+ * På macOS er `/tmp` en symlenke til `/private/tmp`, så `/tmp/repo/Fil.kt` og rota `/private/tmp/repo` er ellers to ulike stier.
+ * Finnes ikke stien på disk, brukes den normaliserte formen.
+ */
+internal fun Path.ekteSti(): Path {
+    val absolutt = toAbsolutePath().normalize()
+    return runCatching { absolutt.toRealPath() }.getOrDefault(absolutt)
+}
+
+/** Stien målt fra [rot], eller stien selv hvis den ligger utenfor rota. */
+internal fun Path.settFra(rot: Path): Path = if (startsWith(rot)) rot.relativize(this) else this
+
+/**
+ * Feiler når filteret fjernet alle filene i et scope som ikke var tomt.
+ * Reglene får da ingenting å lese, finner null brudd og blir grønne.
+ * I et arbeidstre fant `scopeFromProject()` 542 filer, og `kildefiler()` leverte 0.
+ *
+ * Sjekken ligger her og ikke i testklassene, fordi alle reglene går via [kildefiler].
+ * En testklasse som kaller et regelobjekt direkte er dekket uten å gjøre noe selv.
+ *
+ * Et scope som var tomt fra før feiler ikke.
+ * Et `slice { }` på en modul repoet ikke har, eller et testkildesett som ikke finnes ennå, er en gyldig tilstand.
+ * Derfor trengs det ikke noe unntak på kallstedet.
+ */
+private fun assertFilteretIkkeTømteScopet(antallFør: Int, antallEtter: Int, rot: Path, eksempelfil: String?) {
+    if (antallFør == 0 || antallEtter > 0) return
+    throw AssertionError(
+        "Filteret i kildefiler() fjernet alle $antallFør filene i scopet, så reglene ville blitt grønne uten å lese kode.\n" +
+            "Skanningsrot: $rot\n" +
+            "Eksempelfil: $eksempelfil\n" +
+            "Sjekk at rota peker på treet som kjører, og at filene ikke ligger under ${ekskluderteUtsjekker.joinToString(" eller ")} sett fra rota.",
+    )
 }
 
 /**
  * Kodelinjene i fila som (linjenummer, kode)-par for tekstbaserte regler.
- * Kommentarlinjer hoppes over, trailing-kommentarer strippes, og innholdet i inline-strengliteraler maskeres (tekst om et forbudt kall er ikke et kall).
+ * Kommentarlinjer hoppes over, trailing-kommentarer strippes, og innholdet i strengliteraler maskeres, slik at tekst om et forbudt kall ikke teller som kallet.
  */
 internal fun KoFileDeclaration.kodelinjer(): List<Pair<Int, String>> =
     kodelinjerMedStrenger().map { (linjenummer, kode) -> linjenummer to kode.replace(strengliteralRegex, "\"\"") }
 
 /**
  * Som [kodelinjer], men uten maskering av strengliteraler.
- * Brukes av reglene der innholdet i strengen *er* det som skal leses — SQL-en et repo skriver bor nettopp i strengliteraler, og maskeringen ville gjort en slik regel blind.
- * Kommentarlinjer hoppes fortsatt over, slik at dokumentasjon som viser mønsteret den advarer mot ikke blir et brudd i seg selv.
+ * Brukes av reglene som skal lese innholdet i strengen, typisk SQL, der maskeringen ville fjernet det regelen ser etter.
+ * Kommentarlinjer hoppes fortsatt over, så dokumentasjon som viser mønsteret den advarer mot ikke blir et brudd.
  */
 internal fun KoFileDeclaration.kodelinjerMedStrenger(): List<Pair<Int, String>> =
     text.lines().mapIndexedNotNull { index, linje ->
@@ -80,7 +142,7 @@ internal val strengliteralRegex = Regex(""""[^"]*"""")
 
 /**
  * Kutter linjen ved første `//` som starter en trailing-kommentar.
- * `//` inne i strengliteraler (typisk URL-er) beholdes med en enkel heuristikk: oddetall anførselstegn foran, eller `:` rett foran.
+ * `//` inne i strengliteraler, typisk URL-er, beholdes når det står oddetall anførselstegn foran eller `:` rett foran.
  */
 internal fun String.utenTrailingKommentar(): String {
     var searchFrom = 0
@@ -95,8 +157,8 @@ internal fun String.utenTrailingKommentar(): String {
 }
 
 /**
- * Kaster [AssertionError] med [intro] og en punktliste over bruddene hvis [brudd] ikke er tom.
- * Felles feilrapportering for alle reglene i denne modulen, slik at meldingene ser like ut på tvers av repoer.
+ * Kaster [AssertionError] med [intro] og en punktliste over [brudd], hvis lista ikke er tom.
+ * Felles feilrapportering for reglene i modulen, slik at meldingene ser like ut på tvers av repoer.
  */
 fun assertIngenBrudd(brudd: List<String>, intro: String) {
     if (brudd.isEmpty()) return
@@ -106,13 +168,12 @@ fun assertIngenBrudd(brudd: List<String>, intro: String) {
 }
 
 /**
- * Vakt mot en vakuøs grønn kjøring: en regel som ikke finner noen filer å se på, består trivielt.
- * Et tomt eller feilrettet scope er ikke hypotetisk — `scopeFromProject()`/`scopeFromProduction()` leter etter en `.git`-*katalog*, og i et git-arbeidstre er `.git` en fil.
- * Da skanner Konsist feil tre eller ingenting, og hele regelsettet er grønt uten å ha sett koden.
- * En skrivefeil i pakkenavnet eller modulstien kalleren filtrerer på gir nøyaktig samme stillhet.
+ * Feiler når en regel fant færre enn [minstAntall] elementer å se på.
+ * En skrivefeil i pakkenavnet eller modulstien kalleren filtrerer på gir et tomt utvalg og en regel som består uten å ha sett noe.
+ * At selve scopet er tømt fanges av [kildefiler]; denne sjekken dekker utvalget kalleren gjør etterpå.
  *
- * Brukes av reglene som ser på et *utvalg* av scopet (én pakke, ett mønster), der utvalget kan bli tomt uten at noe annet slår ut.
- * [minstAntall] er hva repoet vet at det har: velg et tall trygt under dagens antall, men over null.
+ * Brukes av reglene som ser på et utvalg av scopet, én pakke eller ett mønster, der utvalget kan bli tomt uten at noe annet slår ut.
+ * [minstAntall] er hva repoet vet at det har, altså et tall under dagens antall og over null.
  */
 fun assertSkanningenTraff(antall: Int, minstAntall: Int, hva: String) = assertIngenBrudd(
     listOfNotNull("fant $antall $hva".takeIf { antall < minstAntall }),
@@ -120,14 +181,14 @@ fun assertSkanningenTraff(antall: Int, minstAntall: Int, hva: String) = assertIn
 )
 
 /**
- * Ratchet-en for reglene som tar en whitelist: en fil som ikke lenger bryter regelen, skal ut av whitelisten.
- * Uten den blir en ryddet fil liggende som et unntak ingen ser, og dekker stilltiende over neste brudd i samme fil.
- * Den fanger også oppføringer som aldri traff — en feilstavet eller utdatert sti er et unntak uten virkning, og whitelisten lyver om hva som gjenstår.
+ * Krever at en fil som ikke lenger bryter regelen, tas ut av whitelisten.
+ * Blir den liggende, er den et unntak ingen ser, og den dekker over neste brudd i samme fil.
+ * Sjekken fanger også oppføringer som aldri traff, altså feilstavede eller utdaterte stier.
  *
- * [bruddUtenUnntak] er regelens egen `brudd()`-funksjon kalt med tom whitelist: differansen mot [unntatteFilstier] er nettopp oppføringene som ikke lenger trengs.
- * Alle reglene i modulen rapporterer brudd som `<filsti>:...`, og sti-suffiksene sammenlignes mot det, så matchingen blir like presis som regelens egen `endsWith`.
+ * [bruddUtenUnntak] er regelens egen `brudd()` kalt med tom whitelist, så differansen mot [unntatteFilstier] er oppføringene som ikke trengs.
+ * Reglene rapporterer brudd som `<filsti>:...`, og sti-suffiksene sammenlignes mot det, med samme presisjon som regelens egen `endsWith`.
  */
 fun assertWhitelistenErRyddet(unntatteFilstier: Set<String>, bruddUtenUnntak: List<String>) = assertIngenBrudd(
     unntatteFilstier.filterNot { sti -> bruddUtenUnntak.any { brudd -> "$sti:" in brudd } },
-    "Whitelisten inneholder stier som ikke bryter regelen. Ta dem ut — en oppføring uten virkning dekker over neste brudd i samme fil.",
+    "Whitelisten inneholder stier som ikke bryter regelen. Ta dem ut; en oppføring uten virkning dekker over neste brudd i samme fil.",
 )

@@ -58,7 +58,9 @@ spotless {
     }
 }
 
-tasks.named<Test>("test") {
+// `withType`, ikke `named("test")`, fordi modulene registrerer egne Test-tasker som `arkitekturTest` i konsist-regler.
+// De skal ha samme oppsett uten å gjenta det her.
+tasks.withType<Test>().configureEach {
     useJUnitPlatform()
     // https://phauer.com/2018/best-practices-unit-testing-kotlin/
     systemProperty("junit.jupiter.testinstance.lifecycle.default", "per_class")

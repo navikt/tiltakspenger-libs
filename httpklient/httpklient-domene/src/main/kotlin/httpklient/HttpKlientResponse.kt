@@ -1,0 +1,74 @@
+package no.nav.tiltakspenger.libs.httpklient
+
+import arrow.core.Either
+import io.github.oshai.kotlinlogging.KLogger
+import no.nav.tiltakspenger.libs.logging.Sikkerlogg
+import java.net.URI
+import kotlin.time.Duration
+
+data class HttpKlientResponse<out Body>(
+    val statusCode: Int,
+    val body: Body,
+    val metadata: HttpKlientMetadata,
+) {
+    init {
+        require(statusCode in 100..999) { "statusCode må være en tresifret HTTP-statuskode" }
+    }
+
+    /**
+     * Convenience-aksessorer som peker rett inn i [metadata].
+     * Lar konsumenter slippe å skrive `response.metadata.requestHeaders` osv., samtidig som vi beholder [HttpKlientMetadata] som eneste datatype og sannhetskilde for disse feltene.
+     */
+    val method: String get() = metadata.method
+    val uri: URI get() = metadata.uri
+
+    /** Endepunktet i PII-fri form, klar for vanlig logg — se [HttpKlientMetadata.endepunkt]. */
+    val endepunkt: String get() = metadata.endepunkt
+    val rawRequestString: String get() = metadata.rawRequestString
+
+    /**
+     * Garantert non-null på suksess: pipelinen setter alltid en lesbar respons-string når en respons finnes, og en [HttpKlientResponse] finnes bare når serveren faktisk svarte.
+     * Fjerner behovet for `!!` hos konsumenter som persisterer rå request/respons (Kabal, utbetaling).
+     */
+    val rawResponseString: String get() = checkNotNull(metadata.rawResponseString) { "Invariant brutt: rawResponseString skal alltid være satt på en suksess-respons" }
+
+    val requestHeaders: Map<String, List<String>> get() = metadata.requestHeaders
+    val responseHeaders: Map<String, List<String>> get() = metadata.responseHeaders
+    val attempts: Int get() = metadata.attempts
+    val attemptDurations: List<Duration> get() = metadata.attemptDurations
+    val totalDuration: Duration get() = metadata.totalDuration
+}
+
+/**
+ * Suksess-sti-logging for kritiske klienter som skal ha sporbarhet også når kallet lykkes (datadeling-paritet).
+ * Logger alltid parvis, jf. logge-regelen i AGENTS-backend.md: en PII-fri linje i vanlig logg og en sikkerlogg-linje som starter identisk og fortsetter med maskert rå request/respons på slutten.
+ * Slik kan vanlig logg leses som en helhet, med sikkerlogg som ekstra kontekst funnet via den identiske starten.
+ * Requesten er maskert (auth og sensitive headere) og responsen er lesbar tekst med binær-placeholder, så innholdet er trygt for sikkerlogg.
+ *
+ * @param logger Kallerens egen logger, slik at logglinja får kallerens navnrom.
+ * @param melding Kort PII-fri beskrivelse av hendelsen, f.eks. `"Hentet meldekort fra Arena."`.
+ * @param sikkerlogg Sikkerlogg-instansen henvisningen og sikkerlogg-linja går gjennom; default er companion-objektet (ren tekst-henvisning), injiser appens instans for klikkbar lenke.
+ */
+fun HttpKlientResponse<*>.loggSuksess(logger: KLogger, melding: String, sikkerlogg: Sikkerlogg = Sikkerlogg) {
+    // Grensa står ved siden av varigheten fordi «brukt: 4.8s» alene ikke sier om vi er trygt innenfor eller i ferd med å begynne å time ut.
+    val start =
+        "$melding $endepunkt. Status: $statusCode, forsøk: $attempts, brukt: $totalDuration av ${metadata.tidsgrenser.svar} per forsøk."
+    logger.info { "$start ${sikkerlogg.seSikkerlogg}" }
+    // Bruker invariant-aksessorene (ikke metadata direkte): et invariant-brudd skal feile tydelig, ikke bli et stille «Response: null» i sikkerlogg.
+    sikkerlogg.info { "$start Request: $rawRequestString. Response: $rawResponseString." }
+}
+
+/**
+ * Domene-mapping som kan feile → typet [HttpKlientError.DeserializationError] med responsens metadata.
+ * Erstatter håndbygde `Either.catch` + `DeserializationError(...)`-blokker på call sites (utbetaling/kontorhistorikk-mønsteret): mapping-feil får samme form og kontekst som klientens egne deserialiseringsfeil.
+ */
+fun <T, R> HttpKlientResponse<T>.tryMap(map: (T) -> R): Either<HttpKlientError.DeserializationError, R> {
+    return Either.catch { map(body) }.mapLeft { e ->
+        HttpKlientError.DeserializationError(
+            throwable = e,
+            body = rawResponseString,
+            statusCode = statusCode,
+            metadata = metadata,
+        )
+    }
+}

@@ -1,1 +1,106 @@
 # tiltakspenger-libs
+
+Felles Kotlin-bibliotek for tiltakspenger-tjenestene i Nav.
+Publiseres til GitHub Packages og konsumeres av flere tjenester (bl.a. `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tiltakspenger-meldekort-api`, `tiltakspenger-datadeling`, `tiltakspenger-tiltak`).
+
+> **Kun for Kotlin-konsumenter.**
+> Hele biblioteket — inkludert alle moduler — er designet for og testet med Kotlin.
+> Vi bruker `inline`/`reified`, default-parametere, value classes, extension functions og andre Kotlin-features fritt i det offentlige API-et.
+> Java-interop er hverken testet eller støttet; ikke regn med at signaturer er stabile fra Java.
+
+Se [AGENTS.md](AGENTS.md) for en grundig gjennomgang av arkitektur, moduler og konvensjoner.
+
+## Bruk
+
+Bibliotekene publiseres til GitHub Packages via CI.
+Konsumenter henter typisk via NAVs maven-mirror:
+
+```kotlin
+repositories {
+    maven {
+        url = uri("https://github-package-registry-mirror.gc.nav.no/cached/maven-release")
+    }
+}
+dependencies {
+    implementation("com.github.navikt.tiltakspenger-libs:person-dtos:$felleslibVersion")
+}
+```
+
+## Forsyningskjede: attestering og SBOM
+
+Hver publisering attesteres med [SLSA-provenance](https://slsa.dev/spec/v1.0/provenance) via [GitHubs artifact attestations](https://docs.github.com/en/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds) (`actions/attest`-steget i `.github/workflows/push.yml`).
+Attestasjonen binder hver jar kryptografisk til commit og workflow-kjøring, og kan ses under [attestations](https://github.com/navikt/tiltakspenger-libs/attestations).
+Konsumenter kan verifisere at en jar faktisk ble bygget av CI i dette repoet:
+
+```bash
+gh attestation verify <sti-til-jar> --repo navikt/tiltakspenger-libs
+```
+
+Vi genererer bevisst **ikke** egen SBOM per jar:
+
+- [Nais' SBOM-løp](https://docs.nais.io/services/vulnerabilities/how-to/sbom/) (`nais/docker-build-push` med `salsa: true`) gjelder kun container-images som deployes til Nais — dette repoet publiserer jar-er og deployes aldri.
+- Konsument-appenes image-SBOM-er inkluderer allerede libs-jar-ene og deres transitive avhengigheter, så sårbarheter spores i Nais' sårbarhetsoversikt der koden faktisk kjører.
+- Repoets egne avhengigheter overvåkes av Dependabot.
+
+## Kom i gang (utvikling)
+
+```bash
+./lint_and_build.sh          # lint + build + test (foretrukket)
+./clean_lint_and_build.sh    # clean + lint + build + test
+./gradlew :<modul>:test      # kjør tester for én modul
+```
+
+## Struktur
+
+- Gradle multi-modul prosjekt — se `settings.gradle.kts` for full liste.
+- Felles byggekonfig i convention-pluginene under `build-logic/src/main/kotlin/` (`tiltakspenger.kotlin` er grunnkonvensjonen).
+- Versjoner sentralisert i `gradle/libs.versions.toml`.
+- Moduler med eksterne avhengigheter splittes i `*-domene` (ren domene) og `*-infrastruktur`.
+- Standard layout: `src/main/kotlin/`, `src/test/kotlin/`.
+  Felles rotpakke `no.nav.tiltakspenger.libs` utelates fra mappestrukturen.
+
+## Kodekonvensjoner
+
+- **Feilhåndtering:** Bruk Arrow `Either<Error, Success>` framfor exceptions.
+  Ikke bruk `Option` — bruk nullable eller `Either`.
+- **Typed IDs:** Følg eksisterende mønster i `common/` (privat konstruktør, `UlidBase`, `random()`/`fromString()`, `init`-blokker for invarianter).
+- **Clock:** Bruk `java.time.Clock` som parameter.
+  Aldri `now()` uten clock.
+  Tester bruker `fixedClock`/`TikkendeKlokke` fra `test-common`.
+- **JSON:** Bruk delt `objectMapper` fra `json`-modulen — ikke lag egne.
+- **Logging:** Bruk `Sikkerlogg` fra `logging` for sensitive data, ellers `kotlin-logging`.
+- **Imports:** Ingen star imports.
+- **Kommentarer og KDoc:** Én setning per linje.
+  Start hver setning på ny linje i stedet for å samle flere setninger i samme linje, slik at diff-er blir små og setninger er lette å flytte/endre.
+- **Stil:** Funksjonell stil, immutability, DDD — logikk på domeneobjektet nærmest dataene.
+- **Tester:** Kotest assertions (`shouldBe`), ikke JUnit-assertions.
+  JUnit 5 som runner.
+- **Avhengigheter:** Hold minimalt.
+  Bruk `compileOnly`/`testImplementation` der det passer.
+
+## Språk- og navnekonvensjoner
+
+Vi skriver norsk i kode og kommentarer.
+Tekniske termer brukes på engelsk når det er bransjestandard (f.eks. `serialize`, `round-trip`, `nullable`, `top-level`).
+
+- **Norsk i kode:** vi bruker æøå i filnavn, klassenavn, testnavn, variabelnavn, funksjonsnavn og kommentarer.
+- **JSON-feltnavn (internt):** vi bruker æøå i feltnavn (f.eks. `"beløp"`, `"årsak"`).
+  I `json`-modulen er Jackson Kotlin-modulen konfigurert med `KotlinPropertyNameAsImplicitName` slik at property-navnet bevares.
+- **HTTP-endepunkter:** vi bruker *ikke* æøå i URL-stier — bruk ASCII (f.eks. `/soknad`, ikke `/søknad`).
+  Dette gjelder paths, ikke request/response-bodyer.
+- **Flyway-migreringer:** vi bruker *ikke* æøå i SQL-filnavn eller identifikatorer i migreringsskript (kolonnenavn, tabellnavn, indekser etc.).
+  Bruk ASCII.
+- **PostgresRepo-parametere:** vi bruker *ikke* æøå i navngitte parametere som sendes til databasen (`:soknadId`, ikke `:søknadId`).
+  Verdier som lagres som JSONB kan inneholde æøå — det er bare parameternavn og kolonnenavn som må være ASCII.
+
+## Hvordan andre team i Nav gjør det
+
+Andre teams libs-oppsett er nyttige å skjele til når vi endrer publisering, CI eller struktur (kartlagt 2026-07-17):
+
+- [`navikt/dp-biblioteker`](https://github.com/navikt/dp-biblioteker) (Dagpenger) — Gradle multi-modul som oss, datobasert versjon med commit-sha (`YYYY.MM.dd-HH.mm.<sha12>`).
+- [`navikt/tilleggsstonader-libs`](https://github.com/navikt/tilleggsstonader-libs) og [`-kontrakter`](https://github.com/navikt/tilleggsstonader-kontrakter) — deler én [reusable workflow i metarepoet](https://github.com/navikt/tilleggsstonader/blob/main/.github/workflows/java-build-and-publish-release.yml), bruker `dependency-graph: generate-and-submit`, publiserer `-dev`-versjoner fra brancher.
+- [`navikt/familie-felles`](https://github.com/navikt/familie-felles) og [`familie-kontrakter`](https://github.com/navikt/familie-kontrakter) — Maven, publiserer ved PR-merge, Slack-varsel ved feilet bygg.
+- [`navikt/pensjon-etterlatte-felles`](https://github.com/navikt/pensjon-etterlatte-felles) (Etterlatte) — monorepo der brancher publiserer prerelease-versjoner (`dev.<sha>.dev`) så konsumenter kan teste før merge.
+- AAP/Kelvin har ikke eget libs-repo, men publiserer kontrakt-jar-er fra app-repoene (f.eks. [`aap-tilgang`](https://github.com/navikt/aap-tilgang), [`aap-behandlingsflyt`](https://github.com/navikt/aap-behandlingsflyt)); behandlingsflyt publiserer i tillegg en CycloneDX-SBOM som eget maven-artefakt.
+
+Ingen av teamene attesterer maven-artefaktene sine (per kartleggingen) — se seksjonen om forsyningskjede over for hvordan vi gjør det.

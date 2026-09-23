@@ -1,0 +1,172 @@
+name: Build and deploy
+
+# Trigges av push til main gjort av et menneske/agent (GitHub-knappen eller gh CLI).
+# Merger dependabot-auto-merge-workflowen en PR med GITHUB_TOKEN, trigges denne workflowen ikke
+# (GitHub starter ikke workflows fra pushes gjort med GITHUB_TOKEN).
+# Dependabot-merger publiseres og releases derfor først ved neste vanlige push til main.
+
+# Minste privilegium: toppnivået nullstiller alle token-rettigheter, hver jobb deklarerer eksplisitt det den trenger.
+permissions: {}
+
+# Raske påfølgende pushes ga overlappende kjøringer.
+# Kjør publisering og release serielt; ved flere ventende kjøringer vinner den nyeste.
+concurrency:
+  group: build-and-deploy
+  cancel-in-progress: false
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.gitattributes'
+      - '.gitHooks/**'
+      - '.gitignore'
+      - '.idea/**'
+      - '.nais/alerts.yml'
+      - 'clean_lint_and_build.sh'
+      - 'CODEOWNERS'
+      - 'doc/**'
+      - 'docker-compose/**'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'lint_and_build.sh'
+
+jobs:
+  build:
+    name: test, build and release
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      checks: write
+      contents: write
+      # Attestering av publiserte jar-er (actions/attest) krever OIDC-token og skrivetilgang til attestations-API-et.
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Ikke la tokenet ligge igjen i .git/config - publish-steget kjører avhengigheters kode.
+          persist-credentials: false
+      # Versjonen er et rent UTC-tidsstempel og gjenbrukes aldri på tvers av kjøringer.
+      # GitHub Packages er immutable (409 ved republisering), så gjenbruk av versjonsnummer
+      # etter en delvis feilet publisering låste tidligere bygget permanent fast (0.0.849, juni 2026).
+      # Feiler publiseringen delvis nå, lages ingen tag/release, og neste kjøring får en ny versjon.
+      # Foreldreløse modulversjoner fra en feilet kjøring er harmløse - ingen tag/release peker på dem.
+      # Tag/release lages til slutt og peker på commiten, så komplett versjon <-> commit er alltid entydig.
+      # Monotont økende (og dermed Dependabot-vennlig) fordi concurrency-gruppa over kjører serielt.
+      - name: Sett versjon fra UTC-tidsstempel
+        id: tag
+        run: echo "version=0.0.$(date -u +%Y%m%d%H%M%S)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          java-version: 25
+          distribution: 'temurin'
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          gradle-version: wrapper
+          # Ingen gradle-cache i publiserings-workflowen: artefaktene vi attesterer skal bygges fra friske avhengigheter, ikke fra en cache som kan forgiftes (zizmor: cache-poisoning).
+          # Publiseringene er serialiserte og relativt sjeldne, så tregere bygg er akseptabelt.
+          cache-disabled: true
+          # Send den resolvede avhengighetsgrafen til GitHubs dependency submission-API (krever contents: write).
+          # Gir Dependabot-alerts også for transitive avhengigheter, ikke bare de deklarerte.
+          dependency-graph: generate-and-submit
+      - name: Build and test
+        # generateCatalogAsToml ligger ellers kun i publish-grafen. Uten den her ville versjonskatalogen
+        # ikke finnes på disk når attesteringen kjører, og attest-steget feiler ikke på et mønster uten treff
+        # så lenge andre mønstre treffer - katalogen ville stille blitt publisert uten proveniens.
+        run: ./gradlew --console=plain -Pversion=${{ steps.tag.outputs.version }} build :versjonskatalog:generateCatalogAsToml
+        env:
+          # Spotless provisjonerer ktlint via detached configurations; det er rene byggeverktøy og ga falske Dependabot-alerts (logback 1.3.x fra ktlint-cli).
+          DEPENDENCY_GRAPH_EXCLUDE_CONFIGURATIONS: 'detachedConfiguration.*'
+          # Kun modulenes runtimeClasspath scopes som runtime; test- og verktøyavhengigheter får scope development, som kan filtreres i Dependabot-alerts.
+          DEPENDENCY_GRAPH_RUNTIME_INCLUDE_CONFIGURATIONS: '^runtimeClasspath$'
+      # build-logic er et eget bygg og nås ikke av `publish` på rota; convention-pluginene bygges og publiseres for seg.
+      # Uten dem kan ikke app-repoene skrive `id("tiltakspenger.kotlin")`.
+      - name: Bygg convention-pluginene (build-logic)
+        run: ./gradlew --console=plain -p build-logic -Pversion=${{ steps.tag.outputs.version }} build
+        env:
+          # Egen Gradle-kjøring: uten dette overskrives den filtrerte avhengighetsgrafen fra byggesteget.
+          # Ingen dekningskostnad: build-logics runtime-avhengigheter fanges likevel som settings-classpath -
+          # via includeBuild i byggesteget over, og via modulresolusjonen hos konsumentene - så transitivene
+          # deres får Dependabot-alerts på settings.gradle.kts med scope development.
+          # Jackson 2-alertene 2026-08-05 (fra cyclonedx-core-java) kom nettopp den veien, i både libs og tiltak.
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: 'false'
+      # SBOM over alt som følger med konsumentene, bygget fra avhengighetsgrafen (ikke ved å skanne jar-ene, som for tynne bibliotek-jar-er ville sett nesten ingenting).
+      # Kjøres før publiseringen, sammen med attesteringen: alt bindes til filenes digest, som ikke endres av opplastingen.
+      - name: Generer SBOM
+        run: ./gradlew --console=plain -Pversion=${{ steps.tag.outputs.version }} cyclonedxBom
+        env:
+          # setup-gradle skriver en avhengighetsgraf per Gradle-kjøring, til samme filnavn (job-correlator = workflow+jobb).
+          # Uten dette ville denne kjøringen overskrevet den filtrerte grafen fra byggesteget med en ufiltrert én, og
+          # gjeninnført nettopp de falske Dependabot-alertene filtrene over finnes for å hindre.
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: 'false'
+      # build-logic har egne avhengigheter (Kotlin-, spotless-, kover- og cyclonedx-pluginene) som havner på
+      # app-repoenes buildscript-classpath. De er ikke med i aggregatet over, siden det er et eget bygg.
+      - name: Generer SBOM for build-logic
+        run: ./gradlew --console=plain -p build-logic -Pversion=${{ steps.tag.outputs.version }} cyclonedxBom
+        env:
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: 'false'
+      # actions/attest feiler kun når HELE settet av subjekter er tomt, ikke når et enkelt mønster er uten treff.
+      # Uten denne vakten ville et artefakt som ikke er bygget ennå stille falle ut av attesteringen.
+      - name: Sjekk at artefaktene som skal attesteres finnes
+        run: |
+          mangler=0
+          for m in "versjonskatalog/build/version-catalog/libs.versions.toml" "build-logic/build/libs"; do
+            if ! compgen -G "$m" > /dev/null; then echo "::error::Mangler artefakt for attestering: $m"; mangler=1; fi
+          done
+          antall_jar=$(find . -path '*/build/libs/*.jar' | wc -l)
+          [ "$antall_jar" -gt 0 ] || { echo "::error::Fant ingen jar-er å attestere"; mangler=1; }
+          echo "Fant $antall_jar jar-er."
+          exit $mangler
+      # SLSA-provenance for artefaktene, se navikt/tiltakspenger-libs#528. Kjøres FØR publiseringen, se begrunnelsen der.
+      # Attestasjonen binder hvert artefakt kryptografisk til commit og workflow-kjøring via GitHubs artifact attestations.
+      # Konsumenter verifiserer med `gh attestation verify <fil> --repo navikt/tiltakspenger-libs` - se README.
+      # Versjonskatalogen er en toml, ikke en jar, og må derfor listes for seg.
+      # TODO jah: POM- og .module-filene attesteres ikke - de genereres kun i publish-grafen, og finnes ikke på disk her.
+      # Det gjelder alle publikasjonene, ikke bare `plattform`: også de seks plugin-markørene er rene POM-er.
+      # Det er ikke kosmetikk - POM/.module er nettopp filene Gradle leser for å avgjøre transitive avhengigheter,
+      # så en manipulert POM ville passere både attesteringen og CI-gaten, som kun ser jar-ene som allerede er valgt.
+      # Feiler attesteringen, blir ingenting publisert og ingen tag/release laget; neste kjøring får ny versjon.
+      - name: Attester artefaktene (SLSA-provenance)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            **/build/libs/*.jar
+            versjonskatalog/build/version-catalog/*.toml
+      # Binder SBOM-en til de samme artefaktene, slik at en konsument kan hente ut innholdsfortegnelsen og se at den hører til nettopp denne byggkjøringen.
+      - name: Attester SBOM
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: |
+            **/build/libs/*.jar
+            versjonskatalog/build/version-catalog/*.toml
+            !build-logic/**
+          sbom-path: build/reports/cyclonedx/bom.json
+      # build-logic bindes til sin egen SBOM - hovedbyggets beskriver ikke dens avhengigheter.
+      - name: Attester SBOM for build-logic
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
+        with:
+          subject-path: build-logic/build/libs/*.jar
+          sbom-path: build-logic/build/reports/cyclonedx/bom.json
+      # Publiseringen skjer FØR release, men ETTER attesteringen: attestasjonen binder filenes digest, og digesten
+      # endres ikke av å laste dem opp. Rekkefølgen gjør at en feilet attestering aldri kan etterlate et
+      # publisert artefakt uten proveniens - motsatt rekkefølge ga nettopp det vinduet.
+      - name: Publiser til GitHub Packages
+        run: ./gradlew --console=plain -Pversion=${{ steps.tag.outputs.version }} publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: 'false'
+      - name: Publiser convention-pluginene
+        run: ./gradlew --console=plain -p build-logic -Pversion=${{ steps.tag.outputs.version }} publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_DEPENDENCY_GRAPH_ENABLED: 'false'
+      - name: Create release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ steps.tag.outputs.version }}
+          tag_name: ${{ steps.tag.outputs.version }}
+          prerelease: false

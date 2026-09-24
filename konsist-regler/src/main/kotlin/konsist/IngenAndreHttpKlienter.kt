@@ -1,0 +1,282 @@
+package no.nav.tiltakspenger.libs.konsist
+
+import com.lemonappdev.konsist.api.container.KoScope
+import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
+import java.nio.file.Path
+import kotlin.io.path.name
+import kotlin.io.path.readLines
+
+/**
+ * HTTP-kall mot andre tjenester går via `httpklient`-modulen i libs, aldri direkte via en annen HTTP-klient.
+ * Regelen dekker tre av de fire måtene en klient kan snike seg inn på: som import, som fullkvalifisert kall, og som avhengighet i byggfila.
+ *
+ * [assertIngenKlienterIProduksjonskode] er hovedregelen og forbyr alle kjente klient-API-er.
+ * [assertIngenKlienterITestkode] er strengt tatt en delmengde: den forbyr klientmotorer og fremmede klientbiblioteker, men tillater ktor sin `testApplication`-klient (`io.ktor.client.request`/`statement`/`call`), som er eneste vei inn til test-serveren, og JDK-typene `HttpRequest`/`HttpResponse` som vår egen transportkontrakt eksponerer.
+ * [assertIngenKlientavhengigheter] leser byggfilene og fanger avhengigheter som er deklarert uten å være tatt i bruk ennå.
+ *
+ * Den fjerde måten — transitivt innslep — kan ikke sjekkes herfra, og hører hjemme i en Gradle-task mot `runtimeClasspath` i hvert repo.
+ * Grunnen er at test-classpathen ikke er en meningsfull flate: `ktor-server-test-host` drar inn både `ktor-client-core` og `ktor-client-apache5` (og dermed Apache HttpClient 5) by design, så en `Class.forName`-sjekk fra en test ville flagget dem i hele flåten.
+ *
+ * HTTP-vokabular utenfor klientpakkene er bevisst tillatt — f.eks. `io.ktor.http.ContentType`, `io.ktor.http.HttpHeaders` og `java.net.URI`.
+ * Legitime unntak er implementasjonen selv (`httpklient`-infrastrukturen bygger transporten på JDK-klienten) og testhjelpere mot ktor sin `testApplication`.
+ * Kalleren velger scope (typisk `scopeFromProduction()`) og unntar slike filer via scope-slicing eller `unntatteFilstier` (sti-suffikser), f.eks. for klienter som ennå ikke er migrert.
+ *
+ * Byggfilsjekken har i tillegg en markør per linje, [HTTPKLIENT_UNNTAK], for det ene tilfellet en sti-basert unntaksliste ikke treffer.
+ * Den er ment for en constraint som pinner en forbudt klient bort fra en sårbarhet, ikke for å ta klienten i bruk.
+ * Å gi noen andres transitive avhengighet en trygg versjon er det motsatte av å skaffe seg en HTTP-klient, men står i byggfila på samme form som en deklarasjon.
+ * Den harde grensen ligger fortsatt i Gradle-gaten `verifiserHttpKlienter`, som ser `runtimeClasspath`, og et unntak her flytter ingenting der.
+ */
+object IngenAndreHttpKlienter {
+
+    /**
+     * Markøren som unntar én enkelt linje i en byggfil fra [klientavhengigheter].
+     * Den skrives som etterstilt kommentar på linja den gjelder: `# httpklient-unntak: <begrunnelse>` i en toml, `// httpklient-unntak: <begrunnelse>` i en kts.
+     * Begrunnelsen er påkrevd, og en markør uten tekst etter kolonet unntar ingenting — et unntak ingen har begrunnet er heller ikke til å etterprøve.
+     * Den virker bare der en constraint kan stå: på en oppføring i versjonskatalogen, og inne i `constraints { ... }` i en kts.
+     * På en vanlig avhengighetslinje, uansett scope, blir den ignorert og linja flagget som før — ellers kunne en `compileOnly`- eller test-avhengighet, som Gradle-gaten ikke ser, skjules med en kommentar.
+     * Motstykket i Gradle-gaten er `httpKlientGuard { tillat("<koordinatprefiks>", "<begrunnelse>") }`, som stiller samme krav.
+     */
+    const val HTTPKLIENT_UNNTAK = "httpklient-unntak:"
+
+    /**
+     * Klientbiblioteker fra tredjepart, forbudt i all kildekode.
+     * Ingen av dem har en legitim bruk hos oss — verken i produksjon eller test.
+     */
+    private val tredjepartsklienter = listOf(
+        "okhttp3.",
+        "com.squareup.okhttp",
+        "retrofit2.",
+        "org.apache.hc.",
+        "org.apache.http.",
+        "com.github.kittinunf.fuel",
+        "kong.unirest.",
+        "io.vertx.ext.web.client",
+        "jakarta.ws.rs.client.",
+        "javax.ws.rs.client.",
+        "org.springframework.web.client.",
+        "org.springframework.web.reactive.function.client.",
+        "org.http4k.client.",
+        "feign.",
+    )
+
+    /**
+     * Ktor sine klientmotorer, forbudt også i testkode.
+     * Motor-importen er det som skiller en ekte nettverksklient fra `testApplication`-klienten, som kjører i minnet uten sokkel.
+     * Dekker også `MockEngine`: en klient som må stubbes med motor-mock skal i stedet være vår egen klient over `FakeHttpTransport`.
+     */
+    private val ktorKlientmotorer = listOf("io.ktor.client.engine.")
+
+    /**
+     * `URLConnection`-familien i JDK-et.
+     * Ligger utenfor `java.net.http` og må derfor listes for seg.
+     */
+    private val urlConnection = listOf("java.net.HttpURLConnection", "java.net.URLConnection")
+
+    /** Alt som er forbudt i produksjonskode: hele ktor-klienten, hele JDK-klienten og alle tredjepartsklientene. */
+    val standardForbudtIProduksjonskode =
+        tredjepartsklienter + ktorKlientmotorer + urlConnection + listOf("io.ktor.client.", "java.net.http.")
+
+    /**
+     * Alt som er forbudt i testkode.
+     * `java.net.http.HttpClient` er selve klienten og forbudt, mens `HttpRequest`/`HttpResponse` er kontraktstypene `HttpTransport` og `FakeHttpTransport` eksponerer og derfor tillatt.
+     */
+    val standardForbudtITestkode =
+        tredjepartsklienter + ktorKlientmotorer + urlConnection + listOf("java.net.http.HttpClient")
+
+    /**
+     * Koordinater og versjonskatalog-aliaser som ikke skal stå i en byggfil.
+     * Fanger avhengigheter som er deklarert uten å være tatt i bruk — de er dødvekt i dag og en åpen dør i morgen.
+     *
+     * Ktor-artefaktene er listet enkeltvis, ikke som prefikset `io.ktor:ktor-client`.
+     * Motorene og kjernen skal aldri deklareres, mens plugin-artefakter som `ktor-client-content-negotiation` er legitime i testscope: de konfigurerer `testApplication`-klienten, som ikke er en nettverksklient.
+     */
+    val standardForbudteKoordinater = listOf(
+        "io.ktor:ktor-client-core",
+        "io.ktor:ktor-client-cio",
+        "io.ktor:ktor-client-apache",
+        "io.ktor:ktor-client-okhttp",
+        "io.ktor:ktor-client-java",
+        "io.ktor:ktor-client-android",
+        "io.ktor:ktor-client-mock",
+        "io.ktor:ktor-client-logging",
+        "com.squareup.okhttp3",
+        "com.squareup.retrofit2",
+        "org.apache.httpcomponents",
+        "com.github.kittinunf.fuel",
+        "com.konghq:unirest",
+        "io.vertx:vertx-web-client",
+        "org.http4k:http4k-client",
+        "io.github.openfeign",
+        "libs.ktor.client.core",
+        "libs.ktor.client.cio",
+        "libs.ktor.client.mock",
+        "libs.okhttp",
+        "libs.retrofit",
+        "libs.fuel",
+        "libs.unirest",
+    )
+
+    fun klienterIProduksjonskode(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudtePrefikser: List<String> = emptyList(),
+    ): List<String> = kildekodebrudd(scope, standardForbudtIProduksjonskode + ekstraForbudtePrefikser, unntatteFilstier)
+
+    fun klienterITestkode(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudtePrefikser: List<String> = emptyList(),
+    ): List<String> = kildekodebrudd(scope, standardForbudtITestkode + ekstraForbudtePrefikser, unntatteFilstier)
+
+    /**
+     * Byggfilene under [rot] (`build.gradle.kts` og `gradle/libs.versions.toml`) som deklarerer en forbudt klientavhengighet.
+     * Kun linjer som faktisk deklarerer en avhengighet teller — en koordinat nevnt i en vanlig liste er ikke en avhengighet, og en byggfil som forbyr klienter må kunne navngi dem.
+     * Kommentarlinjer og `exclude(...)`-linjer hoppes over av samme grunn: å nevne en koordinat for å utelate den er nettopp det vi vil ha.
+     * Filer under `src/<sourceSet>/resources` er data (f.eks. testfixturene til denne regelen), ikke byggfiler, og hoppes alltid over — samme prinsipp som [kildefiler].
+     *
+     * Linjer merket med [HTTPKLIENT_UNNTAK] og en begrunnelse hoppes også over, men bare i versjonskatalogen og inne i `constraints { ... }` i en kts.
+     * Det er unntaket for en constraint som pinner en forbudt klient bort fra en sårbarhet uten å legge den på noen classpath, slik plattform-BOM-en gjør for HttpComponents.
+     * Katalogen kan ikke skille en constraint fra en avhengighet, så der gjelder markøren hver oppføring; det er kts-fila som avgjør hva oppføringen brukes til.
+     * Unntaket gjelder kun denne tekstsjekken; Gradle-gaten `verifiserHttpKlienter` ser `runtimeClasspath` og kan ikke myknes opp herfra.
+     *
+     * Begrensning: koordinaten må stå på samme linje som konfigurasjonsnavnet, altså `implementation("gruppe:artefakt:versjon")`, som er formen hele flåten bruker.
+     */
+    fun klientavhengigheter(
+        rot: Path,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudteKoordinater: List<String> = emptyList(),
+    ): List<String> =
+        rot
+            .filerUnder(standardEkskluderteKataloger) { path -> path.name == "build.gradle.kts" || path.name == "libs.versions.toml" }
+            .filterNot { fil ->
+                val relativStreng = rot.relativize(fil).toString()
+                "src/main/resources/" in relativStreng || "src/test/resources/" in relativStreng
+            }.filterNot { fil -> unntatteFilstier.any { sti -> fil.toString().endsWith(sti) } }
+            .flatMap { fil ->
+                fil
+                    .readLines()
+                    .klientdeklarasjoner(
+                        forbudteKoordinater = standardForbudteKoordinater + ekstraForbudteKoordinater,
+                        markørGjelderOveralt = fil.name == "libs.versions.toml",
+                    ).map { (linjenummer, koordinat) -> "${rot.relativize(fil)}:$linjenummer: $koordinat" }
+            }.toList()
+
+    fun assertIngenKlienterIProduksjonskode(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudtePrefikser: List<String> = emptyList(),
+    ) = assertIngenBrudd(
+        klienterIProduksjonskode(scope, unntatteFilstier, ekstraForbudtePrefikser),
+        "HTTP-kall går via libs sin httpklient. Følgende importer av andre HTTP-klienter er ikke tillatt.",
+    )
+
+    fun assertIngenKlienterITestkode(
+        scope: KoScope,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudtePrefikser: List<String> = emptyList(),
+    ) = assertIngenBrudd(
+        klienterITestkode(scope, unntatteFilstier, ekstraForbudtePrefikser),
+        "Testkode driver test-serveren med ktor sin testApplication-klient og eksterne kall med FakeHttpTransport. Følgende klientmotorer og klientbiblioteker er ikke tillatt.",
+    )
+
+    fun assertIngenKlientavhengigheter(
+        rot: Path,
+        unntatteFilstier: Set<String> = emptySet(),
+        ekstraForbudteKoordinater: List<String> = emptyList(),
+    ) = assertIngenBrudd(
+        klientavhengigheter(rot, unntatteFilstier, ekstraForbudteKoordinater),
+        "Byggfilene skal ikke deklarere andre HTTP-klienter enn libs sin httpklient.",
+    )
+
+    private fun kildekodebrudd(scope: KoScope, forbudtePrefikser: List<String>, unntatteFilstier: Set<String>): List<String> =
+        scope
+            .kildefiler()
+            .filterNot { file -> unntatteFilstier.any { sti -> file.path.endsWith(sti) } }
+            .flatMap { file -> file.importbrudd(forbudtePrefikser) + file.tekstbrudd(forbudtePrefikser) }
+
+    private fun KoFileDeclaration.importbrudd(forbudtePrefikser: List<String>): List<String> =
+        imports
+            .filter { import -> forbudtePrefikser.any { prefiks -> import.name.startsWith(prefiks) } }
+            .map { import -> "$path: ${import.name}" }
+
+    /**
+     * Klientbruk som ikke går gjennom en import: fullkvalifiserte kall og `URL(...).openConnection()`.
+     * Kommentarer og strengliteraler er allerede filtrert bort av [kodelinjer], så KDoc som omtaler en klient gir ikke brudd.
+     * Import-linjene hoppes over her, siden de dekkes av [importbrudd] og ellers ville blitt rapportert to ganger.
+     */
+    private fun KoFileDeclaration.tekstbrudd(forbudtePrefikser: List<String>): List<String> {
+        // Unntaket for classpath-ressurser gjelder hele fila, ikke linjen, fordi `getResource(...)` og `.openStream()` ofte står på hver sin linje.
+        val leserClasspathRessurs = "getResource" in text
+        return kodelinjer()
+            .filterNot { (_, kode) -> kode.trimStart().startsWith("import ") }
+            .mapNotNull { (linjenummer, kode) ->
+                val treff = forbudtePrefikser.firstOrNull { prefiks -> prefiks in kode }
+                    ?: kode.nettverksåpning(leserClasspathRessurs)
+                treff?.let { "$path:$linjenummer: $it" }
+            }
+    }
+
+    /**
+     * `openConnection()`/`openStream()` på en URL åpner et nettverkskall utenom httpklient, uten at noen import avslører det.
+     * `openStream()` flagges ikke i filer som leser classpath-ressurser, siden `getResource(...).openStream()` leser en fil og ikke et nettverk.
+     * `openConnection()` flagges uansett: den har ingen tilsvarende legitim bruk hos oss.
+     */
+    private fun String.nettverksåpning(leserClasspathRessurs: Boolean): String? {
+        val treff = nettverksåpningRegex.find(this)?.value ?: return null
+        return treff.takeUnless { leserClasspathRessurs && "openStream" in it }
+    }
+
+    private val nettverksåpningRegex = Regex("""\.open(Connection|Stream)\(""")
+
+    /**
+     * Linjenummer (1-basert) og forbudt koordinat for hver avhengighetsdeklarasjon i byggfila.
+     * [markørGjelderOveralt] er sant for versjonskatalogen, der hver oppføring bare gir en koordinat et navn.
+     * I en kts gjelder [HTTPKLIENT_UNNTAK] kun på linjer inne i `constraints { ... }`, som følges med klammetelling: en constraint med egen blokk (`api(...) { version { strictly(...) } }`) skal ikke lukke den for tidlig.
+     * En linje er inne i blokka bare når den både starter og slutter der, så linjene som åpner og lukker `constraints { ... }` får ikke unntak selv om de bærer en deklarasjon.
+     * Tellingen er en heuristikk over tekst, ikke en parser: klammer før `constraints` og i etterstilte `//`-kommentarer hoppes over, mens klammer i strenger og blokk-kommentarer teller med, og dybden går aldri under null.
+     */
+    private fun List<String>.klientdeklarasjoner(forbudteKoordinater: List<String>, markørGjelderOveralt: Boolean): List<Pair<Int, String>> {
+        var constraintsDybde = 0
+        return mapIndexedNotNull { index, linje ->
+            val trimmet = linje.trim()
+            val dybdeFør = constraintsDybde
+            if (!markørGjelderOveralt) {
+                val kode = trimmet.substringBefore("//")
+                val start = constraintsStartRegex.find(kode)
+                if (dybdeFør > 0 || start != null) {
+                    val telles = if (dybdeFør > 0) kode else kode.substring(start!!.range.first)
+                    constraintsDybde = maxOf(0, dybdeFør + telles.count { it == '{' } - telles.count { it == '}' })
+                }
+            }
+            val iConstraints = dybdeFør > 0 && constraintsDybde > 0
+            if (trimmet.startsWith("//") ||
+                trimmet.startsWith("#") ||
+                "exclude(" in trimmet ||
+                ((markørGjelderOveralt || iConstraints) && trimmet.erUnntatt()) ||
+                !deklarasjonsRegex.containsMatchIn(trimmet)
+            ) {
+                null
+            } else {
+                forbudteKoordinater
+                    .firstOrNull { koordinat -> koordinat in trimmet }
+                    ?.let { koordinat -> index + 1 to koordinat }
+            }
+        }
+    }
+
+    /**
+     * Om linja bærer [HTTPKLIENT_UNNTAK] med en begrunnelse etter kolonet.
+     * Kravet om tekst etter markøren er det som skiller et begrunnet unntak fra en stille avskrudd regel.
+     */
+    private fun String.erUnntatt(): Boolean = unntaksRegex.containsMatchIn(this)
+
+    /** Starten på en `constraints { ... }`-blokk i en kts. */
+    private val constraintsStartRegex = Regex("""\bconstraints\s*\{""")
+
+    /** Markøren fulgt av minst ett synlig tegn, altså en begrunnelse. */
+    private val unntaksRegex = Regex(Regex.escape(HTTPKLIENT_UNNTAK) + """\s*\S""")
+
+    /** En avhengighetsdeklarasjon: et Gradle-konfigurasjonsnavn med parentes, eller `module = ` i en versjonskatalog. */
+    private val deklarasjonsRegex =
+        Regex("""\b(implementation|api|compileOnly|runtimeOnly|testImplementation|testRuntimeOnly|testCompileOnly|testFixtures|classpath|platform)\s*\(|\bmodule\s*=""")
+}

@@ -1,0 +1,134 @@
+package no.nav.tiltakspenger.libs.satser
+
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.dato.desember
+import no.nav.tiltakspenger.libs.dato.januar
+import no.nav.tiltakspenger.libs.periode.Periode
+import no.nav.tiltakspenger.libs.periode.inneholderOverlapp
+import org.junit.jupiter.api.Test
+import java.time.LocalDate
+
+internal class SatserTest {
+    private val enDato = LocalDate.of(2025, 1, 1)
+
+    @Test
+    fun `skal returnere korrekt sats for 2023`() {
+        listOf(1.januar(2023), 31.desember(2023)).forEach { dato ->
+            val satsdag = Satser.sats(dato)
+            satsdag.sats shouldBe 268
+            satsdag.satsRedusert shouldBe 201
+            satsdag.satsBarnetillegg shouldBe 52
+            satsdag.satsBarnetilleggRedusert shouldBe 39
+        }
+    }
+
+    @Test
+    fun `skal returnere korrekt sats for 2024`() {
+        listOf(1.januar(2024), 31.desember(2024)).forEach { dato ->
+            val satsdag = Satser.sats(dato)
+            satsdag.sats shouldBe 285
+            satsdag.satsRedusert shouldBe 214
+            satsdag.satsBarnetillegg shouldBe 53
+            satsdag.satsBarnetilleggRedusert shouldBe 40
+        }
+    }
+
+    @Test
+    fun `skal returnere korrekt sats for 2025`() {
+        listOf(1.januar(2025), 31.desember(2025)).forEach { dato ->
+            val satsdag = Satser.sats(dato)
+            satsdag.sats shouldBe 298
+            satsdag.satsRedusert shouldBe 224
+            satsdag.satsBarnetillegg shouldBe 55
+            satsdag.satsBarnetilleggRedusert shouldBe 41
+        }
+    }
+
+    @Test
+    fun `skal returnere korrekt sats for 2026`() {
+        listOf(
+            1.januar(2026),
+            31.desember(2026),
+            1.januar(2027),
+            31.desember(2027),
+            1.januar(9999),
+            31.desember(9999),
+        ).forEach { dato ->
+            val satsdag = Satser.sats(dato)
+            satsdag.sats shouldBe 312
+            satsdag.satsRedusert shouldBe 234
+            satsdag.satsBarnetillegg shouldBe 56
+            satsdag.satsBarnetilleggRedusert shouldBe 42
+        }
+    }
+
+    @Test
+    fun `skal kaste exception for dato før 2023`() {
+        shouldThrow<IllegalArgumentException> {
+            Satser.sats(31.desember(2022))
+        }
+    }
+
+    @Test
+    fun `skal validere at satser er positive ved opprettelse`() {
+        shouldThrow<IllegalArgumentException> {
+            Sats(
+                periode = Periode(
+                    fraOgMed = enDato,
+                    tilOgMed = enDato,
+                ),
+                sats = -1,
+                satsRedusert = 100,
+                satsBarnetillegg = 100,
+                satsBarnetilleggRedusert = 100,
+            )
+        }
+
+        shouldThrow<IllegalArgumentException> {
+            Sats(
+                periode = Periode(
+                    fraOgMed = enDato,
+                    tilOgMed = enDato,
+                ),
+                sats = 100,
+                satsRedusert = -1,
+                satsBarnetillegg = 100,
+                satsBarnetilleggRedusert = 100,
+            )
+        }
+
+        shouldThrow<IllegalArgumentException> {
+            Sats(
+                periode = Periode(
+                    fraOgMed = enDato,
+                    tilOgMed = enDato,
+                ),
+                sats = 100,
+                satsRedusert = 100,
+                satsBarnetillegg = -1,
+                satsBarnetilleggRedusert = 100,
+            )
+        }
+
+        shouldThrow<IllegalArgumentException> {
+            Sats(
+                periode = Periode(
+                    fraOgMed = enDato,
+                    tilOgMed = enDato,
+                ),
+                sats = 100,
+                satsRedusert = 100,
+                satsBarnetillegg = 100,
+                satsBarnetilleggRedusert = -1,
+            )
+        }
+    }
+
+    @Test
+    fun `skal ikke kunne ha overlappende perioder for satser`() {
+        val satsperioder = Satser.satser.map { it.periode }
+
+        satsperioder.inneholderOverlapp() shouldBe false
+    }
+}

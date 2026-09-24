@@ -1,0 +1,62 @@
+plugins {
+    id("tiltakspenger.bibliotek")
+    id("tiltakspenger.dekning")
+}
+
+dependencies {
+    implementation(project(":person-dtos"))
+    implementation(project(":logging"))
+    implementation(project(":json"))
+    implementation(project(":common"))
+    implementation(project(":httpklient:httpklient-infrastruktur"))
+    implementation(project(":personklient:personklient-domene"))
+
+    implementation(libs.arrow.core)
+
+    implementation(libs.kotlinx.coroutines.core)
+
+    implementation(libs.caffeine)
+
+    testImplementation(project(":test-common"))
+    testImplementation(testFixtures(project(":httpklient:httpklient-infrastruktur")))
+}
+
+tasks.withType<Jar> {
+    archiveBaseName.set("personklient-infrastruktur")
+}
+
+kover {
+    currentProject {
+        createVariant("httpklientKlienter") {
+            add("jvm")
+        }
+    }
+
+    reports {
+        // Klientene på felles HttpKlient holdes på 100 % via en filtrert rapportvariant (per-regel-filter finnes ikke i kover-DSL-en).
+        variant("httpklientKlienter") {
+            filters {
+                includes {
+                    classes(
+                        "no.nav.tiltakspenger.libs.personklient.pdl.FellesHttpPersonklient*",
+                        "no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklient",
+                        "no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklient.Companion",
+                        "no.nav.tiltakspenger.libs.personklient.pdl.HentPersonResponse*",
+                        "no.nav.tiltakspenger.libs.personklient.skjerming.FellesHttpSkjermingsklient*",
+                        "no.nav.tiltakspenger.libs.personklient.skjerming.FellesSkjermingsklient",
+                        "no.nav.tiltakspenger.libs.personklient.skjerming.FellesSkjermingsklient.Companion",
+                    )
+                }
+            }
+            verify {
+                rule {
+                    minBound(100)
+                }
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(tasks.named("koverVerifyHttpklientKlienter"))
+}

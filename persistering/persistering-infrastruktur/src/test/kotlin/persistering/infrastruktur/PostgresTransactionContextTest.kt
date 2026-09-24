@@ -1,0 +1,291 @@
+package no.nav.tiltakspenger.libs.persistering.infrastruktur
+
+import arrow.core.Either
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.shouldBe
+import kotliquery.queryOf
+import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresSessionContext.Companion.withSession
+import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresTransactionContext.Companion.withSession
+import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresTransactionContext.Companion.withTransaction
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
+import org.postgresql.ds.PGSimpleDataSource
+import org.testcontainers.postgresql.PostgreSQLContainer
+import org.testcontainers.utility.DockerImageName
+import javax.sql.DataSource
+
+@Execution(ExecutionMode.SAME_THREAD)
+internal class PostgresTransactionContextTest {
+
+    companion object {
+        /** Startes ved første aksess og stoppes av Testcontainers' Ryuk ved JVM-exit; da trengs ingen JUnit-livssyklusmetoder. */
+        private val postgres = PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine")).also { container -> container.start() }
+
+        private val dataSource: DataSource = PGSimpleDataSource().apply {
+            setURL(postgres.jdbcUrl)
+            user = postgres.username
+            password = postgres.password
+        }
+
+        private val logger = KotlinLogging.logger { }
+
+        private val sessionCounter = SessionCounter(logger)
+    }
+
+    @Test
+    fun `kan ikke bruke samme context transaction flere ganger`() {
+        val context = PostgresTransactionContext(dataSource, sessionCounter)
+        context.withTransaction {}
+        shouldThrow<IllegalStateException> {
+            context.withTransaction { }
+        }.message shouldBe "Den transaksjonelle sesjonen er lukket."
+    }
+
+    @Test
+    fun `kan ikke bruke samme context session flere ganger`() {
+        val context = PostgresSessionContext(dataSource, sessionCounter)
+        context.withSession {}
+        shouldThrow<IllegalStateException> {
+            context.withSession { }
+        }.message shouldBe "Sesjonen er lukket."
+    }
+
+    @Test
+    fun `PostgresTransactionContext - må kalle withTransaction`() {
+        val context = PostgresTransactionContext(dataSource, sessionCounter)
+        shouldThrow<IllegalStateException> {
+            context.withSession { }
+        }.message shouldBe "Må først starte en withTransaction(...) før man kan kalle withSession(...) for en TransactionContext."
+    }
+
+    @Test
+    fun `flere operasjoner i en transaksjon`() {
+        val tx = PostgresTransactionContext(dataSource, sessionCounter)
+        tx.withTransaction { session ->
+
+            session.run(
+                queryOf("create table test (test varchar not null)").asExecute,
+            )
+
+            session.run(
+                queryOf("insert into test (test) values ('Hello') ").asExecute,
+            )
+
+            session.run(
+                queryOf("insert into test (test) values ('World') ").asExecute,
+            )
+        }
+        tx.isClosed() shouldBe true
+
+        val sx = PostgresSessionContext(dataSource, sessionCounter)
+        sx.withSession { session ->
+            val resultat = session.run(
+                queryOf(
+                    "select * from test",
+                ).map { row ->
+                    row.string("test")
+                }.asList,
+            )
+            resultat.size shouldBe 2
+            resultat.first() shouldBe "Hello"
+            resultat.last() shouldBe "World"
+        }
+    }
+
+    @Test
+    fun rollback() {
+        PostgresSessionContext(dataSource, sessionCounter).withSession { session ->
+            session.run(
+                queryOf("create table rollback (test varchar not null)").asExecute,
+            )
+        }
+
+        val tx = PostgresTransactionContext(dataSource, sessionCounter)
+        Either.catch {
+            tx.withTransaction { session ->
+                session.run(
+                    queryOf("insert into rollback (test) values ('Hello') ").asExecute,
+                )
+
+                session.run(
+                    queryOf("insert into rollback (test) values ('World') ").asExecute,
+                )
+
+                throw IllegalStateException("Rollback")
+            }
+        }
+        tx.isClosed() shouldBe true
+
+        val sx = PostgresSessionContext(dataSource, sessionCounter)
+        sx.withSession { session ->
+            val resultat = session.run(
+                queryOf(
+                    "select * from rollback",
+                ).map { row ->
+                    row.string("test")
+                }.asList,
+            )
+            resultat.size shouldBe 0
+        }
+    }
+
+    @Test
+    suspend fun `onSuccess callback`() {
+        val tx = PostgresTransactionContext(dataSource, sessionCounter)
+        var onSuccessCalled = false
+
+        tx.onSuccess {
+            onSuccessCalled = true
+        }
+
+        tx.withTransaction { session ->
+            session.run(
+                queryOf("create table testSuccess (test varchar not null)").asExecute,
+            )
+
+            session.run(
+                queryOf("insert into testSuccess (test) values ('Hello world!') ").asExecute,
+            )
+        }
+
+        onSuccessCalled shouldBe true
+    }
+
+    @Test
+    suspend fun `onError callback`() {
+        val tx = PostgresTransactionContext(dataSource, sessionCounter)
+        var onErrorCalled = false
+
+        tx.onError {
+            onErrorCalled = true
+        }
+
+        Either.catch {
+            tx.withTransaction { session ->
+                session.run(
+                    queryOf("create table testError (test varchar not null)").asExecute,
+                )
+
+                session.run(
+                    queryOf("insert into testError (notTest) values ('Goodbye cruel world!') ").asExecute,
+                )
+            }
+        }
+
+        onErrorCalled shouldBe true
+    }
+
+    @Test
+    fun `withSession disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withSession(disableSessionCounter = false) {
+            factory.withSession(disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+
+    @Test
+    fun `withSession disableSessionCounter=false triggers over-threshold callback on nested sessions`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withSession(disableSessionCounter = false) {
+            factory.withSession(disableSessionCounter = false) {
+            }
+        }
+
+        overThresholdCalled shouldBe true
+    }
+
+    @Test
+    fun `withTransaction disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withTransaction(disableSessionCounter = false) {
+            factory.withTransaction(disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+
+    @Test
+    fun `withTransaction disableSessionCounter=false triggers over-threshold callback on nested transactions`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withTransaction(disableSessionCounter = false) {
+            factory.withTransaction(disableSessionCounter = false) {
+            }
+        }
+
+        overThresholdCalled shouldBe true
+    }
+
+    @Test
+    fun `withSessionContext disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withSessionContext(disableSessionCounter = false) {
+            factory.withSessionContext(disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+
+    @Test
+    fun `withTransactionContext disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withTransactionContext(disableSessionCounter = false) {
+            factory.withTransactionContext(disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+
+    @Test
+    fun `PostgresSessionContext withSession(sessionFactory) disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withSession(disableSessionCounter = false) {
+            null.withSession(factory, disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+
+    @Test
+    fun `PostgresTransactionContext withTransaction(sessionFactory) disableSessionCounter=true does not trigger over-threshold callback`() {
+        var overThresholdCalled = false
+        val trackingCounter = SessionCounter(logger) { overThresholdCalled = true }
+        val factory = PostgresSessionFactory(dataSource, trackingCounter)
+
+        factory.withTransaction(disableSessionCounter = false) {
+            null.withTransaction(factory, disableSessionCounter = true) {
+            }
+        }
+
+        overThresholdCalled shouldBe false
+    }
+}

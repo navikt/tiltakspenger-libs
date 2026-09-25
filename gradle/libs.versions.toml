@@ -58,7 +58,7 @@ mockk = "1.14.11"
 # Netty brukes ikke direkte, men er en hyppig kilde til sikkerhetshull; vi styrer derfor den transitive versjonen selv med en bom.
 # 4.2-linja kommer fra ktor-server-netty, som drar inn en eldre 4.2 enn den fiksede (3.5.2 drar 4.2.16).
 netty42 = "4.2.18.Final"
-nimbus-jose-jwt = "10.9.1"
+nimbus-jose-jwt = "10.10"
 ojdbc = "23.26.3.0.0"
 pdfbox = "3.0.8"
 postgresql = "42.7.13"

@@ -8,7 +8,7 @@
  * ```
  * dependencyResolutionManagement {
  *     versionCatalogs {
- *         create("libs") { from("com.github.navikt.tiltakspenger-libs:versjonskatalog:<versjon>") }
+ *         create("libs") { from("no.nav.tiltakspenger.libs:versjonskatalog:<versjon>") }
  *     }
  * }
  * ```
@@ -16,7 +16,7 @@
 
 plugins {
     `version-catalog`
-    id("tiltakspenger.publisering")
+    id("no.nav.tiltakspenger.publisering")
 }
 
 // TODO jah: Gradle genererer den publiserte toml-en på nytt og stripper alle kommentarer.

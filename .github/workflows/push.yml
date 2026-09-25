@@ -82,7 +82,7 @@ jobs:
           # Kun modulenes runtimeClasspath scopes som runtime; test- og verktøyavhengigheter får scope development, som kan filtreres i Dependabot-alerts.
           DEPENDENCY_GRAPH_RUNTIME_INCLUDE_CONFIGURATIONS: '^runtimeClasspath$'
       # build-logic er et eget bygg og nås ikke av `publish` på rota; convention-pluginene bygges og publiseres for seg.
-      # Uten dem kan ikke app-repoene skrive `id("tiltakspenger.kotlin")`.
+      # Uten dem kan ikke app-repoene skrive `id("no.nav.tiltakspenger.kotlin")`.
       - name: Bygg convention-pluginene (build-logic)
         run: ./gradlew --console=plain -p build-logic -Pversion=${{ steps.tag.outputs.version }} build
         env:

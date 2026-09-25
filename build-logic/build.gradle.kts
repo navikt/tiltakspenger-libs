@@ -24,10 +24,10 @@ plugins {
     alias(libs.plugins.cyclonedx)
 }
 
-// Kan ikke bruke `tiltakspenger.publisering` — den er definert her inne, og et bygg kan ikke applisere sine egne plugins.
+// Kan ikke bruke `no.nav.tiltakspenger.publisering` — den er definert her inne, og et bygg kan ikke applisere sine egne plugins.
 // `kotlin-dsl` drar inn `java-gradle-plugin`, som sammen med `maven-publish` lager både hovedpublikasjonen
-// og en markør per prekompilert skript-plugin, slik at app-repoene kan skrive `id("tiltakspenger.kotlin")`.
-group = "com.github.navikt.tiltakspenger-libs"
+// og en markør per prekompilert skript-plugin, slik at app-repoene kan skrive `id("no.nav.tiltakspenger.kotlin")`.
+group = "no.nav.tiltakspenger.libs"
 version = providers.gradleProperty("version").getOrElse("0.0.0-lokal")
 
 // Nekter å publisere en lokal utviklingsversjon: GitHub Packages er immutable, og et feilaktig
@@ -40,17 +40,17 @@ tasks.withType<PublishToMavenRepository>().configureEach {
     }
 }
 
-// Samme reproduserbarhet som `tiltakspenger.kotlin` gir modulene; build-logic bruker ikke sin egen konvensjon.
+// Samme reproduserbarhet som `no.nav.tiltakspenger.kotlin` gir modulene; build-logic bruker ikke sin egen konvensjon.
 tasks.withType<AbstractArchiveTask>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
 }
 
-// Samme SBOM-konvensjoner som `tiltakspenger.sbom` gir modulene; build-logic kan ikke bruke sin egen plugin.
+// Samme SBOM-konvensjoner som `no.nav.tiltakspenger.sbom` gir modulene; build-logic kan ikke bruke sin egen plugin.
 // Uten componentGroup får rotnoden en uoppslåelig `pkg:maven/unspecified/...`-purl, og uten avgrensningen
 // beskriver SBOM-en også avhengigheter som aldri havner på konsumentens buildscript-classpath.
 tasks.named<org.cyclonedx.gradle.BaseCyclonedxTask>("cyclonedxBom") {
-    componentGroup = "com.github.navikt.tiltakspenger-libs"
+    componentGroup = "no.nav.tiltakspenger.libs"
     projectType = org.cyclonedx.model.Component.Type.LIBRARY
 }
 tasks.withType<org.cyclonedx.gradle.CyclonedxDirectTask>().configureEach {

@@ -1,3 +1,5 @@
+package no.nav.tiltakspenger
+
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import no.nav.tiltakspenger.byggelogikk.Dekning
 import no.nav.tiltakspenger.byggelogikk.Grendekning

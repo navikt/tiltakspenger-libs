@@ -1,5 +1,5 @@
 dependencies {
-    implementation("com.github.navikt.tiltakspenger-libs:httpklient:$felleslibVersion")
+    implementation("no.nav.tiltakspenger.libs:httpklient:$felleslibVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
 

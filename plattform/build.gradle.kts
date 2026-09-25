@@ -6,14 +6,14 @@
  *
  * Konsumeres i app-repoet med én linje, og da faller versjonen bort fra alle libs-koordinatene:
  * ```
- * implementation(platform("com.github.navikt.tiltakspenger-libs:plattform:<versjon>"))
- * implementation("com.github.navikt.tiltakspenger-libs:common")
+ * implementation(platform("no.nav.tiltakspenger.libs:plattform:<versjon>"))
+ * implementation("no.nav.tiltakspenger.libs:common")
  * ```
  */
 
 plugins {
     `java-platform`
-    id("tiltakspenger.publisering")
+    id("no.nav.tiltakspenger.publisering")
 }
 
 // Uten denne kan en java-platform kun deklarere constraints, ikke importere andre BOM-er.
@@ -29,7 +29,7 @@ javaPlatform {
 // Legger noen en modul ett nivå dypere (f.eks. under `httpklient-infrastruktur`), får forelderen barn, faller ut av BOM-en,
 // og hvert app-repo som skriver koordinaten uten versjon feiler med «no version specified».
 // En bladmodul som ikke publiserer, ville motsatt gitt en constraint mot en koordinat som aldri finnes.
-// Vurder å utlede fra prosjektene som faktisk har `tiltakspenger.publisering`, eller legg på en vakt som sammenligner de to settene.
+// Vurder å utlede fra prosjektene som faktisk har `no.nav.tiltakspenger.publisering`, eller legg på en vakt som sammenligner de to settene.
 val bibliotekmoduler =
     rootProject.subprojects
         .filter { modul -> modul.childProjects.isEmpty() }
@@ -51,7 +51,7 @@ dependencies {
 
     constraints {
         bibliotekmoduler.forEach { modul ->
-            api("com.github.navikt.tiltakspenger-libs:$modul:${project.version}")
+            api("no.nav.tiltakspenger.libs:$modul:${project.version}")
         }
 
         // Confluent publiserer sin egen fork av kafka-clients som `<versjon>-ccs`. Den taper ikke konfliktoppløsningen

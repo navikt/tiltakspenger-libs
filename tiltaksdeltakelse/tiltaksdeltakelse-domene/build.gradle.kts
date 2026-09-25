@@ -1,8 +1,8 @@
 import no.nav.tiltakspenger.byggelogikk.Grendekning
 
 plugins {
-    id("tiltakspenger.bibliotek")
-    id("tiltakspenger.dekning")
+    id("no.nav.tiltakspenger.bibliotek")
+    id("no.nav.tiltakspenger.dekning")
     // Byggerne publiseres som testFixtures-variant slik at konsumentene og skyggekjøringen bygger deltakelser gjennom fabrikken, ikke egne kopier.
     `java-test-fixtures`
 }

@@ -17,15 +17,15 @@ Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tilta
   Hver submodul er et fokusert bibliotek (ID-er, DTO-er, klienter, hjelpere).
 - **Convention-plugins**: Delt build-logikk ligger i det inkluderte bygget `build-logic/`, ikke i `buildSrc`.
   `buildSrc` invaliderer hele bygget ved hver endring, og kan aldri publiseres videre til app-repoene slik et inkludert bygg kan.
-  `build-logic` publiseres til GitHub Packages med plugin-markører, slik at app-repoene kan skrive `id("tiltakspenger.kotlin")`.
+  `build-logic` publiseres til GitHub Packages med plugin-markører, slik at app-repoene kan skrive `id("no.nav.tiltakspenger.kotlin")`.
   Pluginene komponeres, slik at en modul bare tar i bruk det den faktisk er:
-    - `tiltakspenger.kotlin` — grunnkonvensjonen: Kotlin/JVM-target og toolchain, compiler-flagg, Spotless med pinnet ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5-oppsett, ekskludering av JUnit 4 og gaten `verifiserHttpKlienter`.
-    - `tiltakspenger.bibliotek` — grunnkonvensjonen pluss `java-library`, sources-jar og publisering til GitHub Packages.
-      Alle bibliotekmodulene bruker denne; `versjonskatalog` og `plattform` publiserer andre artefakttyper og bruker `tiltakspenger.publisering` direkte.
-    - `tiltakspenger.dekning` — Kover med krav om full linjedekning, koblet på `check`.
+    - `no.nav.tiltakspenger.kotlin` — grunnkonvensjonen: Kotlin/JVM-target og toolchain, compiler-flagg, Spotless med pinnet ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5-oppsett, ekskludering av JUnit 4 og gaten `verifiserHttpKlienter`.
+    - `no.nav.tiltakspenger.bibliotek` — grunnkonvensjonen pluss `java-library`, sources-jar og publisering til GitHub Packages.
+      Alle bibliotekmodulene bruker denne; `versjonskatalog` og `plattform` publiserer andre artefakttyper og bruker `no.nav.tiltakspenger.publisering` direkte.
+    - `no.nav.tiltakspenger.dekning` — Kover med krav om full linjedekning, koblet på `check`.
       Brukes av `arenatiltak-dtos`, `httpklient-domene`, `httpklient-infrastruktur`, `jobber`, `json`, `kafka-avro`, `ktor-common`, `ktor-test-common`, `meldekort-dtos`, `personklient-infrastruktur`, `test-common`, `texas` og begge `tiltaksdeltakelse`-modulene.
       Grendekning trappes opp per modul, se under.
-    - `tiltakspenger.githooks` — installerer `.gitHooks/` i `.git/hooks/`.
+    - `no.nav.tiltakspenger.githooks` — installerer `.gitHooks/` i `.git/hooks/`.
       Ligger på rotprosjektet, siden hooks er per utsjekk.
 
   **Grendekning** legges på i tillegg til linjedekningen, aldri i stedet for: full linjedekning sier ingenting om hvilken vei et vilkår ble tatt, og full grendekning sier ingenting om en linje uten grener.
@@ -42,10 +42,10 @@ Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tilta
 - **Delt byggoppsett for app-repoene** publiseres fra to egne moduler, fordi de to lagene kan ulike ting:
     - `versjonskatalog` — publiserer `gradle/libs.versions.toml` som en versjonskatalog.
       Den deklarerer koordinater og versjoner, og ikke noe mer: en katalog kan verken uttrykke constraints eller `exclude`.
-      Konsumeres i app-repoets `settings.gradle.kts` med `versionCatalogs { create("libs") { from("com.github.navikt.tiltakspenger-libs:versjonskatalog:<versjon>") } }`.
+      Konsumeres i app-repoets `settings.gradle.kts` med `versionCatalogs { create("libs") { from("no.nav.tiltakspenger.libs:versjonskatalog:<versjon>") } }`.
     - `plattform` — en `java-platform`-BOM med constraints som virker transitivt, altså det versjonskatalogen ikke kan.
       Den pinner libs-modulene til sin egen versjon, slik at app-repoene skriver libs-koordinatene uten versjon, og styrer de transitive versjonene vi ikke deklarerer selv (netty, jackson 2, kafka-clients med `strictly`, lz4, httpclient5/httpcore5).
-      Konsumeres med `implementation(platform("com.github.navikt.tiltakspenger-libs:plattform:<versjon>"))`.
+      Konsumeres med `implementation(platform("no.nav.tiltakspenger.libs:plattform:<versjon>"))`.
 
   Modullista i plattformen utledes fra prosjektstrukturen, ikke fra en navneliste, så en ny libs-modul er med automatisk.
   `strictly` finnes ikke i Maven-POM-formatet og bæres av Gradle-metadataen ved siden av — det virker for Gradle-konsumenter, som er de eneste vi har.
@@ -162,7 +162,7 @@ Skjer det samme på GitHub-bygget, slett Gradle build-cachen for repoet (depende
 ```bash
 for id in $(gh cache list --limit 100 --json id,key -q '.[] | select(.key | contains("build-cache")) | .id'); do gh cache delete "$id"; done
 ```
-- Delt build-konfig (Kotlin/JVM-versjon, spotless-konfig, compiler-flagg, JUnit 4-ekskludering, `per_class`-testlivssyklus) ligger i `build-logic/src/main/kotlin/tiltakspenger.kotlin.gradle.kts` — sjekk der før du endrer build-oppførsel i enkeltmoduler.
+- Delt build-konfig (Kotlin/JVM-versjon, spotless-konfig, compiler-flagg, JUnit 4-ekskludering, `per_class`-testlivssyklus) ligger i `build-logic/src/main/kotlin/no/nav/tiltakspenger/kotlin.gradle.kts` — sjekk der før du endrer build-oppførsel i enkeltmoduler.
 
 ## CI og publisering
 

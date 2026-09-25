@@ -1,5 +1,5 @@
 plugins {
-    id("tiltakspenger.bibliotek")
+    id("no.nav.tiltakspenger.bibliotek")
 }
 
 dependencies {

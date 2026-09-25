@@ -1,3 +1,5 @@
+package no.nav.tiltakspenger
+
 import org.cyclonedx.gradle.BaseCyclonedxTask
 import org.cyclonedx.gradle.CyclonedxDirectTask
 import org.cyclonedx.model.Component
@@ -16,10 +18,10 @@ plugins {
     id("org.cyclonedx.bom")
 }
 
-// Rotprosjektet publiseres ikke og har derfor ingen group fra `tiltakspenger.publisering`.
+// Rotprosjektet publiseres ikke og har derfor ingen group fra `no.nav.tiltakspenger.publisering`.
 // Uten den blir rotnoden i komponentgrafen liggende på `pkg:maven/unspecified/...`, med en annen bom-ref enn `metadata.component` —
 // og en konsument som følger metadata-refen inn i `dependencies` finner ingenting.
-group = "com.github.navikt.tiltakspenger-libs"
+group = "no.nav.tiltakspenger.libs"
 
 // Aggregattasken samler fra modulenes `cyclonedxDirectBom`, og det er der kildekonfigurasjonene velges.
 // Uten avgrensningen beskriver SBOM-en også modulenes testavhengigheter, som ikke følger med konsumentene.
@@ -33,6 +35,6 @@ allprojects {
 }
 
 tasks.named<BaseCyclonedxTask>("cyclonedxBom") {
-    componentGroup = "com.github.navikt.tiltakspenger-libs"
+    componentGroup = "no.nav.tiltakspenger.libs"
     projectType = Component.Type.LIBRARY
 }

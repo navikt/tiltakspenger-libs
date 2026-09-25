@@ -1,3 +1,5 @@
+package no.nav.tiltakspenger
+
 /**
  * Felles publiseringsoppsett for alt libs sender til GitHub Packages: bibliotekmodulene, versjonskatalogen og plattformen.
  * Selve publikasjonen deklareres av den som bruker pluginen, siden komponenten er ulik per artefakttype.
@@ -10,7 +12,7 @@ plugins {
     `maven-publish`
 }
 
-group = "com.github.navikt.tiltakspenger-libs"
+group = "no.nav.tiltakspenger.libs"
 
 publishing {
     repositories {

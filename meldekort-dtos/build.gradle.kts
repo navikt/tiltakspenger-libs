@@ -1,6 +1,6 @@
 plugins {
-    id("tiltakspenger.bibliotek")
-    id("tiltakspenger.dekning")
+    id("no.nav.tiltakspenger.bibliotek")
+    id("no.nav.tiltakspenger.dekning")
 }
 
 dependencies {

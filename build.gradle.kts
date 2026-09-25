@@ -1,4 +1,4 @@
 plugins {
-    id("tiltakspenger.githooks")
-    id("tiltakspenger.sbom")
+    id("no.nav.tiltakspenger.githooks")
+    id("no.nav.tiltakspenger.sbom")
 }

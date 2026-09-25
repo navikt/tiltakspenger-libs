@@ -1,3 +1,5 @@
+package no.nav.tiltakspenger
+
 /**
  * Installerer repoets git-hooks som en del av bygget.
  * Pluginen hører hjemme på rotprosjektet: hooks er per utsjekk, ikke per modul.

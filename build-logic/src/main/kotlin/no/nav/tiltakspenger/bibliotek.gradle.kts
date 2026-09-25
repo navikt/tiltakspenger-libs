@@ -1,10 +1,12 @@
+package no.nav.tiltakspenger
+
 /**
- * Konvensjonen for en publisert libs-modul: grunnoppsettet fra `tiltakspenger.kotlin`, pluss bibliotek-API og publisering.
+ * Konvensjonen for en publisert libs-modul: grunnoppsettet fra `no.nav.tiltakspenger.kotlin`, pluss bibliotek-API og publisering.
  */
 
 plugins {
-    id("tiltakspenger.kotlin")
-    id("tiltakspenger.publisering")
+    id("no.nav.tiltakspenger.kotlin")
+    id("no.nav.tiltakspenger.publisering")
     `java-library`
 }
 

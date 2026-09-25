@@ -107,7 +107,7 @@ Det gjelder også `postTekst`/`postForm`/`postMultipart`, men kun for DTO-respon
 Tester bytter ut `HttpTransport` med `FakeHttpTransport` fra modulens testFixtures:
 
 ```kotlin
-testImplementation(testFixtures("com.github.navikt.tiltakspenger-libs:httpklient-infrastruktur:$felleslibVersion"))
+testImplementation(testFixtures("no.nav.tiltakspenger.libs:httpklient-infrastruktur:$felleslibVersion"))
 ```
 
 Da kjører hele den reelle pipelinen — auth-materialisering, retry-gates, statusregler, Jackson-deserialisering, metadata og maskering — og bare nettverket er borte.

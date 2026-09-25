@@ -1,9 +1,11 @@
+package no.nav.tiltakspenger
+
 import no.nav.tiltakspenger.byggelogikk.HttpKlientGuard
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 /**
  * Grunnkonvensjonen for alle Kotlin/JVM-moduler i tiltakspenger: toolchain, formatering, testoppsett og HTTP-klientgaten.
- * Pluginen sier ingenting om hva modulen er — et bibliotek legger `tiltakspenger.bibliotek` på toppen, en applikasjon sin egen plugin.
+ * Pluginen sier ingenting om hva modulen er — et bibliotek legger `no.nav.tiltakspenger.bibliotek` på toppen, en applikasjon sin egen plugin.
  */
 
 plugins {
@@ -144,7 +146,7 @@ tasks.register("skrivLibsArtefakter") {
         providers.provider {
             classpaths
                 .flatMap { artefakter -> artefakter.resolvedArtifacts.get() }
-                .filter { artefakt -> "com.github.navikt.tiltakspenger-libs" in artefakt.id.componentIdentifier.displayName }
+                .filter { artefakt -> "no.nav.tiltakspenger.libs" in artefakt.id.componentIdentifier.displayName }
                 .map { artefakt -> artefakt.file.absolutePath }
                 .distinct()
                 .sorted()

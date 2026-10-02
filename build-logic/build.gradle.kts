@@ -2,13 +2,13 @@
 // Det er en egen konfigurasjon som jackson2-bom-løftet i dependencies-blokka lenger ned ikke når - det løftet
 // gjelder artefaktet konsumentene henter, mens dette gjelder bygget av build-logic selv (inkludert som del av
 // rotbygget, og dermed med i avhengighetsgrafen repoet sender inn).
-// Versjonene er skrevet ut fordi buildscript-blokka evalueres før katalog-accessorene finnes; hold dem i sync med `jackson2` i katalogen.
+// Jackson 2 styres med BOM-en på én linje, så Dependabot kan oppdatere den sammen med `jackson2` i katalogen.
+// Versjonen er skrevet ut fordi buildscript-blokka evalueres før katalog-accessorene finnes; hold den i takt med `jackson2` i katalogen.
 buildscript {
     dependencies {
+        // Lukker sårbarheter i jackson-databind og jackson-core fra cyclonedx-pluginen.
+        add("classpath", platform("com.fasterxml.jackson:jackson-bom:2.22.3"))
         constraints {
-            // Åpne advisories på 2.20.1 (bl.a. GHSA-j3rv-43j4-c7qm); samme mønster som avro-repoenes buildscript-pinning.
-            add("classpath", "com.fasterxml.jackson.core:jackson-core:2.22.2")
-            add("classpath", "com.fasterxml.jackson.core:jackson-databind:2.22.2")
             // `kotlin-dsl` (versjonen følger Gradle-distribusjonen) drar kotlin-gradle-plugin 2.4.0 med CVE-2026-53914
             // (usikker deserialisering i build cache). Hold i sync med `kotlin` i katalogen; kan fjernes når Gradle
             // selv leverer en kotlin-dsl som bygger på Kotlin >= 2.4.20 (sjekk med `./gradlew -p build-logic buildEnvironment`).
@@ -75,6 +75,11 @@ dependencies {
     // Jackson 2 med åpne advisories (databind/core 2.20.1, bl.a. GHSA-j3rv-43j4-c7qm). Bom-en løfter dem
     // over de patchede versjonene — samme grep som `plattform` gjør for app-classpathene.
     implementation(platform(libs.jackson2.bom))
+    constraints {
+        implementation(libs.freemarker) {
+            because("Kover drar freemarker 2.3.32 med GHSA-27j2-h3m2-8237; låsen fjernes når Kover drar freemarker >= 2.3.35.")
+        }
+    }
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.spotless.gradle.plugin)
     implementation(libs.kover.gradle.plugin)

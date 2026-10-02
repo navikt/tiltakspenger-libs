@@ -13,6 +13,9 @@ commons-text = "1.15.0"
 confluent = "8.3.1"
 cyclonedx-gradle-plugin = "3.4.1"
 flyway = "13.7.0"
+# FreeMarker brukes ikke direkte, men Kover drar inn 2.3.32 med en kritisk sårbarhet (GHSA-27j2-h3m2-8237) på bygg-classpathen; fikset i 2.3.35.
+# Låsen i build-logic fjernes når Kover drar freemarker >= 2.3.35.
+freemarker = "2.3.35"
 handlebars = "4.5.5"
 hamcrest = "3.0"
 hikaricp = "7.1.0"
@@ -25,7 +28,7 @@ httpcore5 = "5.4.3"
 jackson = "3.2.2"
 jackson-annotations = "2.22"
 # Jackson 2 brukes ikke direkte, men kommer transitivt via WireMock og java-jwt; bom-en løfter dem over de patchede versjonene (bl.a. GHSA-j3rv-43j4-c7qm).
-jackson2 = "2.22.2"
+jackson2 = "2.22.3"
 # Jetty 11 er EOL og får ikke fiks for bl.a. GHSA-355h-qmc2-wpwf; jetty12-varianten av WireMock + denne bom-en gir patchet Jetty.
 jetty = "12.1.13"
 jetbrains-annotations = "26.1.0"
@@ -91,6 +94,7 @@ commons-text = { module = "org.apache.commons:commons-text", version.ref = "comm
 confluent-kafka-avro-serializer = { module = "io.confluent:kafka-avro-serializer", version.ref = "confluent" }
 flyway-database-oracle = { module = "org.flywaydb:flyway-database-oracle", version.ref = "flyway" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+freemarker = { module = "org.freemarker:freemarker", version.ref = "freemarker" }
 handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }

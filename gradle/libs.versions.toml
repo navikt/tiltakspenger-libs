@@ -24,7 +24,7 @@ hikaricp = "7.1.0"
 # httpclient5 5.5 lekker forbindelser når dekoding av Content-Encoding feiler, til poolen er tom (CVE-2026-64607); fikset i 5.6.3.
 # Vi tar 5.6.4, som er nyeste og bygger på httpcore5 5.4.3.
 httpclient5 = "5.6.4"
-httpcore5 = "5.4.3"
+httpcore5 = "5.4.4"
 jackson = "3.2.2"
 jackson-annotations = "2.22"
 # Jackson 2 brukes ikke direkte, men kommer transitivt via WireMock og java-jwt; bom-en løfter dem over de patchede versjonene (bl.a. GHSA-j3rv-43j4-c7qm).

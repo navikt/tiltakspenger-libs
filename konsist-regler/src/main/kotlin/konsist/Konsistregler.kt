@@ -10,9 +10,13 @@ package no.nav.tiltakspenger.libs.konsist
 import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.container.KoScope
 import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
+import java.io.IOException
+import java.nio.file.FileVisitResult
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
-import kotlin.streams.asSequence
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.attribute.BasicFileAttributes
 
 /**
  * Kataloger som inneholder en annen utsjekk av repoet, typisk et git-arbeidstre under repo-rota (`.worktrees/<gren>/`).
@@ -37,13 +41,46 @@ val standardEkskluderteKataloger = setOf("build", ".gradle", ".git", ".idea", "n
  * Filene under rota som [predikat] godtar, minus alt under [ekskluderteKataloger].
  * Ekskluderingen ser på hvert segment i den relative stien, så `<modul>/build/` treffer og ikke bare `build/` på toppnivå.
  * Brukes av reglene som leser markdown og byggfiler fra disk i stedet for gjennom et Konsist-scope.
+ *
+ * Filer som forsvinner mens skanningen pågår hoppes over, se [TålerForsvunnedeFiler].
  */
-internal fun Path.filerUnder(ekskluderteKataloger: Set<String>, predikat: (Path) -> Boolean): Sequence<Path> =
-    Files
-        .walk(this)
+internal fun Path.filerUnder(ekskluderteKataloger: Set<String>, predikat: (Path) -> Boolean): Sequence<Path> {
+    val filer = mutableListOf<Path>()
+    Files.walkFileTree(this, TålerForsvunnedeFiler { path -> filer.add(path) })
+    return filer
         .asSequence()
         .filter(predikat)
         .filterNot { path -> relativize(path).any { segment -> segment.toString() in ekskluderteKataloger } }
+}
+
+/**
+ * Samler alle stier under rota, også katalogene, slik `Files.walk` gjør.
+ * Reglene skanner repo-rota mens andre tester kjører parallelt i samme arbeidskatalog.
+ * Der lager JVM-ens attach-mekanisme kortlivede `.attach_pid<pid>`-filer når MockK/ByteBuddy laster agenten sin dynamisk.
+ * `Files.walk` kaster `NoSuchFileException` når en fil slettes mellom katalogoppslaget og lesingen av attributtene, og regelen feiler da tilfeldig.
+ * Andre IO-feil kastes videre, så en skanning som faktisk ikke kommer til, blir fortsatt rød.
+ */
+internal class TålerForsvunnedeFiler(private val besøk: (Path) -> Unit) : SimpleFileVisitor<Path>() {
+    override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+        besøk(dir)
+        return FileVisitResult.CONTINUE
+    }
+
+    override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+        besøk(file)
+        return FileVisitResult.CONTINUE
+    }
+
+    override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult {
+        if (exc is NoSuchFileException) return FileVisitResult.CONTINUE
+        throw exc
+    }
+
+    override fun postVisitDirectory(dir: Path, exc: IOException?): FileVisitResult {
+        if (exc != null && exc !is NoSuchFileException) throw exc
+        return FileVisitResult.CONTINUE
+    }
+}
 
 /**
  * Kildefilene i scopet, uten `.kt`-filer under resources og uten filer fra en annen utsjekk ([ekskluderteUtsjekker]).

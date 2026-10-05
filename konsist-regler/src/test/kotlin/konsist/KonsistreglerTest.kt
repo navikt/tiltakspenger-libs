@@ -10,7 +10,10 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.AccessDeniedException
+import java.nio.file.FileVisitResult
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 
 /**
@@ -140,5 +143,39 @@ internal class KonsistreglerTest {
                 listOf("/repo/modul/src/test/kotlin/AnnenTest.kt:4: bruker noe forbudt"),
             )
         }.message shouldContain "kotlin/Test.kt"
+    }
+
+    @Test
+    fun `filerUnder finner filer i underkataloger og hopper over ekskluderte kataloger`(@TempDir rot: Path) {
+        Files.createDirectories(rot.resolve("modul/docs")).resolve("Med.md").also { Files.writeString(it, "") }
+        Files.createDirectories(rot.resolve("modul/build")).resolve("Uten.md").also { Files.writeString(it, "") }
+
+        rot.filerUnder(setOf("build")) { it.toString().endsWith(".md") }.toList() shouldContainExactly
+            listOf(rot.resolve("modul/docs/Med.md"))
+    }
+
+    /**
+     * Kappløpet med `.attach_pid<pid>`-filene lar seg ikke gjenskape stabilt, så besøkeren testes direkte med feilen `Files.walkFileTree` gir den.
+     */
+    @Test
+    fun `en fil som forsvinner under skanningen hoppes over`(@TempDir rot: Path) {
+        val forsvunnet = rot.resolve(".attach_pid1234")
+
+        TålerForsvunnedeFiler {}.visitFileFailed(forsvunnet, NoSuchFileException(forsvunnet.toString())) shouldBe
+            FileVisitResult.CONTINUE
+        TålerForsvunnedeFiler {}.postVisitDirectory(rot, NoSuchFileException(forsvunnet.toString())) shouldBe
+            FileVisitResult.CONTINUE
+    }
+
+    @Test
+    fun `andre IO-feil under skanningen kastes videre`(@TempDir rot: Path) {
+        val utilgjengelig = rot.resolve("utilgjengelig")
+
+        shouldThrow<AccessDeniedException> {
+            TålerForsvunnedeFiler {}.visitFileFailed(utilgjengelig, AccessDeniedException(utilgjengelig.toString()))
+        }
+        shouldThrow<AccessDeniedException> {
+            TålerForsvunnedeFiler {}.postVisitDirectory(rot, AccessDeniedException(rot.toString()))
+        }
     }
 }

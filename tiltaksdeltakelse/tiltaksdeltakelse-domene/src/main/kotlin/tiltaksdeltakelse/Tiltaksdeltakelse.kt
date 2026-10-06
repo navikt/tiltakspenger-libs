@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
 import no.nav.tiltakspenger.libs.common.personopplysning.Tilknytningstittel
+import no.nav.tiltakspenger.libs.periode.Overlapp
 import no.nav.tiltakspenger.libs.periode.Periode
 import no.nav.tiltakspenger.libs.periode.ÅpenPeriode
 import java.time.LocalDate
@@ -235,6 +236,18 @@ val Tiltaksdeltakelse.kilde: Tiltakskilde get() = kildestatus.kilde
  * Merk at en vurdert periode kan avvike fra denne; da er det den vurderte som gjelder for utfallet, og den eier konsumenten.
  */
 val Tiltaksdeltakelse.periodeFraKilden: Periode? get() = åpenPeriode?.periode
+
+/**
+ * Om deltakelsen overlapper med [periode], så langt kildedataene rekker.
+ *
+ * Svaret er det samme som [ÅpenPeriode.overlapperMed] gir for datoene kilden oppga.
+ * Har kilden bare én dato, bekrefter den overlapp når den ligger i [periode], og avkrefter når den ligger på feil side.
+ * En [Tiltaksdeltakelse.Ugyldig] svarer alltid [Overlapp.Kanskje]: datoene henger ikke sammen, og da vet vi ingenting.
+ */
+fun Tiltaksdeltakelse.overlapper(periode: Periode): Overlapp {
+    val åpenPeriode = åpenPeriode ?: return Overlapp.Kanskje
+    return åpenPeriode.overlapperMed(periode)
+}
 
 /**
  * Bygger den varianten kildedataen faktisk kvalifiserer til.

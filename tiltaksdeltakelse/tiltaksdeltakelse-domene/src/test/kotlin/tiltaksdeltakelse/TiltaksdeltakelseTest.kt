@@ -6,6 +6,7 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import no.nav.tiltakspenger.libs.common.personopplysning.Tilknytningstittel
 import no.nav.tiltakspenger.libs.common.personopplysning.Virksomhetsnavn
 import no.nav.tiltakspenger.libs.periode.Periode
+import no.nav.tiltakspenger.libs.periode.ÅpenPeriode
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -165,7 +166,20 @@ internal class TiltaksdeltakelseTest {
      */
     @Test
     fun `UtenPeriode kan ikke konstrueres med begge datoene på plass`() {
-        shouldThrow<IllegalArgumentException> { utenPeriode(fraOgMed = start, tilOgMed = slutt) }
+        shouldThrow<IllegalArgumentException> { utenPeriode(ÅpenPeriode(start, slutt)) }
+    }
+
+    @Test
+    fun `GirIkkeRett og UkjentTiltakstype tar ikke en ÅpenPeriode med begge datoene, men godtar en med én dato`() {
+        val girIkkeRett = deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"))
+            .shouldBeInstanceOf<Tiltaksdeltakelse.GirIkkeRett>()
+        val ukjent = deltakelse(tiltakstype = Tiltakstype.Ukjent("NY_KODE"))
+            .shouldBeInstanceOf<Tiltaksdeltakelse.UkjentTiltakstype>()
+
+        shouldThrow<IllegalArgumentException> { girIkkeRett.copy(periode = ÅpenPeriode(start, slutt)) }
+        shouldThrow<IllegalArgumentException> { ukjent.copy(periode = ÅpenPeriode(start, slutt)) }
+        girIkkeRett.copy(periode = ÅpenPeriode(start, null)).periode shouldBe ÅpenPeriode(start, null)
+        ukjent.copy(periode = ÅpenPeriode(null, slutt)).periode shouldBe ÅpenPeriode(null, slutt)
     }
 
     @Test
@@ -174,7 +188,7 @@ internal class TiltaksdeltakelseTest {
         shouldThrow<IllegalArgumentException> { ugyldig(fraOgMed = start, tilOgMed = slutt, grunn = Ugyldiggrunn.DatoPåYttergrense) }
     }
 
-    private fun utenPeriode(fraOgMed: LocalDate?, tilOgMed: LocalDate?) = Tiltaksdeltakelse.GirRett.UtenPeriode(
+    private fun utenPeriode(periode: ÅpenPeriode) = Tiltaksdeltakelse.GirRett.UtenPeriode(
         id = EksternDeltakelseId("TA1234567"),
         kildestatus = Kometstatus.Kjent(Kometstatus.Type.DELTAR, årsak = null, opprettet = statusOpprettet),
         tiltakstype = TiltakstypeSomGirRett.OPPFØLGING,
@@ -184,8 +198,7 @@ internal class TiltaksdeltakelseTest {
         arrangør = Arrangør(hovedenhet = Virksomhetsnavn("Arrangør AS"), underenhet = null),
         omfang = Deltakelsesomfang(deltakelsesprosent = 60f, dagerPerUke = 3f, deltidsprosentPåGjennomføring = null),
         gjennomføringId = null,
-        fraOgMed = fraOgMed,
-        tilOgMed = tilOgMed,
+        periode = periode,
     )
 
     private fun ugyldig(fraOgMed: LocalDate, tilOgMed: LocalDate, grunn: Ugyldiggrunn) = Tiltaksdeltakelse.Ugyldig(
@@ -242,6 +255,33 @@ internal class TiltaksdeltakelseTest {
     fun `periodeFraKilden gir perioden når datoene henger sammen`() {
         deltakelse().periodeFraKilden shouldBe Periode(start, slutt)
         deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR")).periodeFraKilden shouldBe Periode(start, slutt)
+    }
+
+    /**
+     * Alle varianter med datoer som henger sammen bærer en periode: en [Periode] når begge datoene er kjent, ellers en [ÅpenPeriode].
+     */
+    @Test
+    fun `periode er lukket når begge datoene er kjent, åpen ellers, og mangler bare for Ugyldig`() {
+        deltakelse().periode shouldBe Periode(start, slutt)
+        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR")).periode shouldBe Periode(start, slutt)
+        deltakelse(tiltakstype = Tiltakstype.Ukjent("NY_KODE")).periode shouldBe Periode(start, slutt)
+        deltakelse(tilOgMed = null).periode shouldBe ÅpenPeriode(start, null)
+        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"), fraOgMed = null).periode shouldBe ÅpenPeriode(null, slutt)
+        deltakelse(tiltakstype = Tiltakstype.Ukjent("NY_KODE"), fraOgMed = null, tilOgMed = null).periode shouldBe ÅpenPeriode(null, null)
+        deltakelse(fraOgMed = slutt, tilOgMed = start).periode shouldBe null
+    }
+
+    @Test
+    fun `datoene leses fra periode også når tiltakstypen ikke gir rett eller er ukjent`() {
+        val girIkkeRett = deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"), fraOgMed = null)
+            .shouldBeInstanceOf<Tiltaksdeltakelse.GirIkkeRett>()
+        girIkkeRett.fraOgMed shouldBe null
+        girIkkeRett.tilOgMed shouldBe slutt
+
+        val ukjent = deltakelse(tiltakstype = Tiltakstype.Ukjent("NY_KODE"), tilOgMed = null)
+            .shouldBeInstanceOf<Tiltaksdeltakelse.UkjentTiltakstype>()
+        ukjent.fraOgMed shouldBe start
+        ukjent.tilOgMed shouldBe null
     }
 
     @Test

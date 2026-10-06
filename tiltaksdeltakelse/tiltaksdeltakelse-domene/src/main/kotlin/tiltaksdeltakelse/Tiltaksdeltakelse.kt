@@ -1,7 +1,10 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
 import no.nav.tiltakspenger.libs.common.personopplysning.Tilknytningstittel
+import no.nav.tiltakspenger.libs.periode.LukketEllerÅpenPeriode
+import no.nav.tiltakspenger.libs.periode.Overlapp
 import no.nav.tiltakspenger.libs.periode.Periode
+import no.nav.tiltakspenger.libs.periode.ÅpenPeriode
 import java.time.LocalDate
 
 /**
@@ -56,6 +59,13 @@ sealed interface Tiltaksdeltakelse {
     val omfang: Deltakelsesomfang
 
     /**
+     * Datoene kilden oppga.
+     * En [Periode] når begge datoene er kjent, og en [ÅpenPeriode] når minst én av dem mangler — aldri en [ÅpenPeriode] med begge datoene.
+     * `null` kun for [Ugyldig], der datoene ikke henger sammen og derfor ikke kan danne en periode.
+     */
+    val periode: LukketEllerÅpenPeriode?
+
+    /**
      * Startdato hos kilden.
      * Mangler ofte, særlig når deltakeren venter på oppstart.
      */
@@ -82,6 +92,8 @@ sealed interface Tiltaksdeltakelse {
     sealed interface GirRett : Tiltaksdeltakelse {
         val tiltakstype: TiltakstypeSomGirRett
 
+        override val periode: LukketEllerÅpenPeriode
+
         /** Kilden ga både start- og sluttdato, og de henger sammen. */
         data class MedPeriode(
             override val id: EksternDeltakelseId,
@@ -93,7 +105,7 @@ sealed interface Tiltaksdeltakelse {
             override val arrangør: Arrangør,
             override val omfang: Deltakelsesomfang,
             override val gjennomføringId: GjennomføringId?,
-            val periode: Periode,
+            override val periode: Periode,
         ) : GirRett {
             override val fraOgMed: LocalDate = periode.fraOgMed
             override val tilOgMed: LocalDate = periode.tilOgMed
@@ -110,11 +122,13 @@ sealed interface Tiltaksdeltakelse {
             override val arrangør: Arrangør,
             override val omfang: Deltakelsesomfang,
             override val gjennomføringId: GjennomføringId?,
-            override val fraOgMed: LocalDate?,
-            override val tilOgMed: LocalDate?,
+            override val periode: ÅpenPeriode,
         ) : GirRett {
+            override val fraOgMed: LocalDate? get() = periode.fraOgMed
+            override val tilOgMed: LocalDate? get() = periode.tilOgMed
+
             init {
-                require(fraOgMed == null || tilOgMed == null) { "UtenPeriode krever at minst én av datoene mangler — med begge på plass er det MedPeriode som gjelder" }
+                require(periode.periode == null) { "UtenPeriode krever at minst én av datoene mangler — med begge på plass er det MedPeriode som gjelder" }
             }
         }
     }
@@ -134,9 +148,15 @@ sealed interface Tiltaksdeltakelse {
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
-        override val fraOgMed: LocalDate?,
-        override val tilOgMed: LocalDate?,
-    ) : Tiltaksdeltakelse
+        override val periode: LukketEllerÅpenPeriode,
+    ) : Tiltaksdeltakelse {
+        override val fraOgMed: LocalDate? get() = periode.fraOgMed
+        override val tilOgMed: LocalDate? get() = periode.tilOgMed
+
+        init {
+            kreverLukketNårBeggeDatoeneErKjent(periode)
+        }
+    }
 
     /**
      * Tiltakskoden er ikke i tabellene våre.
@@ -153,9 +173,15 @@ sealed interface Tiltaksdeltakelse {
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
-        override val fraOgMed: LocalDate?,
-        override val tilOgMed: LocalDate?,
-    ) : Tiltaksdeltakelse
+        override val periode: LukketEllerÅpenPeriode,
+    ) : Tiltaksdeltakelse {
+        override val fraOgMed: LocalDate? get() = periode.fraOgMed
+        override val tilOgMed: LocalDate? get() = periode.tilOgMed
+
+        init {
+            kreverLukketNårBeggeDatoeneErKjent(periode)
+        }
+    }
 
     /**
      * Datoene fra kilden kan ikke danne en periode — se [grunn].
@@ -180,6 +206,9 @@ sealed interface Tiltaksdeltakelse {
         val grunn: Ugyldiggrunn,
     ) : Tiltaksdeltakelse {
         override val tiltakskodeFraKilden: String get() = tiltakstype.tiltakskodeFraKilden
+
+        /** Datoene henger ikke sammen, og kan derfor ikke danne en periode. */
+        override val periode: LukketEllerÅpenPeriode? get() = null
 
         init {
             when (grunn) {
@@ -209,18 +238,43 @@ enum class Ugyldiggrunn {
 val Tiltaksdeltakelse.kilde: Tiltakskilde get() = kildestatus.kilde
 
 /**
- * Perioden kilden oppga, eller `null` når den mangler eller ikke henger sammen.
+ * Perioden kilden oppga, eller `null` når en av datoene mangler eller de ikke henger sammen.
  * Datoer på tekniske yttergrenser (`LocalDate.MAX` som start, `LocalDate.MIN` som slutt) gir også `null`, siden [Periode] ikke kan bære dem.
  *
  * Virker på alle varianter, slik at kallere slipper å narrowe først.
  * Merk at en vurdert periode kan avvike fra denne; da er det den vurderte som gjelder for utfallet, og den eier konsumenten.
  */
-val Tiltaksdeltakelse.periodeFraKilden: Periode?
-    get() {
-        val fom = fraOgMed
-        val tom = tilOgMed
-        return if (fom != null && tom != null && !fom.isAfter(tom) && fom != LocalDate.MAX && tom != LocalDate.MIN) Periode(fom, tom) else null
+val Tiltaksdeltakelse.periodeFraKilden: Periode? get() = periode as? Periode
+
+/**
+ * Om deltakelsen overlapper med [periode], så langt kildedataene rekker.
+ *
+ * Svaret er det samme som [ÅpenPeriode.overlapperMed] gir for datoene kilden oppga.
+ * Har kilden bare én dato, bekrefter den overlapp når den ligger i [periode], og avkrefter når den ligger på feil side.
+ * En [Tiltaksdeltakelse.Ugyldig] svarer alltid [Overlapp.Kanskje]: datoene henger ikke sammen, og da vet vi ingenting.
+ */
+fun Tiltaksdeltakelse.overlapper(periode: Periode): Overlapp = when (val egen = this.periode) {
+    is Periode -> if (egen.overlapperMed(periode)) Overlapp.Ja else Overlapp.Nei
+    is ÅpenPeriode -> egen.overlapperMed(periode)
+    null -> Overlapp.Kanskje
+}
+
+/**
+ * Felles påstand for variantene som tar imot en [LukketEllerÅpenPeriode]: er begge datoene kjent, skal perioden være en [Periode].
+ * Da finnes det bare én måte å uttrykke de samme datoene på, og [periodeFraKilden] kan lese perioden direkte.
+ */
+private fun kreverLukketNårBeggeDatoeneErKjent(periode: LukketEllerÅpenPeriode) {
+    require(periode !is ÅpenPeriode || periode.periode == null) {
+        "Med begge datoene på plass skal perioden være en Periode, ikke en ÅpenPeriode"
     }
+}
+
+/**
+ * Den lukkede perioden når begge datoene er kjent, ellers den åpne.
+ * Kalles bare etter at fabrikken har slått fast at datoene henger sammen.
+ */
+private fun lukketEllerÅpenPeriode(fraOgMed: LocalDate?, tilOgMed: LocalDate?): LukketEllerÅpenPeriode =
+    if (fraOgMed != null && tilOgMed != null) Periode(fraOgMed, tilOgMed) else ÅpenPeriode(fraOgMed, tilOgMed)
 
 /**
  * Bygger den varianten kildedataen faktisk kvalifiserer til.
@@ -293,8 +347,7 @@ fun tiltaksdeltakelse(
                     arrangør = arrangør,
                     omfang = omfang,
                     gjennomføringId = gjennomføringId,
-                    fraOgMed = fraOgMed,
-                    tilOgMed = tilOgMed,
+                    periode = ÅpenPeriode(fraOgMed, tilOgMed),
                 )
             }
 
@@ -308,8 +361,7 @@ fun tiltaksdeltakelse(
                 arrangør = arrangør,
                 omfang = omfang,
                 gjennomføringId = gjennomføringId,
-                fraOgMed = fraOgMed,
-                tilOgMed = tilOgMed,
+                periode = lukketEllerÅpenPeriode(fraOgMed, tilOgMed),
             )
 
         is Tiltakstype.Ukjent ->
@@ -322,8 +374,7 @@ fun tiltaksdeltakelse(
                 arrangør = arrangør,
                 omfang = omfang,
                 gjennomføringId = gjennomføringId,
-                fraOgMed = fraOgMed,
-                tilOgMed = tilOgMed,
+                periode = lukketEllerÅpenPeriode(fraOgMed, tilOgMed),
             )
     }
 }

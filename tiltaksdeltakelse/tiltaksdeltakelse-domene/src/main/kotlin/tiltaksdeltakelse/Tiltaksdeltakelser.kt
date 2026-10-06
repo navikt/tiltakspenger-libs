@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
+import no.nav.tiltakspenger.libs.periode.Overlapp
 import no.nav.tiltakspenger.libs.periode.Periode
 
 /**

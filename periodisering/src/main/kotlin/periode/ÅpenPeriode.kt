@@ -8,9 +8,9 @@ import java.time.LocalDate
  * Overlappsspørsmål svarer derfor med [Overlapp]: [Overlapp.Ja] eller [Overlapp.Nei] der svaret er sikkert, og [Overlapp.Kanskje] der en ukjent dato gjør at begge utfall er mulige.
  */
 data class ÅpenPeriode(
-    val fraOgMed: LocalDate?,
-    val tilOgMed: LocalDate?,
-) {
+    override val fraOgMed: LocalDate?,
+    override val tilOgMed: LocalDate?,
+) : LukketEllerÅpenPeriode {
     /**
      * Den lukkede perioden, eller `null` dersom [fraOgMed] eller [tilOgMed] mangler.
      * Den bygges ved konstruksjon, slik at kravene til [Periode] også gjelder når begge datoene er kjent.

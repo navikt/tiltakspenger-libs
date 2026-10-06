@@ -12,9 +12,10 @@ En Periode med LocalDate.MIN og/eller LocalDate.MAX er ment å tilsvare en åpen
 Så bruk LocalDate.MIN/MAX i stedet for null
  */
 data class Periode(
-    val fraOgMed: LocalDate,
-    val tilOgMed: LocalDate,
-) : ClosedRange<LocalDate> {
+    override val fraOgMed: LocalDate,
+    override val tilOgMed: LocalDate,
+) : ClosedRange<LocalDate>,
+    LukketEllerÅpenPeriode {
 
     init {
         require(!fraOgMed.isAfter(tilOgMed)) { "$fraOgMed kan ikke være etter $tilOgMed" }

@@ -19,7 +19,7 @@ To ting, holdt fra hverandre med vilje.
 **Kilden.** `Kildestatus` bærer statusen kildesystemet selv oppga, ordrett — `Arenastatus`, `Kometstatus`, `TeamTiltakstatus`.
 En kode vi ikke kjenner igjen flyter inn som kildens egen `Ukjent`-variant, bæres ordrett, og blokkerer tolkning til den er mappet.
 `Tiltaksdeltakelse` bærer resten av saksopplysningen: datoer, arrangør, omfang, og tiltakskoden slik kilden skrev den.
-Datoene bæres som en `ÅpenPeriode` fra `periodisering`, der hver dato kan mangle; bare `Ugyldig`, der datoene ikke henger sammen, har ingen.
+Datoene bæres som `periode: LukketEllerÅpenPeriode` fra `periodisering`: en `Periode` når begge datoene er kjent (alltid for `GirRett.MedPeriode`), ellers en `ÅpenPeriode`; bare `Ugyldig`, der datoene ikke henger sammen, har ingen.
 
 **Vår tolkning.** `Deltakerstatus` er domenets egen ordlyd, tre kategorier som avgjør rett: `DeltarEllerHarDeltatt`, `TildeltIkkeStartet` og `IkkeDeltatt`.
 

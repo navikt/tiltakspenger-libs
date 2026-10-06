@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
 import no.nav.tiltakspenger.libs.common.personopplysning.Tilknytningstittel
 import no.nav.tiltakspenger.libs.periode.Periode
+import no.nav.tiltakspenger.libs.periode.ÅpenPeriode
 import java.time.LocalDate
 
 /**
@@ -56,6 +57,12 @@ sealed interface Tiltaksdeltakelse {
     val omfang: Deltakelsesomfang
 
     /**
+     * Datoene kilden oppga, der hver av dem kan mangle.
+     * `null` kun for [Ugyldig], der datoene ikke henger sammen og derfor ikke kan danne en [ÅpenPeriode].
+     */
+    val åpenPeriode: ÅpenPeriode?
+
+    /**
      * Startdato hos kilden.
      * Mangler ofte, særlig når deltakeren venter på oppstart.
      */
@@ -82,6 +89,8 @@ sealed interface Tiltaksdeltakelse {
     sealed interface GirRett : Tiltaksdeltakelse {
         val tiltakstype: TiltakstypeSomGirRett
 
+        override val åpenPeriode: ÅpenPeriode
+
         /** Kilden ga både start- og sluttdato, og de henger sammen. */
         data class MedPeriode(
             override val id: EksternDeltakelseId,
@@ -95,6 +104,7 @@ sealed interface Tiltaksdeltakelse {
             override val gjennomføringId: GjennomføringId?,
             val periode: Periode,
         ) : GirRett {
+            override val åpenPeriode: ÅpenPeriode = ÅpenPeriode(periode.fraOgMed, periode.tilOgMed)
             override val fraOgMed: LocalDate = periode.fraOgMed
             override val tilOgMed: LocalDate = periode.tilOgMed
         }
@@ -110,11 +120,13 @@ sealed interface Tiltaksdeltakelse {
             override val arrangør: Arrangør,
             override val omfang: Deltakelsesomfang,
             override val gjennomføringId: GjennomføringId?,
-            override val fraOgMed: LocalDate?,
-            override val tilOgMed: LocalDate?,
+            override val åpenPeriode: ÅpenPeriode,
         ) : GirRett {
+            override val fraOgMed: LocalDate? get() = åpenPeriode.fraOgMed
+            override val tilOgMed: LocalDate? get() = åpenPeriode.tilOgMed
+
             init {
-                require(fraOgMed == null || tilOgMed == null) { "UtenPeriode krever at minst én av datoene mangler — med begge på plass er det MedPeriode som gjelder" }
+                require(åpenPeriode.periode == null) { "UtenPeriode krever at minst én av datoene mangler — med begge på plass er det MedPeriode som gjelder" }
             }
         }
     }
@@ -134,9 +146,11 @@ sealed interface Tiltaksdeltakelse {
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
-        override val fraOgMed: LocalDate?,
-        override val tilOgMed: LocalDate?,
-    ) : Tiltaksdeltakelse
+        override val åpenPeriode: ÅpenPeriode,
+    ) : Tiltaksdeltakelse {
+        override val fraOgMed: LocalDate? get() = åpenPeriode.fraOgMed
+        override val tilOgMed: LocalDate? get() = åpenPeriode.tilOgMed
+    }
 
     /**
      * Tiltakskoden er ikke i tabellene våre.
@@ -153,9 +167,11 @@ sealed interface Tiltaksdeltakelse {
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
-        override val fraOgMed: LocalDate?,
-        override val tilOgMed: LocalDate?,
-    ) : Tiltaksdeltakelse
+        override val åpenPeriode: ÅpenPeriode,
+    ) : Tiltaksdeltakelse {
+        override val fraOgMed: LocalDate? get() = åpenPeriode.fraOgMed
+        override val tilOgMed: LocalDate? get() = åpenPeriode.tilOgMed
+    }
 
     /**
      * Datoene fra kilden kan ikke danne en periode — se [grunn].
@@ -180,6 +196,9 @@ sealed interface Tiltaksdeltakelse {
         val grunn: Ugyldiggrunn,
     ) : Tiltaksdeltakelse {
         override val tiltakskodeFraKilden: String get() = tiltakstype.tiltakskodeFraKilden
+
+        /** Datoene henger ikke sammen, og kan derfor ikke danne en [ÅpenPeriode]. */
+        override val åpenPeriode: ÅpenPeriode? get() = null
 
         init {
             when (grunn) {
@@ -209,18 +228,13 @@ enum class Ugyldiggrunn {
 val Tiltaksdeltakelse.kilde: Tiltakskilde get() = kildestatus.kilde
 
 /**
- * Perioden kilden oppga, eller `null` når den mangler eller ikke henger sammen.
+ * Perioden kilden oppga, eller `null` når en av datoene mangler eller de ikke henger sammen.
  * Datoer på tekniske yttergrenser (`LocalDate.MAX` som start, `LocalDate.MIN` som slutt) gir også `null`, siden [Periode] ikke kan bære dem.
  *
  * Virker på alle varianter, slik at kallere slipper å narrowe først.
  * Merk at en vurdert periode kan avvike fra denne; da er det den vurderte som gjelder for utfallet, og den eier konsumenten.
  */
-val Tiltaksdeltakelse.periodeFraKilden: Periode?
-    get() {
-        val fom = fraOgMed
-        val tom = tilOgMed
-        return if (fom != null && tom != null && !fom.isAfter(tom) && fom != LocalDate.MAX && tom != LocalDate.MIN) Periode(fom, tom) else null
-    }
+val Tiltaksdeltakelse.periodeFraKilden: Periode? get() = åpenPeriode?.periode
 
 /**
  * Bygger den varianten kildedataen faktisk kvalifiserer til.
@@ -293,8 +307,7 @@ fun tiltaksdeltakelse(
                     arrangør = arrangør,
                     omfang = omfang,
                     gjennomføringId = gjennomføringId,
-                    fraOgMed = fraOgMed,
-                    tilOgMed = tilOgMed,
+                    åpenPeriode = ÅpenPeriode(fraOgMed, tilOgMed),
                 )
             }
 
@@ -308,8 +321,7 @@ fun tiltaksdeltakelse(
                 arrangør = arrangør,
                 omfang = omfang,
                 gjennomføringId = gjennomføringId,
-                fraOgMed = fraOgMed,
-                tilOgMed = tilOgMed,
+                åpenPeriode = ÅpenPeriode(fraOgMed, tilOgMed),
             )
 
         is Tiltakstype.Ukjent ->
@@ -322,8 +334,7 @@ fun tiltaksdeltakelse(
                 arrangør = arrangør,
                 omfang = omfang,
                 gjennomføringId = gjennomføringId,
-                fraOgMed = fraOgMed,
-                tilOgMed = tilOgMed,
+                åpenPeriode = ÅpenPeriode(fraOgMed, tilOgMed),
             )
     }
 }

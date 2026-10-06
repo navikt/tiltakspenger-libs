@@ -19,12 +19,13 @@ To ting, holdt fra hverandre med vilje.
 **Kilden.** `Kildestatus` bærer statusen kildesystemet selv oppga, ordrett — `Arenastatus`, `Kometstatus`, `TeamTiltakstatus`.
 En kode vi ikke kjenner igjen flyter inn som kildens egen `Ukjent`-variant, bæres ordrett, og blokkerer tolkning til den er mappet.
 `Tiltaksdeltakelse` bærer resten av saksopplysningen: datoer, arrangør, omfang, og tiltakskoden slik kilden skrev den.
+Datoene bæres som en `ÅpenPeriode` fra `periodisering`, der hver dato kan mangle; bare `Ugyldig`, der datoene ikke henger sammen, har ingen.
 
 **Vår tolkning.** `Deltakerstatus` er domenets egen ordlyd, tre kategorier som avgjør rett: `DeltarEllerHarDeltatt`, `TildeltIkkeStartet` og `IkkeDeltatt`.
 
 Normaliseringen mellom dem er en faglig vurdering, ikke en teknisk oversettelse, og ligger derfor i domenet der den kan granskes og testes.
 
-**Samlingen.** `Tiltaksdeltakelser` er wrapperen rundt alt vi mottok for en person, med narrowing (`girRett`, `ugyldige`, `medUkjentKildestatus`), overlappsvar som `Overlapp { Ja, Nei, Kanskje }`, og uttrekket `somKildenTilsierManKanSøkePå(påDato)` — en egen type som bærer datoen utvalget gjaldt.
+**Samlingen.** `Tiltaksdeltakelser` er wrapperen rundt alt vi mottok for en person, med narrowing (`girRett`, `ugyldige`, `medUkjentKildestatus`), overlappsvar som `Overlapp { Ja, Nei, Kanskje }` (fra `periodisering`, samme svar som `ÅpenPeriode.overlapperMed`), og uttrekket `somKildenTilsierManKanSøkePå(påDato)` — en egen type som bærer datoen utvalget gjaldt.
 `UkjentKildeverdi` samler alt kilden sa som vi ikke kjenner igjen — med `hva` («deltakerstatus fra Arena», «årsak fra Komet», …) og `kodeIKontrakten` — slik at varsling og visning slipper å kjenne hver akse.
 
 **Hentingen.** `Tiltakshistorikk` er resultatet av én henting: deltakelsene, `UkjenteDeltakelsesformer` for kontraktsvarianter vi ikke har, og `hentetTidspunkt` ytterst.

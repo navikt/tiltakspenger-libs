@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
 import io.kotest.matchers.shouldBe
+import no.nav.tiltakspenger.libs.periode.Overlapp
 import no.nav.tiltakspenger.libs.periode.Periode
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -17,15 +18,18 @@ internal class OverlappTest {
     }
 
     /**
-     * Med bare én dato kan vi avkrefte overlapp, men aldri bekrefte det.
+     * Med bare én dato bekrefter vi overlapp når datoen ligger i perioden, og avkrefter når den ligger på feil side.
+     * Ellers kan den ukjente datoen gi begge utfall.
      */
     @Test
-    fun `én dato kan avkrefte, aldri bekrefte`() {
+    fun `én dato kan bekrefte, avkrefte eller gi kanskje`() {
         testdeltakelse(tilOgMed = null).overlapper(førJul) shouldBe Overlapp.Nei
         testdeltakelse(tilOgMed = null).overlapper(april) shouldBe Overlapp.Kanskje
+        testdeltakelse(tilOgMed = null).overlapper(Periode(testStart, testStart)) shouldBe Overlapp.Ja
 
         testdeltakelse(fraOgMed = null).overlapper(etterpå) shouldBe Overlapp.Nei
         testdeltakelse(fraOgMed = null).overlapper(april) shouldBe Overlapp.Kanskje
+        testdeltakelse(fraOgMed = null).overlapper(Periode(testSlutt, testSlutt)) shouldBe Overlapp.Ja
     }
 
     @Test

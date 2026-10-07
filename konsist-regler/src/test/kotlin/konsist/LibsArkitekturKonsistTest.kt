@@ -147,8 +147,8 @@ internal class LibsArkitekturKonsistTest {
      */
     private val tillatteWireMockTester = setOf(
         "test-common/src/test/kotlin/common/WiremockExTest.kt",
-        "personklient/personklient-infrastruktur/src/test/kotlin/personklient/pdl/FellesHttpPersonklientTest.kt",
-        "personklient/personklient-infrastruktur/src/test/kotlin/personklient/skjerming/FellesHttpSkjermingsklientTest.kt",
+        "personklient/personklient-infrastruktur/src/test/kotlin/personklient/infra/pdl/FellesHttpPersonklientTest.kt",
+        "personklient/personklient-infrastruktur/src/test/kotlin/personklient/infra/skjerming/FellesHttpSkjermingsklientTest.kt",
     )
 
     /**

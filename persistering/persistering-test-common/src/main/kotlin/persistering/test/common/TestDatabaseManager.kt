@@ -5,9 +5,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotliquery.sessionOf
 import no.nav.tiltakspenger.libs.common.TikkendeKlokke
 import no.nav.tiltakspenger.libs.persistering.domene.SessionFactory
-import no.nav.tiltakspenger.libs.persistering.infrastruktur.PostgresSessionFactory
-import no.nav.tiltakspenger.libs.persistering.infrastruktur.SessionCounter
-import no.nav.tiltakspenger.libs.persistering.infrastruktur.sqlQuery
+import no.nav.tiltakspenger.libs.persistering.infra.PostgresSessionFactory
+import no.nav.tiltakspenger.libs.persistering.infra.SessionCounter
+import no.nav.tiltakspenger.libs.persistering.infra.sqlQuery
 import org.flywaydb.core.Flyway
 import org.flywaydb.core.api.output.MigrateResult
 import org.testcontainers.postgresql.PostgreSQLContainer

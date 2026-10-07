@@ -7,7 +7,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import kotliquery.sessionOf
 import no.nav.tiltakspenger.libs.common.TikkendeKlokke
-import no.nav.tiltakspenger.libs.persistering.infrastruktur.sqlQuery
+import no.nav.tiltakspenger.libs.persistering.infra.sqlQuery
 import no.nav.tiltakspenger.libs.persistering.test.common.TestDatabaseConfig
 import no.nav.tiltakspenger.libs.persistering.test.common.TestDatabaseManager
 import org.junit.jupiter.api.RepeatedTest

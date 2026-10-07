@@ -38,13 +38,13 @@ kover {
             filters {
                 includes {
                     classes(
-                        "no.nav.tiltakspenger.libs.personklient.pdl.FellesHttpPersonklient*",
-                        "no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklient",
-                        "no.nav.tiltakspenger.libs.personklient.pdl.FellesPersonklient.Companion",
-                        "no.nav.tiltakspenger.libs.personklient.pdl.HentPersonResponse*",
-                        "no.nav.tiltakspenger.libs.personklient.skjerming.FellesHttpSkjermingsklient*",
-                        "no.nav.tiltakspenger.libs.personklient.skjerming.FellesSkjermingsklient",
-                        "no.nav.tiltakspenger.libs.personklient.skjerming.FellesSkjermingsklient.Companion",
+                        "no.nav.tiltakspenger.libs.personklient.infra.pdl.FellesHttpPersonklient*",
+                        "no.nav.tiltakspenger.libs.personklient.infra.pdl.FellesPersonklient",
+                        "no.nav.tiltakspenger.libs.personklient.infra.pdl.FellesPersonklient.Companion",
+                        "no.nav.tiltakspenger.libs.personklient.infra.pdl.HentPersonResponse*",
+                        "no.nav.tiltakspenger.libs.personklient.infra.skjerming.FellesHttpSkjermingsklient*",
+                        "no.nav.tiltakspenger.libs.personklient.infra.skjerming.FellesSkjermingsklient",
+                        "no.nav.tiltakspenger.libs.personklient.infra.skjerming.FellesSkjermingsklient.Companion",
                     )
                 }
             }

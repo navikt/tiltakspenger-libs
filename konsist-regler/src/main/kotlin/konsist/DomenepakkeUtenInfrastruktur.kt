@@ -19,7 +19,7 @@ object DomenepakkeUtenInfrastruktur {
 
     /**
      * `infra` er segmentet appene bruker selv.
-     * `infrastruktur` er med fordi libs bruker det (`libs.persistering.infrastruktur`), og et slikt importbehov i en domenepakke er like mye et brudd.
+     * `infrastruktur` er med fordi eldre biblioteksversjoner bruker det, og en slik import i en domenepakke er like fullt et brudd.
      * Settet er bredere enn [InfraImport.standardInfraSegmenter], som kun kjenner `infra`.
      */
     val standardInfraSegmenter = setOf("infra", "infrastruktur")

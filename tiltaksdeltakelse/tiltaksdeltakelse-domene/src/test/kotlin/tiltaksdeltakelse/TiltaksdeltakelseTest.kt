@@ -75,6 +75,7 @@ internal class TiltaksdeltakelseTest {
     fun `tiltakskoden fra kilden bevares på alle variantene`() {
         deltakelse().tiltakskodeFraKilden shouldBe "INDOPPFAG"
         deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR")).tiltakskodeFraKilden shouldBe "MENTOR"
+        deltakelse(tiltakstype = Tiltakstype.SomFratarRett("MIDLONTIL")).tiltakskodeFraKilden shouldBe "MIDLONTIL"
         deltakelse(tiltakstype = Tiltakstype.Ukjent("NOE_HELT_NYTT")).tiltakskodeFraKilden shouldBe "NOE_HELT_NYTT"
         deltakelse(fraOgMed = slutt, tilOgMed = start).tiltakskodeFraKilden shouldBe "INDOPPFAG"
         deltakelse(tilOgMed = null).tiltakskodeFraKilden shouldBe "INDOPPFAG"
@@ -86,6 +87,22 @@ internal class TiltaksdeltakelseTest {
             .shouldBeInstanceOf<Tiltaksdeltakelse.GirIkkeRett>()
 
         resultat.tiltakskodeFraKilden shouldBe "MENTOR"
+    }
+
+    @Test
+    fun `kjent type som fratar rett blir FratarRett og bærer koden som streng`() {
+        val resultat = deltakelse(tiltakstype = Tiltakstype.SomFratarRett("MIDLONTIL"))
+            .shouldBeInstanceOf<Tiltaksdeltakelse.FratarRett>()
+
+        resultat.tiltakskodeFraKilden shouldBe "MIDLONTIL"
+        resultat.periode shouldBe Periode(start, slutt)
+    }
+
+    @Test
+    fun `ugyldige datoer slår ut også når tiltakstypen fratar rett`() {
+        deltakelse(tiltakstype = Tiltakstype.SomFratarRett("MIDLONTIL"), fraOgMed = slutt, tilOgMed = start)
+            .shouldBeInstanceOf<Tiltaksdeltakelse.Ugyldig>()
+            .tiltakstype shouldBe Tiltakstype.SomFratarRett("MIDLONTIL")
     }
 
     /**
@@ -170,14 +187,18 @@ internal class TiltaksdeltakelseTest {
     }
 
     @Test
-    fun `GirIkkeRett og UkjentTiltakstype tar ikke en ÅpenPeriode med begge datoene, men godtar en med én dato`() {
+    fun `GirIkkeRett, FratarRett og UkjentTiltakstype tar ikke en ÅpenPeriode med begge datoene, men godtar en med én dato`() {
         val girIkkeRett = deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"))
             .shouldBeInstanceOf<Tiltaksdeltakelse.GirIkkeRett>()
+        val fratarRett = deltakelse(tiltakstype = Tiltakstype.SomFratarRett("MIDLONTIL"))
+            .shouldBeInstanceOf<Tiltaksdeltakelse.FratarRett>()
         val ukjent = deltakelse(tiltakstype = Tiltakstype.Ukjent("NY_KODE"))
             .shouldBeInstanceOf<Tiltaksdeltakelse.UkjentTiltakstype>()
 
         shouldThrow<IllegalArgumentException> { girIkkeRett.copy(periode = ÅpenPeriode(start, slutt)) }
+        shouldThrow<IllegalArgumentException> { fratarRett.copy(periode = ÅpenPeriode(start, slutt)) }
         shouldThrow<IllegalArgumentException> { ukjent.copy(periode = ÅpenPeriode(start, slutt)) }
+        fratarRett.copy(periode = ÅpenPeriode(null, slutt)).periode shouldBe ÅpenPeriode(null, slutt)
         girIkkeRett.copy(periode = ÅpenPeriode(start, null)).periode shouldBe ÅpenPeriode(start, null)
         ukjent.copy(periode = ÅpenPeriode(null, slutt)).periode shouldBe ÅpenPeriode(null, slutt)
     }
@@ -272,11 +293,16 @@ internal class TiltaksdeltakelseTest {
     }
 
     @Test
-    fun `datoene leses fra periode også når tiltakstypen ikke gir rett eller er ukjent`() {
+    fun `datoene leses fra periode også når tiltakstypen ikke gir rett, fratar rett eller er ukjent`() {
         val girIkkeRett = deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"), fraOgMed = null)
             .shouldBeInstanceOf<Tiltaksdeltakelse.GirIkkeRett>()
         girIkkeRett.fraOgMed shouldBe null
         girIkkeRett.tilOgMed shouldBe slutt
+
+        val fratarRett = deltakelse(tiltakstype = Tiltakstype.SomFratarRett("MIDLONTIL"), tilOgMed = null)
+            .shouldBeInstanceOf<Tiltaksdeltakelse.FratarRett>()
+        fratarRett.fraOgMed shouldBe start
+        fratarRett.tilOgMed shouldBe null
 
         val ukjent = deltakelse(tiltakstype = Tiltakstype.Ukjent("NY_KODE"), tilOgMed = null)
             .shouldBeInstanceOf<Tiltaksdeltakelse.UkjentTiltakstype>()

@@ -32,6 +32,24 @@ internal class TiltaksdeltakelserTest {
     }
 
     @Test
+    fun `fratarRett er de gyldige deltakelsene der tiltakstypen fratar rett`() {
+        val fratarRett = testdeltakelse(id = "TA1", tiltakstype = Tiltakstype.SomFratarRett("MIDLONTIL"))
+        val utenRett = testdeltakelse(id = "TA2", tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"))
+        val girRett = testdeltakelse(id = "TA3")
+        val ugyldigFratarRett = testdeltakelse(
+            id = "TA4",
+            tiltakstype = Tiltakstype.SomFratarRett("VARLONTIL"),
+            fraOgMed = testSlutt,
+            tilOgMed = testStart,
+        )
+        val samling = Tiltaksdeltakelser(listOf(fratarRett, utenRett, girRett, ugyldigFratarRett))
+
+        samling.fratarRett shouldContainExactly listOf(fratarRett)
+        samling.girRett shouldContainExactly listOf(girRett)
+        samling.ugyldige shouldContainExactly listOf(ugyldigFratarRett)
+    }
+
+    @Test
     fun `ukjente kildeverdier samles på tvers av deltakelsene`() {
         val samling = Tiltaksdeltakelser(
             listOf(

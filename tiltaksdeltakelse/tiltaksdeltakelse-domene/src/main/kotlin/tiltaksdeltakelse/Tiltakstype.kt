@@ -1,14 +1,15 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
 /**
- * Tiltakstypen slik den kom fra kilden, klassifisert etter om vi kjenner den igjen og om den gir rett.
+ * Tiltakstypen slik den kom fra kilden, klassifisert etter om vi kjenner den igjen og hva den betyr for retten.
  *
  * Dette er inngangsverdien til [tiltaksdeltakelse]-fabrikken.
  * Klassifiseringen gjøres i infrastrukturen, som eier kodetabellene fra Arena, Komet og Team Tiltak.
  *
  * Granulariteten er bevisst skjev.
  * [SomGirRett] bærer i tillegg en enum fordi vi diskriminerer på den — den avgjør blant annet stønadstype ved utbetaling.
- * De to andre bærer bare koden, fordi vi aldri trenger å skille dem fra hverandre.
+ * De andre bærer bare koden, fordi vi aldri trenger å skille kodene innenfor dem fra hverandre.
+ * At [SomFratarRett] er skilt ut fra [SomIkkeGirRett] er et skille mellom to konsekvenser for retten, ikke mellom koder.
  */
 sealed interface Tiltakstype {
     /**
@@ -35,6 +36,16 @@ sealed interface Tiltakstype {
      * Koden er kjent, men gir ikke rett til tiltakspenger.
      */
     data class SomIkkeGirRett(
+        override val tiltakskodeFraKilden: String,
+    ) : Tiltakstype
+
+    /**
+     * Koden er kjent, og deltakelse i tiltaket fratar rett til tiltakspenger.
+     *
+     * Skilt ut fra [SomIkkeGirRett] fordi konsekvensen er en annen: tiltaket gir ikke bare ingen rett selv, saksbehandler må også se det.
+     * I første omgang omfatter den alle typer lønnstilskudd.
+     */
+    data class SomFratarRett(
         override val tiltakskodeFraKilden: String,
     ) : Tiltakstype
 

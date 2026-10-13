@@ -27,7 +27,7 @@ data class SøknadDTO(
     val saksnummer: String,
     /**
      * Søkerens svar på om hen vil søke barnetillegg.
-     * Er null for søknader fra før søknaden spurte om dette. Da var det barnelistene som avgjorde om det var søkt.
+     * Er null for søknader fra før søknaden spurte om dette, da var det barnelistene som avgjorde om det var søkt.
      */
     val harSøktOmBarnetillegg: JaNeiSpmDTO? = null,
 )

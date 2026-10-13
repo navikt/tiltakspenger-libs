@@ -37,7 +37,7 @@ internal class SøkbarhetTest {
         testdeltakelse(tiltakstype = Tiltakstype.Ukjent("NOE_HELT_NYTT")).søkbarhet(påDato) shouldBe
             Søkbarhet.KanIkkeSøkesPå("Tiltakskoden fra kilden er ikke i tabellene våre ennå, og deltakelsen må vurderes manuelt før bruker kan søke.")
 
-        testdeltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR")).søkbarhet(påDato) shouldBe
+        testdeltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet)).søkbarhet(påDato) shouldBe
             Søkbarhet.KanIkkeSøkesPå("Tiltakstypen gir ikke rett til tiltakspenger.")
 
         testdeltakelse(kildestatus = Arenastatus.Ukjent("NY_KONTRAKTSVERDI")).søkbarhet(påDato) shouldBe

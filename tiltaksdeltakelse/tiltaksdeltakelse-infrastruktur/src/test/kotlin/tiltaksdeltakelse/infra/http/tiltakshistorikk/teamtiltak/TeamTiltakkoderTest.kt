@@ -35,6 +35,16 @@ class TeamTiltakkoderTest {
     }
 
     @Test
+    fun `lønnstilskuddene er pinnet og er kjente koder uten rett`() {
+        teamTiltakkoderForLønnstilskudd shouldBe setOf(
+            "FIREARIG_LONNSTILSKUDD",
+            "MIDLERTIDIG_LONNSTILSKUDD",
+            "VARIG_LONNSTILSKUDD",
+        )
+        (teamTiltakkoderForLønnstilskudd - kjenteTeamTiltakkoderUtenRett).shouldBeEmpty()
+    }
+
+    @Test
     fun `alle kjente team tiltak-statuser blir Kjent`() {
         TeamTiltakstatus.Type.entries.forEach { type ->
             teamTiltakstatus(type.name).getOrFail() shouldBe TeamTiltakstatus.Kjent(type)

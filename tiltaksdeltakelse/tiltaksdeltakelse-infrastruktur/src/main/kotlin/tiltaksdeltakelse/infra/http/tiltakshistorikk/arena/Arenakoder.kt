@@ -139,8 +139,25 @@ internal val kjenteArenakoderUtenRett: Set<String> = setOf(
     "YHEMMOFF",
 )
 
+/**
+ * Arena-kodene for lønnstilskudd, alle typer — en delmengde av [kjenteArenakoderUtenRett].
+ */
+internal val arenakoderForLønnstilskudd: Set<String> = setOf(
+    "FIREARIG_LONNSTILSKUDD",
+    "FLEKSJOBB",
+    "LONNTIL",
+    "LONNTILAAP",
+    "LONNTILL",
+    "LONNTILS",
+    "MIDLONTIL",
+    "REAKTUFOR",
+    "TIDSUBLONN",
+    "UFØREPENLØ",
+    "VARLONTIL",
+)
+
 internal fun arenaTiltakstype(tiltakskode: String): Either<UgyldigKontraktsverdi, Tiltakstype> =
-    tiltakstype(tiltakskode, arenakoderSomGirRett, kjenteArenakoderUtenRett, "Arena")
+    tiltakstype(tiltakskode, arenakoderSomGirRett, kjenteArenakoderUtenRett, arenakoderForLønnstilskudd, "Arena")
 
 internal fun arenastatus(kodeIKontrakten: String): Either<UgyldigKontraktsverdi, Arenastatus> {
     val kjent = Arenastatus.Type.entries.find { it.name == kodeIKontrakten }

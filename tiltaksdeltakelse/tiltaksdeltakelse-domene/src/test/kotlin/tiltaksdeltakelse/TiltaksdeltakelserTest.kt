@@ -32,6 +32,29 @@ internal class TiltaksdeltakelserTest {
     }
 
     @Test
+    fun `lønnstilskuddene er de gyldige deltakelsene uten rett i kategorien lønnstilskudd`() {
+        val lønnstilskudd = testdeltakelse(
+            id = "TA1",
+            tiltakstype = Tiltakstype.SomIkkeGirRett("MIDLONTIL", TiltakskategoriUtenRett.Lønnstilskudd),
+        )
+        val annetUtenRett = testdeltakelse(
+            id = "TA2",
+            tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet),
+        )
+        val girRett = testdeltakelse(id = "TA3")
+        val ugyldigLønnstilskudd = testdeltakelse(
+            id = "TA4",
+            tiltakstype = Tiltakstype.SomIkkeGirRett("VARLONTIL", TiltakskategoriUtenRett.Lønnstilskudd),
+            fraOgMed = testSlutt,
+            tilOgMed = testStart,
+        )
+        val samling = Tiltaksdeltakelser(listOf(lønnstilskudd, annetUtenRett, girRett, ugyldigLønnstilskudd))
+
+        samling.lønnstilskudd shouldContainExactly listOf(lønnstilskudd)
+        samling.ugyldige shouldContainExactly listOf(ugyldigLønnstilskudd)
+    }
+
+    @Test
     fun `ukjente kildeverdier samles på tvers av deltakelsene`() {
         val samling = Tiltaksdeltakelser(
             listOf(
@@ -94,7 +117,7 @@ internal class TiltaksdeltakelserTest {
         // Takket nei, ikke «ikke møtt» — den siste er søkbar ved unntak, se SøkbarhetTest.
         val takketNei = testdeltakelse(id = "TA2", kildestatus = Arenastatus.Kjent(Arenastatus.Type.TAKKET_NEI_TIL_TILBUD))
         val ukjentStatus = testdeltakelse(id = "TA3", kildestatus = Arenastatus.Ukjent("NY_KONTRAKTSVERDI"))
-        val girIkkeRett = testdeltakelse(id = "TA4", tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"))
+        val girIkkeRett = testdeltakelse(id = "TA4", tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet))
         val ugyldig = testdeltakelse(id = "TA5", fraOgMed = testSlutt, tilOgMed = testStart)
         val samling = Tiltaksdeltakelser(listOf(søkbar, takketNei, ukjentStatus, girIkkeRett, ugyldig))
 

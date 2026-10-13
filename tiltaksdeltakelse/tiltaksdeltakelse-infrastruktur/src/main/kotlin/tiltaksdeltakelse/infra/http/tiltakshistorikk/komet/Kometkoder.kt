@@ -48,7 +48,7 @@ internal val kjenteKometkoderUtenRett: Set<String> = setOf(
 )
 
 internal fun kometTiltakstype(tiltakskode: String): Either<UgyldigKontraktsverdi, Tiltakstype> =
-    tiltakstype(tiltakskode, kometkoderSomGirRett, kjenteKometkoderUtenRett, "Komet")
+    tiltakstype(tiltakskode, kometkoderSomGirRett, kjenteKometkoderUtenRett, lønnstilskudd = emptySet(), kilde = "Komet")
 
 internal fun kometstatus(
     kodeIKontrakten: String,

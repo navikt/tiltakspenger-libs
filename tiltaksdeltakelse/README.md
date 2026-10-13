@@ -22,10 +22,12 @@ En kode vi ikke kjenner igjen flyter inn som kildens egen `Ukjent`-variant, bær
 Datoene bæres som `periode: LukketEllerÅpenPeriode` fra `periodisering`: en `Periode` når begge datoene er kjent (alltid for `GirRett.MedPeriode`), ellers en `ÅpenPeriode`; bare `Ugyldig`, der datoene ikke henger sammen, har ingen.
 
 **Vår tolkning.** `Deltakerstatus` er domenets egen ordlyd, tre kategorier som avgjør rett: `DeltarEllerHarDeltatt`, `TildeltIkkeStartet` og `IkkeDeltatt`.
+En tiltakstype uten rett bærer en `TiltakskategoriUtenRett` (`Lønnstilskudd` eller `Annet`), slik at konsumenten kan vise lønnstilskudd uten å tolke `tiltakskodeFraKilden`.
+Kategorien settes av kodetabellene i infrastrukturen, som eier klassifiseringen av kildens koder.
 
 Normaliseringen mellom dem er en faglig vurdering, ikke en teknisk oversettelse, og ligger derfor i domenet der den kan granskes og testes.
 
-**Samlingen.** `Tiltaksdeltakelser` er wrapperen rundt alt vi mottok for en person, med narrowing (`girRett`, `ugyldige`, `medUkjentKildestatus`), overlappsvar som `Overlapp { Ja, Nei, Kanskje }` (fra `periodisering`, samme svar som `ÅpenPeriode.overlapperMed`), og uttrekket `somKildenTilsierManKanSøkePå(påDato)` — en egen type som bærer datoen utvalget gjaldt.
+**Samlingen.** `Tiltaksdeltakelser` er wrapperen rundt alt vi mottok for en person, med narrowing (`girRett`, `lønnstilskudd`, `ugyldige`, `medUkjentKildestatus`), overlappsvar som `Overlapp { Ja, Nei, Kanskje }` (fra `periodisering`, samme svar som `ÅpenPeriode.overlapperMed`), og uttrekket `somKildenTilsierManKanSøkePå(påDato)` — en egen type som bærer datoen utvalget gjaldt.
 `UkjentKildeverdi` samler alt kilden sa som vi ikke kjenner igjen — med `hva` («deltakerstatus fra Arena», «årsak fra Komet», …) og `kodeIKontrakten` — slik at varsling og visning slipper å kjenne hver akse.
 
 **Hentingen.** `Tiltakshistorikk` er resultatet av én henting: deltakelsene, `UkjenteDeltakelsesformer` for kontraktsvarianter vi ikke har, og `hentetTidspunkt` ytterst.

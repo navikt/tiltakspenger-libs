@@ -8,7 +8,8 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
  *
  * Granulariteten er bevisst skjev.
  * [SomGirRett] bærer i tillegg en enum fordi vi diskriminerer på den — den avgjør blant annet stønadstype ved utbetaling.
- * De to andre bærer bare koden, fordi vi aldri trenger å skille dem fra hverandre.
+ * [SomIkkeGirRett] bærer bare en grov [TiltakskategoriUtenRett], fordi lønnstilskudd er det eneste vi trenger å skille ut der.
+ * [Ukjent] bærer bare koden.
  */
 sealed interface Tiltakstype {
     /**
@@ -36,6 +37,7 @@ sealed interface Tiltakstype {
      */
     data class SomIkkeGirRett(
         override val tiltakskodeFraKilden: String,
+        val kategori: TiltakskategoriUtenRett,
     ) : Tiltakstype
 
     /**

@@ -3,11 +3,13 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
+import no.nav.tiltakspenger.libs.tiltaksdeltakelse.TiltakskategoriUtenRett
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltakstype
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.TiltakstypeSomGirRett
 
 // Klassifiseringen av en tiltakskode til domenets Tiltakstype, delt mellom kildene — tabellene bor i Arenakoder, Kometkoder og TeamTiltakkoder.
 // Tabellene er data, ikke kontrollflyt: en kode slås opp, og utfallet er SomGirRett, SomIkkeGirRett eller Ukjent.
+// En kode uten rett får i tillegg en kategori, slik at konsumentene kan skille ut lønnstilskudd uten å kjenne kildens koder.
 // Skillet mellom de to siste krever at vi kjenner kildens vokabular: en kode vi aldri har sett kan i prinsippet gi rett og skal varsles på, mens en kjent kode uten rett er hverdagskost.
 // Ukjente koder blir aldri valueOf — det er en påregnelig hendelse, ikke en feil.
 
@@ -15,6 +17,7 @@ internal fun tiltakstype(
     tiltakskode: String,
     somGirRett: Map<String, TiltakstypeSomGirRett>,
     utenRett: Set<String>,
+    lønnstilskudd: Set<String>,
     kilde: String,
 ): Either<UgyldigKontraktsverdi, Tiltakstype> {
     if (tiltakskode.isBlank()) {
@@ -23,7 +26,12 @@ internal fun tiltakstype(
     val girRett = somGirRett[tiltakskode]
     return when {
         girRett != null -> Tiltakstype.SomGirRett(tiltakskodeFraKilden = tiltakskode, tiltakstype = girRett)
-        tiltakskode in utenRett -> Tiltakstype.SomIkkeGirRett(tiltakskodeFraKilden = tiltakskode)
+
+        tiltakskode in utenRett -> Tiltakstype.SomIkkeGirRett(
+            tiltakskodeFraKilden = tiltakskode,
+            kategori = if (tiltakskode in lønnstilskudd) TiltakskategoriUtenRett.Lønnstilskudd else TiltakskategoriUtenRett.Annet,
+        )
+
         else -> Tiltakstype.Ukjent(tiltakskodeFraKilden = tiltakskode)
     }.right()
 }

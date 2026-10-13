@@ -74,18 +74,22 @@ internal class TiltaksdeltakelseTest {
     @Test
     fun `tiltakskoden fra kilden bevares på alle variantene`() {
         deltakelse().tiltakskodeFraKilden shouldBe "INDOPPFAG"
-        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR")).tiltakskodeFraKilden shouldBe "MENTOR"
+        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet)).tiltakskodeFraKilden shouldBe "MENTOR"
         deltakelse(tiltakstype = Tiltakstype.Ukjent("NOE_HELT_NYTT")).tiltakskodeFraKilden shouldBe "NOE_HELT_NYTT"
         deltakelse(fraOgMed = slutt, tilOgMed = start).tiltakskodeFraKilden shouldBe "INDOPPFAG"
         deltakelse(tilOgMed = null).tiltakskodeFraKilden shouldBe "INDOPPFAG"
     }
 
     @Test
-    fun `kjent type uten rett bærer koden som streng`() {
-        val resultat = deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"))
+    fun `kjent type uten rett bærer koden som streng og kategorien fra klassifiseringen`() {
+        val resultat = deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet))
             .shouldBeInstanceOf<Tiltaksdeltakelse.GirIkkeRett>()
 
         resultat.tiltakskodeFraKilden shouldBe "MENTOR"
+        resultat.kategori shouldBe TiltakskategoriUtenRett.Annet
+        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MIDLONTIL", TiltakskategoriUtenRett.Lønnstilskudd))
+            .shouldBeInstanceOf<Tiltaksdeltakelse.GirIkkeRett>()
+            .kategori shouldBe TiltakskategoriUtenRett.Lønnstilskudd
     }
 
     /**
@@ -171,7 +175,7 @@ internal class TiltaksdeltakelseTest {
 
     @Test
     fun `GirIkkeRett og UkjentTiltakstype tar ikke en ÅpenPeriode med begge datoene, men godtar en med én dato`() {
-        val girIkkeRett = deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"))
+        val girIkkeRett = deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet))
             .shouldBeInstanceOf<Tiltaksdeltakelse.GirIkkeRett>()
         val ukjent = deltakelse(tiltakstype = Tiltakstype.Ukjent("NY_KODE"))
             .shouldBeInstanceOf<Tiltaksdeltakelse.UkjentTiltakstype>()
@@ -254,7 +258,7 @@ internal class TiltaksdeltakelseTest {
     @Test
     fun `periodeFraKilden gir perioden når datoene henger sammen`() {
         deltakelse().periodeFraKilden shouldBe Periode(start, slutt)
-        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR")).periodeFraKilden shouldBe Periode(start, slutt)
+        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet)).periodeFraKilden shouldBe Periode(start, slutt)
     }
 
     /**
@@ -263,17 +267,17 @@ internal class TiltaksdeltakelseTest {
     @Test
     fun `periode er lukket når begge datoene er kjent, åpen ellers, og mangler bare for Ugyldig`() {
         deltakelse().periode shouldBe Periode(start, slutt)
-        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR")).periode shouldBe Periode(start, slutt)
+        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet)).periode shouldBe Periode(start, slutt)
         deltakelse(tiltakstype = Tiltakstype.Ukjent("NY_KODE")).periode shouldBe Periode(start, slutt)
         deltakelse(tilOgMed = null).periode shouldBe ÅpenPeriode(start, null)
-        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"), fraOgMed = null).periode shouldBe ÅpenPeriode(null, slutt)
+        deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet), fraOgMed = null).periode shouldBe ÅpenPeriode(null, slutt)
         deltakelse(tiltakstype = Tiltakstype.Ukjent("NY_KODE"), fraOgMed = null, tilOgMed = null).periode shouldBe ÅpenPeriode(null, null)
         deltakelse(fraOgMed = slutt, tilOgMed = start).periode shouldBe null
     }
 
     @Test
     fun `datoene leses fra periode også når tiltakstypen ikke gir rett eller er ukjent`() {
-        val girIkkeRett = deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR"), fraOgMed = null)
+        val girIkkeRett = deltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet), fraOgMed = null)
             .shouldBeInstanceOf<Tiltaksdeltakelse.GirIkkeRett>()
         girIkkeRett.fraOgMed shouldBe null
         girIkkeRett.tilOgMed shouldBe slutt

@@ -33,8 +33,17 @@ internal val kjenteTeamTiltakkoderUtenRett: Set<String> = setOf(
     "VTAO",
 )
 
+/**
+ * Team Tiltak-kodene for lønnstilskudd, alle typer — en delmengde av [kjenteTeamTiltakkoderUtenRett].
+ */
+internal val teamTiltakkoderForLønnstilskudd: Set<String> = setOf(
+    "FIREARIG_LONNSTILSKUDD",
+    "MIDLERTIDIG_LONNSTILSKUDD",
+    "VARIG_LONNSTILSKUDD",
+)
+
 internal fun teamTiltakTiltakstype(tiltakskode: String): Either<UgyldigKontraktsverdi, Tiltakstype> =
-    tiltakstype(tiltakskode, teamTiltakkoderSomGirRett, kjenteTeamTiltakkoderUtenRett, "Team Tiltak")
+    tiltakstype(tiltakskode, teamTiltakkoderSomGirRett, kjenteTeamTiltakkoderUtenRett, teamTiltakkoderForLønnstilskudd, "Team Tiltak")
 
 internal fun teamTiltakstatus(kodeIKontrakten: String): Either<UgyldigKontraktsverdi, TeamTiltakstatus> {
     val kjent = TeamTiltakstatus.Type.entries.find { it.name == kodeIKontrakten }

@@ -137,6 +137,7 @@ sealed interface Tiltaksdeltakelse {
      * Tiltakstypen er kjent, men gir ikke rett til tiltakspenger.
      *
      * Koden bæres som `String` fordi vi aldri diskriminerer på den.
+     * Det vi trenger å skille på, som om tiltaket er et lønnstilskudd, bæres i stedet som [kategori].
      * Deltakelsen flyter likevel inn: saksbehandler skal kunne se den, og den er ofte begrunnelsen for et avslag.
      */
     data class GirIkkeRett(
@@ -144,6 +145,7 @@ sealed interface Tiltaksdeltakelse {
         override val kildestatus: Kildestatus,
         override val tiltakstypenavn: String,
         override val tiltakskodeFraKilden: String,
+        val kategori: TiltakskategoriUtenRett,
         override val tittel: Tilknytningstittel?,
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
@@ -357,6 +359,7 @@ fun tiltaksdeltakelse(
                 kildestatus = kildestatus,
                 tiltakstypenavn = tiltakstypenavn,
                 tiltakskodeFraKilden = tiltakstype.tiltakskodeFraKilden,
+                kategori = tiltakstype.kategori,
                 tittel = tittel,
                 arrangør = arrangør,
                 omfang = omfang,

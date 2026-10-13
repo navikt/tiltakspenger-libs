@@ -67,6 +67,24 @@ class ArenakoderTest {
     }
 
     @Test
+    fun `lønnstilskuddene er pinnet og er kjente koder uten rett`() {
+        arenakoderForLønnstilskudd shouldBe setOf(
+            "FIREARIG_LONNSTILSKUDD",
+            "FLEKSJOBB",
+            "LONNTIL",
+            "LONNTILAAP",
+            "LONNTILL",
+            "LONNTILS",
+            "MIDLONTIL",
+            "REAKTUFOR",
+            "TIDSUBLONN",
+            "UFØREPENLØ",
+            "VARLONTIL",
+        )
+        (arenakoderForLønnstilskudd - kjenteArenakoderUtenRett).shouldBeEmpty()
+    }
+
+    @Test
     fun `alle kjente arena-statuser blir Kjent`() {
         Arenastatus.Type.entries.forEach { type ->
             arenastatus(type.name).getOrFail() shouldBe Arenastatus.Kjent(type)

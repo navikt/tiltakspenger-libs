@@ -29,7 +29,7 @@ internal class UkjentKildeverdiTest {
     fun `en deltakelse der alt lot seg tolke har ingen ukjente kildeverdier`() {
         testdeltakelse().ukjenteKildeverdier shouldBe emptyList()
         testdeltakelse(fraOgMed = null).ukjenteKildeverdier shouldBe emptyList()
-        testdeltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR")).ukjenteKildeverdier shouldBe emptyList()
+        testdeltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR", TiltakskategoriUtenRett.Annet)).ukjenteKildeverdier shouldBe emptyList()
     }
 
     @Test

@@ -55,7 +55,7 @@ logback-syslog4j = "1.0.0"
 logstash-logback-encoder = "9.0"
 # LZ4 brukes ikke direkte, men kafka-clients drar inn 1.10.2, der de native XXHash-implementasjonene kan krasje JVM-en på ugyldige byte-intervaller (GHSA-xx22-p4ch-683r).
 # Vi styrer derfor versjonen selv, på samme måte som netty-linja under.
-lz4 = "1.11.3"
+lz4 = "1.11.4"
 micrometer = "1.17.1"
 mockk = "1.14.11"
 # Netty brukes ikke direkte, men er en hyppig kilde til sikkerhetshull; vi styrer derfor den transitive versjonen selv med en bom.

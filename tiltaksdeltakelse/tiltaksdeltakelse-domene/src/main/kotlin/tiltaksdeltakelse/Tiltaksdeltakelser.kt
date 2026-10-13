@@ -22,6 +22,12 @@ data class Tiltaksdeltakelser(
     /** Deltakelsene der tiltakstypen gir rett — det eneste utvalget beregning noen gang skal se. */
     val girRett: List<Tiltaksdeltakelse.GirRett> get() = deltakelser.filterIsInstance<Tiltaksdeltakelse.GirRett>()
 
+    /**
+     * Deltakelsene der tiltakstypen fratar rett, som lønnstilskudd — til visning for saksbehandler, aldri beregning.
+     * En slik deltakelse med datoer som ikke henger sammen er en [Tiltaksdeltakelse.Ugyldig], og finnes i [ugyldige].
+     */
+    val fratarRett: List<Tiltaksdeltakelse.FratarRett> get() = deltakelser.filterIsInstance<Tiltaksdeltakelse.FratarRett>()
+
     /** Radene med datoer som ikke kan danne en periode — til innsyn og varsling, aldri beregning. */
     val ugyldige: List<Tiltaksdeltakelse.Ugyldig> get() = deltakelser.filterIsInstance<Tiltaksdeltakelse.Ugyldig>()
 

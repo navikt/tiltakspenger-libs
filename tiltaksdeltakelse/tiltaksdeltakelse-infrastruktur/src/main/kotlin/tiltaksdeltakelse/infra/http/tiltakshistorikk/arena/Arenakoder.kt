@@ -42,7 +42,7 @@ internal val arenakoderSomGirRett: Map<String, TiltakstypeSomGirRett> = mapOf(
 )
 
 /**
- * Resten av Arena-vokabularet vi kjenner — dagens `TiltakTypeDTO` minus kodene som gir rett.
+ * Resten av Arena-vokabularet vi kjenner — dagens `TiltakTypeDTO` minus kodene som gir rett og kodene som fratar rett.
  * Merk at langformen `JOBBKLUBB` står her med vilje: det er Komet-navnet som havnet i Arena-vokabularet, og bare Arenas egen `JOBBK` gir rett — paritet med dagens kjede.
  */
 internal val kjenteArenakoderUtenRett: Set<String> = setOf(
@@ -75,8 +75,6 @@ internal val kjenteArenakoderUtenRett: Set<String> = setOf(
     "DIVTILT",
     "EKSPEBIST",
     "ETAB",
-    "FIREARIG_LONNSTILSKUDD",
-    "FLEKSJOBB",
     "FORSAMOENK",
     "FORSAMOGRU",
     "FORSFAGENK",
@@ -97,12 +95,7 @@ internal val kjenteArenakoderUtenRett: Set<String> = setOf(
     "JOBBSKAP",
     "KAT",
     "KURS",
-    "LONNTIL",
-    "LONNTILAAP",
-    "LONNTILL",
-    "LONNTILS",
     "MENTOR",
-    "MIDLONTIL",
     "NETTAMO",
     "NETTKURS",
     "NYTEST",
@@ -110,7 +103,6 @@ internal val kjenteArenakoderUtenRett: Set<String> = setOf(
     "PRAKSKJERM",
     "PRAKSORD",
     "PV",
-    "REAKTUFOR",
     "REFINO",
     "SPA",
     "STATLAERL",
@@ -118,19 +110,16 @@ internal val kjenteArenakoderUtenRett: Set<String> = setOf(
     "SYSSLANG",
     "SYSSOFF",
     "TESTING",
-    "TIDSUBLONN",
     "TILPERBED",
     "TILRETTEL",
     "TILRTILSK",
     "TILSJOBB",
-    "UFØREPENLØ",
     "UTBHLETTPS",
     "UTBHPSLD",
     "UTBHSAMLI",
     "UTDPERMVIK",
     "UTDYRK",
     "VALS",
-    "VARLONTIL",
     "VASV",
     "VATIAROR",
     "VIDRSKOLE",
@@ -139,8 +128,25 @@ internal val kjenteArenakoderUtenRett: Set<String> = setOf(
     "YHEMMOFF",
 )
 
+/**
+ * Arena-kodene som fratar rett: lønnstilskuddene, alle typer.
+ */
+internal val arenakoderSomFratarRett: Set<String> = setOf(
+    "FIREARIG_LONNSTILSKUDD",
+    "FLEKSJOBB",
+    "LONNTIL",
+    "LONNTILAAP",
+    "LONNTILL",
+    "LONNTILS",
+    "MIDLONTIL",
+    "REAKTUFOR",
+    "TIDSUBLONN",
+    "UFØREPENLØ",
+    "VARLONTIL",
+)
+
 internal fun arenaTiltakstype(tiltakskode: String): Either<UgyldigKontraktsverdi, Tiltakstype> =
-    tiltakstype(tiltakskode, arenakoderSomGirRett, kjenteArenakoderUtenRett, "Arena")
+    tiltakstype(tiltakskode, arenakoderSomGirRett, arenakoderSomFratarRett, kjenteArenakoderUtenRett, "Arena")
 
 internal fun arenastatus(kodeIKontrakten: String): Either<UgyldigKontraktsverdi, Arenastatus> {
     val kjent = Arenastatus.Type.entries.find { it.name == kodeIKontrakten }

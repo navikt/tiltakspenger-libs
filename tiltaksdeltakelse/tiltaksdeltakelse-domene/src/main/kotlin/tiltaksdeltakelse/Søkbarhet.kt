@@ -54,6 +54,8 @@ fun Tiltaksdeltakelse.søkbarhet(påDato: LocalDate): Søkbarhet = when (this) {
 
     is Tiltaksdeltakelse.GirIkkeRett -> Søkbarhet.KanIkkeSøkesPå(BEGRUNNELSE_TILTAKSTYPE_UTEN_RETT)
 
+    is Tiltaksdeltakelse.FratarRett -> Søkbarhet.KanIkkeSøkesPå(BEGRUNNELSE_TILTAKSTYPE_SOM_FRATAR_RETT)
+
     is Tiltaksdeltakelse.GirRett.MedPeriode,
     is Tiltaksdeltakelse.GirRett.UtenPeriode,
     -> søkbarhetForStatusen(påDato)
@@ -81,6 +83,9 @@ private const val BEGRUNNELSE_UKJENT_TILTAKSKODE =
 
 private const val BEGRUNNELSE_TILTAKSTYPE_UTEN_RETT =
     "Tiltakstypen gir ikke rett til tiltakspenger."
+
+private const val BEGRUNNELSE_TILTAKSTYPE_SOM_FRATAR_RETT =
+    "Tiltakstypen fratar rett til tiltakspenger."
 
 private const val BEGRUNNELSE_UKJENT_KILDESTATUS =
     "Statusen fra kilden er en kode vi ikke kjenner igjen ennå, og den må mappes før bruker kan søke."

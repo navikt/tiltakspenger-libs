@@ -30,6 +30,7 @@ internal class UkjentKildeverdiTest {
         testdeltakelse().ukjenteKildeverdier shouldBe emptyList()
         testdeltakelse(fraOgMed = null).ukjenteKildeverdier shouldBe emptyList()
         testdeltakelse(tiltakstype = Tiltakstype.SomIkkeGirRett("MENTOR")).ukjenteKildeverdier shouldBe emptyList()
+        testdeltakelse(tiltakstype = Tiltakstype.SomFratarRett("MIDLONTIL")).ukjenteKildeverdier shouldBe emptyList()
     }
 
     @Test

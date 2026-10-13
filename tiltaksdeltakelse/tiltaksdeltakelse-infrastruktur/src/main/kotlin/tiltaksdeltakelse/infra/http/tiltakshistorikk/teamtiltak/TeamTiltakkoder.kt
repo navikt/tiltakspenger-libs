@@ -21,20 +21,26 @@ internal val teamTiltakkoderSomGirRett: Map<String, TiltakstypeSomGirRett> = map
 )
 
 /**
- * Team Tiltak-kodene uten rett: lønnstilskuddene, mentor, inkluderingstilskudd, sommerjobb og VTAO.
+ * Team Tiltak-kodene uten rett: mentor, inkluderingstilskudd, sommerjobb og VTAO.
  */
 internal val kjenteTeamTiltakkoderUtenRett: Set<String> = setOf(
-    "FIREARIG_LONNSTILSKUDD",
     "INKLUDERINGSTILSKUDD",
     "MENTOR",
-    "MIDLERTIDIG_LONNSTILSKUDD",
     "SOMMERJOBB",
-    "VARIG_LONNSTILSKUDD",
     "VTAO",
 )
 
+/**
+ * Team Tiltak-kodene som fratar rett: lønnstilskuddene, alle typer.
+ */
+internal val teamTiltakkoderSomFratarRett: Set<String> = setOf(
+    "FIREARIG_LONNSTILSKUDD",
+    "MIDLERTIDIG_LONNSTILSKUDD",
+    "VARIG_LONNSTILSKUDD",
+)
+
 internal fun teamTiltakTiltakstype(tiltakskode: String): Either<UgyldigKontraktsverdi, Tiltakstype> =
-    tiltakstype(tiltakskode, teamTiltakkoderSomGirRett, kjenteTeamTiltakkoderUtenRett, "Team Tiltak")
+    tiltakstype(tiltakskode, teamTiltakkoderSomGirRett, teamTiltakkoderSomFratarRett, kjenteTeamTiltakkoderUtenRett, "Team Tiltak")
 
 internal fun teamTiltakstatus(kodeIKontrakten: String): Either<UgyldigKontraktsverdi, TeamTiltakstatus> {
     val kjent = TeamTiltakstatus.Type.entries.find { it.name == kodeIKontrakten }

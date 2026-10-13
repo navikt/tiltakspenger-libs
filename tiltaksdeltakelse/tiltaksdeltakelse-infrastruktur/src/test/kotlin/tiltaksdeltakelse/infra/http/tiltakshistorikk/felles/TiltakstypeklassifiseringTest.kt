@@ -7,6 +7,7 @@ import no.nav.tiltakspenger.libs.common.getOrFail
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Tiltakstype
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.TiltakstypeSomGirRett
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.arena.arenaTiltakstype
+import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.arena.arenakoderSomFratarRett
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.arena.arenakoderSomGirRett
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.arena.kjenteArenakoderUtenRett
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.komet.kjenteKometkoderUtenRett
@@ -14,6 +15,7 @@ import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.k
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.komet.kometkoderSomGirRett
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.teamtiltak.kjenteTeamTiltakkoderUtenRett
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.teamtiltak.teamTiltakTiltakstype
+import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.teamtiltak.teamTiltakkoderSomFratarRett
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.teamtiltak.teamTiltakkoderSomGirRett
 import org.junit.jupiter.api.Test
 
@@ -25,16 +27,20 @@ class TiltakstypeklassifiseringTest {
             val navn: String,
             val klassifiser: (String) -> Either<UgyldigKontraktsverdi, Tiltakstype>,
             val somGirRett: Map<String, TiltakstypeSomGirRett>,
+            val somFratarRett: Set<String>,
             val utenRett: Set<String>,
         )
 
         listOf(
-            Kilde("Arena", ::arenaTiltakstype, arenakoderSomGirRett, kjenteArenakoderUtenRett),
-            Kilde("Komet", ::kometTiltakstype, kometkoderSomGirRett, kjenteKometkoderUtenRett),
-            Kilde("Team Tiltak", ::teamTiltakTiltakstype, teamTiltakkoderSomGirRett, kjenteTeamTiltakkoderUtenRett),
+            Kilde("Arena", ::arenaTiltakstype, arenakoderSomGirRett, arenakoderSomFratarRett, kjenteArenakoderUtenRett),
+            Kilde("Komet", ::kometTiltakstype, kometkoderSomGirRett, emptySet(), kjenteKometkoderUtenRett),
+            Kilde("Team Tiltak", ::teamTiltakTiltakstype, teamTiltakkoderSomGirRett, teamTiltakkoderSomFratarRett, kjenteTeamTiltakkoderUtenRett),
         ).forEach { kilde ->
             kilde.somGirRett.forEach { (kode, forventet) ->
                 kilde.klassifiser(kode).getOrFail() shouldBe Tiltakstype.SomGirRett(kode, forventet)
+            }
+            kilde.somFratarRett.forEach { kode ->
+                kilde.klassifiser(kode).getOrFail() shouldBe Tiltakstype.SomFratarRett(kode)
             }
             kilde.utenRett.forEach { kode ->
                 kilde.klassifiser(kode).getOrFail() shouldBe Tiltakstype.SomIkkeGirRett(kode)

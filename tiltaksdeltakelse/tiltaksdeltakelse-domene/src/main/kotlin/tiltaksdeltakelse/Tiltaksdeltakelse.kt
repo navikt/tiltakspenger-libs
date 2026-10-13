@@ -159,6 +159,32 @@ sealed interface Tiltaksdeltakelse {
     }
 
     /**
+     * Tiltakstypen er kjent, og deltakelse i den fratar rett til tiltakspenger — se [Tiltakstype.SomFratarRett].
+     *
+     * Koden bæres som `String` fordi vi aldri diskriminerer på den; det er varianten som bærer konsekvensen.
+     * I første omgang omfatter den alle typer lønnstilskudd.
+     * Deltakelsen skal vises tydelig til saksbehandler, men aldri brukes som grunnlag for beregning.
+     */
+    data class FratarRett(
+        override val id: EksternDeltakelseId,
+        override val kildestatus: Kildestatus,
+        override val tiltakstypenavn: String,
+        override val tiltakskodeFraKilden: String,
+        override val tittel: Tilknytningstittel?,
+        override val arrangør: Arrangør,
+        override val omfang: Deltakelsesomfang,
+        override val gjennomføringId: GjennomføringId?,
+        override val periode: LukketEllerÅpenPeriode,
+    ) : Tiltaksdeltakelse {
+        override val fraOgMed: LocalDate? get() = periode.fraOgMed
+        override val tilOgMed: LocalDate? get() = periode.tilOgMed
+
+        init {
+            kreverLukketNårBeggeDatoeneErKjent(periode)
+        }
+    }
+
+    /**
      * Tiltakskoden er ikke i tabellene våre.
      *
      * Før tok en ukjent Arena-kode ned hele oppslaget, fordi mappingen gjorde `valueOf` på fritekst.
@@ -353,6 +379,19 @@ fun tiltaksdeltakelse(
 
         is Tiltakstype.SomIkkeGirRett ->
             Tiltaksdeltakelse.GirIkkeRett(
+                id = id,
+                kildestatus = kildestatus,
+                tiltakstypenavn = tiltakstypenavn,
+                tiltakskodeFraKilden = tiltakstype.tiltakskodeFraKilden,
+                tittel = tittel,
+                arrangør = arrangør,
+                omfang = omfang,
+                gjennomføringId = gjennomføringId,
+                periode = lukketEllerÅpenPeriode(fraOgMed, tilOgMed),
+            )
+
+        is Tiltakstype.SomFratarRett ->
+            Tiltaksdeltakelse.FratarRett(
                 id = id,
                 kildestatus = kildestatus,
                 tiltakstypenavn = tiltakstypenavn,

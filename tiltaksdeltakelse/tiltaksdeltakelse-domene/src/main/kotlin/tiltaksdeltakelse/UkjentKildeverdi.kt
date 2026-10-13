@@ -49,6 +49,7 @@ val Tiltaksdeltakelse.ukjenteKildeverdier: List<UkjentKildeverdi>
             is Tiltaksdeltakelse.GirRett.MedPeriode,
             is Tiltaksdeltakelse.GirRett.UtenPeriode,
             is Tiltaksdeltakelse.GirIkkeRett,
+            is Tiltaksdeltakelse.FratarRett,
             -> null
         }
         if (ukjentTiltakskode != null) {

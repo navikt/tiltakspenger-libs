@@ -49,11 +49,11 @@ class ArenakoderTest {
     fun `arena-vokabularet og rett-utfallet matcher dagens kjede i tiltak-dtos`() {
         val vokabular = TiltakResponsDTO.TiltakTypeDTO.entries
 
-        (arenakoderSomGirRett.keys + kjenteArenakoderUtenRett) shouldBe vokabular.map { it.name }.toSet()
+        (arenakoderSomGirRett.keys + arenakoderSomFratarRett + kjenteArenakoderUtenRett) shouldBe vokabular.map { it.name }.toSet()
 
         vokabular.forEach { kode ->
             kode.toTiltakstypeSomGirRett().fold(
-                { (kode.name in kjenteArenakoderUtenRett) shouldBe true },
+                { (kode.name in arenakoderSomFratarRett + kjenteArenakoderUtenRett) shouldBe true },
                 { rett -> arenakoderSomGirRett[kode.name]?.name shouldBe rett.name },
             )
         }
@@ -62,8 +62,28 @@ class ArenakoderTest {
     @Test
     fun `tabellene er disjunkte og har pinnet størrelse`() {
         arenakoderSomGirRett.size shouldBe 22
-        kjenteArenakoderUtenRett.size shouldBe 91
+        arenakoderSomFratarRett.size shouldBe 11
+        kjenteArenakoderUtenRett.size shouldBe 80
         (arenakoderSomGirRett.keys intersect kjenteArenakoderUtenRett).shouldBeEmpty()
+        (arenakoderSomGirRett.keys intersect arenakoderSomFratarRett).shouldBeEmpty()
+        (arenakoderSomFratarRett intersect kjenteArenakoderUtenRett).shouldBeEmpty()
+    }
+
+    @Test
+    fun `kodene som fratar rett er pinnet — lønnstilskuddene, alle typer`() {
+        arenakoderSomFratarRett shouldBe setOf(
+            "FIREARIG_LONNSTILSKUDD",
+            "FLEKSJOBB",
+            "LONNTIL",
+            "LONNTILAAP",
+            "LONNTILL",
+            "LONNTILS",
+            "MIDLONTIL",
+            "REAKTUFOR",
+            "TIDSUBLONN",
+            "UFØREPENLØ",
+            "VARLONTIL",
+        )
     }
 
     @Test

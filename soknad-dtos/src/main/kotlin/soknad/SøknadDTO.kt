@@ -25,6 +25,11 @@ data class SøknadDTO(
     val trygdOgPensjon: PeriodeSpmDTO,
     val opprettet: LocalDateTime,
     val saksnummer: String,
+    /**
+     * Søkerens svar på om hen vil søke barnetillegg.
+     * Er null for søknader fra før søknaden spurte om dette. Da var det barnelistene som avgjorde om det var søkt.
+     */
+    val harSøktOmBarnetillegg: JaNeiSpmDTO? = null,
 )
 
 data class PersonopplysningerDTO(
@@ -50,8 +55,23 @@ data class BarnetilleggDTO(
     val fornavn: String?,
     val mellomnavn: String?,
     val etternavn: String?,
+    /**
+     * Ja når barnet oppholder seg i Norge eller et annet EØS-land i tiltaksperioden.
+     * Når [oppholdssted] er satt, er dette feltet avledet fra det.
+     */
     val oppholderSegIEØS: JaNeiSpmDTO,
+    /**
+     * Hvor barnet oppholder seg i tiltaksperioden.
+     * Er null for søknader fra før søknaden spurte om dette, da var svaret bare ja/nei på [oppholderSegIEØS].
+     */
+    val oppholdssted: OppholdsstedDTO?,
 )
+
+enum class OppholdsstedDTO {
+    NORGE,
+    ANNET_EØS_LAND,
+    IKKE_EØS_LAND,
+}
 
 enum class AdressebeskyttelseDTO {
     STRENGT_FORTROLIG_UTLAND,

@@ -12,7 +12,7 @@ commons-lang3 = "3.20.0"
 commons-text = "1.15.0"
 confluent = "8.3.1"
 cyclonedx-gradle-plugin = "3.4.1"
-flyway = "13.7.0"
+flyway = "13.8.0"
 # FreeMarker brukes ikke direkte, men Kover drar inn 2.3.32 med en kritisk sårbarhet (GHSA-27j2-h3m2-8237) på bygg-classpathen; fikset i 2.3.35.
 # Låsen i build-logic fjernes når Kover drar freemarker >= 2.3.35.
 freemarker = "2.3.35"

@@ -29,7 +29,7 @@ data class SøknadDTO(
      * Søkerens svar på om hen vil søke barnetillegg.
      * Er null for søknader fra før søknaden spurte om dette, da var det barnelistene som avgjorde om det var søkt.
      */
-    val harSøktOmBarnetillegg: JaNeiSpmDTO? = null,
+    val harSøktOmBarnetillegg: JaNeiSpmDTO?,
 )
 
 data class PersonopplysningerDTO(

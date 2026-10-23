@@ -1,6 +1,5 @@
 package no.nav.tiltakspenger.libs.personklient.infra.pdl.dto
 
-import no.nav.tiltakspenger.libs.person.BarnUtenFolkeregisteridentifikator
 import java.time.LocalDate
 
 enum class ForelderBarnRelasjonRolle {
@@ -38,24 +37,5 @@ fun List<ForelderBarnRelasjon>.toIdenterForBarnIFolkeregisteret(): List<String> 
         .mapNotNull { it.relatertPersonsIdent }
         .distinct()
         .map { it }
-        .toList()
-}
-
-fun List<ForelderBarnRelasjon>.toBarnUtenforFolkeregisteret(): List<BarnUtenFolkeregisteridentifikator> {
-    return this
-        .asSequence()
-        .filter { it.relatertPersonsRolle == ForelderBarnRelasjonRolle.BARN }
-        .filter { it.relatertPersonUtenFolkeregisteridentifikator != null }
-        .map {
-            val barn = it.relatertPersonUtenFolkeregisteridentifikator!!
-            val navn = barn.navn
-            BarnUtenFolkeregisteridentifikator(
-                fornavn = navn?.fornavn,
-                mellomnavn = navn?.mellomnavn,
-                etternavn = navn?.etternavn,
-                fødselsdato = barn.foedselsdato,
-                statsborgerskap = barn.statsborgerskap,
-            )
-        }
         .toList()
 }

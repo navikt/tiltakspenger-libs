@@ -22,7 +22,7 @@ repositories {
     }
 }
 dependencies {
-    implementation("no.nav.tiltakspenger.libs:person-dtos:$felleslibVersion")
+    implementation("no.nav.tiltakspenger.libs:common:$felleslibVersion")
 }
 ```
 

@@ -22,7 +22,6 @@ include(
     // Delt byggoppsett publisert til konsumentene: koordinatene i "versjonskatalog", de transitive constraintsene i "plattform".
     "versjonskatalog",
     "plattform",
-    "person-dtos",
     "arenatiltak-dtos",
     "tiltak-dtos",
     "soknad-dtos",
@@ -49,7 +48,6 @@ include(
     "meldekort",
     "kafka",
     "kafka-avro",
-    "kafka-test",
     "konsist-regler",
     "texas",
     "satser"

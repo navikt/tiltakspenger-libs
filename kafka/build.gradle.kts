@@ -16,6 +16,7 @@ dependencies {
     api(libs.micrometer.core)
 
     testImplementation(project(":test-common"))
-    testImplementation(project(":kafka-test"))
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.testcontainers.kafka)
     testImplementation(libs.micrometer.registry.prometheus)
 }

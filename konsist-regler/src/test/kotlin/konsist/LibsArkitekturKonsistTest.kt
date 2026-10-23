@@ -209,7 +209,6 @@ internal class LibsArkitekturKonsistTest {
                 "no.nav.tiltakspenger.libs.logging",
                 "no.nav.tiltakspenger.libs.persistering.domene",
                 "no.nav.tiltakspenger.libs.periode",
-                "no.nav.tiltakspenger.libs.person",
                 "no.nav.tiltakspenger.libs.personklient",
                 "no.nav.tiltakspenger.libs.tiltaksdeltakelse",
             ),

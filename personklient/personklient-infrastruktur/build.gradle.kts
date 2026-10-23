@@ -4,7 +4,6 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":person-dtos"))
     implementation(project(":logging"))
     implementation(project(":json"))
     implementation(project(":common"))

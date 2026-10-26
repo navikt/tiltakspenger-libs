@@ -73,13 +73,6 @@ enum class OppholdsstedDTO {
     IKKE_EØS_LAND,
 }
 
-enum class AdressebeskyttelseDTO {
-    STRENGT_FORTROLIG_UTLAND,
-    STRENGT_FORTROLIG,
-    FORTROLIG,
-    UGRADERT,
-}
-
 data class JaNeiSpmDTO(
     val svar: SpmSvarDTO,
 )

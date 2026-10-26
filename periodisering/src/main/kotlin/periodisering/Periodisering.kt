@@ -91,46 +91,6 @@ interface Periodisering<T : Any> : List<PeriodeMedVerdi<T>> {
     }
 
     /**
-     * Utvider en periodisering.
-     * Dersom periodiseringen har hull, vil disse fylles inn.
-     * Merk at hvis Periodiseringen er en [IkkesammenhengendePeriodisering], så blir det en [SammenhengendePeriodisering] etter denne operasjonen - bruk [utvid] hvis du ønsker å beholde hullene i den originale periodiseringen
-     */
-    fun utvidOgFyllInnAlleTommePerioder(verdi: T, nyTotalPeriode: Periode): SammenhengendePeriodisering<T> {
-        val nyFørstePeriode = nyTotalPeriode.fraOgMedTil(this.perioder.first().fraOgMed.minusDays(1))
-            ?.let { PeriodeMedVerdi(verdi, it) }
-
-        val eksisterendePerioderMedVerdi = this.perioderMedVerdi
-        val perioderMedFylltInnHull = buildList<PeriodeMedVerdi<T>> {
-            for (current in eksisterendePerioderMedVerdi) {
-                val previous = lastOrNull()
-                if (previous != null && !previous.periode.tilstøter(current.periode)) {
-                    add(
-                        PeriodeMedVerdi(
-                            verdi,
-                            Periode(
-                                previous.periode.tilOgMed.plusDays(1),
-                                current.periode.fraOgMed.minusDays(1),
-                            ),
-                        ),
-                    )
-                }
-                add(current)
-            }
-        }
-
-        val nySistePeriode = Periode(
-            this.perioder.last().fraOgMed,
-            this.perioder.last().tilOgMed.plusDays(1),
-        ).tilOgMedTil(nyTotalPeriode.tilOgMed)?.let {
-            PeriodeMedVerdi(verdi, it)
-        }
-
-        return (listOf(nyFørstePeriode) + perioderMedFylltInnHull + listOf(nySistePeriode))
-            .mapNotNull { it }
-            .tilSammenhengendePeriodisering()
-    }
-
-    /**
      * Merk at vi ikke vil kaste feil, selvom den nye perioden ikke overlapper den gamle.
      * Tenkt at denne erstatter kombinasjonsbruk av utvid + krymp.
      * Dersom det ikke gir mening og sende inn en default-verdi (i de tilfellene periodiseringen vil overlappe den nye perioden), kan man heller bruke [krymp]

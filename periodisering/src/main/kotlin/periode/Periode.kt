@@ -2,7 +2,6 @@ package no.nav.tiltakspenger.libs.periode
 
 import no.nav.tiltakspenger.libs.dato.localeNorsk
 import no.nav.tiltakspenger.libs.dato.norskDatoFormatter
-import no.nav.tiltakspenger.libs.dato.norskDatoMedPunktumFormatter
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
@@ -194,26 +193,6 @@ data class Periode(
         return ikkeOverlappendePerioder(andrePerioder, godtaOverlapp)
     }
 
-    /**
-     * @return null hvis perioden ikke starter etter [dato], ellers en periode fra og med denne.perioden.fraOgMed til og med [dato]
-     */
-    fun fraOgMedTil(dato: LocalDate): Periode? {
-        if (!fraOgMed.isBefore(dato)) {
-            return null
-        }
-        return Periode(fraOgMed, dato)
-    }
-
-    /**
-     * @return null hvis perioden ikke starter etter [dato], ellers en periode fra og med denne.perioden.fraOgMed til og med [dato]
-     */
-    fun tilOgMedTil(dato: LocalDate): Periode? {
-        if (!tilOgMed.isBefore(dato)) {
-            return null
-        }
-        return Periode(tilOgMed, dato)
-    }
-
     override fun toString(): String {
         if (fraOgMed == tilOgMed) {
             return fraOgMed.format(norskDatoFormatter)
@@ -240,15 +219,11 @@ data class Periode(
         return this.month.getDisplayName(TextStyle.FULL, localeNorsk).lowercase()
     }
 
-    fun tilNorskFormat(): String =
-        "${fraOgMed.format(norskDatoMedPunktumFormatter)} - ${tilOgMed.format(norskDatoMedPunktumFormatter)}"
-
     fun inneholder(dato: LocalDate): Boolean = dato in this
 
     fun tilDager(): List<LocalDate> = fraOgMed.datesUntil(tilOgMed.plusDays(1)).toList()
 
     fun minusDager(dager: Long): Periode = Periode(fraOgMed.minusDays(dager), tilOgMed.minusDays(dager))
-    fun minus14Dager(): Periode = minusDager(14)
     fun minusFraOgMed(dager: Long): Periode = Periode(fraOgMed.minusDays(dager), tilOgMed)
     fun minusTilOgMed(dager: Long): Periode = Periode(fraOgMed, tilOgMed.minusDays(dager))
 

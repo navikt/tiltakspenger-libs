@@ -110,4 +110,30 @@ internal class PdlPersonTest {
             ).gtType shouldBe type
         }
     }
+
+    @Test
+    fun `deserialiserer barn uten folkeregisteridentifikator`() {
+        val relasjon = deserialize<ForelderBarnRelasjon>(
+            """
+            {
+              "relatertPersonsIdent": null,
+              "relatertPersonsRolle": "BARN",
+              "minRolleForPerson": "MOR",
+              "relatertPersonUtenFolkeregisteridentifikator": {
+                "navn": { "fornavn": "Barn", "mellomnavn": null, "etternavn": "Utenident" },
+                "foedselsdato": "2020-03-04",
+                "statsborgerskap": "SWE"
+              },
+              "metadata": { "master": "PDL", "endringer": [] },
+              "folkeregistermetadata": null
+            }
+            """.trimIndent(),
+        )
+
+        relasjon.relatertPersonUtenFolkeregisteridentifikator shouldBe RelatertBiPerson(
+            navn = Personnavn(fornavn = "Barn", mellomnavn = null, etternavn = "Utenident"),
+            foedselsdato = LocalDate.of(2020, 3, 4),
+            statsborgerskap = "SWE",
+        )
+    }
 }

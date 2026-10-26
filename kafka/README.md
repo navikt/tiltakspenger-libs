@@ -79,6 +79,11 @@ val producer = Producer<String, String>(producerConfig = kafkaConfig.producerCon
 
 `producerConfig()` bruker String-serialisering for nøkkel og verdi; trenger du noe annet, finnes en variant som tar serialisererne som parametre.
 
+`Producer` lukker seg ikke selv, heller ikke ved shutdown.
+Det er trygt å la den stå åpen til JVM-en avslutter: hver sending venter på kvittering fra Kafka, så bufferen er alltid tom, og nettverkstråden er en daemon-tråd som ikke holder JVM-en i live.
+Den registrerer bevisst ingen shutdown-hook, fordi en slik hook kjører parallelt med avslutningen i Ktor og kan stenge produsenten mens jobbene fortsatt sender.
+`Producer` er `AutoCloseable`, så vil du likevel lukke den, kaller du `close()` etter at jobbene som sender, er stoppet, for eksempel på `ApplicationStopped`.
+
 ## Migrering fra det gamle API-et
 
 Det gamle `KafkaConfig`-interfacet med `KafkaConfigImpl` og `LocalKafkaConfig` i pakka `kafka.config` er fjernet.

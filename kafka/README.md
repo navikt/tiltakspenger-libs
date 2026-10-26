@@ -69,6 +69,9 @@ if (Configuration.isNais()) {
 }
 ```
 
+`ManagedKafkaConsumer` stopper seg ikke selv ved shutdown og registrerer bevisst ingen shutdown-hook.
+Den som starter consumeren, kaller `stop()`; i appene gjør livssyklusen i `ktor-common` det når consumeren er registrert med `KafkaConsumerOppsett`.
+
 ## Producer
 
 `Producer` tar konfigurasjonsmappa direkte, på samme måte som `ManagedKafkaConsumer`:

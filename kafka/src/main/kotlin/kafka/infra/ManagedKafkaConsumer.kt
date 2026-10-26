@@ -22,6 +22,13 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.min
 import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * Kjører konsument-loopen for ett topic.
+ *
+ * Konsumenten stopper seg ikke selv ved shutdown; den som starter den, kaller [stop].
+ * I appene gjør livssyklusen i `ktor-common` det, via `KafkaConsumerOppsett`.
+ * Den registrerer bevisst ingen shutdown-hook, fordi en slik hook kjører parallelt med avslutningen i Ktor, gjør at [stop] kalles to ganger, og etterlater en tråd per instans.
+ */
 class ManagedKafkaConsumer<K, V>(
     private val topic: String,
     private val config: Map<String, *>,
@@ -65,12 +72,6 @@ class ManagedKafkaConsumer<K, V>(
         baseDelayMillis = baseBackoffDelayMillis,
         initialDelayMillis = initialBackoffDelayMillis,
     )
-
-    init {
-        Runtime.getRuntime().addShutdownHook(
-            Thread { stop() },
-        )
-    }
 
     fun run(): Job {
         if (!started.compareAndSet(false, true)) {

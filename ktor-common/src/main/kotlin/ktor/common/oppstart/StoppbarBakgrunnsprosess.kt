@@ -2,14 +2,12 @@ package no.nav.tiltakspenger.libs.ktor.common.oppstart
 
 import io.github.oshai.kotlinlogging.KLogger
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * En bakgrunnsprosess (skedulert jobb, Kafka-consumer e.l.) som kan stoppes rent ved shutdown.
@@ -52,20 +50,14 @@ fun stoppbarKafkaConsumer(
     stoppScope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
     stopp: () -> Unit,
 ): StoppbarBakgrunnsprosess {
-    val stoppJobb = AtomicReference<Deferred<Unit>?>(null)
+    val lås = Any()
+    var stoppJobb: Deferred<Unit>? = null
 
-    fun påbegynnStopp() {
-        // Vanlig tilfelle: stoppen er allerede igangsatt (påbegyntStopp + stop), så vi slipper å opprette en ny jobb.
-        if (stoppJobb.get() != null) return
-        // start = LAZY slik at kun den jobben som faktisk vinner compareAndSet blir startet (idempotent stopp).
-        val nyJobb = stoppScope.async(start = CoroutineStart.LAZY) { stopp() }
-        if (stoppJobb.compareAndSet(null, nyJobb)) {
+    // Låsen gjør stoppen idempotent: kaller flere tråder samtidig, starter bare den første jobben, og ingen ubrukt jobb blir liggende i scopet.
+    fun påbegynnStopp(): Deferred<Unit> = synchronized(lås) {
+        stoppJobb ?: stoppScope.async { stopp() }.also {
             log.info { "Signaliserer stopp til $navn" }
-            nyJobb.start()
-        } else {
-            // Tapte kappløpet (en annen tråd vant CAS).
-            // Kanseller den ubrukte LAZY-jobben med en gang så den ikke henger igjen som et ikke-startet child i scopet til scopet rives ned.
-            nyJobb.cancel()
+            stoppJobb = it
         }
     }
 
@@ -73,12 +65,11 @@ fun stoppbarKafkaConsumer(
         navn = navn,
         stopp = {
             // Sikrer at stoppen er igangsatt (selv om ApplicationStopPreparing ikke ble fyrt) og venter på at den fullføres.
-            påbegynnStopp()
-            val jobb = stoppJobb.get()
+            val jobb = påbegynnStopp()
             try {
                 // stop() kalles fra Ktor sin blokkerende shutdown-callback, så vi joiner via runBlocking.
                 // await() kaster videre en evt. feil fra stopp-coroutinen, slik at shutdown-problemer blir synlige (og håndteres/logges av stoppBakgrunnsprosesser).
-                runBlocking { jobb?.await() }
+                runBlocking { jobb.await() }
             } catch (e: InterruptedException) {
                 // runBlocking kaster InterruptedException hvis shutdown-tråden blir avbrutt mens vi venter.
                 // Bevar interrupt-flagget slik at kallende kode ser avbruddet.

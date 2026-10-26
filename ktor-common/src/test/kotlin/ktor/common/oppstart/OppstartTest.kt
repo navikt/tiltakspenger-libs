@@ -476,7 +476,7 @@ class OppstartTest {
         stoppScope.coroutineContext.job.children.count() shouldBe 1
 
         // Kall påbegyntStopp mange ganger mens stoppen fortsatt kjører.
-        // Hvert kall skal returnere tidlig (og et evt. CAS-tap kanselleres umiddelbart), så det skal ikke samle seg opp ubrukte, ikke-startede LAZY-jobber i scopet.
+        // Hvert kall skal returnere tidlig uten å lage en ny jobb, så det skal ikke samle seg opp ubrukte jobber i scopet.
         repeat(20) { prosess.påbegynStopp() }
         stoppScope.coroutineContext.job.children.count() shouldBe 1
 
@@ -632,7 +632,7 @@ class OppstartTest {
 
     @Test
     fun `stoppbarKafkaConsumer er idempotent under samtidige påbegynStopp og starter stoppen nøyaktig en gang`() {
-        // Kjører mange runder med flere tråder som kaller påbegynStopp samtidig, slik at CAS-tap-grenen (avbryt den ubrukte LAZY-jobben) trigges.
+        // Kjører mange runder med flere tråder som kaller påbegynStopp samtidig.
         repeat(50) {
             val stoppKalt = AtomicInteger(0)
             val prosess = stoppbarKafkaConsumer(log = log, navn = "samtidig-consumer") {

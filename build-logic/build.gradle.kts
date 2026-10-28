@@ -7,12 +7,12 @@
 buildscript {
     dependencies {
         // Lukker sårbarheter i jackson-databind og jackson-core fra cyclonedx-pluginen.
-        add("classpath", platform("com.fasterxml.jackson:jackson-bom:2.22.3"))
+        add("classpath", platform("com.fasterxml.jackson:jackson-bom:2.22.4"))
         constraints {
             // `kotlin-dsl` (versjonen følger Gradle-distribusjonen) drar kotlin-gradle-plugin 2.4.0 med CVE-2026-53914
             // (usikker deserialisering i build cache). Hold i sync med `kotlin` i katalogen; kan fjernes når Gradle
             // selv leverer en kotlin-dsl som bygger på Kotlin >= 2.4.20 (sjekk med `./gradlew -p build-logic buildEnvironment`).
-            add("classpath", "org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.20")
+            add("classpath", "org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21")
         }
     }
 }

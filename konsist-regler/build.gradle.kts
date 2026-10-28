@@ -6,14 +6,6 @@ dependencies {
     // `api` slik at konsumentene får Konsist-typene (KoScope) transitivt og versjonen styres ett sted.
     api(libs.konsist)
 
-    constraints {
-        // Konsist 0.17.3 setter opp kompilatormiljøet sitt mot kotlin-compiler-embeddable 2.0.21 og krasjer med 2.4.20
-        // («Extensions storage is not registered»), som app-repoenes kotlin-bom ellers løfter den til.
-        // `api` slik at constrainten følger med til konsumentene, sammen med Konsist-typene over.
-        // Fjernes — sammen med app-repoenes egne pinner og `ignore` i dependabot.yml — når Konsist støtter Kotlin 2.4.
-        api("org.jetbrains.kotlin:kotlin-compiler-embeddable") { version { strictly("2.0.21") } }
-    }
-
     // Bevisst ikke test-common: denne modulen skal stå på egne ben, og trenger kun assertions.
     testImplementation(libs.kotest.assertions.core)
 }

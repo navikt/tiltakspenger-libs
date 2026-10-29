@@ -152,8 +152,12 @@ jobs:
       # Publiseringen skjer FØR release, men ETTER attesteringen: attestasjonen binder filenes digest, og digesten
       # endres ikke av å laste dem opp. Rekkefølgen gjør at en feilet attestering aldri kan etterlate et
       # publisert artefakt uten proveniens - motsatt rekkefølge ga nettopp det vinduet.
+      # Jar-ene er allerede bygget og er UP-TO-DATE her; steget er bare opplasting. GitHub Packages bruker ~1 s per
+      # HTTP-kall, og hver modul er ~25 kall (artefakter, sjekksummer, maven-metadata), altså ~30 s per modul.
+      # Gradle begrenser parallelle tasks til antall CPU-er (4 på runneren), som ga ~6 min for 22 publikasjoner.
+      # Opplastingen venter på nettverket, ikke CPU, så vi lar alle modulene laste opp samtidig.
       - name: Publiser til GitHub Packages
-        run: ./gradlew --console=plain -Pversion=${{ steps.tag.outputs.version }} publish
+        run: ./gradlew --console=plain --max-workers=24 -Pversion=${{ steps.tag.outputs.version }} publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_DEPENDENCY_GRAPH_ENABLED: 'false'

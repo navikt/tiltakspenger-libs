@@ -10,7 +10,7 @@ workflows:
         - 'actions/attest-sbom@v4.1.0'
         - 'actions/attest@v4.2.2'
         - 'actions/checkout@v7.0.1'
-        - 'actions/setup-java@v6.0.0'
+        - 'actions/setup-java@v6.1.0'
         - 'gradle/actions@v6.3.0'
         - 'softprops/action-gh-release@v3.0.3'
     '.github/workflows/test-and-build-on-push.yml': []
@@ -37,9 +37,9 @@ dependencies:
         commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
         owner_id: 44036562
         repo_id: 197814629
-    'actions/setup-java@v6.0.0':
-        ref: 'v6.0.0'
-        commit: 'sha1-dd06d9cba3e5552c54d9f8ea23572deb30010f7c'
+    'actions/setup-java@v6.1.0':
+        ref: 'v6.1.0'
+        commit: 'sha1-b843ebf9b913146b38da2eaa7aeddf76074ae1ad'
         owner_id: 44036562
         repo_id: 196057608
     'gradle/actions@v6.3.0':

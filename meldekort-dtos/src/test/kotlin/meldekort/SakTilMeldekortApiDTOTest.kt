@@ -98,8 +98,6 @@ class SakTilMeldekortApiDTOTest {
                         "fraOgMed": "2024-01-01",
                         "tilOgMed": "2024-01-14"
                     },
-                    "fraOgMed": "2024-01-01",
-                    "tilOgMed": "2024-01-14",
                     "antallDagerForPeriode": 10,
                     "girRett": {
                         "2024-01-01": false,

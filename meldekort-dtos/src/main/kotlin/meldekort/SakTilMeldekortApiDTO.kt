@@ -30,17 +30,6 @@ data class SakTilMeldekortApiDTO(
         val antallDagerForPeriode: Int,
         val girRett: Map<LocalDate, Boolean>,
     ) {
-        /**
-         * Bakoverkompatibilitet: meldekort-api / andre konsumenter som ikke er oppgradert leser fortsatt `fraOgMed`/`tilOgMed` flatt.
-         * Slik unngår vi koordinerte deploys.
-         * Fjernes når alle konsumenter har gått over til [periodeDTO].
-         */
-        @Deprecated("Bruk periodeDTO.fraOgMed", ReplaceWith("periodeDTO.fraOgMed"))
-        val fraOgMed: String = periodeDTO.fraOgMed
-
-        @Deprecated("Bruk periodeDTO.tilOgMed", ReplaceWith("periodeDTO.tilOgMed"))
-        val tilOgMed: String = periodeDTO.tilOgMed
-
         init {
             val (fraOgMed, tilOgMed) = validerMeldeperiode(periodeDTO)
             val forventedeDatoer = (0L..13L).map { fraOgMed.plusDays(it) }.toSet()

@@ -7,6 +7,12 @@ Publiseres til GitHub Packages og konsumeres av flere tjenester (bl.a. `tiltaksp
 > Hele biblioteket — inkludert alle moduler — er designet for og testet med Kotlin.
 > Vi bruker `inline`/`reified`, default-parametere, value classes, extension functions og andre Kotlin-features fritt i det offentlige API-et.
 > Java-interop er hverken testet eller støttet; ikke regn med at signaturer er stabile fra Java.
+>
+> **Laget for tiltakspenger-tjenestene.**
+> Biblioteket er laget for teamets egne tjenester.
+> Vi endrer koden etter egne behov og tilpasser våre tjenester ved nye versjoner.
+> Endringer kan bryte bakoverkompatibilitet, også i det offentlige API-et.
+> Andre står fritt til å bruke koden, men vi tilbyr ikke brukerstøtte og tar ikke hensyn til andre brukere når vi endrer biblioteket.
 
 Se [AGENTS.md](AGENTS.md) for en grundig gjennomgang av arkitektur, moduler og konvensjoner.
 

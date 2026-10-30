@@ -104,7 +104,8 @@ class ManagedKafkaConsumer<K, V>(
     fun stop() {
         log?.info { "Stopping consumer for topic: $topic" }
         running = false
-        // Avbryt en eventuell blokkerende poll/commit slik at consumeren avslutter raskt, i stedet for å vente ut pollDuration eller en pågående backoff.
+        // Avbryt en eventuell blokkerende poll slik at consumeren avslutter raskt, i stedet for å vente ut pollDuration eller en pågående backoff.
+        // Treffer wakeup() mens en batch behandles, kaster den første commitSync() WakeupException; da committer vi på nytt (se commitEtterBehandling), slik at batchen likevel blir committet.
         try {
             consumer?.wakeup()
         } catch (t: Throwable) {
@@ -112,6 +113,7 @@ class ManagedKafkaConsumer<K, V>(
         }
         // Vent på at konsument-loopen fullfører pågående prosessering + commit, slik at vi ikke avbryter midt i en batch.
         // Da unngår vi unødvendig reprosessering (at-least-once) ved oppstart.
+        // Venter vi lenger enn shutdownTimeout, avbrytes coroutinen, og batchen leses på nytt ved neste oppstart.
         val activeJob = consumerJob ?: return
         runBlocking {
             try {
@@ -179,7 +181,7 @@ class ManagedKafkaConsumer<K, V>(
         try {
             records.forEach { record -> process(record) }
             // det er viktig at committing av offset først skjer når alle records er behandlet ok, hvis ikke risikerer vi at records som har feilet ikke blir forsøkt på nytt hvis vi har lest flere records i en poll
-            consumer.commitSync()
+            commitEtterBehandling(consumer)
             status.success()
             målinger.registrerVellykketKjøring(topic)
         } catch (e: WakeupException) {
@@ -191,6 +193,20 @@ class ManagedKafkaConsumer<K, V>(
             status.failure()
             // Spol tilbake til starten av batchen slik at de samme recordene leses på nytt, uten å måtte unsubscribe og utløse en full (kostbar) rebalance.
             seekToBatchStart(consumer, records)
+        }
+    }
+
+    /**
+     * Committer offset etter at batchen er behandlet.
+     * [stop] kaller wakeup() som er sticky, så en wakeup som traff under behandlingen får første commitSync() til å kaste [WakeupException] uten å committe.
+     * Wakeupen er da brukt opp, og vi committer på nytt slik at den ferdig behandlede batchen ikke leses om igjen etter deploy.
+     */
+    private fun commitEtterBehandling(consumer: KafkaConsumer<K, V>) {
+        try {
+            consumer.commitSync()
+        } catch (_: WakeupException) {
+            log?.info { "Consumer for $topic ble vekket under commit; committer batchen på nytt før den avslutter." }
+            consumer.commitSync()
         }
     }
 

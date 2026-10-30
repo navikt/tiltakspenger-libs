@@ -11,6 +11,10 @@ Publiseres til GitHub Packages.
 **Deployes ikke til NAIS.**
 Brukes av `tiltakspenger-saksbehandling-api`, `tiltakspenger-soknad-api`, `tiltakspenger-meldekort-api`, `tiltakspenger-datadeling`, `tiltakspenger-tiltak` med flere.
 
+**Bare tiltakspenger-tjenestene teller som konsumenter.**
+Fjern ubrukt kode og endre signaturer når det forbedrer biblioteket, uten å lete etter konsumenter utenfor teamet.
+Teamet tilpasser egne tjenester ved oppgradering til ny versjon.
+
 ## Arkitektur
 
 - **Gradle-submoduler** — se `settings.gradle.kts`.

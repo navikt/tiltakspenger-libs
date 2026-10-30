@@ -659,4 +659,54 @@ class OppstartTest {
             stoppKalt.get() shouldBe 1
         }
     }
+
+    @Test
+    fun `stoppBakgrunnsprosesser stopper alle selv om en blir avbrutt og setter interrupt-flagget igjen`() {
+        val stoppet = mutableListOf<String>()
+
+        try {
+            stoppBakgrunnsprosesser(
+                log = log,
+                bakgrunnsprosesser = listOf(
+                    StoppbarBakgrunnsprosess(navn = "først") { stoppet.add("først") },
+                    StoppbarBakgrunnsprosess(navn = "avbrutt") { throw InterruptedException("avbrutt") },
+                    StoppbarBakgrunnsprosess(navn = "sist") { stoppet.add("sist") },
+                ),
+            )
+
+            stoppet shouldBe listOf("først", "sist")
+            Thread.currentThread().isInterrupted shouldBe true
+        } finally {
+            // Rydder flagget slik at det ikke lekker til andre tester på samme tråd.
+            Thread.interrupted()
+        }
+    }
+
+    @Test
+    fun `påbegynStopp signaliseres til alle selv om en blir avbrutt og interrupt-flagget settes igjen`() = testApplication {
+        val signalisert = mutableListOf<String>()
+        lateinit var app: Application
+        application {
+            app = this
+            konfigurerLivssyklus(
+                log = log,
+                readiness = Readiness(),
+                startBakgrunnsprosesser = {
+                    listOf(
+                        StoppbarBakgrunnsprosess(navn = "avbrutt", påbegynStopp = { throw InterruptedException("avbrutt") }, stopp = {}),
+                        StoppbarBakgrunnsprosess(navn = "feilende", påbegynStopp = { error("Feil") }, stopp = {}),
+                        StoppbarBakgrunnsprosess(navn = "sist", påbegynStopp = { signalisert.add("sist") }, stopp = {}),
+                    )
+                },
+            )
+        }
+        client.get("/isalive")
+
+        app.monitor.raise(ServerReady, app.environment)
+        app.monitor.raise(ApplicationStopPreparing, app.environment)
+        val avbrutt = Thread.interrupted()
+
+        signalisert shouldBe listOf("sist")
+        avbrutt shouldBe true
+    }
 }

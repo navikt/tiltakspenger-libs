@@ -1,6 +1,5 @@
 package no.nav.tiltakspenger.libs.jobber
 
-import arrow.core.Either
 import arrow.core.NonEmptyList
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -26,7 +25,7 @@ import kotlin.time.Duration.Companion.seconds
  *  1. To [Kjøremodus.SERIELT]-grupper kjører aldri samtidig.
  *     De drives av én felles seriell coroutine som våkner på neste due-tidspunkt og kjører due grupper én for én.
  *  2. Tasks innad i en gruppe kjøres serielt i listerekkefølge.
- *     En feil i én task stopper ikke de øvrige (hver wrappes i [Either.catch] og loggføres).
+ *     En feil i én task stopper ikke de øvrige (hver fanges og loggføres, også en timeout fra withTimeout).
  *  3. Fixed-delay: neste kjøring av en seriell gruppe planlegges [TaskGruppe.intervall] etter at hele kjøringsrunden (alle due grupper) er ferdig; for en parallell gruppe etter at gruppen selv er ferdig.
  *     Serielle grupper med likt intervall holder seg dermed i samme runde, slik at «ingen arbeid»-logging kan samles per runde.
  *  4. Melder en task [TaskResultat.MerArbeid] og [TaskGruppe.kjørKontinuerligTilTom] er satt, kjøres gruppen på nytt umiddelbart til den er à jour, før den faller tilbake til [TaskGruppe.intervall].
@@ -170,9 +169,12 @@ class GruppertTaskExecutor private constructor(
         var merArbeid = false
         var ingenArbeid = true
         var feilet = false
-        withCorrelationIdSuspend(log, mdcCallIdKey) { correlationId ->
+        withCorrelationIdSuspend(mdcCallIdKey) { correlationId ->
             gruppe.tasks.forEach { task ->
-                Either.catch {
+                // Vanlig try/catch, ikke Either.catch: Arrow 2.x kaster CancellationException videre, og dermed også TimeoutCancellationException fra withTimeout i en task.
+                // Kjøringen er NonCancellable, så en CancellationException her kommer fra tasken selv (typisk timeout) og skal bare feile denne tasken, ikke avslutte løkka.
+                // Ekte kansellering av løkka sjekkes av kallerne (isActive) og av delay mellom kjøringene.
+                try {
                     when (task(correlationId)) {
                         TaskResultat.MerArbeid -> {
                             merArbeid = true
@@ -188,7 +190,7 @@ class GruppertTaskExecutor private constructor(
 
                         TaskResultat.IngenArbeid -> Unit
                     }
-                }.onLeft { throwable ->
+                } catch (throwable: Exception) {
                     ingenArbeid = false
                     feilet = true
                     log.error(throwable) { "Feil ved kjøring av task i gruppe '${gruppe.navn}'. correlationId: $correlationId" }

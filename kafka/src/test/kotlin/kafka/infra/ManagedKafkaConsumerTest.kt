@@ -25,6 +25,8 @@ import java.time.Clock
 import java.time.Duration
 import java.util.Properties
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
 
 class ManagedKafkaConsumerTest {
@@ -377,6 +379,65 @@ class ManagedKafkaConsumerTest {
         // stop() skal blokkere til den pågående prosesseringen er ferdig.
         consumer.stop()
         processingFinished shouldBe true
+    }
+
+    @Test
+    fun `ManagedKafkaConsumer - record under behandling når stop kalles blir committet`() {
+        val topic = "stop.commit.topic"
+        val groupId = "test-consumer-${UUID.randomUUID()}"
+        produceStringString(ProducerRecord(topic, "key", "value"))
+
+        val config = KafkaConfig(kafkaBrokers = SingletonKafkaProvider.getHost())
+            .consumerConfig(
+                keyDeserializer = StringDeserializer(),
+                valueDeserializer = StringDeserializer(),
+                groupId = groupId,
+            )
+
+        val behandlingStartet = AtomicBoolean(false)
+        val førsteConsumer = ManagedKafkaConsumer(
+            topic = topic,
+            config = config,
+            pollDuration = testPollDuration,
+            baseBackoffDelayMillis = testBaseBackoffDelayMillis,
+            initialBackoffDelayMillis = testInitialBackoffDelayMillis,
+            log = null,
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
+        ) { _: String, _: String ->
+            behandlingStartet.set(true)
+            delay(500)
+        }
+        førsteConsumer.run()
+        runBlocking { eventually { behandlingStartet.get() shouldBe true } }
+
+        // stop() kalles midt i behandlingen; recorden skal likevel committes.
+        førsteConsumer.stop()
+
+        // En ny consumer i samme gruppe skal ikke få recorden på nytt.
+        val reprosessert = AtomicInteger(0)
+        val andreConsumer = ManagedKafkaConsumer(
+            topic = topic,
+            config = config,
+            pollDuration = testPollDuration,
+            baseBackoffDelayMillis = testBaseBackoffDelayMillis,
+            initialBackoffDelayMillis = testInitialBackoffDelayMillis,
+            log = null,
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
+        ) { _: String, _: String ->
+            reprosessert.incrementAndGet()
+        }
+        andreConsumer.run()
+        try {
+            runBlocking {
+                // Gi consumeren tid til å bli med i gruppen og polle flere ganger.
+                delay(3000)
+            }
+            reprosessert.get() shouldBe 0
+        } finally {
+            andreConsumer.stop()
+        }
     }
 }
 

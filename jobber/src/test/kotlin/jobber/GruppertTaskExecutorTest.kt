@@ -18,6 +18,7 @@ import io.kotest.matchers.shouldBe
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import no.nav.tiltakspenger.libs.common.CorrelationId
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
@@ -625,5 +626,41 @@ internal class GruppertTaskExecutorTest {
         }
         executor.stop()
         kjøringer.get() shouldBe 0
+    }
+
+    @Test
+    fun `timeout i en task feiler bare tasken og løkka fortsetter`() {
+        val (logger, fanger) = loggerMedFanger("timeout-i-task-test")
+        val timeoutKjøringer = AtomicInteger(0)
+        val etterpå = AtomicInteger(0)
+        val timeout: suspend (CorrelationId) -> TaskResultat = { _ ->
+            timeoutKjøringer.incrementAndGet()
+            // withTimeout kaster TimeoutCancellationException, som Arrow sin Either.catch ville kastet videre og drept løkka.
+            withTimeout(5.milliseconds) { delay(10.seconds) }
+            TaskResultat.Ferdig
+        }
+        val neste: suspend (CorrelationId) -> TaskResultat = { _ ->
+            etterpå.incrementAndGet()
+            TaskResultat.Ferdig
+        }
+        val executor = GruppertTaskExecutor.startJob(
+            runCheckFactory = alltidLeder(),
+            mdcCallIdKey = "test",
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
+            logger = logger,
+            grupper = nonEmptyListOf(
+                TaskGruppe(navn = "gruppe", intervall = 20.milliseconds, tasks = nonEmptyListOf(timeout, neste), initialDelay = 5.milliseconds),
+            ),
+        )
+        runBlocking {
+            eventually(10.seconds) {
+                timeoutKjøringer.get() shouldBeGreaterThanOrEqualTo 3
+                etterpå.get() shouldBeGreaterThanOrEqualTo 3
+            }
+        }
+        executor.stop()
+
+        fanger.meldinger.any { it.startsWith("Feil ved kjøring av task i gruppe 'gruppe'") } shouldBe true
     }
 }

@@ -47,12 +47,10 @@ internal class TexasPrincipalInternalTest {
     }
 
     @Test
-    fun `toSaksbehandler - tilgang uten treff i autoriserte roller gir tom rolleliste`() {
-        val saksbehandler = principal(saksbehandlerclaims, listOf("en-helt-annen-gruppe"))
+    fun `toSaksbehandler - tilgang uten treff i autoriserte roller gir IngenRoller`() {
+        principal(saksbehandlerclaims, listOf("en-helt-annen-gruppe"))
             .toSaksbehandler(alleAdRoller)
-            .getOrNull()!!
-
-        saksbehandler.roller.toList() shouldBe emptyList()
+            .leftOrNull() shouldBe InternalPrincipalMappingfeil.IngenRoller
     }
 
     @Test

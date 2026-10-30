@@ -1,7 +1,6 @@
 package no.nav.tiltakspenger.libs.lokal
 
 import arrow.core.Either
-import arrow.core.flatten
 import arrow.core.left
 import arrow.core.right
 import java.io.BufferedReader
@@ -38,14 +37,15 @@ internal class ProsessKommandokjører : Kommandokjører {
         kommando: List<String>,
         arbeidskatalog: Path?,
         timeout: Duration,
-    ): Either<Kommandofeil, Kommandoresultat> = Either.catch { startOgVent(kommando, arbeidskatalog, timeout) }
-        .mapLeft { throwable ->
-            when (throwable) {
-                is InterruptedException -> Kommandofeil.Avbrutt
-                else -> Kommandofeil.KunneIkkeStarte(throwable)
-            }
-        }
-        .flatten()
+    ): Either<Kommandofeil, Kommandoresultat> = try {
+        startOgVent(kommando, arbeidskatalog, timeout)
+    } catch (e: InterruptedException) {
+        // Vanlig try/catch: Either.catch kaster InterruptedException videre, så Avbrutt ville aldri vært nåbar.
+        Thread.currentThread().interrupt()
+        Kommandofeil.Avbrutt.left()
+    } catch (e: Exception) {
+        Kommandofeil.KunneIkkeStarte(e).left()
+    }
 
     private fun startOgVent(
         kommando: List<String>,

@@ -28,13 +28,14 @@ data class TexasPrincipalInternal(
             claims["NAVident"]?.toString() ?: return InternalPrincipalMappingfeil.ManglerClaim("NAVident").left()
         val epost = claims["preferred_username"]?.toString()
             ?: return InternalPrincipalMappingfeil.ManglerClaim("preferred_username").left()
-        if (tilganger.isEmpty()) {
-            log.warn { "Saksbehandler har ingen forhåndsgodkjente roller. NavIdent: $navIdent. Klientnavn: $klientnavn. KlientId: $klientId" }
-            return InternalPrincipalMappingfeil.IngenRoller.left()
-        }
         val roller = tilganger.mapNotNull {
             autoriserteBrukerroller.find { autorisertRolle -> it == autorisertRolle.objectId }?.name
         }.let { Saksbehandlerroller(it) }
+        // Gjelder både tom gruppeliste og grupper som ikke er mappet til noen autorisert rolle.
+        if (roller.isEmpty()) {
+            log.warn { "Saksbehandler har ingen forhåndsgodkjente roller. NavIdent: $navIdent. Klientnavn: $klientnavn. KlientId: $klientId" }
+            return InternalPrincipalMappingfeil.IngenRoller.left()
+        }
 
         log.debug { "Mapping OK for saksbehandler $navIdent med roller $roller" }
         return Saksbehandler(

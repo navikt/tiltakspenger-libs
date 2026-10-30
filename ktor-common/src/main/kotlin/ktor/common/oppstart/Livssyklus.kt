@@ -101,12 +101,22 @@ internal fun stoppBakgrunnsprosesser(
     }
 
     log.info { "Stopper ${bakgrunnsprosesser.size} bakgrunnsprosess(er)" }
+    var avbrutt = false
     bakgrunnsprosesser.forEach { bakgrunnsprosess ->
         log.info { "Stopper ${bakgrunnsprosess.navn}" }
-        Either.catch { bakgrunnsprosess.stopp() }
-            .onLeft { log.error(it) { "Kunne ikke stoppe ${bakgrunnsprosess.navn} ved shutdown" } }
-            .onRight { log.info { "Stoppet ${bakgrunnsprosess.navn}" } }
+        // Vanlig try/catch: Either.catch kaster InterruptedException videre, og da ville resten av prosessene aldri fått stopp().
+        try {
+            bakgrunnsprosess.stopp()
+            log.info { "Stoppet ${bakgrunnsprosess.navn}" }
+        } catch (e: InterruptedException) {
+            log.error(e) { "Kunne ikke stoppe ${bakgrunnsprosess.navn} ved shutdown" }
+            avbrutt = true
+        } catch (e: Exception) {
+            log.error(e) { "Kunne ikke stoppe ${bakgrunnsprosess.navn} ved shutdown" }
+        }
     }
+    // Setter interrupt-flagget igjen etter at alle er stoppet, slik at kallende kode ser avbruddet.
+    if (avbrutt) Thread.currentThread().interrupt()
     log.info { "Ferdig med å stoppe bakgrunnsprosesser" }
 }
 
@@ -176,10 +186,19 @@ private class Bakgrunnsprosesslivssyklus(
                 return
             }
             log.info { "ApplicationStopPreparing mottatt - signaliserer stopp til ${bakgrunnsprosesser.size} bakgrunnsprosess(er)" }
+            var avbrutt = false
             bakgrunnsprosesser.forEach { bakgrunnsprosess ->
-                Either.catch { bakgrunnsprosess.påbegynStopp() }
-                    .onLeft { log.error(it) { "Kunne ikke påbegynne stopp av ${bakgrunnsprosess.navn}" } }
+                // Vanlig try/catch: Either.catch kaster InterruptedException videre, og da ville resten av prosessene aldri fått signalet.
+                try {
+                    bakgrunnsprosess.påbegynStopp()
+                } catch (e: InterruptedException) {
+                    log.error(e) { "Kunne ikke påbegynne stopp av ${bakgrunnsprosess.navn}" }
+                    avbrutt = true
+                } catch (e: Exception) {
+                    log.error(e) { "Kunne ikke påbegynne stopp av ${bakgrunnsprosess.navn}" }
+                }
             }
+            if (avbrutt) Thread.currentThread().interrupt()
         }
     }
 

@@ -2,6 +2,8 @@ package no.nav.tiltakspenger.libs.lokal
 
 import arrow.core.Either
 import arrow.core.flatMap
+import arrow.core.left
+import arrow.core.right
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.sql.DriverManager
@@ -58,9 +60,12 @@ internal fun interface Venting {
 
 internal class TrådsøvnVenting : Venting {
     override fun vent(varighet: Duration, steg: String): Either<LokalPostgresFeil.Avbrutt, Unit> =
-        Either.catch { Thread.sleep(varighet.inWholeMilliseconds) }
-            .mapLeft {
-                Thread.currentThread().interrupt()
-                LokalPostgresFeil.Avbrutt(steg)
-            }
+        try {
+            Thread.sleep(varighet.inWholeMilliseconds)
+            Unit.right()
+        } catch (_: InterruptedException) {
+            // Vanlig try/catch: Either.catch kaster InterruptedException videre, så Avbrutt ville aldri vært nåbar.
+            Thread.currentThread().interrupt()
+            LokalPostgresFeil.Avbrutt(steg).left()
+        }
 }

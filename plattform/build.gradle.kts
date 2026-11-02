@@ -77,6 +77,9 @@ dependencies {
         api(libs.httpclient5)
         api(libs.httpcore5)
         api(libs.httpcore5.h2)
+        // Guava 33.7.1 og eldre allokerer ubegrenset minne ved Java-deserialisering (CVE-2026-102554); fikset i 33.7.2.
+        // App-repoene får den i runtime via avro-konsumentene og i test via WireMock og jwks-rsa.
+        api(libs.guava)
     }
 }
 

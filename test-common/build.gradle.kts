@@ -44,6 +44,8 @@ dependencies {
         api(libs.httpclient5)
         api(libs.httpcore5)
         api(libs.httpcore5.h2)
+        // WireMock og jwks-rsa drar inn Guava 33.5 og 33.6 med ubegrenset allokering ved Java-deserialisering (CVE-2026-102554), fikset i 33.7.2.
+        api(libs.guava)
     }
     api(libs.kotlinx.coroutines.test.jvm)
 

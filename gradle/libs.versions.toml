@@ -10,13 +10,16 @@ caffeine = "3.3.1"
 # commons-lang3 kommer transitivt fra avro-tools på buildscript-classpathen, og pinnes mot ukontrollert rekursjon på lange inndata (GHSA-j288-q9x7-2f5v).
 commons-lang3 = "3.21.0"
 commons-text = "1.15.0"
-confluent = "8.3.2"
+confluent = "8.4.0"
 cyclonedx-gradle-plugin = "3.4.1"
-flyway = "13.10.3"
+flyway = "13.11.1"
 # FreeMarker brukes ikke direkte, men Kover drar inn 2.3.32 med en kritisk sårbarhet (GHSA-27j2-h3m2-8237) på bygg-classpathen; fikset i 2.3.35.
 # Låsen i build-logic fjernes når Kover drar freemarker >= 2.3.35.
 freemarker = "2.3.35"
-handlebars = "4.5.5"
+# Guava brukes ikke direkte, men kommer transitivt via Confluent, WireMock og jwks-rsa.
+# Guava 33.7.1 og eldre allokerer ubegrenset minne ved Java-deserialisering (CVE-2026-102554); fikset i 33.7.2.
+guava = "33.7.2-jre"
+handlebars = "4.5.7"
 hamcrest = "3.0"
 hikaricp = "7.1.0"
 # HttpComponents brukes ikke direkte, men kafka-schema-registry-client (via kafka-avro-serializer) drar inn httpclient5 5.5 og httpcore5 5.3.4.
@@ -34,7 +37,7 @@ jetty = "12.1.14"
 jetbrains-annotations = "26.1.0"
 jsonassert = "1.5.3"
 junit = "6.1.3"
-kafka = "4.3.2"
+kafka = "4.4.0"
 konfig = "1.6.10.0"
 konsist = "0.18.1"
 kotest = "6.2.6"
@@ -50,13 +53,13 @@ kotlinx-coroutines = "1.11.0"
 kotlinx-io = "0.9.1"
 kotliquery = "1.9.1"
 ktor = "3.6.0"
-logback = "1.6.5"
+logback = "1.6.6"
 logback-syslog4j = "1.0.0"
 logstash-logback-encoder = "9.0"
 # LZ4 brukes ikke direkte, men kafka-clients drar inn 1.10.2, der de native XXHash-implementasjonene kan krasje JVM-en på ugyldige byte-intervaller (GHSA-xx22-p4ch-683r).
 # Vi styrer derfor versjonen selv, på samme måte som netty-linja under.
-lz4 = "1.12.0"
-micrometer = "1.17.1"
+lz4 = "1.12.1"
+micrometer = "1.17.2"
 mockk = "1.14.11"
 # Netty brukes ikke direkte, men er en hyppig kilde til sikkerhetshull; vi styrer derfor den transitive versjonen selv med en bom.
 # 4.2-linja kommer fra ktor-server-netty, som drar inn en eldre 4.2 enn den fiksede (3.6.0 drar 4.2.17).
@@ -72,7 +75,7 @@ snakeyaml = "2.7"
 spotless = "8.10.4"
 swagger-parser = "2.1.48"
 testcontainers = "2.0.5"
-tika = "4.1.0"
+tika = "4.2.0"
 tms-mikrofrontend-selector = "3.0.0"
 tms-varsel = "2.2.0"
 ulid = "1.6.0"
@@ -95,6 +98,7 @@ confluent-kafka-avro-serializer = { module = "io.confluent:kafka-avro-serializer
 flyway-database-oracle = { module = "org.flywaydb:flyway-database-oracle", version.ref = "flyway" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 freemarker = { module = "org.freemarker:freemarker", version.ref = "freemarker" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
 handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }

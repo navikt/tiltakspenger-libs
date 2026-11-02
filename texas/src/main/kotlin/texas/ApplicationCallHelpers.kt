@@ -31,12 +31,12 @@ suspend fun ApplicationCall.saksbehandler(
 
 /**
  * Oversetter en mappingfeil fra [TexasPrincipalInternal.toSaksbehandler] til respons.
+ * Ikke saksbehandler/systembruker og ingen roller er allerede logget med klient og ident i [TexasPrincipalInternal], så de logges ikke her.
  * [InternalPrincipalMappingfeil.IkkeSystembruker] kan ikke oppstå i denne retningen, men when-et er uttømmende over sealed-interfacet slik at en ny variant blir en kompileringsfeil framfor en stille 500.
  */
 internal suspend fun ApplicationCall.respondMappingfeilForSaksbehandler(feil: InternalPrincipalMappingfeil) {
     when (feil) {
         is InternalPrincipalMappingfeil.IkkeSaksbehandler -> {
-            log.warn { "Mapping til saksbehandler feilet: Brukeren er ikke en saksbehandler" }
             this.respond403Forbidden(
                 melding = "Brukeren er ikke en saksbehandler",
                 kode = "ikke_saksbehandler",
@@ -44,7 +44,6 @@ internal suspend fun ApplicationCall.respondMappingfeilForSaksbehandler(feil: In
         }
 
         is InternalPrincipalMappingfeil.IngenRoller -> {
-            log.warn { "Saksbehandler må ha minst en autorisert rolle for å aksessere denne ressursen" }
             this.respond403Forbidden(
                 melding = "Saksbehandler må ha minst en autorisert rolle for å aksessere denne ressursen",
                 kode = "mangler_rolle",
@@ -88,12 +87,12 @@ suspend fun ApplicationCall.systembruker(
 
 /**
  * Oversetter en mappingfeil fra [TexasPrincipalInternal.toSystembruker] til respons.
+ * Ikke saksbehandler/systembruker og ingen roller er allerede logget med klient og ident i [TexasPrincipalInternal], så de logges ikke her.
  * [InternalPrincipalMappingfeil.IkkeSaksbehandler] kan ikke oppstå i denne retningen, men when-et er uttømmende over sealed-interfacet slik at en ny variant blir en kompileringsfeil framfor en stille 500.
  */
 internal suspend fun ApplicationCall.respondMappingfeilForSystembruker(feil: InternalPrincipalMappingfeil) {
     when (feil) {
         is InternalPrincipalMappingfeil.IkkeSystembruker -> {
-            log.warn { "Mapping til systembruker feilet: Brukeren er ikke en systembruker" }
             this.respond403Forbidden(
                 melding = "Brukeren er ikke en systembruker",
                 kode = "ikke_systembruker",
@@ -101,7 +100,6 @@ internal suspend fun ApplicationCall.respondMappingfeilForSystembruker(feil: Int
         }
 
         is InternalPrincipalMappingfeil.IngenRoller -> {
-            log.warn { "Systembrukeren må ha minst en autorisert rolle for å aksessere denne ressursen" }
             this.respond403Forbidden(
                 melding = "Systembrukeren må ha minst en autorisert rolle for å aksessere denne ressursen",
                 kode = "mangler_rolle",

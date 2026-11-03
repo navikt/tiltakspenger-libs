@@ -143,6 +143,7 @@ class GruppertTaskExecutor private constructor(
             målinger.registrerVellykketKjøring(gruppe.navn)
         }
         while (gruppe.kjørKontinuerligTilTom && kjøring.merArbeid && currentCoroutineContext().isActive) {
+            delay(gruppe.pauseMellomDrenering)
             kjøring = kjørTasks(gruppe)
             if (!kjøring.feilet) {
                 målinger.registrerVellykketKjøring(gruppe.navn)
@@ -225,6 +226,7 @@ class GruppertTaskExecutor private constructor(
             grupper.forEach { gruppe ->
                 require(gruppe.intervall.isPositive()) { "Intervall for gruppe '${gruppe.navn}' må være større enn 0." }
                 require(!gruppe.initialDelay.isNegative()) { "initialDelay for gruppe '${gruppe.navn}' kan ikke være negativ." }
+                require(!gruppe.pauseMellomDrenering.isNegative()) { "pauseMellomDrenering for gruppe '${gruppe.navn}' kan ikke være negativ." }
             }
 
             val serielle = grupper.filter { it.kjøremodus == Kjøremodus.SERIELT }

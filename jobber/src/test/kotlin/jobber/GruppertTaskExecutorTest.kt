@@ -182,6 +182,42 @@ internal class GruppertTaskExecutorTest {
     }
 
     @Test
+    fun `pauseMellomDrenering venter mellom hver kjøring under drenering`() {
+        val tidspunkter = ConcurrentLinkedQueue<Long>()
+        val task: suspend (CorrelationId) -> TaskResultat = { _ ->
+            tidspunkter.add(System.nanoTime())
+            if (tidspunkter.size < 4) TaskResultat.MerArbeid else TaskResultat.Ferdig
+        }
+
+        val executor = GruppertTaskExecutor.startJob(
+            runCheckFactory = alltidLeder(),
+            mdcCallIdKey = "test",
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
+            grupper = nonEmptyListOf(
+                TaskGruppe(
+                    navn = "drener-med-pause",
+                    intervall = 10_000.milliseconds,
+                    tasks = nonEmptyListOf(task),
+                    kjøremodus = Kjøremodus.PARALLELT,
+                    initialDelay = 5.milliseconds,
+                    kjørKontinuerligTilTom = true,
+                    pauseMellomDrenering = 100.milliseconds,
+                ),
+            ),
+        )
+        runBlocking {
+            eventually(10.seconds) {
+                tidspunkter.size shouldBe 4
+            }
+        }
+        executor.stop()
+        tidspunkter.toList().zipWithNext { forrige, neste -> (neste - forrige) / 1_000_000 }.forEach {
+            it shouldBeGreaterThanOrEqualTo 100L
+        }
+    }
+
+    @Test
     fun `tasks i en gruppe kjører serielt i listerekkefølge og en feil stopper ikke de øvrige`() {
         val hendelser = ConcurrentLinkedQueue<String>()
         val ranB = AtomicInteger(0)
@@ -549,6 +585,15 @@ internal class GruppertTaskExecutorTest {
             GruppertTaskExecutor.startJob(
                 alltidLeder(),
                 grupper = nonEmptyListOf(TaskGruppe("a", 10.milliseconds, nonEmptyListOf(ferdig), initialDelay = (-1).milliseconds)),
+                mdcCallIdKey = "test",
+                clock = clock,
+                meterRegistry = nyttMeterRegistry(),
+            )
+        }
+        shouldThrow<IllegalArgumentException> {
+            GruppertTaskExecutor.startJob(
+                alltidLeder(),
+                grupper = nonEmptyListOf(TaskGruppe("a", 10.milliseconds, nonEmptyListOf(ferdig), pauseMellomDrenering = (-1).milliseconds)),
                 mdcCallIdKey = "test",
                 clock = clock,
                 meterRegistry = nyttMeterRegistry(),

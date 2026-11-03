@@ -82,6 +82,9 @@ fun Iterable<TaskResultat>.tilSamletResultat(): TaskResultat = when {
  *   Default [GruppertTaskExecutor.STANDARD_INITIAL_DELAY].
  * @param kjørKontinuerligTilTom Når `true` og en task melder [TaskResultat.MerArbeid], kjøres gruppen på nytt umiddelbart (uten å vente [intervall]) til den er à jour, for å spise unna bulk raskt.
  *   Anbefales sammen med [Kjøremodus.PARALLELT] slik at de serielle gruppene ikke stopper opp mens bulk dreneres.
+ * @param pauseMellomDrenering Ventetid før hver nye kjøring under [kjørKontinuerligTilTom], målt fra etter at forrige kjøring er ferdig.
+ *   Brukes for å spre kall mot en ekstern tjeneste, slik at den får tid til andre konsumenter mellom kallene våre.
+ *   Default [Duration.ZERO], altså umiddelbart.
  */
 class TaskGruppe(
     val navn: String,
@@ -90,4 +93,5 @@ class TaskGruppe(
     val kjøremodus: Kjøremodus = Kjøremodus.SERIELT,
     val initialDelay: Duration = GruppertTaskExecutor.STANDARD_INITIAL_DELAY,
     val kjørKontinuerligTilTom: Boolean = false,
+    val pauseMellomDrenering: Duration = Duration.ZERO,
 )

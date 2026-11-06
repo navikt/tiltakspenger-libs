@@ -44,7 +44,9 @@ class ManagedKafkaConsumer<K, V>(
     clock: Clock,
     /** Register som mottar målingene for siste vellykkede poll og pollintervallet. */
     meterRegistry: MeterRegistry,
-    private val consume: suspend (key: K, value: V) -> Unit,
+    /** Brukes i stedet for [consume] når consumeren trenger mer enn nøkkel og verdi, for eksempel headerne. */
+    private val consumeRecord: (suspend (record: ConsumerRecord<K, V>) -> Unit)? = null,
+    private val consume: suspend (key: K, value: V) -> Unit = { _, _ -> error("ManagedKafkaConsumer trenger consume eller consumeRecord") },
 ) {
     private val job = Job()
     private val scope = CoroutineScope(Dispatchers.IO + job)
@@ -239,7 +241,7 @@ class ManagedKafkaConsumer<K, V>(
             ""
         }
         try {
-            consume(record.key(), record.value())
+            consumeRecord?.invoke(record) ?: consume(record.key(), record.value())
             log?.debug {
                 "Consumed record for " +
                     "topic=${record.topic()} " +

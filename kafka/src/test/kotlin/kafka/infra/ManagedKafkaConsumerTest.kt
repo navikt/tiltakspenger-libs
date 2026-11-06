@@ -12,6 +12,7 @@ import org.apache.kafka.clients.producer.KafkaProducer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.clients.producer.RecordMetadata
+import org.apache.kafka.common.header.internals.RecordHeader
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.kafka.common.serialization.IntegerDeserializer
@@ -78,6 +79,36 @@ class ManagedKafkaConsumerTest {
             runBlocking {
                 eventually {
                     cache[key] shouldBe value
+                }
+            }
+        } finally {
+            consumer.stop()
+        }
+    }
+
+    @Test
+    fun `ManagedKafkaConsumer - consumeRecord får med headerne`() {
+        val key = "header-key"
+        val cache = mutableMapOf<String, String>()
+        produceStringString(ProducerRecord(topic, null, key, "value", listOf(RecordHeader("fagsystem", "TILTAKSPENGER".toByteArray()))))
+
+        val consumer = ManagedKafkaConsumer<String, String>(
+            topic = topic,
+            config = stringConsumerConfig,
+            pollDuration = testPollDuration,
+            baseBackoffDelayMillis = testBaseBackoffDelayMillis,
+            initialBackoffDelayMillis = testInitialBackoffDelayMillis,
+            log = null,
+            clock = clock,
+            meterRegistry = nyttMeterRegistry(),
+            consumeRecord = { cache[it.key()] = String(it.headers().lastHeader("fagsystem").value()) },
+        )
+        consumer.run()
+
+        try {
+            runBlocking {
+                eventually {
+                    cache[key] shouldBe "TILTAKSPENGER"
                 }
             }
         } finally {

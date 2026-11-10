@@ -75,7 +75,7 @@ snakeyaml = "2.7"
 # Snappy brukes ikke direkte, men kafka-clients 4.4.0 drar inn 1.1.10.7 med bufferoverflyt og tjenestenekt (CVE-2026-93451, CVE-2026-108106, CVE-2026-116590), fikset i 1.1.10.9.
 # Fjernes når kafka-clients selv drar en fikset versjon.
 snappy = "1.1.10.12"
-spotless = "8.10.4"
+spotless = "8.11.0"
 swagger-parser = "2.1.48"
 testcontainers = "2.0.5"
 tika = "4.2.0"

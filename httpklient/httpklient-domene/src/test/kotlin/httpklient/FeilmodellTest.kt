@@ -123,7 +123,7 @@ internal class FeilmodellTest {
             val sikkerlogg = mockk<Sikkerlogg>(relaxed = true)
 
             HttpKlientError.NetworkError(io, tomMetadata())
-                .loggFeil(logger, operasjon = "sending", kontekst = "Sak 123", sikkerlogg = sikkerlogg, nivå = nivå)
+                .loggFeil(logger, operasjon = "sending", kontekst = "Sak 123", sikkerlogg = sikkerlogg, level = nivå)
 
             verify(exactly = 1) {
                 when (nivå) {
@@ -154,7 +154,7 @@ internal class FeilmodellTest {
         val sikkerlogg = mockk<Sikkerlogg>(relaxed = true)
 
         HttpKlientError.NetworkError(io, tomMetadata())
-            .loggFeil(logger, operasjon = "sending", kontekst = "Sak 123", sikkerlogg = sikkerlogg, nivå = Level.OFF)
+            .loggFeil(logger, operasjon = "sending", kontekst = "Sak 123", sikkerlogg = sikkerlogg, level = Level.OFF)
 
         verify { logger wasNot Called }
         verify(exactly = 0) {

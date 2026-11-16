@@ -301,7 +301,7 @@ fun authFeilUtenKall(
  * Slik unngås dobbeltlogging (transport-logg fra libs + domenelogg fra konsument), og det blir nøyaktig én logghendelse per feilsituasjon.
  * All HTTP-kontekst hentes fra feilen selv ([HttpKlientError.metadata]), så kalleren bidrar bare med det kalleren vet mer om enn klienten: [operasjon] og [kontekst].
  *
- * En «logghendelse» er paret [logger] (uten personopplysninger) + [sikkerlogg] (med maskert request og lesbar respons) på samme [nivå], i tråd med resten av kodebasen.
+ * En «logghendelse» er paret [logger] (uten personopplysninger) + [sikkerlogg] (med maskert request og lesbar respons) på samme [level], i tråd med resten av kodebasen.
  *
  * Linja navngir feilarten ([beskrivelse]) og endepunktet ([HttpKlientMetadata.endepunkt]) eksplisitt.
  * Det er ikke pynt: feil fra `java.net.http` oppstår asynkront på klientens I/O-tråd, så stacktracen inneholder null applikasjonsframes og kan hverken fortelle hvor kallet gikk eller hvem som gjorde det.
@@ -311,7 +311,7 @@ fun authFeilUtenKall(
  * @param operasjon Kort beskrivelse av hva som feilet, f.eks. `"sending til datadeling"`.
  * @param kontekst Domenekontekst som bare kalleren har, f.eks. `"Sak abc, saksnummer 123"`.
  * @param sikkerlogg Sikkerlogg-instansen henvisningen og sikkerlogg-linja går gjennom; default er companion-objektet (ren tekst-henvisning), injiser appens instans for klikkbar lenke.
- * @param nivå Loggnivået begge linjene skrives på.
+ * @param level Loggnivået begge linjene skrives på.
  * Default er [Level.ERROR]
  */
 fun HttpKlientError.loggFeil(
@@ -319,7 +319,7 @@ fun HttpKlientError.loggFeil(
     operasjon: String,
     kontekst: String,
     sikkerlogg: Sikkerlogg = Sikkerlogg,
-    nivå: Level = Level.ERROR,
+    level: Level = Level.ERROR,
 ) {
     val throwable = throwableOrNull()
     // Status utelates når den ikke finnes: "Status: null" er støy, og fraværet er allerede sagt av beskrivelsen ("Timeout (oppkobling)").
@@ -328,7 +328,7 @@ fun HttpKlientError.loggFeil(
     val logMelding = "$start ${sikkerlogg.seSikkerlogg}"
     val sikkerMelding =
         "$start Request: ${metadata.rawRequestString}. Response: ${metadata.rawResponseString}. ResponseHeaders: ${metadata.responseHeaders}."
-    when (nivå) {
+    when (level) {
         Level.TRACE -> {
             logger.trace(throwable) { logMelding }
             sikkerlogg.trace(throwable) { sikkerMelding }

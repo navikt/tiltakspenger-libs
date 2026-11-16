@@ -1,6 +1,7 @@
 package no.nav.tiltakspenger.libs.httpklient
 
 import arrow.resilience.CircuitBreaker
+import io.github.oshai.kotlinlogging.KLoggingEventBuilder
 import io.github.oshai.kotlinlogging.Level
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.booleans.shouldBeFalse
@@ -103,17 +104,19 @@ internal class FeilmodellTest {
         HttpKlientError.NetworkError(io, tomMetadata())
             .loggFeil(logger, operasjon = "sending til datadeling", kontekst = "Sak 123")
 
-        verify(exactly = 1) { logger.error(io, any<() -> Any?>()) }
+        verify(exactly = 1) { logger.at(Level.ERROR, null, any()) }
     }
 
     @Test
     fun `loggFeil logger uten stacktrace for UventetStatus`() {
         val logger = testLogger()
+        val loggingEvent = slot<KLoggingEventBuilder.() -> Unit>()
 
         HttpKlientError.UventetStatus(500, "", tomMetadata(statusCode = 500))
             .loggFeil(logger, operasjon = "sending", kontekst = "Sak 123")
 
-        verify(exactly = 1) { logger.error(null as Throwable?, any<() -> Any?>()) }
+        verify(exactly = 1) { logger.at(Level.ERROR, null, capture(loggingEvent)) }
+        KLoggingEventBuilder().apply(loggingEvent.captured).cause.shouldBeNull()
     }
 
     @Test
@@ -125,16 +128,7 @@ internal class FeilmodellTest {
             HttpKlientError.NetworkError(io, tomMetadata())
                 .loggFeil(logger, operasjon = "sending", kontekst = "Sak 123", sikkerlogg = sikkerlogg, level = nivå)
 
-            verify(exactly = 1) {
-                when (nivå) {
-                    Level.TRACE -> logger.trace(io, any<() -> Any?>())
-                    Level.DEBUG -> logger.debug(io, any<() -> Any?>())
-                    Level.INFO -> logger.info(io, any<() -> Any?>())
-                    Level.WARN -> logger.warn(io, any<() -> Any?>())
-                    Level.ERROR -> logger.error(io, any<() -> Any?>())
-                    Level.OFF -> error("OFF testes for seg")
-                }
-            }
+            verify(exactly = 1) { logger.at(nivå, null, any()) }
             verify(exactly = 1) {
                 when (nivå) {
                     Level.TRACE -> sikkerlogg.trace(io, any())
@@ -173,7 +167,7 @@ internal class FeilmodellTest {
     @Test
     fun `loggFeil navngir feilart, endepunkt og målinger i vanlig logg`() {
         val logger = testLogger()
-        val melding = slot<() -> Any?>()
+        val loggingEvent = slot<KLoggingEventBuilder.() -> Unit>()
 
         HttpKlientError.Timeout(
             throwable = io,
@@ -187,8 +181,10 @@ internal class FeilmodellTest {
             ),
         ).loggFeil(logger, operasjon = "skjermingsoppslag", kontekst = "Saksbehandler Z994321")
 
-        verify(exactly = 1) { logger.error(io, capture(melding)) }
-        melding.captured().toString() shouldBe
+        verify(exactly = 1) { logger.at(Level.ERROR, null, capture(loggingEvent)) }
+        val event = KLoggingEventBuilder().apply(loggingEvent.captured)
+        event.cause shouldBe io
+        event.message shouldBe
             "Feil ved skjermingsoppslag. Saksbehandler Z994321. Timeout (oppkobling, grense 3s) mot " +
             "POST https://skjermede-personer-pip.test/skjermet. forsøk: 1, brukt: 0s. Se sikkerlogg for mer kontekst."
     }
@@ -196,7 +192,7 @@ internal class FeilmodellTest {
     @Test
     fun `loggFeil tar med status når serveren faktisk svarte, og skjuler URIen når klienten ikke har frikjent den`() {
         val logger = testLogger()
-        val melding = slot<() -> Any?>()
+        val loggingEvent = slot<KLoggingEventBuilder.() -> Unit>()
         val fnr = FnrGenerator().generer().verdi
 
         HttpKlientError.UventetStatus(
@@ -210,8 +206,8 @@ internal class FeilmodellTest {
             ),
         ).loggFeil(logger, operasjon = "personoppslag", kontekst = "Sak 123")
 
-        verify(exactly = 1) { logger.error(null as Throwable?, capture(melding)) }
-        melding.captured().toString() shouldBe
+        verify(exactly = 1) { logger.at(Level.ERROR, null, capture(loggingEvent)) }
+        KLoggingEventBuilder().apply(loggingEvent.captured).message shouldBe
             "Feil ved personoppslag. Sak 123. Uventet HTTP-status 503 mot GET https://pdl.test/<skjult>. " +
             "status: 503, forsøk: 3, brukt: 0s. Se sikkerlogg for mer kontekst."
     }

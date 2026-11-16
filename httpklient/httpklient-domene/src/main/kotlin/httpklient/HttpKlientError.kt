@@ -4,6 +4,7 @@ import arrow.resilience.CircuitBreaker
 import io.github.oshai.kotlinlogging.KLogger
 import io.github.oshai.kotlinlogging.Level
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
+import no.nav.tiltakspenger.libs.logging.logg
 import java.net.URI
 import kotlin.time.Duration
 
@@ -328,32 +329,10 @@ fun HttpKlientError.loggFeil(
     val logMelding = "$start ${sikkerlogg.seSikkerlogg}"
     val sikkerMelding =
         "$start Request: ${metadata.rawRequestString}. Response: ${metadata.rawResponseString}. ResponseHeaders: ${metadata.responseHeaders}."
-    when (level) {
-        Level.TRACE -> {
-            logger.trace(throwable) { logMelding }
-            sikkerlogg.trace(throwable) { sikkerMelding }
-        }
-
-        Level.DEBUG -> {
-            logger.debug(throwable) { logMelding }
-            sikkerlogg.debug(throwable) { sikkerMelding }
-        }
-
-        Level.INFO -> {
-            logger.info(throwable) { logMelding }
-            sikkerlogg.info(throwable) { sikkerMelding }
-        }
-
-        Level.WARN -> {
-            logger.warn(throwable) { logMelding }
-            sikkerlogg.warn(throwable) { sikkerMelding }
-        }
-
-        Level.ERROR -> {
-            logger.error(throwable) { logMelding }
-            sikkerlogg.error(throwable) { sikkerMelding }
-        }
-
-        Level.OFF -> Unit
+    if (level == Level.OFF) return
+    logger.at(level) {
+        cause = throwable
+        message = logMelding
     }
+    sikkerlogg.logg(level, throwable) { sikkerMelding }
 }

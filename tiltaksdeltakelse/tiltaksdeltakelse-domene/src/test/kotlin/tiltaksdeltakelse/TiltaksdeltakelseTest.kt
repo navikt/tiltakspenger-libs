@@ -3,6 +3,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import no.nav.tiltakspenger.libs.common.personopplysning.Gjennomføringsnavn
 import no.nav.tiltakspenger.libs.common.personopplysning.Tilknytningstittel
 import no.nav.tiltakspenger.libs.common.personopplysning.Virksomhetsnavn
 import no.nav.tiltakspenger.libs.periode.Periode
@@ -22,6 +23,7 @@ internal class TiltaksdeltakelseTest {
         fraOgMed: LocalDate? = start,
         tilOgMed: LocalDate? = slutt,
         gjennomføringId: GjennomføringId? = GjennomføringId("6f3b1f52-9a1e-4a34-8f9a-1c2d3e4f5a6b"),
+        gjennomføringsnavn: Gjennomføringsnavn? = Gjennomføringsnavn("Oppfølgingskurs Strandveien"),
     ) = tiltaksdeltakelse(
         id = EksternDeltakelseId("TA1234567"),
         kildestatus = kildestatus,
@@ -33,6 +35,7 @@ internal class TiltaksdeltakelseTest {
         fraOgMed = fraOgMed,
         tilOgMed = tilOgMed,
         gjennomføringId = gjennomføringId,
+        gjennomføringsnavn = gjennomføringsnavn,
     )
 
     @Test
@@ -219,6 +222,7 @@ internal class TiltaksdeltakelseTest {
         arrangør = Arrangør(hovedenhet = Virksomhetsnavn("Arrangør AS"), underenhet = null),
         omfang = Deltakelsesomfang(deltakelsesprosent = 60f, dagerPerUke = 3f, deltidsprosentPåGjennomføring = null),
         gjennomføringId = null,
+        gjennomføringsnavn = null,
         periode = periode,
     )
 
@@ -231,6 +235,7 @@ internal class TiltaksdeltakelseTest {
         arrangør = Arrangør(hovedenhet = Virksomhetsnavn("Arrangør AS"), underenhet = null),
         omfang = Deltakelsesomfang(deltakelsesprosent = 60f, dagerPerUke = 3f, deltidsprosentPåGjennomføring = null),
         gjennomføringId = null,
+        gjennomføringsnavn = null,
         fraOgMed = fraOgMed,
         tilOgMed = tilOgMed,
         grunn = grunn,
@@ -319,14 +324,15 @@ internal class TiltaksdeltakelseTest {
     }
 
     /**
-     * Tittelen inneholder arrangørnavnet og er derfor stedsinformasjon.
-     * Maskeringen arves fra typen, så deltakelsen trenger ingen egen `toString()`.
+     * Tittelen inneholder arrangørnavnet og er derfor stedsinformasjon, og gjennomføringsnavnet er fritekst som kan inneholde persondata.
+     * Maskeringen arves fra typene, så deltakelsen trenger ingen egen `toString()`.
      */
     @Test
-    fun `toString lekker hverken tittel eller arrangørnavn`() {
+    fun `toString lekker hverken tittel, arrangørnavn eller gjennomføringsnavn`() {
         val tekst = deltakelse().toString()
 
         tekst.contains("Arrangør AS") shouldBe false
+        tekst.contains("Strandveien") shouldBe false
         tekst.contains("*****") shouldBe true
     }
 }

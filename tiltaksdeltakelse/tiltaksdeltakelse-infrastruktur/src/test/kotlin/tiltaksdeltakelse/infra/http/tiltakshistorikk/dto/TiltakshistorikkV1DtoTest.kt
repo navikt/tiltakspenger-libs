@@ -14,8 +14,8 @@ class TiltakshistorikkV1DtoTest {
     private val historiskFnr = FnrGenerator(start = 1).generer().verdi
 
     /**
-     * JSON-en er pinnet mot kontraktens wire-format, inkludert feltene vi bevisst utelater fra kopien (`organisasjonsnummer`, `gjennomforing.navn`).
-     * At de står i JSON-en og ikke i forventningsobjektet beviser at utelatelsene tolereres i stedet for å velte deserialiseringen.
+     * JSON-en er pinnet mot kontraktens wire-format, inkludert feltet vi bevisst utelater fra kopien (`organisasjonsnummer`).
+     * At det står i JSON-en og ikke i forventningsobjektet beviser at utelatelsen tolereres i stedet for å velte deserialiseringen.
      */
     @Test
     fun `deserialiserer kontraktens tre deltakelsesformer felt for felt`() {
@@ -95,6 +95,7 @@ class TiltakshistorikkV1DtoTest {
                     tiltakstype = TiltakshistorikkV1Dto.Tiltakstype(tiltakskode = "INDOPPFAG", navn = "Oppfølging"),
                     gjennomforing = TiltakshistorikkV1Dto.Gjennomforing(
                         id = UUID.fromString("0190c9a2-1111-7000-8000-000000000001"),
+                        navn = "Oppfølging 2024",
                         deltidsprosent = 50.0f,
                     ),
                     arrangor = TiltakshistorikkV1Dto.Arrangor(
@@ -123,6 +124,7 @@ class TiltakshistorikkV1DtoTest {
                     ),
                     gjennomforing = TiltakshistorikkV1Dto.Gjennomforing(
                         id = UUID.fromString("0190c9a2-3333-7000-8000-000000000003"),
+                        navn = null,
                         deltidsprosent = null,
                     ),
                     arrangor = TiltakshistorikkV1Dto.Arrangor(

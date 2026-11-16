@@ -37,7 +37,7 @@ class KometMapperTest {
         tittel = "Arbeidsforberedende trening hos Arrangør AS",
         status = TiltakshistorikkV1Dto.TeamKometDeltakelse.Status(type = status, aarsak = aarsak, opprettetTidspunkt = opprettet),
         tiltakstype = TiltakshistorikkV1Dto.Tiltakstype(tiltakskode = tiltakskode, navn = "Arbeidsforberedende trening"),
-        gjennomforing = TiltakshistorikkV1Dto.Gjennomforing(id = gjennomføringId, deltidsprosent = null),
+        gjennomforing = TiltakshistorikkV1Dto.Gjennomforing(id = gjennomføringId, navn = null, deltidsprosent = null),
         arrangor = TiltakshistorikkV1Dto.Arrangor(
             hovedenhet = hovedenhetsnavn?.let { TiltakshistorikkV1Dto.Virksomhet(navn = it) },
             underenhet = TiltakshistorikkV1Dto.Virksomhet(navn = null),

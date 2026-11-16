@@ -5,6 +5,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import no.nav.tiltakspenger.libs.common.FnrGenerator
 import no.nav.tiltakspenger.libs.common.getOrFail
+import no.nav.tiltakspenger.libs.common.personopplysning.gjennomføringsnavn
 import no.nav.tiltakspenger.libs.common.personopplysning.tilknytningstittel
 import no.nav.tiltakspenger.libs.common.personopplysning.virksomhetsnavn
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Arenastatus
@@ -47,7 +48,7 @@ class ArenaMapperTest {
         arenaId = 142536,
         status = status,
         tiltakstype = TiltakshistorikkV1Dto.Tiltakstype(tiltakskode = tiltakskode, navn = "Oppfølging"),
-        gjennomforing = TiltakshistorikkV1Dto.Gjennomforing(id = gjennomføringId, deltidsprosent = 50.0f),
+        gjennomforing = TiltakshistorikkV1Dto.Gjennomforing(id = gjennomføringId, navn = "Oppfølging 2024", deltidsprosent = 50.0f),
         arrangor = TiltakshistorikkV1Dto.Arrangor(
             hovedenhet = hovedenhetsnavn?.let { TiltakshistorikkV1Dto.Virksomhet(navn = it) },
             underenhet = TiltakshistorikkV1Dto.Virksomhet(navn = "Arrangør AS avd Strandveien"),
@@ -78,6 +79,7 @@ class ArenaMapperTest {
             fraOgMed = LocalDate.of(2024, 1, 1),
             tilOgMed = LocalDate.of(2024, 6, 30),
             gjennomføringId = GjennomføringId(gjennomføringId.toString()),
+            gjennomføringsnavn = gjennomføringsnavn("Oppfølging 2024"),
         )
         resultat.shouldBeInstanceOf<Tiltaksdeltakelse.GirRett.MedPeriode>()
     }

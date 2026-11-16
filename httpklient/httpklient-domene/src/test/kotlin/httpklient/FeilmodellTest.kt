@@ -1,15 +1,18 @@
 package no.nav.tiltakspenger.libs.httpklient
 
 import arrow.resilience.CircuitBreaker
+import io.github.oshai.kotlinlogging.Level
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
+import io.mockk.Called
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import no.nav.tiltakspenger.libs.common.FnrGenerator
+import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import org.junit.jupiter.api.Test
 import java.io.IOException
 import java.net.URI
@@ -110,7 +113,57 @@ internal class FeilmodellTest {
         HttpKlientError.UventetStatus(500, "", tomMetadata(statusCode = 500))
             .loggFeil(logger, operasjon = "sending", kontekst = "Sak 123")
 
-        verify(exactly = 1) { logger.error(any<() -> Any?>()) }
+        verify(exactly = 1) { logger.error(null as Throwable?, any<() -> Any?>()) }
+    }
+
+    @Test
+    fun `loggFeil logger både vanlig logg og sikkerlogg på valgt nivå`() {
+        listOf(Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR).forEach { nivå ->
+            val logger = testLogger()
+            val sikkerlogg = mockk<Sikkerlogg>(relaxed = true)
+
+            HttpKlientError.NetworkError(io, tomMetadata())
+                .loggFeil(logger, operasjon = "sending", kontekst = "Sak 123", sikkerlogg = sikkerlogg, nivå = nivå)
+
+            verify(exactly = 1) {
+                when (nivå) {
+                    Level.TRACE -> logger.trace(io, any<() -> Any?>())
+                    Level.DEBUG -> logger.debug(io, any<() -> Any?>())
+                    Level.INFO -> logger.info(io, any<() -> Any?>())
+                    Level.WARN -> logger.warn(io, any<() -> Any?>())
+                    Level.ERROR -> logger.error(io, any<() -> Any?>())
+                    Level.OFF -> error("OFF testes for seg")
+                }
+            }
+            verify(exactly = 1) {
+                when (nivå) {
+                    Level.TRACE -> sikkerlogg.trace(io, any())
+                    Level.DEBUG -> sikkerlogg.debug(io, any())
+                    Level.INFO -> sikkerlogg.info(io, any())
+                    Level.WARN -> sikkerlogg.warn(io, any())
+                    Level.ERROR -> sikkerlogg.error(io, any())
+                    Level.OFF -> error("OFF testes for seg")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `loggFeil med nivå OFF logger ingenting`() {
+        val logger = testLogger()
+        val sikkerlogg = mockk<Sikkerlogg>(relaxed = true)
+
+        HttpKlientError.NetworkError(io, tomMetadata())
+            .loggFeil(logger, operasjon = "sending", kontekst = "Sak 123", sikkerlogg = sikkerlogg, nivå = Level.OFF)
+
+        verify { logger wasNot Called }
+        verify(exactly = 0) {
+            sikkerlogg.trace(any(), any())
+            sikkerlogg.debug(any(), any())
+            sikkerlogg.info(any(), any())
+            sikkerlogg.warn(any(), any())
+            sikkerlogg.error(any(), any())
+        }
     }
 
     /**
@@ -157,7 +210,7 @@ internal class FeilmodellTest {
             ),
         ).loggFeil(logger, operasjon = "personoppslag", kontekst = "Sak 123")
 
-        verify(exactly = 1) { logger.error(capture(melding)) }
+        verify(exactly = 1) { logger.error(null as Throwable?, capture(melding)) }
         melding.captured().toString() shouldBe
             "Feil ved personoppslag. Sak 123. Uventet HTTP-status 503 mot GET https://pdl.test/<skjult>. " +
             "status: 503, forsøk: 3, brukt: 0s. Se sikkerlogg for mer kontekst."

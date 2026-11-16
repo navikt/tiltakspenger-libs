@@ -1,5 +1,6 @@
 package no.nav.tiltakspenger.libs.tiltaksdeltakelse
 
+import no.nav.tiltakspenger.libs.common.personopplysning.Gjennomføringsnavn
 import no.nav.tiltakspenger.libs.common.personopplysning.Tilknytningstittel
 import no.nav.tiltakspenger.libs.periode.LukketEllerÅpenPeriode
 import no.nav.tiltakspenger.libs.periode.Overlapp
@@ -84,6 +85,13 @@ sealed interface Tiltaksdeltakelse {
     val gjennomføringId: GjennomføringId?
 
     /**
+     * Navnet på gjennomføringen, fritekst fra kilden.
+     * Kilden oppgir det for Arena og Komet, men det kan mangle; Team Tiltak har ingen gjennomføring.
+     * Kan inneholde persondata for eldre Arena-deltakelser, så foretrekk [tittel] der den dekker behovet.
+     */
+    val gjennomføringsnavn: Gjennomføringsnavn?
+
+    /**
      * Tiltakstypen er kjent og gir rett til tiltakspenger.
      *
      * Delt i to etter om kilden ga oss begge datoene, slik at [MedPeriode] har en total [MedPeriode.periode] og slipper nullsjekker der det betyr noe.
@@ -105,6 +113,7 @@ sealed interface Tiltaksdeltakelse {
             override val arrangør: Arrangør,
             override val omfang: Deltakelsesomfang,
             override val gjennomføringId: GjennomføringId?,
+            override val gjennomføringsnavn: Gjennomføringsnavn?,
             override val periode: Periode,
         ) : GirRett {
             override val fraOgMed: LocalDate = periode.fraOgMed
@@ -122,6 +131,7 @@ sealed interface Tiltaksdeltakelse {
             override val arrangør: Arrangør,
             override val omfang: Deltakelsesomfang,
             override val gjennomføringId: GjennomføringId?,
+            override val gjennomføringsnavn: Gjennomføringsnavn?,
             override val periode: ÅpenPeriode,
         ) : GirRett {
             override val fraOgMed: LocalDate? get() = periode.fraOgMed
@@ -148,6 +158,7 @@ sealed interface Tiltaksdeltakelse {
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
+        override val gjennomføringsnavn: Gjennomføringsnavn?,
         override val periode: LukketEllerÅpenPeriode,
     ) : Tiltaksdeltakelse {
         override val fraOgMed: LocalDate? get() = periode.fraOgMed
@@ -174,6 +185,7 @@ sealed interface Tiltaksdeltakelse {
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
+        override val gjennomføringsnavn: Gjennomføringsnavn?,
         override val periode: LukketEllerÅpenPeriode,
     ) : Tiltaksdeltakelse {
         override val fraOgMed: LocalDate? get() = periode.fraOgMed
@@ -199,6 +211,7 @@ sealed interface Tiltaksdeltakelse {
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
+        override val gjennomføringsnavn: Gjennomføringsnavn?,
         override val periode: LukketEllerÅpenPeriode,
     ) : Tiltaksdeltakelse {
         override val fraOgMed: LocalDate? get() = periode.fraOgMed
@@ -227,6 +240,7 @@ sealed interface Tiltaksdeltakelse {
         override val arrangør: Arrangør,
         override val omfang: Deltakelsesomfang,
         override val gjennomføringId: GjennomføringId?,
+        override val gjennomføringsnavn: Gjennomføringsnavn?,
         override val fraOgMed: LocalDate,
         override val tilOgMed: LocalDate,
         val grunn: Ugyldiggrunn,
@@ -323,6 +337,7 @@ fun tiltaksdeltakelse(
     fraOgMed: LocalDate?,
     tilOgMed: LocalDate?,
     gjennomføringId: GjennomføringId?,
+    gjennomføringsnavn: Gjennomføringsnavn?,
 ): Tiltaksdeltakelse {
     if (fraOgMed != null && tilOgMed != null) {
         val grunn = when {
@@ -340,6 +355,7 @@ fun tiltaksdeltakelse(
                 arrangør = arrangør,
                 omfang = omfang,
                 gjennomføringId = gjennomføringId,
+                gjennomføringsnavn = gjennomføringsnavn,
                 fraOgMed = fraOgMed,
                 tilOgMed = tilOgMed,
                 grunn = grunn,
@@ -360,6 +376,7 @@ fun tiltaksdeltakelse(
                     arrangør = arrangør,
                     omfang = omfang,
                     gjennomføringId = gjennomføringId,
+                    gjennomføringsnavn = gjennomføringsnavn,
                     periode = Periode(fraOgMed, tilOgMed),
                 )
             } else {
@@ -373,6 +390,7 @@ fun tiltaksdeltakelse(
                     arrangør = arrangør,
                     omfang = omfang,
                     gjennomføringId = gjennomføringId,
+                    gjennomføringsnavn = gjennomføringsnavn,
                     periode = ÅpenPeriode(fraOgMed, tilOgMed),
                 )
             }
@@ -387,6 +405,7 @@ fun tiltaksdeltakelse(
                 arrangør = arrangør,
                 omfang = omfang,
                 gjennomføringId = gjennomføringId,
+                gjennomføringsnavn = gjennomføringsnavn,
                 periode = lukketEllerÅpenPeriode(fraOgMed, tilOgMed),
             )
 
@@ -400,6 +419,7 @@ fun tiltaksdeltakelse(
                 arrangør = arrangør,
                 omfang = omfang,
                 gjennomføringId = gjennomføringId,
+                gjennomføringsnavn = gjennomføringsnavn,
                 periode = lukketEllerÅpenPeriode(fraOgMed, tilOgMed),
             )
 
@@ -413,6 +433,7 @@ fun tiltaksdeltakelse(
                 arrangør = arrangør,
                 omfang = omfang,
                 gjennomføringId = gjennomføringId,
+                gjennomføringsnavn = gjennomføringsnavn,
                 periode = lukketEllerÅpenPeriode(fraOgMed, tilOgMed),
             )
     }

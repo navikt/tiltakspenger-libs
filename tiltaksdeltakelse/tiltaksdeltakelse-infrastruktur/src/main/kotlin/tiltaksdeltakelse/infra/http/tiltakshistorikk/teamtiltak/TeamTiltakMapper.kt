@@ -35,5 +35,6 @@ internal fun TiltakshistorikkV1Dto.TeamTiltakAvtale.tilTiltaksdeltakelse(): Eith
         fraOgMed = startDato,
         tilOgMed = sluttDato,
         gjennomføringId = null,
+        gjennomføringsnavn = null,
     )
 }

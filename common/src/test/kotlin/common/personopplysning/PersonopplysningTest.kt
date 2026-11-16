@@ -74,6 +74,26 @@ internal class PersonopplysningTest {
         }
     }
 
+    @Test
+    fun `gjennomføringsnavn maskerer seg selv`() {
+        val navn = Gjennomføringsnavn("AMO-kurs i sveis, Strandveien")
+
+        navn.toString() shouldBe "*****"
+        navn.toString() shouldNotContain "Strandveien"
+        navn.verdi shouldBe "AMO-kurs i sveis, Strandveien"
+    }
+
+    @Test
+    fun `tomt gjennomføringsnavn avvises - fravær uttrykkes med null`() {
+        shouldThrowWithMessage<IllegalArgumentException>("Gjennomføringsnavn kan ikke være tomt") {
+            Gjennomføringsnavn("   ")
+        }
+        gjennomføringsnavn(null) shouldBe null
+        gjennomføringsnavn("") shouldBe null
+        gjennomføringsnavn("   ") shouldBe null
+        gjennomføringsnavn("AMO-kurs i sveis") shouldBe Gjennomføringsnavn("AMO-kurs i sveis")
+    }
+
     /**
      * Begrunnelsen er grunnlaget for å avstemme typene mot PVK-ene, og må stå på hver type.
      * `when`-en er uttømmende uten `else` med vilje: legges en ny personopplysningstype til, kompilerer ikke testen før typen er med her.
@@ -87,6 +107,7 @@ internal class PersonopplysningTest {
             is Tilknytningstittel -> opplysning.begrunnelse
             is Organisasjonsnummer -> opplysning.begrunnelse
             is Samhandlerident -> opplysning.begrunnelse
+            is Gjennomføringsnavn -> opplysning.begrunnelse
         }
 
         begrunnelsen(FnrGenerator().generer()).isNotBlank() shouldBe true
@@ -94,6 +115,7 @@ internal class PersonopplysningTest {
         begrunnelsen(Tilknytningstittel("Oppfølging hos Arrangør AS")).isNotBlank() shouldBe true
         begrunnelsen(Organisasjonsnummer("000000000")).isNotBlank() shouldBe true
         begrunnelsen(Samhandlerident("alle nitall")).isNotBlank() shouldBe true
+        begrunnelsen(Gjennomføringsnavn("AMO-kurs i sveis")).isNotBlank() shouldBe true
     }
 
     /**

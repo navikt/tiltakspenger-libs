@@ -20,7 +20,7 @@ import java.util.UUID
  * Kontraktens `opphav`-felt finnes ikke på wiren — det settes i klassekroppen hos kilden og er ikke med i kotlinx-serialiseringen deres.
  * Kildesystemet identifiseres av `type`-diskriminatoren.
  *
- * Ikke logg denne typen: radene bærer fødselsnummer, og tittel/arrangørnavn er stedsinformasjon.
+ * Ikke logg denne typen: radene bærer fødselsnummer, tittel/arrangørnavn er stedsinformasjon, og gjennomføringsnavnet kan inneholde persondata.
  * Sikkerlogg bruker `metadata.rawResponseString`, som allerede bærer hele responsen.
  */
 @JsonTypeInfo(
@@ -59,7 +59,11 @@ sealed interface TiltakshistorikkV1Dto {
 
     data class Gjennomforing(
         val id: UUID,
-        // navn er bevisst utelatt: kontrakten advarer selv om at feltet er fritekst og kan inneholde persondata for eldre Arena-deltakelser, og anbefaler tittel i stedet.
+        /**
+         * Navn på gjennomføringen, fra Tiltaksadministrasjon eller Arena.
+         * Kontrakten advarer om at feltet er fritekst og kan inneholde persondata for eldre Arena-deltakelser, og anbefaler tittel der den dekker behovet.
+         */
+        val navn: String?,
         /**
          * Deltidsprosent definert på gjennomføringen; gjelder deltakelsene på tiltaket når de ikke har egen.
          */

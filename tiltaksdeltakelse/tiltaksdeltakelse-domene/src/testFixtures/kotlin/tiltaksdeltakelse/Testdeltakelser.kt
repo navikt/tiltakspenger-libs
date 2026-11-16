@@ -32,4 +32,5 @@ fun testdeltakelse(
     fraOgMed = fraOgMed,
     tilOgMed = tilOgMed,
     gjennomføringId = null,
+    gjennomføringsnavn = null,
 )

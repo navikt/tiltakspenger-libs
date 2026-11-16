@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.tiltaksdeltakelse.infra.http.tiltakshistorikk.
 
 import arrow.core.Either
 import arrow.core.raise.either
+import no.nav.tiltakspenger.libs.common.personopplysning.gjennomføringsnavn
 import no.nav.tiltakspenger.libs.common.personopplysning.tilknytningstittel
 import no.nav.tiltakspenger.libs.common.personopplysning.virksomhetsnavn
 import no.nav.tiltakspenger.libs.tiltaksdeltakelse.Arrangør
@@ -39,5 +40,6 @@ internal fun TiltakshistorikkV1Dto.TeamKometDeltakelse.tilTiltaksdeltakelse(): E
         fraOgMed = startDato,
         tilOgMed = sluttDato,
         gjennomføringId = GjennomføringId(gjennomforing.id.toString()),
+        gjennomføringsnavn = gjennomføringsnavn(gjennomforing.navn),
     )
 }

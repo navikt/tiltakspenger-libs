@@ -63,6 +63,7 @@ class TeamTiltakMapperTest {
             fraOgMed = LocalDate.of(2025, 1, 1),
             tilOgMed = null,
             gjennomføringId = null,
+            gjennomføringsnavn = null,
         )
     }
 

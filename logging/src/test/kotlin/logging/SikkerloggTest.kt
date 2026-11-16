@@ -1,5 +1,10 @@
 package no.nav.tiltakspenger.libs.logging
 
+import io.github.oshai.kotlinlogging.Level
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.mockk.Called
+import io.mockk.mockk
+import io.mockk.verify
 import no.nav.tiltakspenger.libs.logging.infra.KotlinLoggingSikkerlogg
 import org.junit.jupiter.api.Test
 
@@ -30,6 +35,36 @@ internal class SikkerloggTest {
     @Test
     fun `companion-objektet kan brukes som injisert instans på alle nivåer, med og uten throwable`() {
         loggPåAlleNivåer(Sikkerlogg)
+    }
+
+    @Test
+    fun `logg sender meldingen til valgt nivå og ignorerer OFF`() {
+        val sikkerlogg = mockk<Sikkerlogg>(relaxed = true)
+        val feil = RuntimeException("feil for test")
+
+        listOf(Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR).forEach { level ->
+            sikkerlogg.logg(level, feil) { "melding" }
+
+            verify(exactly = 1) {
+                when (level) {
+                    Level.TRACE -> sikkerlogg.trace(feil, any())
+                    Level.DEBUG -> sikkerlogg.debug(feil, any())
+                    Level.INFO -> sikkerlogg.info(feil, any())
+                    Level.WARN -> sikkerlogg.warn(feil, any())
+                    Level.ERROR -> sikkerlogg.error(feil, any())
+                    Level.OFF -> Unit
+                }
+            }
+        }
+
+        val avskruddSikkerlogg = mockk<Sikkerlogg>(relaxed = true)
+        var meldingEvaluert = false
+        avskruddSikkerlogg.logg(Level.OFF, feil) {
+            meldingEvaluert = true
+            "melding"
+        }
+        verify { avskruddSikkerlogg wasNot Called }
+        meldingEvaluert.shouldBeFalse()
     }
 
     private fun loggPåAlleNivåer(sikkerlogg: Sikkerlogg) {

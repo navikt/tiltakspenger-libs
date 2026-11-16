@@ -1,6 +1,19 @@
 package no.nav.tiltakspenger.libs.logging
 
+import io.github.oshai.kotlinlogging.Level
 import no.nav.tiltakspenger.libs.logging.infra.KotlinLoggingSikkerlogg
+
+/** Logger meldingen på angitt nivå. */
+fun Sikkerlogg.logg(level: Level, throwable: Throwable? = null, loggstatement: () -> Any?) {
+    when (level) {
+        Level.TRACE -> trace(throwable, loggstatement)
+        Level.DEBUG -> debug(throwable, loggstatement)
+        Level.INFO -> info(throwable, loggstatement)
+        Level.WARN -> warn(throwable, loggstatement)
+        Level.ERROR -> error(throwable, loggstatement)
+        Level.OFF -> Unit
+    }
+}
 
 /**
  * Sikkerlogg for logglinjer som kan inneholde personopplysninger og derfor kun skal til team-logs.

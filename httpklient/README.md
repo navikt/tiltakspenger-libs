@@ -215,7 +215,6 @@ return arenaKlient.hentMeldekort(fnr, periode)
 `logger` er kallerens egen logger, slik at logglinja får kallerens navnerom.
 `sikkerlogg` defaulter til companion-objektet, som gir en ren tekst-henvisning; injiser appens `KotlinLoggingSikkerlogg(appNavn, gcpProsjektId)` for å få en klikkbar lenke til sikkerloggen i logglinja.
 `nivå` styrer loggnivået for både vanlig logg og sikkerlogg, og defaulter til `Level.ERROR`.
-Senk det for feil som er forventet og håndtert, f.eks. `nivå = Level.WARN` når en jobb uansett prøver igjen.
 
 At klienten er stille er et bevisst valg: transport-logging fra libs pluss domenelogging fra konsumenten ga to logghendelser for samme feil, og bare konsumenten vet hva kallet betød.
 Konsumentens egen klientklasse skal derfor heller ikke logge — den returnerer `Either`, og laget som håndterer feilen logger den én gang.

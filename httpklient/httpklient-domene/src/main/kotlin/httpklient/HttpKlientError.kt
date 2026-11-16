@@ -2,6 +2,7 @@ package no.nav.tiltakspenger.libs.httpklient
 
 import arrow.resilience.CircuitBreaker
 import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.Level
 import no.nav.tiltakspenger.libs.logging.Sikkerlogg
 import java.net.URI
 import kotlin.time.Duration
@@ -300,7 +301,7 @@ fun authFeilUtenKall(
  * Slik unngås dobbeltlogging (transport-logg fra libs + domenelogg fra konsument), og det blir nøyaktig én logghendelse per feilsituasjon.
  * All HTTP-kontekst hentes fra feilen selv ([HttpKlientError.metadata]), så kalleren bidrar bare med det kalleren vet mer om enn klienten: [operasjon] og [kontekst].
  *
- * En «logghendelse» er paret [logger].error (uten personopplysninger) + `Sikkerlogg.error` (med maskert request og lesbar respons), i tråd med resten av kodebasen.
+ * En «logghendelse» er paret [logger] (uten personopplysninger) + [sikkerlogg] (med maskert request og lesbar respons) på samme [level], i tråd med resten av kodebasen.
  *
  * Linja navngir feilarten ([beskrivelse]) og endepunktet ([HttpKlientMetadata.endepunkt]) eksplisitt.
  * Det er ikke pynt: feil fra `java.net.http` oppstår asynkront på klientens I/O-tråd, så stacktracen inneholder null applikasjonsframes og kan hverken fortelle hvor kallet gikk eller hvem som gjorde det.
@@ -310,12 +311,15 @@ fun authFeilUtenKall(
  * @param operasjon Kort beskrivelse av hva som feilet, f.eks. `"sending til datadeling"`.
  * @param kontekst Domenekontekst som bare kalleren har, f.eks. `"Sak abc, saksnummer 123"`.
  * @param sikkerlogg Sikkerlogg-instansen henvisningen og sikkerlogg-linja går gjennom; default er companion-objektet (ren tekst-henvisning), injiser appens instans for klikkbar lenke.
+ * @param level Loggnivået begge linjene skrives på.
+ * Default er [Level.ERROR]
  */
 fun HttpKlientError.loggFeil(
     logger: KLogger,
     operasjon: String,
     kontekst: String,
     sikkerlogg: Sikkerlogg = Sikkerlogg,
+    level: Level = Level.ERROR,
 ) {
     val throwable = throwableOrNull()
     // Status utelates når den ikke finnes: "Status: null" er støy, og fraværet er allerede sagt av beskrivelsen ("Timeout (oppkobling)").
@@ -324,11 +328,32 @@ fun HttpKlientError.loggFeil(
     val logMelding = "$start ${sikkerlogg.seSikkerlogg}"
     val sikkerMelding =
         "$start Request: ${metadata.rawRequestString}. Response: ${metadata.rawResponseString}. ResponseHeaders: ${metadata.responseHeaders}."
-    if (throwable != null) {
-        logger.error(throwable) { logMelding }
-        sikkerlogg.error(throwable) { sikkerMelding }
-    } else {
-        logger.error { logMelding }
-        sikkerlogg.error { sikkerMelding }
+    when (level) {
+        Level.TRACE -> {
+            logger.trace(throwable) { logMelding }
+            sikkerlogg.trace(throwable) { sikkerMelding }
+        }
+
+        Level.DEBUG -> {
+            logger.debug(throwable) { logMelding }
+            sikkerlogg.debug(throwable) { sikkerMelding }
+        }
+
+        Level.INFO -> {
+            logger.info(throwable) { logMelding }
+            sikkerlogg.info(throwable) { sikkerMelding }
+        }
+
+        Level.WARN -> {
+            logger.warn(throwable) { logMelding }
+            sikkerlogg.warn(throwable) { sikkerMelding }
+        }
+
+        Level.ERROR -> {
+            logger.error(throwable) { logMelding }
+            sikkerlogg.error(throwable) { sikkerMelding }
+        }
+
+        Level.OFF -> Unit
     }
 }

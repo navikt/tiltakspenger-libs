@@ -19,7 +19,7 @@ freemarker = "2.3.35"
 # Guava brukes ikke direkte, men kommer transitivt via Confluent, WireMock og jwks-rsa.
 # Guava 33.7.1 og eldre allokerer ubegrenset minne ved Java-deserialisering (CVE-2026-102554); fikset i 33.7.2.
 guava = "33.7.2-jre"
-handlebars = "4.5.7"
+handlebars = "4.5.8"
 hamcrest = "3.0"
 hikaricp = "7.1.0"
 # HttpComponents brukes ikke direkte, men kafka-schema-registry-client (via kafka-avro-serializer) drar inn httpclient5 5.5 og httpcore5 5.3.4.

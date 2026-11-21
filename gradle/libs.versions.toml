@@ -65,7 +65,7 @@ mockk = "1.14.11"
 # 4.2-linja kommer fra ktor-server-netty, som drar inn en eldre 4.2 enn den fiksede (3.6.0 drar 4.2.17).
 netty42 = "4.2.19.Final"
 nimbus-jose-jwt = "10.10"
-ojdbc = "23.26.3.0.0"
+ojdbc = "23.26.4.0.0"
 pdfbox = "3.0.8"
 postgresql = "42.7.14"
 # Simpleclient er avviklet oppstrøms til fordel for micrometer; kun soknad-api bruker den, og linja fjernes når den er migrert.

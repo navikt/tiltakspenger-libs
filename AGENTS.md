@@ -23,7 +23,7 @@ Teamet tilpasser egne tjenester ved oppgradering til ny versjon.
   `buildSrc` invaliderer hele bygget ved hver endring, og kan aldri publiseres videre til app-repoene slik et inkludert bygg kan.
   `build-logic` publiseres til GitHub Packages med plugin-markører, slik at app-repoene kan skrive `id("no.nav.tiltakspenger.kotlin")`.
   Pluginene komponeres, slik at en modul bare tar i bruk det den faktisk er:
-    - `no.nav.tiltakspenger.kotlin` — grunnkonvensjonen: Kotlin/JVM-target og toolchain, compiler-flagg, Spotless med pinnet ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5-oppsett, ekskludering av JUnit 4 og gaten `verifiserHttpKlienter`.
+    - `no.nav.tiltakspenger.kotlin` — grunnkonvensjonen: Kotlin/JVM-target og toolchain, compiler-flagg, Spotless med låst ktlint-versjon fra `gradle/libs.versions.toml`, JUnit 5-oppsett, ekskludering av JUnit 4 og gaten `verifiserHttpKlienter`.
     - `no.nav.tiltakspenger.bibliotek` — grunnkonvensjonen pluss `java-library`, sources-jar og publisering til GitHub Packages.
       Alle bibliotekmodulene bruker denne; `versjonskatalog` og `plattform` publiserer andre artefakttyper og bruker `no.nav.tiltakspenger.publisering` direkte.
     - `no.nav.tiltakspenger.dekning` — Kover med krav om full linjedekning, koblet på `check`.
@@ -48,7 +48,7 @@ Teamet tilpasser egne tjenester ved oppgradering til ny versjon.
       Den deklarerer koordinater og versjoner, og ikke noe mer: en katalog kan verken uttrykke constraints eller `exclude`.
       Konsumeres i app-repoets `settings.gradle.kts` med `versionCatalogs { create("libs") { from("no.nav.tiltakspenger.libs:versjonskatalog:<versjon>") } }`.
     - `plattform` — en `java-platform`-BOM med constraints som virker transitivt, altså det versjonskatalogen ikke kan.
-      Den pinner libs-modulene til sin egen versjon, slik at app-repoene skriver libs-koordinatene uten versjon, og styrer de transitive versjonene vi ikke deklarerer selv (netty, jackson 2, kafka-clients med `strictly`, lz4, httpclient5/httpcore5).
+      Den låser libs-modulene til sin egen versjon, slik at app-repoene skriver libs-koordinatene uten versjon, og styrer de transitive versjonene vi ikke deklarerer selv (netty, jackson 2, kafka-clients med `strictly`, lz4, httpclient5/httpcore5).
       Konsumeres med `implementation(platform("no.nav.tiltakspenger.libs:plattform:<versjon>"))`.
 
   Modullista i plattformen utledes fra prosjektstrukturen, ikke fra en navneliste, så en ny libs-modul er med automatisk.

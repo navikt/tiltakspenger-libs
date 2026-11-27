@@ -10,16 +10,4 @@ interface SaksnummerGenerator {
             return Saksnummer.genererSaknummer(dato = dato, løpenr = "0001")
         }
     }
-
-    data object Dev : SaksnummerGenerator {
-        override fun generer(dato: LocalDate): Saksnummer {
-            return Saksnummer.genererSaknummer(dato = dato, løpenr = "1001")
-        }
-    }
-
-    data object Local : SaksnummerGenerator {
-        override fun generer(dato: LocalDate): Saksnummer {
-            return Saksnummer.genererSaknummer(dato = dato, løpenr = "1001")
-        }
-    }
 }
